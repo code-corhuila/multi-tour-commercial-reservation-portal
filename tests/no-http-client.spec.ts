@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
-import * as ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { listSourceFiles } from './source-files';
+import { listSourceFiles, withoutComments } from './source-files';
 
 // Norm 5.4.1 / Annex H: the HTTP client and the session live only in the container.
 // A portal that builds its own sends requests with no interceptor: unauthenticated and in silence.
@@ -13,18 +12,6 @@ const FORBIDDEN: ReadonlyArray<readonly [string, RegExp]> = [
   ['XMLHttpRequest', /\bXMLHttpRequest\b/],
   ['axios', /\baxios\b/],
 ];
-
-/** Source text with every comment removed, so that a comment explaining the rule is not a breach. */
-export function withoutComments(source: string): string {
-  const scanner = ts.createScanner(ts.ScriptTarget.ES2022, false, ts.LanguageVariant.Standard, source);
-  let code = '';
-  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-    if (token !== ts.SyntaxKind.SingleLineCommentTrivia && token !== ts.SyntaxKind.MultiLineCommentTrivia) {
-      code += scanner.getTokenText();
-    }
-  }
-  return code;
-}
 
 /** The forbidden constructs found in one piece of source text. */
 export function findViolations(source: string): string[] {
