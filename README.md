@@ -43,11 +43,9 @@ npm test       # Vitest (Angular unit-test builder) with Testing Library
 
 ## What is missing
 
-Every file under `src/app/catalog/` is an empty stub. The tasks still open, from `tasks.md` of the story:
+Done: the money model (T-03), the four states with the newest request winning (T-04) and the test that no screen offers a delete action (T-08). `catalog-item-form.component.ts` is still an empty stub and `catalog.routes.ts` declares no route. The tasks still open, from `tasks.md` of the story:
 
 - T-00: the route map and the catalog operations in the published contract.
-- T-03: the money model. T-04: the four states and the newest request winning.
 - T-05: the form. T-06: one `Idempotency-Key` per intention. T-07: actions by role.
-- T-08: the test that no screen offers a delete action.
 - T-09: mounting in `multi-tour-front` (blocked by G-FRT).
 - The Playwright level for the mounted portal.
