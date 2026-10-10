@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
-import { CatalogItemsWriter } from '../data/catalog-api.service';
+import { CatalogItemsWriter, IdempotencyKeys } from '../data/catalog-api.service';
 import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogItemCommand } from '../model/catalog-item';
 import { MoneyRejection, formatMoney, parseMoney } from '../model/money';
 
@@ -182,9 +182,16 @@ let nextFormId = 0;
     </form>
   `,
 })
-export class CatalogItemFormComponent {
+export class CatalogItemFormComponent implements OnInit {
   private readonly writer = inject(CatalogItemsWriter);
+  private readonly keys = inject(IdempotencyKeys);
   private readonly destroyRef = inject(DestroyRef);
+  /**
+   * One per registration intention, born when the form opens and not when it is submitted (D-07):
+   * a key made at submit would give a double click two keys, which is the duplicate it prevents.
+   * A refusal keeps it so the retry is the same intention; only a saved item makes a new one.
+   */
+  private idempotencyKey: string | null = null;
   private readonly formId = `catalog-item-form-${nextFormId++}`;
 
   /** Present to edit an item; absent to register a new one. */
@@ -207,6 +214,12 @@ export class CatalogItemFormComponent {
     ...this.refusedFields(),
     ...(this.attempted() ? validate(this.draft()).messages : {}),
   }));
+
+  ngOnInit(): void {
+    if (this.item() === undefined) {
+      this.idempotencyKey = this.keys.generate();
+    }
+  }
 
   protected id(name: FieldName): string {
     return `${this.formId}-${name}`;
@@ -251,12 +264,13 @@ export class CatalogItemFormComponent {
     // Editing sends no serviceType: the contract refuses it, the type is fixed at creation.
     const request = current
       ? this.writer.update(current.serviceId, command)
-      : this.writer.create({ serviceType: this.draft().serviceType, ...command });
+      : this.writer.create({ serviceType: this.draft().serviceType, ...command }, (this.idempotencyKey ??= this.keys.generate()));
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (stored) => {
         this.pending.set(false);
         if (!current) {
           this.draft.set(toDraft(undefined));
+          this.idempotencyKey = this.keys.generate();
           this.attempted.set(false);
         }
         this.saved.emit(stored);
