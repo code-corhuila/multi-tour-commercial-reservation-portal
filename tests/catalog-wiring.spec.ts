@@ -3,9 +3,10 @@ import { fireEvent, within } from '@testing-library/dom';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CATALOG_ROUTES } from '../src/app/catalog/catalog.routes';
-import { CatalogItemsSource, CatalogItemsWriter, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
+import { ActorContext, CatalogItemsSource, CatalogItemsWriter, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
+import { actorAs } from './actor-context.double';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
 import { apiError, ControllableCatalogItemsWriter, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import { withoutComments } from './source-files';
@@ -19,6 +20,7 @@ async function openPage(items?: readonly CatalogItem[]) {
       { provide: CatalogItemsSource, useValue: source },
       { provide: CatalogItemsWriter, useValue: writer },
       { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() },
+      { provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') },
     ],
   });
   const fixture: ComponentFixture<CatalogPageComponent> = TestBed.createComponent(CatalogPageComponent);
