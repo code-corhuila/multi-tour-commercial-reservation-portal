@@ -3,8 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
-import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
-import { CatalogItem } from '../model/catalog-item';
+import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
+import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
 
 /**
  * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
@@ -33,6 +33,9 @@ function reasonOf(error: unknown): string {
   imports: [CatalogItemFormComponent],
   template: `
     @let current = state();
+    @if (caps.isDenied) {
+      <p role="alert" data-state="denied">You do not have access to the catalog.</p>
+    } @else {
     <!-- Outside the states: a reload must not take away a form whose save is in flight. -->
     @if (formTarget(); as target) {
       <!-- Keyed, so another item or a new one starts a fresh form instead of reusing the old state. -->
@@ -41,6 +44,7 @@ function reasonOf(error: unknown): string {
           [item]="target.item"
           (saved)="onSaved($event)"
           (cancelled)="closeForm()"
+          [scope]="caps.canEditCommercialFields ? 'all' : 'description'"
           (saving)="saving.set($event)"
         />
       }
@@ -53,7 +57,9 @@ function reasonOf(error: unknown): string {
         <button type="button" (click)="current.retry()">Retry</button>
       </div>
     } @else {
-      <button type="button" [disabled]="saving()" (click)="openForm(undefined)">New item</button>
+      @if (caps.canRegister) {
+        <button type="button" [disabled]="saving()" (click)="openForm(undefined)">New item</button>
+      }
     }
     @if (current.kind === 'empty') {
       <p role="status" data-state="empty">No results</p>
@@ -62,14 +68,18 @@ function reasonOf(error: unknown): string {
         @for (item of current.items; track item.serviceId) {
           <li>
             {{ item.commercialName }} · {{ item.catalogStatus }}
-            <button type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
-              @if (item.catalogStatus === 'ACTIVE') {
-                Inactivate
-              } @else {
-                Reactivate
-              }
-            </button>
-            <button type="button" [disabled]="saving()" (click)="openForm(item)">Edit</button>
+            @if (caps.canChangeStatus) {
+              <button type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
+                @if (item.catalogStatus === 'ACTIVE') {
+                  Inactivate
+                } @else {
+                  Reactivate
+                }
+              </button>
+            }
+            @if (canEdit) {
+              <button type="button" [disabled]="saving()" (click)="openForm(item)">Edit</button>
+            }
             @if (rowErrors()[item.serviceId]; as reason) {
               <p role="alert">{{ reason }}</p>
             }
@@ -77,13 +87,23 @@ function reasonOf(error: unknown): string {
         }
       </ul>
     }
+    }
   `,
 })
 export class CatalogPageComponent {
   private readonly source = inject(CatalogItemsSource);
   private readonly writer = inject(CatalogItemsWriter);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly actor = inject(ActorContext);
   private readonly requests = new Subject<void>();
+
+  /**
+   * What this actor is offered (RN-P8), derived once. The screen is convenience, not authority (D-09):
+   * the service refuses what the actor may not do. DP-PT-06 is open, so it acts as the one internal
+   * role the container reports.
+   */
+  protected readonly caps = capabilitiesOf(this.actor.role, this.actor.collaboratorMayEditDescription);
+  protected readonly canEdit = this.caps.canEditCommercialFields || this.caps.canEditDescription;
 
   readonly state = signal<PageState>({ kind: 'loading' });
   /** Per row, apart from the four states of the page: one item pending never blanks the others. */
@@ -114,6 +134,10 @@ export class CatalogPageComponent {
   }
 
   reload(): void {
+    // The Accountant is denied (AC-P1.10): the list is never asked for.
+    if (this.caps.isDenied) {
+      return;
+    }
     this.rowErrors.set({});
     if (!this.saving()) {
       this.formTarget.set(null);
@@ -123,7 +147,8 @@ export class CatalogPageComponent {
 
   /** Opens the form to register (no item) or to change one; it replaces any form already open, never one that is saving. */
   protected openForm(item: CatalogItem | undefined): void {
-    if (!this.saving()) {
+    const allowed = item === undefined ? this.caps.canRegister : this.canEdit;
+    if (allowed && !this.saving()) {
       this.formTarget.set({ item });
     }
   }
@@ -135,8 +160,7 @@ export class CatalogPageComponent {
 
   /**
    * Shows what the service stored without asking for the list again (AC-P1.3): a new item goes on
-   * top, the most recent first, and a changed one takes the place of the old one. It assumes the
-   * Administrator; actions by role are T-07.
+   * top, the most recent first, and a changed one takes the place of the old one.
    */
   protected onSaved(stored: CatalogItem): void {
     const registered = this.formTarget()?.item === undefined;
@@ -160,11 +184,14 @@ export class CatalogPageComponent {
   }
 
   /**
-   * Inactivates an active item or reactivates an inactive one. It assumes the Administrator;
-   * actions by role are T-07. The item stays in the list either way (AC-P1.4): the answer of the
+   * Inactivates an active item or reactivates an inactive one. Only an actor who may change the
+   * condition is offered it (T-07). The item stays in the list either way (AC-P1.4): the answer of the
    * service replaces it, and a refusal leaves it as it was.
    */
   protected changeStatus(item: CatalogItem): void {
+    if (!this.caps.canChangeStatus) {
+      return;
+    }
     // Checked before anything else: a second click arrives before the button is rendered disabled.
     if (this.isPending(item.serviceId)) {
       return;
