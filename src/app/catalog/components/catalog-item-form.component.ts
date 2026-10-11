@@ -176,6 +176,8 @@ let nextFormId = 0;
         </div>
       }
       <button type="submit" [disabled]="pending()">Save</button>
+      <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
+      <button type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancel</button>
       @for (text of formMessages(); track $index) {
         <p role="alert">{{ text }}</p>
       }
@@ -198,6 +200,10 @@ export class CatalogItemFormComponent implements OnInit {
   readonly item = input<CatalogItem | undefined>(undefined);
   /** The item as the service stored it, so the list can refresh without reloading the page. */
   readonly saved = output<CatalogItem>();
+  /** The person gave up without saving; the host decides to close the form. */
+  readonly cancelled = output<void>();
+  /** True when a save starts and false when it ends, so the host never replaces the form mid-flight. */
+  readonly saving = output<boolean>();
 
   protected readonly serviceTypes = CATALOG_SERVICE_TYPES;
   protected readonly textFields = TEXT_FIELDS;
@@ -258,6 +264,7 @@ export class CatalogItemFormComponent implements OnInit {
       return;
     }
     this.pending.set(true);
+    this.saving.emit(true);
     this.refusedFields.set({});
     this.formMessages.set([]);
     const current = this.item();
@@ -268,6 +275,7 @@ export class CatalogItemFormComponent implements OnInit {
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (stored) => {
         this.pending.set(false);
+        this.saving.emit(false);
         if (!current) {
           this.draft.set(toDraft(undefined));
           this.idempotencyKey = this.keys.generate();
@@ -278,6 +286,7 @@ export class CatalogItemFormComponent implements OnInit {
       // The draft is left as it is: a refusal must keep what the person typed (RN-P10).
       error: (error: unknown) => {
         this.pending.set(false);
+        this.saving.emit(false);
         this.showRefusal(error);
       },
     });
