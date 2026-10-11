@@ -20,6 +20,18 @@ export function findViolations(source: string): string[] {
 }
 
 describe('portalDeclaresNoHttpClientOfItsOwn', () => {
+  describe('theNewFeatureFolderDeclaresNoHttpClientOfItsOwn', () => {
+  it('covers establishments as part of the whole source tree and permits no HttpClient reference there', () => {
+    const files = listSourceFiles();
+    expect(files.some((file) => file.startsWith('src/app/establishments/'))).toBe(true);
+    const offenders = files
+      .map((file) => ({ file, code: withoutComments(readFileSync(file, 'utf8')) }))
+      .filter(({ file, code }) => findViolations(code).length > 0
+        || (file.startsWith('src/app/establishments/') && /\bHttpClient\b/.test(code)));
+    expect(offenders).toEqual([]);
+  });
+  });
+
   it('finds no HTTP client, session or direct request anywhere in src/', () => {
     const offenders = listSourceFiles()
       .filter((file) => file.endsWith('.ts'))
