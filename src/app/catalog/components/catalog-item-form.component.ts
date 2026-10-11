@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, injec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemsWriter, IdempotencyKeys } from '../data/catalog-api.service';
-import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogItemCommand } from '../model/catalog-item';
+import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
 import { MoneyRejection, formatMoney, parseMoney } from '../model/money';
 
 // Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
@@ -115,6 +115,14 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
   };
 }
 
+/** What a Collaborator may change (AC-P1.6): only the commercial name, so only it is validated and sent. */
+function validateDescription(draft: Draft): { command: UpdateDescriptionCommand | null; messages: FieldMessages } {
+  if (draft.commercialName.trim() === '') {
+    return { command: null, messages: { commercialName: 'Required' } };
+  }
+  return { command: { commercialName: draft.commercialName.trim() }, messages: {} };
+}
+
 function isApiError(value: unknown): value is ApiError {
   return typeof value === 'object' && value !== null && typeof (value as ApiError).userMessage === 'string';
 }
@@ -126,6 +134,7 @@ let nextFormId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form novalidate (submit)="submit($event)">
+      @if (scope() === 'all') {
       <div>
         <label [for]="id('serviceType')">Service type</label>
         <select
@@ -143,7 +152,8 @@ let nextFormId = 0;
           <p role="alert" [id]="id('serviceType') + '-error'">{{ text }}</p>
         }
       </div>
-      @for (field of textFields; track field.name) {
+      }
+      @for (field of shownTextFields(); track field.name) {
         <div>
           <label [for]="id(field.name)">{{ field.label }}</label>
           <input
@@ -159,6 +169,7 @@ let nextFormId = 0;
           }
         </div>
       }
+      @if (scope() === 'all') {
       @for (field of checkFields; track field.name) {
         <div>
           <input
@@ -174,6 +185,7 @@ let nextFormId = 0;
             <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p>
           }
         </div>
+      }
       }
       <button type="submit" [disabled]="pending()">Save</button>
       <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
@@ -201,12 +213,17 @@ export class CatalogItemFormComponent implements OnInit {
   /** The item as the service stored it, so the list can refresh without reloading the page. */
   readonly saved = output<CatalogItem>();
   /** The person gave up without saving; the host decides to close the form. */
+  /**
+   * What the actor may change: everything, or only the descriptive information (AC-P1.6). The other
+   * fields are not rendered, not just disabled, and the command carries only the name.
+   */
+  readonly scope = input<'all' | 'description'>('all');
   readonly cancelled = output<void>();
   /** True when a save starts and false when it ends, so the host never replaces the form mid-flight. */
   readonly saving = output<boolean>();
 
   protected readonly serviceTypes = CATALOG_SERVICE_TYPES;
-  protected readonly textFields = TEXT_FIELDS;
+  protected readonly shownTextFields = computed(() => (this.scope() === 'all' ? TEXT_FIELDS : TEXT_FIELDS.filter((field) => field.name === 'commercialName')));
   protected readonly checkFields = CHECK_FIELDS;
   protected readonly draft = linkedSignal(() => toDraft(this.item()));
   protected readonly pending = signal(false);
@@ -218,8 +235,12 @@ export class CatalogItemFormComponent implements OnInit {
   /** Local errors appear once the person tried to save; the service's own refusal always shows. */
   protected readonly messages = computed<FieldMessages>(() => ({
     ...this.refusedFields(),
-    ...(this.attempted() ? validate(this.draft()).messages : {}),
+    ...(this.attempted() ? this.check().messages : {}),
   }));
+
+  private check(): { command: UpdateCatalogItemCommand | UpdateDescriptionCommand | null; messages: FieldMessages } {
+    return this.scope() === 'all' ? validate(this.draft()) : validateDescription(this.draft());
+  }
 
   ngOnInit(): void {
     if (this.item() === undefined) {
@@ -259,7 +280,7 @@ export class CatalogItemFormComponent implements OnInit {
       return;
     }
     this.attempted.set(true);
-    const { command } = validate(this.draft());
+    const { command } = this.check();
     if (command === null) {
       return;
     }
@@ -271,7 +292,7 @@ export class CatalogItemFormComponent implements OnInit {
     // Editing sends no serviceType: the contract refuses it, the type is fixed at creation.
     const request = current
       ? this.writer.update(current.serviceId, command)
-      : this.writer.create({ serviceType: this.draft().serviceType, ...command }, (this.idempotencyKey ??= this.keys.generate()));
+      : this.writer.create({ serviceType: this.draft().serviceType, ...(command as UpdateCatalogItemCommand) }, (this.idempotencyKey ??= this.keys.generate()));
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (stored) => {
         this.pending.set(false);
