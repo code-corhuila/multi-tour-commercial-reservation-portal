@@ -1,12 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogPageComponent, PageState } from '../src/app/catalog/pages/catalog-page.component';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
+import { ControllableCatalogItemsWriter } from './catalog-items-writer.double';
 
 async function openPage() {
   const source = new ControllableCatalogItemsSource();
-  TestBed.configureTestingModule({ providers: [{ provide: CatalogItemsSource, useValue: source }] });
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: CatalogItemsSource, useValue: source },
+      { provide: CatalogItemsWriter, useValue: new ControllableCatalogItemsWriter() },
+    ],
+  });
   const fixture: ComponentFixture<CatalogPageComponent> = TestBed.createComponent(CatalogPageComponent);
   const settle = async () => {
     fixture.detectChanges();
