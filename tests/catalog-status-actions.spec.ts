@@ -72,8 +72,8 @@ describe('reactivatedItemShowsAsActive', () => {
 describe('oneStatusActionPerItem', () => {
   it('offers only Inactivate on an active item and only Reactivate on an inactive one', async () => {
     const { rowOf } = await openList();
-    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Inactivate']);
-    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Reactivate']);
+    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Inactivate', 'Edit']);
+    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Reactivate', 'Edit']);
   });
 
   it('sends one request for a double click, disables the button while it pends and enables it after', async () => {

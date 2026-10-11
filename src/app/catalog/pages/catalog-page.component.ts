@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
+import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
 import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CatalogItem } from '../model/catalog-item';
 
@@ -15,6 +16,11 @@ export type PageState =
   | { readonly kind: 'empty' }
   | { readonly kind: 'data'; readonly items: readonly CatalogItem[] };
 
+/** The one form the page may show: registering (no item) or changing the given item. */
+interface FormTarget {
+  readonly item: CatalogItem | undefined;
+}
+
 /** The reason the service gave, or a generic one when the failure has no ApiError shape. */
 function reasonOf(error: unknown): string {
   const userMessage = (error as Partial<ApiError> | null)?.userMessage;
@@ -24,8 +30,21 @@ function reasonOf(error: unknown): string {
 @Component({
   selector: 'app-catalog-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CatalogItemFormComponent],
   template: `
     @let current = state();
+    <!-- Outside the states: a reload must not take away a form whose save is in flight. -->
+    @if (formTarget(); as target) {
+      <!-- Keyed, so another item or a new one starts a fresh form instead of reusing the old state. -->
+      @for (key of [formKey()]; track key) {
+        <app-catalog-item-form
+          [item]="target.item"
+          (saved)="onSaved($event)"
+          (cancelled)="closeForm()"
+          (saving)="saving.set($event)"
+        />
+      }
+    }
     @if (current.kind === 'loading') {
       <p role="status" data-state="loading">Loading</p>
     } @else if (current.kind === 'error') {
@@ -33,9 +52,12 @@ function reasonOf(error: unknown): string {
         <p>The request failed.</p>
         <button type="button" (click)="current.retry()">Retry</button>
       </div>
-    } @else if (current.kind === 'empty') {
-      <p role="status" data-state="empty">No results</p>
     } @else {
+      <button type="button" [disabled]="saving()" (click)="openForm(undefined)">New item</button>
+    }
+    @if (current.kind === 'empty') {
+      <p role="status" data-state="empty">No results</p>
+    } @else if (current.kind === 'data') {
       <ul data-state="data">
         @for (item of current.items; track item.serviceId) {
           <li>
@@ -47,6 +69,7 @@ function reasonOf(error: unknown): string {
                 Reactivate
               }
             </button>
+            <button type="button" [disabled]="saving()" (click)="openForm(item)">Edit</button>
             @if (rowErrors()[item.serviceId]; as reason) {
               <p role="alert">{{ reason }}</p>
             }
@@ -66,6 +89,11 @@ export class CatalogPageComponent {
   /** Per row, apart from the four states of the page: one item pending never blanks the others. */
   private readonly pendingIds = signal<Readonly<Record<string, true>>>({});
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
+  /** Null when no form is open: a single value, so two forms can never be open together. */
+  protected readonly formTarget = signal<FormTarget | null>(null);
+  protected readonly formKey = computed(() => this.formTarget()?.item?.serviceId ?? 'new');
+  /** True while the open form has a save in flight; nothing may replace or close that form then. */
+  protected readonly saving = signal(false);
 
   constructor() {
     this.requests
@@ -87,7 +115,44 @@ export class CatalogPageComponent {
 
   reload(): void {
     this.rowErrors.set({});
+    if (!this.saving()) {
+      this.formTarget.set(null);
+    }
     this.requests.next();
+  }
+
+  /** Opens the form to register (no item) or to change one; it replaces any form already open, never one that is saving. */
+  protected openForm(item: CatalogItem | undefined): void {
+    if (!this.saving()) {
+      this.formTarget.set({ item });
+    }
+  }
+
+  protected closeForm(): void {
+    this.saving.set(false);
+    this.formTarget.set(null);
+  }
+
+  /**
+   * Shows what the service stored without asking for the list again (AC-P1.3): a new item goes on
+   * top, the most recent first, and a changed one takes the place of the old one. It assumes the
+   * Administrator; actions by role are T-07.
+   */
+  protected onSaved(stored: CatalogItem): void {
+    const registered = this.formTarget()?.item === undefined;
+    this.state.update((current) => {
+      if (current.kind === 'empty' && registered) {
+        return { kind: 'data', items: [stored] };
+      }
+      if (current.kind !== 'data') {
+        return current;
+      }
+      const items = registered
+        ? [stored, ...current.items]
+        : current.items.map((each) => (each.serviceId === stored.serviceId ? stored : each));
+      return { kind: 'data', items };
+    });
+    this.closeForm();
   }
 
   protected isPending(serviceId: string): boolean {
