@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
-import { CatalogItemsSource } from '../data/catalog-api.service';
+import { ApiError } from '../../shell-contract';
+import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CatalogItem } from '../model/catalog-item';
 
 /**
@@ -13,6 +14,12 @@ export type PageState =
   | { readonly kind: 'error'; readonly retry: () => void }
   | { readonly kind: 'empty' }
   | { readonly kind: 'data'; readonly items: readonly CatalogItem[] };
+
+/** The reason the service gave, or a generic one when the failure has no ApiError shape. */
+function reasonOf(error: unknown): string {
+  const userMessage = (error as Partial<ApiError> | null)?.userMessage;
+  return typeof userMessage === 'string' ? userMessage : 'The request failed.';
+}
 
 @Component({
   selector: 'app-catalog-page',
@@ -31,7 +38,19 @@ export type PageState =
     } @else {
       <ul data-state="data">
         @for (item of current.items; track item.serviceId) {
-          <li>{{ item.commercialName }} · {{ item.catalogStatus }}</li>
+          <li>
+            {{ item.commercialName }} · {{ item.catalogStatus }}
+            <button type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
+              @if (item.catalogStatus === 'ACTIVE') {
+                Inactivate
+              } @else {
+                Reactivate
+              }
+            </button>
+            @if (rowErrors()[item.serviceId]; as reason) {
+              <p role="alert">{{ reason }}</p>
+            }
+          </li>
         }
       </ul>
     }
@@ -39,9 +58,14 @@ export type PageState =
 })
 export class CatalogPageComponent {
   private readonly source = inject(CatalogItemsSource);
+  private readonly writer = inject(CatalogItemsWriter);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly requests = new Subject<void>();
 
   readonly state = signal<PageState>({ kind: 'loading' });
+  /** Per row, apart from the four states of the page: one item pending never blanks the others. */
+  private readonly pendingIds = signal<Readonly<Record<string, true>>>({});
+  protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
 
   constructor() {
     this.requests
@@ -62,6 +86,45 @@ export class CatalogPageComponent {
   }
 
   reload(): void {
+    this.rowErrors.set({});
     this.requests.next();
+  }
+
+  protected isPending(serviceId: string): boolean {
+    return this.pendingIds()[serviceId] === true;
+  }
+
+  /**
+   * Inactivates an active item or reactivates an inactive one. It assumes the Administrator;
+   * actions by role are T-07. The item stays in the list either way (AC-P1.4): the answer of the
+   * service replaces it, and a refusal leaves it as it was.
+   */
+  protected changeStatus(item: CatalogItem): void {
+    // Checked before anything else: a second click arrives before the button is rendered disabled.
+    if (this.isPending(item.serviceId)) {
+      return;
+    }
+    this.pendingIds.update((current) => ({ ...current, [item.serviceId]: true }));
+    this.rowErrors.update(({ [item.serviceId]: _cleared, ...rest }) => rest);
+    const request =
+      item.catalogStatus === 'ACTIVE' ? this.writer.inactivate(item.serviceId) : this.writer.reactivate(item.serviceId);
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (stored) => {
+        this.settle(item.serviceId);
+        this.state.update((current) =>
+          current.kind === 'data'
+            ? { kind: 'data', items: current.items.map((each) => (each.serviceId === stored.serviceId ? stored : each)) }
+            : current,
+        );
+      },
+      error: (error: unknown) => {
+        this.settle(item.serviceId);
+        this.rowErrors.update((current) => ({ ...current, [item.serviceId]: reasonOf(error) }));
+      },
+    });
+  }
+
+  private settle(serviceId: string): void {
+    this.pendingIds.update(({ [serviceId]: _done, ...rest }) => rest);
   }
 }
