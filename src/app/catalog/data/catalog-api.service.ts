@@ -16,11 +16,15 @@ export abstract class CatalogItemsSource {
  * implementation over the container HttpClient comes with the container (T-09). A refusal reaches
  * the form as an ApiError of shell-contract.ts.
  *
- * Only creation takes the Idempotency-Key (api plan D-06): an update is idempotent by nature.
+ * Only creation takes the Idempotency-Key (api plan D-06). An update and the two status actions are
+ * idempotent by nature: inactivating twice leaves the same state, so they carry no key.
  */
 export abstract class CatalogItemsWriter {
   abstract create(command: CreateCatalogItemCommand, idempotencyKey: string): Observable<CatalogItem>;
   abstract update(serviceId: string, command: UpdateCatalogItemCommand): Observable<CatalogItem>;
+  /** The item stays readable and listed; only its commercial eligibility changes. */
+  abstract inactivate(serviceId: string): Observable<CatalogItem>;
+  abstract reactivate(serviceId: string): Observable<CatalogItem>;
 }
 
 /**
