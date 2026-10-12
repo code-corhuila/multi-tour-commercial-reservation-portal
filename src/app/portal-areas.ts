@@ -89,7 +89,12 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
-    isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && has(injector, DiscountRulesSource),
+    isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
+  },
+  {
+    key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent, audience: 'customer',
+    // HU-COM-008 DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
+    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
   // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
   { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer' },
