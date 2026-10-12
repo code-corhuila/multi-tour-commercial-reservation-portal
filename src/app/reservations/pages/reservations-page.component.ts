@@ -6,7 +6,7 @@ import { formatDate } from '../../shared/format';
 import { ReservationFormComponent } from '../components/reservation-form.component';
 import { ReservationViewComponent } from '../components/reservation-view.component';
 import { ReservationsSource } from '../data/reservations-source';
-import { RESERVATION_TEXT, Reservation, STATUS_LABEL, canCreateReservations, money } from '../model/reservation';
+import { RESERVATION_TEXT, Reservation, STATUS_LABEL, canCreateReservations, money, travelers } from '../model/reservation';
 
 type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly Reservation[] };
 type View = { kind: 'list' | 'create' } | { kind: 'created' | 'detail'; reservation: Reservation };
@@ -37,13 +37,13 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
           @let current = state();
           @switch (current.kind) {
             @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-            @case ('error') { <div role="alert" data-state="error">{{ text.failed }}<button type="button" (click)="reload()">{{ text.retry }}</button></div> }
+            @case ('error') { <div role="alert" data-state="error">{{ text.failed }}<button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
             @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
             @case ('data') {
               <div class="crp-table-wrap" data-state="data"><table class="crp-operator-table">
                 <thead><tr>@for (column of text.columns; track column) { <th>{{ column }}</th> }</tr></thead>
                 <tbody>@for (r of current.items; track r.id) {
-                  <tr><td><span class="crp-reservation-code">#{{ r.id }}</span><small>{{ date(r.departureDate) }} · {{ r.people }} viajeros</small></td>
+                  <tr><td><span class="crp-reservation-code">#{{ r.id }}</span><small>{{ date(r.departureDate) }} · {{ travelers(r.people) }}</small></td>
                     <td>{{ r.leadCustomerName }}</td><td>{{ r.tourName }}</td>
                     <td><span class="crp-operator-status crp-is-pending">{{ status[r.status] }}</span></td><td>{{ money(r.quote.finalCents) }}</td>
                     <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button></td></tr>
@@ -62,6 +62,7 @@ export class ReservationsPageComponent {
   protected readonly text = RESERVATION_TEXT;
   protected readonly money = money;
   protected readonly date = formatDate;
+  protected readonly travelers = travelers;
   protected readonly status = STATUS_LABEL;
   protected readonly headers = HEADERS;
   protected readonly view = signal<View>({ kind: 'list' });

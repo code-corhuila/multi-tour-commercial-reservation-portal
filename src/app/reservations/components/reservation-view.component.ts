@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { formatDate } from '../../shared/format';
-import { FINANCIAL_LABEL, RESERVATION_TEXT, Reservation, STATUS_LABEL, discountTotal, money } from '../model/reservation';
+import { FINANCIAL_LABEL, RESERVATION_TEXT, Reservation, STATUS_LABEL, discountTotal, money, persons, travelers } from '../model/reservation';
 import { ReservationBreakdownComponent } from './reservation-breakdown.component';
 
 /** Screen 10C (fresh) or 10A, without the payment parts (cash and payments stories). Renders the snapshot fixed at creation. */
@@ -35,12 +35,12 @@ import { ReservationBreakdownComponent } from './reservation-breakdown.component
     } @else {
       <div class="reservation-detail">
         <section class="crp-operator-panel crp-reservation-hero">
-          <div><p class="crp-operator-eyebrow">#{{ r.id }}</p><h2>{{ r.tourName }}</h2><p>Salida: {{ date(r.departureDate) }} · {{ r.people }} viajeros</p></div>
+          <div><p class="crp-operator-eyebrow">#{{ r.id }}</p><h2>{{ r.tourName }}</h2><p>Salida: {{ date(r.departureDate) }} · {{ travelers(r.people) }}</p></div>
           <span class="crp-operator-status crp-is-pending">{{ status[r.status] }}</span>
         </section>
         <div class="crp-reservation-panels">
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Titular y viajeros</p><h2>{{ r.leadCustomerName }}</h2>
-            <dl><div><dt>Viajeros registrados</dt><dd>{{ r.people }} personas</dd></div><div><dt>Situación financiera</dt><dd>{{ financial[r.financialStatus] }}</dd></div></dl>
+            <dl><div><dt>Viajeros registrados</dt><dd>{{ persons(r.people) }}</dd></div><div><dt>Situación financiera</dt><dd>{{ financial[r.financialStatus] }}</dd></div></dl>
           </section>
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Estado económico</p><h2>{{ money(r.quote.finalCents) }} pendientes</h2>
             <app-reservation-breakdown [quote]="r.quote" />
@@ -64,5 +64,7 @@ export class ReservationViewComponent {
   protected readonly financial = FINANCIAL_LABEL;
   protected readonly money = money;
   protected readonly date = formatDate;
+  protected readonly travelers = travelers;
+  protected readonly persons = persons;
   protected readonly discountTotal = discountTotal;
 }
