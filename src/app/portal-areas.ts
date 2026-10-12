@@ -60,13 +60,13 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   },
   // HU-COM-008 reservar-tour.html: opened by "Reservar tour" of the offer with { tour }.
   {
-    key: RESERVATION_FLOW.reserve, label: 'Reservar tour', component: ReserveTourPageComponent, audience: 'customer', clientChrome: 'panel',
+    key: RESERVATION_FLOW.reserve, label: 'Reservar tour', component: ReserveTourPageComponent, audience: 'customer', clientChrome: 'none',
     isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
   // HU-COM-008 finalizar-reserva.html, opened by "Continuar reserva" with { departure, services, people }.
   // DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
   {
-    key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'panel',
+    key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
     isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
 ]);
