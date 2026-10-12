@@ -1,4 +1,6 @@
+import { firstValueFrom } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DemoCurrentDiscountsStore } from '../src/app/demo/current-discounts-demo';
 import * as entry from '../src/mount-entry';
 import { apiError } from './catalog-items-writer.double';
 import { openCurrentDiscounts, ruleNamed, serviceNamed } from './current-discounts.double';
@@ -153,6 +155,24 @@ describe('theScreenFollowsTheAuthorizedMockup', () => {
     expect(text(page.element, '.crp-operator-panel > h2')).toEqual(['Valores por servicio', 'Autorización']);
     expect(page.submitButton().textContent?.trim()).toBe('Aplicar descuento');
     expect(text(page.element, 'select[name="type"] option')).toEqual(['Porcentaje', 'Valor fijo']);
+  });
+
+  it('offers the outline Cancelar of the mockup, which clears the form without sending', async () => {
+    const page = await withData();
+    const actions = Array.from(page.element.querySelectorAll<HTMLButtonElement>('form .crp-form-actions button'));
+    expect(actions.map((b) => b.textContent?.trim())).toEqual(['Cancelar', 'Aplicar descuento']);
+    expect(actions[0].type).toBe('button'); expect(actions[0].classList).toContain('crp-operator-outline');
+    await submit(page); await fillAdditional(page, '7', 'Cliente frecuente');
+    actions[0].click(); await page.settle();
+    expect((page.field('value') as HTMLInputElement).value).toBe('');
+    expect((page.field('reason') as HTMLInputElement).value).toBe('');
+    expect(page.errorFor('reason')).toBeFalsy();
+    expect(page.writer.calls).toHaveLength(0);
+  });
+
+  it('writes the demo rule names in Spanish with their accents', async () => {
+    const services = await firstValueFrom(new DemoCurrentDiscountsStore().list());
+    expect(services.flatMap((s) => s.rules.map((r) => r.name))).toContain('Promoción de lanzamiento');
   });
 
   it('shows the values block with formatted money and dates, and numbers each discount once', async () => {
