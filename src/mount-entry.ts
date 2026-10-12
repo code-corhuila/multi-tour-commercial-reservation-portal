@@ -5,6 +5,8 @@ import { ActorRole } from './app/catalog/model/catalog-item';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
+import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
+import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
 
 const KNOWN_ROLES: readonly string[] = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT'];
 
@@ -40,6 +42,9 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
       ...sourceProviders(props.apiClient),
+      // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
+      { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
+      ...selfServiceDemoProviders(),
     ],
   }).then((created) => {
     app = created;
