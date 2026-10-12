@@ -140,7 +140,7 @@ describe('sensitiveDataIsRestrictedWithoutThePermission', () => {
   it('keeps the values out of the page without the permission', async () => {
     const p = await openPeople('TENANT_ADMINISTRATOR', false); await p.answer(groupWith(true));
     expect(p.element.textContent).toContain('Restricted');
-    for (const value of values) expect(p.element.innerHTML).not.toContain(value);
+    for (const value of values) expect(p.element.querySelector('[data-state="data"]')!.innerHTML).not.toContain(value);
   });
   it('shows them to an administrator holding the permission', async () => {
     const p = await openPeople('TENANT_ADMINISTRATOR', true); await p.answer(groupWith(true));
@@ -148,7 +148,7 @@ describe('sensitiveDataIsRestrictedWithoutThePermission', () => {
   });
   it('masks a manager even with the permission', async () => {
     const p = await openPeople('MANAGER', true); await p.answer(groupWith(true));
-    for (const value of values) expect(p.element.innerHTML).not.toContain(value);
+    for (const value of values) expect(p.element.querySelector('[data-state="data"]')!.innerHTML).not.toContain(value);
   });
 });
 

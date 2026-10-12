@@ -3,7 +3,7 @@ import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
-import { currentDiscountsProviders } from './app/demo/current-discounts-demo';
+import { customersDemoProviders } from './app/demo/customers-demo';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -45,7 +45,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
       ...sourceProviders(props.apiClient),
-      ...currentDiscountsProviders(), // DEMO until G-API: no adapter over apiClient yet (DD-1)
+      ...customersDemoProviders(props.session.roles),
     ],
   }).then((created) => {
     app = created;
