@@ -69,7 +69,7 @@
 .crp-root .crp-operator-nav button:hover:not(:disabled):not(.crp-is-active) { border-color: transparent; background: var(--crp-muted); color: var(--crp-text); }
 .crp-root .crp-operator-nav button.crp-is-active { border-left-color: var(--crp-accent); background: var(--crp-accent-soft); color: var(--crp-accent-strong); font-weight: 800; }
 .crp-root .crp-operator-content { width: min(100%, 1420px); padding: 32px clamp(20px, 4vw, 56px) 56px; }
-.crp-root .crp-operator-panel { margin-top: 22px; padding: 30px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: var(--crp-radius-panel); }
+.crp-root .crp-operator-panel { margin-top: 22px; padding: 25px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: var(--crp-radius-panel); }
 .crp-root .crp-operator-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
 .crp-root .crp-operator-panel h2 { margin: 4px 0 0; color: #172728; font-size: 1.18rem; letter-spacing: -0.045em; }
 .crp-root .crp-operator-eyebrow, .crp-root .crp-page-header-eyebrow { margin: 0; color: #667579; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
@@ -157,6 +157,25 @@
 .crp-root [role="alert"] + [role="alert"] { margin-top: 4px; }
 .crp-root input + [role="alert"], .crp-root select + [role="alert"], .crp-root textarea + [role="alert"] { margin: 4px 0 0; padding: 0; border: 0; background: none; font-size: 0.82rem; }
 
+/* Discounts (screen 12): compact hero, promotion items, numbered form panels and the inactivation dialog. */
+.crp-root .crp-discount-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: 28px; margin-bottom: 22px; padding: 25px 28px; border: 1px solid #d5e4dc; border-radius: 16px; background: linear-gradient(135deg, #e9f4ed, #fffefa 76%); }
+.crp-root .crp-discount-hero h2 { margin: 4px 0 0; color: #172728; font-size: clamp(1.25rem, 1.1rem + 0.45vw, 1.58rem); line-height: 1.25; letter-spacing: -0.045em; }
+.crp-root .crp-discount-hero > p, .crp-root .crp-discount-feedback { margin: 0; color: #5b696c; font-size: 0.92rem; line-height: 1.6; }
+.crp-root .crp-discount-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.crp-root .crp-discount-promo { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 21px; border: 1px solid #cce3d6; border-radius: 14px; background: #f1faf5; }
+.crp-root .crp-discount-promo span { display: block; color: #1f4d3d; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.crp-root .crp-discount-promo strong { display: block; margin-top: 5px; color: #1e3c3a; font-size: 1.2rem; }
+.crp-root .crp-discount-promo p { margin: 7px 0 8px; color: #607174; font-size: 0.87rem; }
+.crp-root .crp-discount-promo em { font-style: normal; }
+.crp-root .crp-discount-promo button { background: #ffffff; border-color: #bad8ca; font-weight: 800; }
+.crp-root .crp-discount-promo .crp-discount-toggle { border-color: #e4c6ba; background: #fff8f4; color: #a94f35; }
+.crp-root .crp-discount-dialog { margin-bottom: 16px; padding: 16px; border: 1px solid #e4c6ba; border-radius: 14px; background: #fff8f4; }
+.crp-root .crp-discount-dialog button + button { margin-left: 12px; }
+.crp-root .crp-discount-form { display: grid; grid-template-columns: 1fr; gap: 22px; }
+.crp-root .crp-discount-form .crp-operator-panel { margin-top: 0; }
+.crp-root .crp-discount-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.crp-root .crp-discount-grid small { display: block; margin-top: 4px; color: var(--crp-soft); font-size: 0.78rem; }
+
 @media (max-width: 860px) {
   .crp-root .crp-operator-shell { grid-template-columns: 1fr; }
   .crp-root .crp-operator-sidebar { padding: 16px; border-right: 0; border-bottom: 1px solid var(--crp-line); }
@@ -173,5 +192,6 @@
   .crp-root .crp-nav { flex-wrap: wrap; }
   .crp-root .crp-operator-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .crp-root .crp-filters > div { flex-basis: 100%; }
-  .crp-root form { grid-template-columns: 1fr; }
+  .crp-root form, .crp-root .crp-discount-grid, .crp-root .crp-discount-hero { grid-template-columns: 1fr; }
+  .crp-root .crp-discount-promo { align-items: flex-start; flex-direction: column; }
 }
