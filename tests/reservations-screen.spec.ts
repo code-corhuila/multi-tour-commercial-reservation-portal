@@ -13,7 +13,7 @@ const header = (root: Element) => ({ eyebrow: root.querySelector('.crp-page-head
 const noRawCodes = (root: Element) => { for (const code of RAW) expect(root.textContent, code).not.toContain(code); };
 const noPayments = (root: Element) => { for (const text of ['Gestionar pago', 'Pagos y soportes', 'Total recibido', 'Modalidad']) expect(root.textContent, text).not.toContain(text); };
 
-async function overDemo() {
+async function overDemo(people = '2') {
   const departures = new DemoDeparturesStore(), store = new DemoReservationsStore(), discounts = new StubDiscounts();
   discounts.lines = [{ name: 'Temporada baja', base: 'ORIGINAL_VALUE', amountCents: 1000 }];
   const open = departures.items.find((d) => d.state === 'PROGRAMADA' && d.openForReservations)!;
@@ -22,7 +22,7 @@ async function overDemo() {
   const create = async () => {
     await view.click('Crear reserva');
     await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);
-    await view.tick('svc-Kayak'); await view.type('people', '2');
+    await view.tick('svc-Kayak'); await view.type('people', people);
     await view.click('Registrar reserva');
   };
   return { ...view, open, create };
@@ -43,6 +43,17 @@ describe('the list is screen 10', () => {
     expect(cells.slice(1)).toEqual(['Lead Demo', 'Tour 1', 'Pendiente de pago', '$50', 'Ver detalle']);
     expect(element.querySelector('tbody .crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
     noRawCodes(element); noPayments(element);
+  });
+
+  it('writes one traveler in singular and offers Reintentar as an outline button', async () => {
+    const reservations = new ControllableReservations();
+    const { element, settle, button, click } = await screenOf(ReservationsPageComponent, reservationProviders({ reservations }));
+    reservations.inner.requests[0].fail(); await settle();
+    expect(button('Reintentar')?.classList).toContain('crp-operator-outline');
+    await click('Reintentar');
+    reservations.inner.requests[1].reply([reservationOf('RES-1', { people: 1 })]); await settle();
+    expect(texts(element, 'tbody tr td')[0]).toContain('07 nov 2026 · 1 viajero');
+    expect(element.textContent).not.toContain('1 viajeros');
   });
 
   it('starts the demo with seeded reservations pending payment', async () => {
@@ -109,5 +120,13 @@ describe('the result is screen 10C and the detail is screen 10A, both without pa
     expect(detail.textContent).toContain('Temporada baja (sobre el valor original)');
     expect(texts(detail, 'th')).toEqual(['Servicio', 'Fecha', 'Cantidad']);
     noRawCodes(element); noPayments(element);
+  });
+
+  it('writes one traveler and one person in singular in the detail', async () => {
+    const { element, create, click } = await overDemo('1');
+    await create(); await click('Ver detalle');
+    const detail = element.querySelector('.reservation-detail')!;
+    expect(detail.textContent).toContain('1 viajero'); expect(detail.textContent).toContain('1 persona');
+    expect(detail.textContent).not.toContain('1 viajeros'); expect(detail.textContent).not.toContain('1 personas');
   });
 });
