@@ -33,6 +33,15 @@ export function openerOf(key: string): (() => void) | null {
   return navigation?.has(key) ? () => navigation.open(key) : null;
 }
 
+/** The key under which HU-COM-008 registers Reservar tour (reservar-tour.html); it reads { tour } from PortalNavigation. */
+export const RESERVE_TOUR_AREA = 'reserve';
+
+/** Opens Reservar tour on a tour, or null when the shell cannot show it. */
+export function reserverOf(): ((tourId: string) => void) | null {
+  const navigation = inject(PortalNavigation, { optional: true });
+  return navigation?.has(RESERVE_TOUR_AREA) ? (tourId) => { navigation.open(RESERVE_TOUR_AREA, { tour: tourId }); } : null;
+}
+
 /** "Volver al panel cliente", drawn only when the shell can open the panel (HU-COM-008). */
 export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA.panel); }
 
@@ -67,7 +76,7 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
             </div>&ngsp;
             <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div></dl>
             @if (priced.tour.validity; as range) { <p class="crp-offer-validity">{{ copy.validFrom }} {{ day(range.from) }} {{ copy.validTo }} {{ day(range.to) }}.</p> }
-            @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" (click)="reserve()">{{ copy.reserve }}</button> }
+            @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" (click)="reserve(priced.tour.serviceId)">{{ copy.reserve }}</button> }
           </aside>
         </div>
       </article>
@@ -82,13 +91,9 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
         <div class="crp-page-header-action crp-offer-search">
           <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchToursHint" #query (keydown.enter)="search.set(query.value)" />
           <button type="button" class="crp-primary" (click)="search.set(query.value)">{{ copy.search }}</button>
+          <label class="crp-offer-date"><span>{{ copy.date }}</span><input type="date" [value]="date()" (change)="choose($event)" /></label>
         </div>
       </header>
-      <div class="crp-offer-when">
-        <span data-date>{{ copy.availableOn }} {{ day(date()) }}</span>
-        <label for="public-offer-date">{{ copy.date }}</label>
-        <input id="public-offer-date" type="date" [value]="date()" (change)="choose($event)" />
-      </div>
       <section class="crp-offer-section" data-part="tours" [attr.aria-label]="copy.toursList">
         @let tours = toursState();
         @switch (tours.kind) {
@@ -128,8 +133,8 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
 export class PublicOfferPageComponent {
   protected readonly copy = PUBLIC_OFFER_COPY;
   protected readonly back = backToPanel();
-  /** "Reservar tour" opens the reservation of HU-COM-008, drawn only when the shell has it (AC-PO.7: no form here). */
-  protected readonly reserve = openerOf(CLIENT_AREA.reservations);
+  /** "Reservar tour" opens Reservar tour of HU-COM-008 on the tour, drawn only when the shell has it (AC-PO.7: no form here). */
+  protected readonly reserve = reserverOf();
   private readonly offer = inject(PublicOfferSource, { optional: true });
   // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });

@@ -271,18 +271,33 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Explora los tours disponibles y consulta sus detalles.');
     expect(within(page.host).getByLabelText('Buscar tours por nombre o destino').getAttribute('placeholder')).toBe('Buscar tours por nombre o destino...');
     const header = page.host.querySelector('header.crp-offer-head')!;
-    expect(Array.from(header.querySelector('.crp-page-header-action')!.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON']);
-    expect(header.querySelector('input[type="date"]')).toBeNull();
-    expect(page.host.querySelector('.crp-offer-when input[type="date"]')).not.toBeNull();
+    const action = header.querySelector('.crp-page-header-action.crp-offer-search')!;
+    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON', 'LABEL']);
+    expect(text(action.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
+    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBe(action);
+    expect(page.host.querySelector('.crp-offer-when, [data-date]')).toBeNull();
+    expect(page.host.textContent).not.toMatch(/Disponibles el|Fecha de consulta/);
     expect(page.part('tours').getAttribute('aria-label')).toBe('Listado de tours disponibles');
     expect(text(page.part('tours').querySelector('[data-state="loading"]'))).toBe('Cargando tours…');
     expect(page.host.querySelector('.crp-operator-panel, .crp-operator-panel-head')).toBeNull();
   });
 
-  it('writes the chosen date as the screens do, never as an ISO date', async () => {
+  it('keeps the chosen date in the compact Fecha control and never writes it as an ISO date', async () => {
     const page = await openPage();
     await page.chooseDate('2026-11-22');
-    expect(text(page.host.querySelector('[data-date]'))).toBe('Disponibles el 22 nov 2026');
+    expect(within(page.host).getByLabelText<HTMLInputElement>('Fecha').value).toBe('2026-11-22');
+    expect(page.host.textContent).not.toContain('2026-11-22');
+  });
+
+  it('keeps the photo of a card at 3:2 and the search row narrow, with the buttons at the size of the mockup', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
+    expect(rule('.crp-root .crp-tour-media')).toMatch(/position:\s*relative;\s*overflow:\s*hidden;\s*aspect-ratio:\s*3 \/ 2;/);
+    expect(rule('.crp-root .crp-tour-media img')).toMatch(/position:\s*absolute;\s*inset:\s*0;.*width:\s*100%;\s*height:\s*100%;\s*object-fit:\s*cover;/);
+    expect(rule('.crp-root .crp-offer-search')).toMatch(/display:\s*flex;.*width:\s*auto;\s*max-width:\s*100%;\s*align-self:\s*flex-end;/);
+    expect(rule('.crp-root .crp-offer-search input[type="search"]')).toMatch(/flex:\s*0 1 180px;/);
+    expect(rule('.crp-root .crp-tour-meta button')).toMatch(/font-size:\s*1rem;/);
+    expect(rule('.crp-root .crp-offer-reserve')).toMatch(/font-size:\s*1rem;/);
   });
 
   it('draws a tour card as tours.html: photo, tag of the value port, struck base, from-value in green and Ver detalle', async () => {
@@ -359,8 +374,8 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(detail.querySelector('.crp-offer-validity'))).toBe('Vigente del 01 sep 2026 al 30 sep 2026.');
   });
 
-  it('draws Reservar tour only when the shell can open the reservation of HU-COM-008, and opens it', async () => {
-    const page = await openPage({ areas: [CLIENT_AREA.tours, CLIENT_AREA.reservations] });
+  it('draws Reservar tour only when the shell can open Reservar tour of HU-COM-008, and opens it on the tour', async () => {
+    const page = await openPage({ areas: [CLIENT_AREA.tours, 'reserve'] });
     page.tours.requests[0].reply([tourNamed('Suaza')]);
     await page.settle();
     expect(page.host.textContent).not.toContain('Reservar tour');
@@ -370,7 +385,8 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(reserve.classList).toContain('crp-primary');
     expect(reserve.closest('.crp-offer-summary')).not.toBeNull();
     fireEvent.click(reserve);
-    expect(TestBed.inject(PortalNavigation).selected()).toBe(CLIENT_AREA.reservations);
+    expect(TestBed.inject(PortalNavigation).selected()).toBe('reserve');
+    expect(TestBed.inject(PortalNavigation).params()).toEqual({ tour: 'tour-Suaza' });
   });
 
   it('lays the cards of tours.html out in four columns with 3:2 photos and the price beside Ver detalle', () => {
