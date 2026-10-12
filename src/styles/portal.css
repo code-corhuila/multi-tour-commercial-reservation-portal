@@ -207,9 +207,16 @@
   .crp-root .crp-discount-promo { align-items: flex-start; flex-direction: column; }
 }
 
-/* Public offer (HU-COM-006): read-only cards, one column on a 360 px screen */
-.crp-root .public-offer-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
-.crp-root .public-offer-card { padding: 1rem; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-surface); }
-.crp-root .public-offer-card h3 { margin: 0 0 0.5rem; font-size: 1.05rem; }
-.crp-root .public-offer-value s { margin-left: 0.5rem; color: var(--crp-soft); }
-.crp-root .public-offer-transport, .crp-root .public-offer-type { color: var(--crp-accent-strong); font-weight: 600; }
+/* Public offer (HU-COM-006): cards of tours.html, alojamiento.html and restaurantes.html; one column on a 360 px screen */
+.crp-root .crp-offer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.crp-root .crp-tour-card { display: grid; align-content: start; gap: 10px; padding: 18px 16px; border: 1px solid #d7e0de; border-radius: 22px; background: #ffffff; box-shadow: 0 18px 34px rgba(28, 35, 38, 0.04); }
+.crp-root .crp-tour-card strong { color: #17252b; font-size: 1.05rem; line-height: 1.45; }
+.crp-root .crp-tour-discount-tag { justify-self: start; display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border-radius: 999px; background: #2f6b57; color: #ffffff; font-size: 0.76rem; font-weight: 800; }
+.crp-root .crp-tour-price { display: grid; gap: 2px; }
+.crp-root .crp-tour-price small { color: #7a8588; }
+.crp-root .crp-tour-price del { color: #667277; font-weight: 700; }
+.crp-root .crp-tour-price em { color: #17252b; font-style: normal; font-weight: 800; font-size: 1.1rem; }
+.crp-root .crp-tour-transport, .crp-root .crp-establishment-contact { margin: 0; }
+.crp-root .crp-tour-transport { color: var(--crp-accent-strong); font-weight: 600; }
+.crp-root .crp-establishment-type { color: #5a6b70; font-size: 0.94rem; }
+.crp-root .crp-offer-agreement { margin: 0 0 16px; color: var(--crp-soft); }
