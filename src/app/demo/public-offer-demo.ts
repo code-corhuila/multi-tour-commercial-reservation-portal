@@ -12,7 +12,7 @@ const TRANSPORT_TOUR_ID = 'demo-svc-6';
 export function seedTransportTour(store: DemoCatalogStore): void {
   if (store.find(TRANSPORT_TOUR_ID)) { return; }
   store.add({
-    serviceId: TRANSPORT_TOUR_ID, serviceType: 'TOUR', commercialName: 'San Agustín con traslado incluido', catalogStatus: 'ACTIVE',
+    serviceId: TRANSPORT_TOUR_ID, serviceType: 'TOUR', commercialName: 'San Agustin con traslado incluido', catalogStatus: 'ACTIVE',
     baseRateCents: 26_000_000, baseOperationalCostCents: 15_600_000, configuredCapacity: 14, transportRequired: true, highRisk: false,
     createdAt: '2026-10-01T09:00:00Z', updatedAt: '2026-10-01T09:00:00Z',
   });
