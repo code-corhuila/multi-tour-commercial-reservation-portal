@@ -91,84 +91,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && has(injector, DiscountRulesSource),
   },
-  // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
-  { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
-    isAvailable: (injector) => has(injector, CurrentDiscountsSource) },
-  // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
-  { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer',
-    isAvailable: (injector) => has(injector, PublicOfferSource) },
-  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingOfferPageComponent, audience: 'customer',
-    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
-  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer',
-    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
-  {
-    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
-    // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
-    isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
-  },
-  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
-  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
-  // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
-  {
-    key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
-  },
-  {
-    key: CLIENT_AREA.reservations, label: 'Mis reservas', component: MyReservationsPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
-  },
-  // HU-COM-008 reservar-tour.html: opened by "Reservar tour" of the offer with { tour }.
-  {
-    key: RESERVATION_FLOW.reserve, label: 'Reservar tour', component: ReserveTourPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, CatalogItemsSource, DeparturesSource, SelectionQuoteSource),
-  },
-  // HU-COM-008 finalizar-reserva.html, opened by "Continuar reserva" with { departure, services, people }.
-  // DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
-  {
-    key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, PaymentMethodsSource, SelectionQuoteSource, ReservationRequester),
-  },
-  // HU-COM-009 admin-gestion-pago.html (13): opened by Gestionar pago of 10A and 10C with { reservation }; Reservas stays active.
-  { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent, menu: false, parent: 'reservations',
-    isAvailable: (injector) => has(injector, ReservationsSource, PaymentsWriter, PaymentMethodsSource) },
-  // HU-COM-013 admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Reservas stays active (spec G-NAV closed by the base).
-  { key: RESERVATION_CHANGE_SCREEN, label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent, menu: false, parent: 'reservations',
-    isAvailable: (injector) => injector.get(PortalCapabilities).canRegisterChange() && has(injector, ReservationsSource, CancellationQuote, CancellationWriter) },
-  // HU-COM-009 pago-transferencia.html (24): opened by Continuar al pago of 21 with { reservation, type, amount }.
-  { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource, PaymentsWriter, PaymentMethodsSource) },
-  // HU-COM-009 pago-exitoso.html (22, "Comprobante recibido") and pago-fallido.html (23, "Comprobante rechazado"), PROPUESTO: opened with { reservation };
-  // 22 by the proof sent on 24, 23 by whoever knows a proof was rejected. They read the own reservation through Mis pagos' port.
-  { key: PAYMENT_RESULT_AREA.received, label: 'Comprobante recibido', component: PaymentReceivedPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
-  { key: PAYMENT_RESULT_AREA.rejected, label: 'Comprobante rechazado', component: PaymentRejectedPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
-  // HU-COM-010 admin-pagos.html (13), item Pagos of the mockup's sidebar, and admin-validar-soporte.html opened with { reservation, payment }.
-  { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
-  { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent, menu: false, parent: 'payments',
-    isAvailable: (injector) => has(injector, ReservationsSource, ProofReviewWriter, PaymentMethodsSource) },
-  // HU-COM-011 admin-registrar-seguimiento.html, opened by Registrar seguimiento of 13 with { reservation }; Pagos stays active.
-  { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent, menu: false, parent: 'payments',
-    isAvailable: (injector) => injector.get(PortalCapabilities).canFollowUp() && has(injector, ReservationsSource, PaymentFollowupsWriter, PaymentDeadlineReader, PaymentMethodsSource) },
-  // HU-COM-014 mis-pagos.html, opened by Mis pagos of 17; read only, under the compact header of the panel (Volver al panel).
-  { key: CLIENT_AREA.payments, label: 'Mis pagos', component: MyPaymentsPageComponent, audience: 'customer', clientChrome: 'panel', menu: false,
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
-  // HU-COM-016 admin-solicitudes-devolucion.html and admin-detalle-devolucion.html with { refund }, sub-screens of 13; Pagos stays active.
-  { key: REFUND_SCREENS.requests, label: 'Solicitudes de devolución', component: RefundRequestsPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
-  { key: REFUND_SCREENS.detail, label: 'Detalle de devolución', component: RefundDetailPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
-  // HU-COM-016 admin-gestionar-devolucion.html (from 10A) and admin-tratamiento-pendiente-devolucion.html, whose decision is the Administrator's.
-  { key: REFUND_SCREENS.manage, label: 'Gestionar devolución', component: RefundManagePageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
-  { key: REFUND_SCREENS.treatment, label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent, menu: false, parent: 'payments',
-    isAvailable: (injector) => injector.get(PortalCapabilities).canAuthorizeRefund() && refundsAvailable(injector) },
-  // HU-COM-016 admin-notificaciones.html: "Notificaciones" is a sidebar item only of screen 9 (admin-operador.html:25, between Operación and Reportes);
-  // here it follows Pagos, since Operación belongs to another portal (position PROPUESTO, spec 016- section 5), while some alert is offered (DP-RF6).
-  { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent, isAvailable: hasNotifications },
-  // HU-COM-018 admin-reprogramar-reserva.html: opened from the 10A header with { reservation } (DP-RP4); every operator reads it, Reservas stays active.
-  { key: RESCHEDULING_AREA, label: 'Propuesta de reprogramación', component: ReschedulingPageComponent, menu: false, parent: 'reservations',
-    isAvailable: (injector) => has(injector, ReschedulingSource, ReschedulingWriter) },
-  // HU-COM-018 propuesta-reprogramacion.html (24A): opened by Responder propuesta of Mis reservas and of 17 with { reservation }; its own top bar.
-  { key: PROPOSAL_AREA, label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
-    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyProposalsSource, ProposalAnswerWriter) },
+  // HU-COM-006: the read-only public offer, the 'Explorar' link of the client header (tours.html).
+  { key: 'offer', label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer' },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
