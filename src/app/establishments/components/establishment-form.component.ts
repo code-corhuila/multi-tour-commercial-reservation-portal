@@ -7,7 +7,6 @@ import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '..
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
 import { ESTABLISHMENTS_COPY } from '../establishments-copy';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
 
 type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;
