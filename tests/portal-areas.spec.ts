@@ -51,6 +51,8 @@ describe('portalAreasRegistry', () => {
       { key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
+    // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
+    expect(PORTAL_AREAS.find((area) => area.key === 'my-reservations')?.audience).toBe('customer');
   });
 
   it('names every role in Spanish', () => {
