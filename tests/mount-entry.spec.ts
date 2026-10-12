@@ -79,9 +79,11 @@ describe('mountEntryContract', () => {
 });
 
 describe('mountEntryWiresTheSelfServiceReservation', () => {
+  // The client layout lands on the panel cliente; Ver mis reservas opens the area, and a selection in the URL opens it at once.
   const openSelfService = async () => {
-    await vi.waitFor(() => expect(host.querySelector('.crp-client-header .crp-client-nav button')).toBeTruthy());
-    Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.nav)!.click();
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-client-panel-page, .crp-client-content app-self-service-area')).toBeTruthy());
+    Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-panel-card button')).find((b) => b.textContent?.trim() === 'Ver mis reservas')?.click();
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-self-service-area')).toBeTruthy());
   };
   afterEach(() => history.replaceState(null, '', '/'));
 
@@ -89,7 +91,10 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     mountAs(['FINAL_CUSTOMER']);
     await openSelfService();
     await vi.waitFor(() => expect(host.querySelectorAll('.self-service-panel [data-state="data"] li').length).toBeGreaterThan(0));
-    expect(host.querySelectorAll('.self-service-panel button')).toHaveLength(0);
+    // Only Volver al panel cliente, a way back: no action on a reservation.
+    expect(Array.from(host.querySelectorAll('.self-service-panel button'), (b) => b.className)).toEqual(['self-service-back']);
+    expect(host.querySelector('.self-service-panel')?.textContent).toContain('Pendiente de pago');
+    for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-1', 'demo-res']) expect(host.textContent).not.toContain(raw);
   });
 
   it('without a session, confirming asks the container to sign in on the same URL', async () => {
