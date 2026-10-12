@@ -78,9 +78,9 @@ describe('mountEntryContract', () => {
 });
 
 describe('mountEntryWiresTheSelfServiceReservation', () => {
+  // The only client area of this story, so the client layout lands on it (no header link maps to it).
   const openSelfService = async () => {
-    await vi.waitFor(() => expect(host.querySelector('.crp-client-header .crp-client-nav button')).toBeTruthy());
-    Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.nav)!.click();
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-self-service-area')).toBeTruthy());
   };
   afterEach(() => history.replaceState(null, '', '/'));
 
