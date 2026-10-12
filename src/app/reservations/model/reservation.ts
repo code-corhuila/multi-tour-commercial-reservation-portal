@@ -43,6 +43,9 @@ export const RESERVATION_TEXT = {
 export const STATUS_LABEL: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'Pendiente de pago' };
 export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago' };
 export const money = formatCop;
+/** "1 viajero" or "N viajeros"; "1 persona" or "N personas". */
+export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
+export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 /** The sum of the discount lines, written as the screens write a discount: `-$15`, or `$0`. */
 export const discountTotal = (q: Quote) => -q.discounts.reduce((sum, d) => sum + d.amountCents, 0);
 
