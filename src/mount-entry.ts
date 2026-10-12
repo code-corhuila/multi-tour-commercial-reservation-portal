@@ -3,7 +3,7 @@ import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
-import { customersDemoProviders } from './app/demo/customers-demo';
+import { reservationDemoProviders } from './app/demo/reservations-demo';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -45,7 +45,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
       ...sourceProviders(props.apiClient),
-      ...customersDemoProviders(props.session.roles),
+      ...reservationDemoProviders(),
     ],
   }).then((created) => {
     app = created;

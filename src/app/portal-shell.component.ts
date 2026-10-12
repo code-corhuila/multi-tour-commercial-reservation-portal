@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
-import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page.component';
+import { ReservationsPageComponent } from './reservations/pages/reservations-page.component';
 
 /**
  * Shell of the authorized screens, drawn from PORTAL_AREAS: the operator sidebar for an operator, the client
@@ -10,7 +10,7 @@ import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page
 @Component({
   selector: 'crp-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogPageComponent, EstablishmentsPageComponent, PublicOfferPageComponent],
+  imports: [CatalogPageComponent, EstablishmentsPageComponent, ReservationsPageComponent],
   template: `
     <div class="crp-operator-shell">
     <main class="crp-operator-content">
@@ -19,14 +19,14 @@ import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page
       <nav class="crp-nav" aria-label="Commercial reservation">
         <button type="button" [attr.aria-current]="view() === 'catalog' ? 'page' : null" (click)="view.set('catalog')">Catalog</button>
         <button type="button" [attr.aria-current]="view() === 'establishments' ? 'page' : null" (click)="view.set('establishments')">Establishments</button>
-        <button type="button" [attr.aria-current]="view() === 'offer' ? 'page' : null" (click)="view.set('offer')">Offer</button>
+        <button type="button" [attr.aria-current]="view() === 'reservations' ? 'page' : null" (click)="view.set('reservations')">Reservations</button>
       </nav>
     </header>
-    @if (view() === 'catalog') { <app-catalog-page /> } @else if (view() === 'establishments') { <app-establishments-page /> } @else { <app-public-offer-page /> }
+    @if (view() === 'catalog') { <app-catalog-page /> } @else if (view() === 'reservations') { <app-reservations-page /> } @else { <app-establishments-page /> }
     </main>
     </div>
   `,
 })
 export class PortalShellComponent {
-  protected readonly view = signal<'catalog' | 'establishments' | 'offer'>('catalog');
+  protected readonly view = signal<'catalog' | 'establishments' | 'reservations'>('catalog');
 }
