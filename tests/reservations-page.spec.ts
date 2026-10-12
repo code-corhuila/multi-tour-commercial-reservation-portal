@@ -4,10 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ControllableReservations, StubDepartures, StubDiscounts, reservationOf, reservationProviders, screenOf } from './reservations.double';
-import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
-import { DEFAULT_SERVICES, StubCatalog } from './reservations.double';
 
-const NEW = 'Crear reserva';
+const NEW = 'New reservation';
 
 describe('everyScreenShowsOneOfTheFourStates (list)', () => {
   it('goes from loading to error with retry, to empty, and to data', async () => {
@@ -16,8 +14,8 @@ describe('everyScreenShowsOneOfTheFourStates (list)', () => {
     expect(element.querySelector('[data-state="loading"]')).not.toBeNull();
     reservations.inner.requests[0].fail(); await settle();
     expect(element.querySelector('[data-state="error"]')).not.toBeNull();
-    await click('Reintentar'); reservations.inner.requests[1].reply([]); await settle();
-    expect(element.querySelector('[data-state="empty"]')?.textContent).toContain('Aún no hay reservas registradas');
+    await click('Retry'); reservations.inner.requests[1].reply([]); await settle();
+    expect(element.querySelector('[data-state="empty"]')?.textContent).toContain('No results');
   });
 });
 
@@ -42,40 +40,38 @@ async function overDemo() {
   discounts.lines = [{ name: 'Early bird', base: 'ORIGINAL_VALUE', amountCents: 1000 }];
   const open = departures.items.find((d) => d.state === 'PROGRAMADA' && d.openForReservations)!;
   const view = await screenOf(ReservationsPageComponent, reservationProviders({ reservations: store, discounts,
-    writer: new DemoReservationsWriter(store, departures, new DemoReservationQuotes(departures, new StubCatalog(DEFAULT_SERVICES), discounts)),
-    departures: new StubDepartures(() => of(departures.items)) }));
+    writer: new DemoReservationsWriter(store, departures), departures: new StubDepartures(() => of(departures.items)) }));
   const create = async () => {
     await view.click(NEW);
     await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);
-    await view.tick('svc-Kayak'); await view.type('people', '2'); await view.payWith();
-    await view.click('Registrar reserva');
+    await view.tick('svc-Kayak'); await view.type('people', '2');
+    await view.click('Create reservation');
   };
   return { ...view, discounts, open, create };
 }
 
 describe('createdReservationIsPendienteDePagoSinPagoWithNoSeatHeld', () => {
   it('closes the form and shows the reservation in Pendiente de pago, Sin pago, with no seat held and the tour conditions', async () => {
-    const { element, create, click } = await overDemo();
+    const { element, create, open } = await overDemo();
     await create();
     expect(element.querySelector('form')).toBeNull();
-    const result = element.querySelector('.reservation-result')!.textContent!;
-    for (const text of ['Pendiente de pago', 'Sin pago', 'sin cupo apartado hasta su primer pago']) expect(result).toContain(text);
-    await click('Volver a reservas');
-    expect(element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(1);
+    const detail = element.querySelector('.reservation-detail')!.textContent!;
+    for (const text of ['Pendiente de pago', 'Sin pago', 'No seat is held yet', open.conditions]) expect(detail).toContain(text);
+    expect(element.querySelectorAll('[data-state="data"] li')).toHaveLength(1);
   });
 });
 
 describe('detailShowsTheValuesAndDiscountsFixedAtCreation', () => {
   it('keeps the projected value, the final value and the discount after the discount is inactivated', async () => {
     const { element, create, discounts, click, settle } = await overDemo();
-    await create(); await click('Ver detalle');
+    await create();
     const before = element.querySelector('.reservation-detail')!.textContent;
     discounts.lines = [];
-    await click('Volver a reservas');
+    await click('Close');
     expect(element.querySelector('.reservation-detail')).toBeNull();
-    element.querySelector<HTMLButtonElement>('[data-state="data"] tbody button')!.click(); await settle();
+    element.querySelector<HTMLButtonElement>('[data-state="data"] li button')!.click(); await settle();
     const detail = element.querySelector('.reservation-detail');
     expect(detail?.textContent).toBe(before);
-    expect(detail?.textContent).toContain('Early bird (sobre el valor original)');
+    expect(detail?.textContent).toContain('Early bird (on the original value)');
   });
 });
