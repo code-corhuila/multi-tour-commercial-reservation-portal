@@ -271,16 +271,47 @@ describe('anInternalOrUnknownRoleIsNotOfferedTheConfirmation', () => {
 });
 
 describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)', () => {
-  it('the confirmation shows the summary in pesos and the two conditions, with no payment terms', async () => {
+  it('the confirmation draws finalizar-reserva: topbar, holder, travelers, conditions, method, summary, help and bar', async () => {
     const p = await openConfirm(); await p.showMethods();
-    expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Finalizar reserva de tour');
-    const summary = p.element.querySelector('.self-service-summary')!;
-    expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
-    const rows = Array.from(summary.querySelectorAll('dt'), (dt) => `${dt.textContent?.trim()} ${dt.nextElementSibling?.textContent?.trim()}`);
-    expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
+    const text = (selector: string) => p.element.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim();
+    expect(text('.crp-booking-topbar h1')).toBe('Finalizar reserva de tour');
+    expect(text('.crp-finish-pill')).toBe('Selecciona el medio de pago habilitado para esta reserva.');
+    expect(Array.from(p.element.querySelectorAll('.crp-finish-main h2'), (h) => h.textContent?.trim()))
+      .toEqual(['Cliente titular', 'Viajeros', 'Condiciones de reserva', 'Medio de pago']);
+    const holder = Array.from(p.element.querySelectorAll<HTMLInputElement>('.crp-finish-holder input'));
+    expect(holder.map((input) => p.element.querySelector('label[for="' + input.id + '"]')?.textContent?.trim()))
+      .toEqual(['Nombre completo', 'Documento de identidad', 'Teléfono', 'Correo electrónico', 'Fecha de nacimiento']);
+    expect(holder.map((input) => input.type)).toEqual(['text', 'text', 'tel', 'email', 'date']);
+    expect(text('.crp-finish-travelers')).toContain('1 acompañante requerido');
+    expect(Array.from(p.element.querySelectorAll('.crp-finish-conditions li'), (li) => li.textContent?.trim())).toEqual([
+      'La modificación o cancelación depende de las condiciones vigentes del tour.',
+      'La disponibilidad y los valores se validan antes de registrar la reserva.',
+    ]);
     const consents = Array.from(p.element.querySelectorAll('input[type="checkbox"]'), (box) => box.closest('label')?.textContent?.trim());
     expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
-    for (const absent of ['Método y plazo de pago', 'Abono', 'Pago total', 'demo-dep-7', 'demo-svc-1', '2026-09-18']) expect(p.element.textContent).not.toContain(absent);
+    const summary = p.element.querySelector('.crp-finish-aside .self-service-summary')!;
+    expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
+    expect(summary.querySelector('.crp-finish-media')).not.toBeNull();
+    expect(summary.querySelector('.self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
+    const rows = Array.from(summary.querySelectorAll('dt'), (dt) => (dt.textContent?.trim() ?? '') + ' ' + (dt.nextElementSibling?.textContent?.trim() ?? ''));
+    expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
+    expect(text('.crp-finish-help')).toBe('¿Necesitas ayuda? Asistencia comercial El equipo del operador puede ayudarte a continuar el proceso.');
+    const bar = Array.from(p.element.querySelectorAll('.crp-booking-bar-pricing > div, .crp-booking-bar-selection'), (d) => d.textContent?.replace(/\s+/g, ' ').trim());
+    expect(bar).toEqual(['Reserva Borrador', 'Total $2.078.400', 'Seleccionado 18 sep 2026 - 2 viajeros']);
+    expect(p.element.querySelector('.crp-booking-bar button[type="submit"]')?.textContent?.trim()).toBe('Confirmar reserva');
+    for (const absent of ['Método y plazo de pago', 'Abono', 'Pago total', 'Monto a abonar', 'Continuar al pago', 'demo-dep-7', 'demo-svc-1', '2026-09-18']) {
+      expect(p.element.textContent).not.toContain(absent);
+    }
+  });
+
+  it('Volver a fecha y viajeros reopens Reservar tour on the same tour', async () => {
+    const navigation = new PortalNavigation();
+    navigation.register([RESERVATION_FLOW.reserve, RESERVATION_FLOW.finish]);
+    TestBed.configureTestingModule({ providers: [{ provide: PortalNavigation, useValue: navigation }] });
+    const p = await openConfirm();
+    buttonNamed(p.element, '← Volver a fecha y viajeros')!.click();
+    expect(navigation.selected()).toBe(RESERVATION_FLOW.reserve);
+    expect(navigation.params()).toEqual({ tour: 'demo-svc-1' });
   });
   it('the confirmation without a selection says so in Spanish', async () => {
     const p = await openConfirm({ selection: null });
@@ -301,9 +332,9 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
   it('the confirmation uses the client cards of finalizar-reserva, never the operator classes', async () => {
     const c = await openConfirm(); await c.showMethods();
     expect(c.element.querySelector('[class*="crp-operator"]')).toBeNull();
-    expect(c.element.querySelector('.self-service-checkout > form.self-service-box')).not.toBeNull();
-    expect(c.element.querySelector('.self-service-checkout > aside.self-service-box.self-service-summary')).not.toBeNull();
-    expect(c.element.querySelector('form button[type="submit"].crp-primary')).not.toBeNull();
+    expect(c.element.querySelector('form .crp-finish-layout > .crp-finish-main > .crp-booking-card')).not.toBeNull();
+    expect(c.element.querySelector('form .crp-finish-layout > aside.crp-finish-aside > .crp-booking-card.self-service-summary')).not.toBeNull();
+    expect(c.element.querySelector('form .crp-booking-bar button[type="submit"].crp-primary')).not.toBeNull();
   });
   it('Mis reservas uses the client classes in every state, never the operator ones', async () => {
     const p = await openPanel(); p.source.requests[0].fail(); await p.settle();

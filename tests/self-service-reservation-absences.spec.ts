@@ -10,8 +10,9 @@ import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION
 // AC3 / RN-RS7: the customer's area offers no modify, cancel or reschedule (RF-014, Phase 1).
 // It is an absence, so it is asserted on the screen and on every source of the feature (plan D-06).
 const CHANGE_ACTIONS = /modif|cancel|reschedul|reprogram|postpone|amend|\bedit|aplazar/i;
-// Not actions: the note of mis-reservas.html that sends changes to the operator, and the Cancelada state a reservation can be in.
-const INFORMATIVE = /Para cambios o cancelaciones, comunícate con el operador\.|Cancelada|crp-is-cancelled|CANCELLED/g;
+// Not actions: the note of mis-reservas.html that sends changes to the operator, the condition of finalizar-reserva.html that
+// says changes depend on the tour, and the Cancelada state a reservation can be in.
+const INFORMATIVE = /Para cambios o cancelaciones, comunícate con el operador\.|La modificación o cancelación depende de las condiciones vigentes del tour\.|Cancelada|crp-is-cancelled|CANCELLED/g;
 // RN-RS1 / T-01: no sign-in or registration form of its own, no client, no storage, no token.
 const OWN_SESSION = /password|passwd|contrase|credential|Authorization|Bearer|HttpClient|fetch\s*\(|XMLHttpRequest|localStorage|sessionStorage|https?:\/\//i;
 
