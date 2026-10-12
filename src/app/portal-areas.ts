@@ -8,7 +8,7 @@ import { DiscountsPageComponent } from './discounts/pages/discounts-page.compone
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
 import { Audience } from './portal-audience';
 
-/** One sidebar item of the operator shell and the page it shows. */
+/** One area of the shell: an item of the operator sidebar, or a client page opened by the client header, footer or a page. */
 export interface PortalArea {
   readonly key: string;
   /** Spanish label of the authorized screen's menu. */
@@ -33,6 +33,20 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
   },
 ]);
+
+/** Keys of the client areas the client header and footer open; a story registers its client area under one of them. */
+export const CLIENT_AREA = Object.freeze({
+  panel: 'client-panel', tours: 'tours', lodging: 'lodging', gastronomy: 'gastronomy', reservations: 'my-reservations',
+} as const);
+
+export interface ClientLink { readonly key: string; readonly label: string }
+
+/** The links of tours.html: header center, header right ('Perfil' has no story yet) and the Explorar column of the footer. */
+export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer', readonly ClientLink[]>> = Object.freeze({
+  nav: [{ key: CLIENT_AREA.tours, label: 'Explorar' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
+  account: [{ key: CLIENT_AREA.panel, label: 'Mis reservas' }],
+  footer: [{ key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
+});
 
 /** The role line under the brand. */
 export const ROLE_LABELS: Readonly<Record<ActorRole, string>> = Object.freeze({
