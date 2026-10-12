@@ -153,3 +153,10 @@
   .crp-root .crp-filters > div { flex-basis: 100%; }
   .crp-root form { grid-template-columns: 1fr; }
 }
+
+/* Public offer (HU-COM-006): read-only cards, one column on a 360 px screen */
+.crp-root .public-offer-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.crp-root .public-offer-card { padding: 1rem; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-surface); }
+.crp-root .public-offer-card h3 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+.crp-root .public-offer-value s { margin-left: 0.5rem; color: var(--crp-soft); }
+.crp-root .public-offer-transport, .crp-root .public-offer-type { color: var(--crp-accent-strong); font-weight: 600; }
