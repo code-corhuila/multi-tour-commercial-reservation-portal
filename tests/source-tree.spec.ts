@@ -57,12 +57,15 @@ const SPECIFIED_TREE = [
   'src/main.ts',
   'src/mount-entry.ts',
   'src/styles/portal.css',
-  'src/app/demo/public-offer-demo.ts',
-  'src/app/public-offer/data/public-offer-sources.ts',
-  'src/app/public-offer/model/public-offer.ts',
-  'src/app/public-offer/pages/establishments-offer-page.component.ts',
-  'src/app/public-offer/pages/public-offer-page.component.ts',
-  'src/app/public-offer/public-offer-copy.ts',
+  'src/app/demo/reservations-demo.ts',
+  'src/app/reservations/components/reservation-breakdown.component.ts',
+  'src/app/reservations/components/reservation-form.component.ts',
+  'src/app/reservations/data/departures-source.ts',
+  'src/app/reservations/data/reservation-integrations.ts',
+  'src/app/reservations/data/reservations-source.ts',
+  'src/app/reservations/data/reservations-writer.ts',
+  'src/app/reservations/model/reservation.ts',
+  'src/app/reservations/pages/reservations-page.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
