@@ -37,6 +37,7 @@ describe('theDemoOfferReadsTheCatalogStore (plan D-05)', () => {
     const withTransport = (await toursOf(new DemoPublicOfferSource(store))).filter((tour) => tour.transportIncluded);
     expect(withTransport).toHaveLength(1);
     expect((await firstValueFrom(store.list())).filter((item) => item.transportRequired && item.serviceType === 'TOUR')).toHaveLength(1);
+    expect(withTransport[0].commercialName).toBe('San Agustín con traslado incluido');
   });
 });
 

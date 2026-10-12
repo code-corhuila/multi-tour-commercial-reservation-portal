@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
 import { PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '../src/app/public-offer/data/public-offer-sources';
 import { PublicTour, TourValue } from '../src/app/public-offer/model/public-offer';
@@ -46,6 +46,15 @@ describe('onlyWhatIsAvailableForTheDateAppears (AC-PO.2, RN-PO2)', () => {
     await page.settle();
     expect(page.cards('tours').map((card) => card.textContent)).toEqual([expect.stringContaining('Tatacoa')]);
     expect(page.host.textContent).not.toContain('Nevado');
+  });
+
+  it('starts on the local date, not the UTC one, so a Colombian night still asks for today', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 12, 23, 30));
+    try {
+      const page = await openPage();
+      expect(page.tours.requests[0].date).toBe('2026-10-12');
+    } finally { vi.useRealTimers(); }
   });
 
   it('asks again for the chosen date and only the newest answer reaches the screen', async () => {
