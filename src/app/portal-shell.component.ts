@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
-import { ReservationsPageComponent } from './reservations/pages/reservations-page.component';
+import { SELF_SERVICE_TEXT } from './self-service-reservation/model/self-service-reservation';
+import { ConfirmReservationPageComponent } from './self-service-reservation/pages/confirm-reservation-page.component';
+import { MyReservationsPageComponent } from './self-service-reservation/pages/my-reservations-page.component';
 
 /**
  * Shell of the authorized screens, drawn from PORTAL_AREAS: the operator sidebar for an operator, the client
@@ -10,7 +12,7 @@ import { ReservationsPageComponent } from './reservations/pages/reservations-pag
 @Component({
   selector: 'crp-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogPageComponent, EstablishmentsPageComponent, ReservationsPageComponent],
+  imports: [CatalogPageComponent, EstablishmentsPageComponent, ConfirmReservationPageComponent, MyReservationsPageComponent],
   template: `
     <div class="crp-operator-shell">
     <main class="crp-operator-content">
@@ -19,14 +21,16 @@ import { ReservationsPageComponent } from './reservations/pages/reservations-pag
       <nav class="crp-nav" aria-label="Commercial reservation">
         <button type="button" [attr.aria-current]="view() === 'catalog' ? 'page' : null" (click)="view.set('catalog')">Catalog</button>
         <button type="button" [attr.aria-current]="view() === 'establishments' ? 'page' : null" (click)="view.set('establishments')">Establishments</button>
-        <button type="button" [attr.aria-current]="view() === 'reservations' ? 'page' : null" (click)="view.set('reservations')">Reservations</button>
+        <button type="button" [attr.aria-current]="view() === 'self-service' ? 'page' : null" (click)="view.set('self-service')">{{ selfServiceNav }}</button>
       </nav>
     </header>
-    @if (view() === 'catalog') { <app-catalog-page /> } @else if (view() === 'reservations') { <app-reservations-page /> } @else { <app-establishments-page /> }
+    @if (view() === 'catalog') { <app-catalog-page /> } @else if (view() === 'establishments') { <app-establishments-page /> }
+    @if (view() === 'self-service') { <app-confirm-reservation-page /><app-my-reservations-page /> }
     </main>
     </div>
   `,
 })
 export class PortalShellComponent {
-  protected readonly view = signal<'catalog' | 'establishments' | 'reservations'>('catalog');
+  protected readonly view = signal<'catalog' | 'establishments' | 'self-service'>('catalog');
+  protected readonly selfServiceNav = SELF_SERVICE_TEXT.nav;
 }

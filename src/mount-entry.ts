@@ -3,7 +3,8 @@ import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { CONTAINER_NAVIGATION, MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
-import { reservationDemoProviders } from './app/demo/reservations-demo';
+import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
+import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -45,7 +46,9 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
       ...sourceProviders(props.apiClient),
-      ...reservationDemoProviders(),
+      // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
+      { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
+      ...selfServiceDemoProviders(),
     ],
   }).then((created) => {
     app = created;
