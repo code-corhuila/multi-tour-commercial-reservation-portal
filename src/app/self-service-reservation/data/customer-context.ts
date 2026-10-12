@@ -1,11 +1,8 @@
 import { Injectable } from '@angular/core';
-import { CustomerStanding, customerStandingOf } from '../../shared/portal-capabilities';
+import { CustomerStanding, standingOf } from '../model/self-service-reservation';
 
 /** PROPUESTO, pending HU-FRT-001: the event the portal raises on its host so the container opens its sign-in. */
 export const SIGN_IN_REQUESTED_EVENT = 'crp-sign-in-requested';
-
-/** What a visitor without a final-customer session reads in Mis reservas (HU-COM-008) and in Mis pagos (HU-COM-014). */
-export const SIGN_IN_AS_CUSTOMER_NOTICE = 'Inicia sesión como cliente para ver tus reservas.';
 
 /**
  * DP-RS2: the final customer as this area sees them, derived from props.session.roles in mount-entry.ts.
@@ -21,7 +18,7 @@ export abstract class CustomerContext {
 
 export function customerContextFor(roles: readonly string[], askSignIn: () => void): CustomerContext {
   return new (class extends CustomerContext {
-    override readonly standing = customerStandingOf(roles);
+    override readonly standing = standingOf(roles);
     override requestSignIn(): void { askSignIn(); }
   })();
 }
