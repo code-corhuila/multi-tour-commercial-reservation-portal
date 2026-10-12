@@ -153,3 +153,9 @@
   .crp-root .crp-filters > div { flex-basis: 100%; }
   .crp-root form { grid-template-columns: 1fr; }
 }
+
+/* HU-COM-004: current discounts breakdown. */
+.crp-root .current-discounts-services { list-style: none; padding: 0; display: grid; gap: 16px; }
+.crp-root .current-discounts-lines { margin: 8px 0; padding-left: 20px; }
+.crp-root .current-discounts-lines li { margin: 4px 0; }
+.crp-root .current-discounts-final { font-size: 1.05rem; }
