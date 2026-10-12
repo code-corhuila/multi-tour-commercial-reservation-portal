@@ -17,7 +17,7 @@ import { EstablishmentsPageComponent } from '../src/app/establishments/pages/est
 import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
-import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea } from '../src/app/portal-areas';
+import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
@@ -46,26 +46,7 @@ import { ActorContext } from '../src/app/shared/actor-context';
 
 @Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
 class CustomerPageDouble {}
-const CUSTOMER_AREA: PortalArea = { key: CLIENT_AREA.tours, label: 'Explorar', component: CustomerPageDouble, audience: 'customer' };
-
-/** A client page that opens another area through PortalNavigation, as "Ver mis reservas" or "Volver al panel cliente" do. */
-@Component({ selector: 'crp-test-panel-page', template: '<button type="button" class="go" (click)="nav.open(key)">Ver mis reservas</button>' })
-class PanelPageDouble { protected readonly nav = inject(PortalNavigation); protected readonly key = CLIENT_AREA.reservations; }
-@Component({ selector: 'crp-test-lodging-page', template: '<p>Alojamiento de prueba</p>' })
-class LodgingPageDouble {}
-@Component({ selector: 'crp-test-gastronomy-page', template: '<p>Gastronomía de prueba</p>' })
-class GastronomyPageDouble {}
-@Component({ selector: 'crp-test-reservations-page', template: '<p>Reservas de prueba</p>' })
-class ReservationsPageDouble {}
-const CLIENT_AREAS: PortalArea[] = [
-  CUSTOMER_AREA,
-  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingPageDouble, audience: 'customer' },
-  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyPageDouble, audience: 'customer' },
-  { key: CLIENT_AREA.panel, label: 'Panel cliente', component: PanelPageDouble, audience: 'customer', clientChrome: 'panel' },
-  { key: CLIENT_AREA.reservations, label: 'Mis reservas', component: ReservationsPageDouble, audience: 'customer', clientChrome: 'panel' },
-];
-/** The same areas, all with the site chrome of tours.html. */
-const SITE_CLIENT_AREAS: PortalArea[] = CLIENT_AREAS.map((area) => ({ ...area, clientChrome: 'site' }));
+const CUSTOMER_AREA: PortalArea = { key: 'explore', label: 'Área de prueba', component: CustomerPageDouble, audience: 'customer' };
 
 async function openShell(role: ActorRole, withDiscounts = true, extra: PortalArea[] = []) {
   const catalog = new DemoCatalogStore();
@@ -97,32 +78,7 @@ describe('portalAreasRegistry', () => {
       { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
-      { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
-      { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
-      { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
-      { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
-      { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
-      { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent },
-      { key: 'client-panel', label: 'Mis reservas', component: ClientPanelPageComponent },
-      { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
-      { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
-      { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
-      { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
-      { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
-      { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
-      { key: 'payment-received', label: 'Comprobante recibido', component: PaymentReceivedPageComponent },
-      { key: 'payment-rejected', label: 'Comprobante rechazado', component: PaymentRejectedPageComponent },
-      { key: 'payments', label: 'Pagos', component: PaymentsPageComponent },
-      { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent },
-      { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent },
-      { key: 'my-payments', label: 'Mis pagos', component: MyPaymentsPageComponent },
-      { key: 'refund-requests', label: 'Solicitudes de devolución', component: RefundRequestsPageComponent },
-      { key: 'refund-detail', label: 'Detalle de devolución', component: RefundDetailPageComponent },
-      { key: 'refund-manage', label: 'Gestionar devolución', component: RefundManagePageComponent },
-      { key: 'refund-treatment', label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent },
-      { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent },
-      { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
-      { key: 'rescheduling-proposal', label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent },
+      { key: 'offer', label: 'Explorar', component: PublicOfferPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
@@ -189,156 +145,20 @@ describe('customerShellHeader', () => {
     expect(brand?.textContent?.trim()).toBe('MULTITOUR');
     expect(brand?.querySelector('span')?.textContent).toBe('TOUR');
     expect(host.querySelector('.crp-client-nav')?.getAttribute('aria-label')).toBe('Navegación principal del cliente');
-    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar', 'Alojamiento', 'Gastronomía']);
-    expect(texts(host, '.crp-client-actions button')).toEqual(['Mis reservas']);
-    expect(host.textContent).not.toMatch(/Perfil|Catálogos|Establecimientos|Descuentos/);
-  });
-
-  it('lands on the panel cliente and leaves the greeting to that page', async () => {
-    const { host } = await openShell('READ_ONLY', true, CLIENT_AREAS);
-    expect(host.querySelector('.crp-client-content crp-test-panel-page')).not.toBeNull();
-    expect(host.querySelector('.crp-client-greeting')).toBeNull();
-  });
-
-  it('opens the reservations list from Mis reservas and marks it active there', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
-    expect(button(host, '.crp-client-actions button', 'Mis reservas').getAttribute('aria-current')).toBeNull();
-    button(host, '.crp-client-actions button', 'Mis reservas').click();
-    await settle();
-    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
-    expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Mis reservas']);
-  });
-
-  it('opens the area of each header link and moves the active state with it', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
-    button(host, '.crp-client-nav button', 'Gastronomía').click();
-    await settle();
-    expect(host.querySelector('crp-test-gastronomy-page')).not.toBeNull();
-    expect(host.querySelector('crp-test-panel-page')).toBeNull();
-    expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Gastronomía']);
-  });
-
-  it('lets a client page open another area through PortalNavigation', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
-    host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
-    await settle();
-    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
-  });
-
-  it('hands the parameters of PortalNavigation.open to the opened area and clears them on the next opening', async () => {
-    const { host, settle, navigation } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
-    expect(navigation().params()).toEqual({});
-    expect(navigation().open(CLIENT_AREA.reservations, { departure: 'DEP-1', people: '2' })).toBe(true);
-    await settle();
-    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
-    expect(navigation().params()).toEqual({ departure: 'DEP-1', people: '2' });
-    expect(navigation().open('unknown-area', { departure: 'X' })).toBe(false);
-    expect(navigation().params()).toEqual({ departure: 'DEP-1', people: '2' });
-    button(host, '.crp-client-nav button', 'Explorar').click();
-    await settle();
-    expect(navigation().params()).toEqual({});
-  });
-
-  it('draws the dark footer of tours.html, its Explorar column opening the areas and no Cuenta column (the session is open)', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
-    const footer = host.querySelector('.crp-client-shell > footer.crp-client-footer')!;
-    expect(footer.querySelector('.crp-client-footer-brand')?.textContent?.trim()).toBe('MULTITOUR');
-    expect(footer.textContent).toContain('Plataforma para descubrir, reservar y gestionar experiencias de turismo con operadores locales.');
-    expect(texts(host, '.crp-client-footer-col strong')).toEqual(['Explorar']);
-    expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] button')).toEqual(['Tours', 'Alojamiento', 'Gastronomía']);
-    expect(footer.textContent).not.toMatch(/Ingresar|Crear cuenta|Cuenta/);
-    expect(footer.querySelector('.crp-client-footer-bottom')?.textContent?.trim()).toBe('© 2026 Multitour. Plataforma para operadores de turismo.');
-    button(host, '.crp-client-footer-col button', 'Alojamiento').click();
-    await settle();
-    expect(host.querySelector('crp-test-lodging-page')).not.toBeNull();
-  });
-
-  it('draws only the links whose area the build has; the footer keeps the others as text', async () => {
-    const { host } = await openShell('READ_ONLY', true, [CUSTOMER_AREA]);
-    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar']);
-    expect(texts(host, '.crp-client-actions button')).toEqual([]);
-    expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] button')).toEqual(['Tours']);
-    expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] span')).toEqual(['Alojamiento', 'Gastronomía']);
-    expect(host.querySelector('.crp-client-content crp-test-customer-page')).not.toBeNull();
+    // HU-COM-006: the public offer is the first customer area.
+    expect(links(host).map((b) => b.textContent?.trim())).toEqual(['Explorar', 'Área de prueba']);
+    expect(host.querySelector('.crp-client-eyebrow')?.textContent?.trim()).toBe('Portal cliente');
+    expect(host.querySelector('.crp-client-greeting')?.textContent?.trim()).toMatch(/^Hola/);
+    expect(links(host)[0].getAttribute('aria-current')).toBe('page');
+    expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
   });
 
   it('shows the customer the public offer under Explorar and no operator page', async () => {
     const { host } = await openShell('READ_ONLY');
-    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar', 'Alojamiento', 'Gastronomía']);
+    expect(links(host).map((b) => b.textContent?.trim())).toEqual(['Explorar']);
     expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
     expect(host.querySelector('app-catalog-page')).toBeNull();
-    expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.tours)?.audience).toBe('customer');
-  });
-});
-
-describe('customerPanelChrome', () => {
-  const texts = (host: HTMLElement, selector: string) => Array.from(host.querySelectorAll(selector)).map((e) => e.textContent?.trim());
-  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button)';
-
-  it('draws the compact header of panel-cliente.html inside the canvas, with Ver catálogo, no avatar and no footer', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
-    expect(host.querySelector('.crp-client-header')).toBeNull();
-    expect(host.querySelector('.crp-client-footer')).toBeNull();
-    const header = host.querySelector('.crp-client-content > header.crp-client-panel-header')!;
-    // panel-cliente.html draws no brand in its header: Ver catálogo and the bell of Notificaciones.
-    expect(header.querySelector('.crp-client-panel-brand')).toBeNull();
-    expect(texts(host, link)).toEqual(['Ver catálogo']);
-    const bell = header.querySelector<HTMLButtonElement>('.crp-client-bell-button')!;
-    expect(header.querySelector('.crp-client-panel-actions > button + .crp-client-bell')).not.toBeNull();
-    expect(bell.getAttribute('aria-label')).toBe('Notificaciones');
-    expect(bell.getAttribute('aria-expanded')).toBe('false');
-    const panel = header.querySelector<HTMLElement>('.crp-client-bell-panel')!;
-    expect(panel.hidden).toBe(true);
-    expect(panel.querySelector('h2')?.textContent?.trim()).toBe('Notificaciones');
-    expect(panel.textContent).toContain('No tienes notificaciones nuevas.');
-    bell.click();
-    await settle();
-    expect(panel.hidden).toBe(false);
-    expect(bell.getAttribute('aria-expanded')).toBe('true');
-    bell.click();
-    await settle();
-    expect(panel.hidden).toBe(true);
-    expect(host.textContent).not.toMatch(/Perfil/);
-    host.querySelector<HTMLButtonElement>(link)!.click();
-    await settle();
-    expect(host.querySelector('crp-test-customer-page')).not.toBeNull();
-    expect(host.querySelector('.crp-client-panel-header')).toBeNull();
-    expect(host.querySelector('.crp-client-header')).not.toBeNull();
-    expect(host.querySelector('.crp-client-footer')).not.toBeNull();
-  });
-
-  it('offers Volver al panel on the reservations list', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
-    host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
-    await settle();
-    expect(texts(host, link)).toEqual(['Volver al panel']);
-    expect(host.querySelector('.crp-client-panel-brand')?.textContent?.trim()).toBe('Multitour');
-    expect(host.querySelector('.crp-client-bell')).toBeNull();
-    host.querySelector<HTMLButtonElement>(link)!.click();
-    await settle();
-    expect(host.querySelector('crp-test-panel-page')).not.toBeNull();
-  });
-});
-
-@Component({ selector: 'crp-test-flow-page', template: '<header class="flow-bar">Volver al tour</header>' })
-class FlowPageDouble {}
-@Component({ selector: 'crp-test-go-flow', template: '<button type="button" class="go" (click)="nav.open(\'flow\')">Reservar</button>' })
-class GoFlowPageDouble { protected readonly nav = inject(PortalNavigation); }
-
-describe('customerFlowChrome', () => {
-  const FLOW_AREAS: PortalArea[] = [
-    { key: CLIENT_AREA.panel, label: 'Panel cliente', component: GoFlowPageDouble, audience: 'customer', clientChrome: 'panel' },
-    { key: 'flow', label: 'Reservar tour', component: FlowPageDouble, audience: 'customer', clientChrome: 'none' },
-  ];
-
-  it('draws no client header, panel header or footer on a flow screen with its own top bar, inside the canvas', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, FLOW_AREAS);
-    host.querySelector<HTMLButtonElement>('crp-test-go-flow .go')!.click();
-    await settle();
-    expect(host.querySelector('.crp-client-content > crp-test-flow-page .flow-bar')).not.toBeNull();
-    expect(host.querySelector('.crp-client-header')).toBeNull();
-    expect(host.querySelector('.crp-client-panel-header')).toBeNull();
-    expect(host.querySelector('.crp-client-footer')).toBeNull();
+    expect(PORTAL_AREAS.find((area) => area.key === 'offer')?.audience).toBe('customer');
   });
 });
 
