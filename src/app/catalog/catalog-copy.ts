@@ -1,29 +1,25 @@
-import { CatalogServiceType } from './model/catalog-item';
+import { CatalogItem, CatalogServiceType } from './model/catalog-item';
 
-/** Interface texts of the catalog list, in one place; the wording follows the landing. */
+/** Interface texts of the catalog list, in one place; the wording follows screen 11 (`admin-gestionar-catalogo.html`). */
 export const CATALOG_COPY = {
-  eyebrow: 'Configuración operativa',
+  eyebrow: 'Catálogos',
   title: { all: 'Gestionar catálogo', TOUR: 'Gestionar tours', TRANSPORTATION: 'Gestionar transporte' },
-  description: 'Administra los servicios del catálogo y su información comercial.',
-  accessNote: 'Las acciones disponibles dependen de tu rol. Solo las personas autorizadas pueden cambiar la información comercial.',
-  panelTitle: 'Servicios del catálogo',
+  panelEyebrow: 'Tours y atractivos',
+  // The screen says "Oferta, salidas y tarifas base"; departures belong to another story and stay out.
+  panelTitle: 'Oferta y tarifas base',
+  panelCopy: 'Desactivar evita nuevas reservas; el historial existente se conserva.',
   denied: 'No tienes acceso al catálogo.',
-  columns: { name: 'Nombre comercial', type: 'Tipo', rate: 'Tarifa base', status: 'Estado', actions: 'Acciones' },
+  // The screen's "Vigencia" column has no field in the catalog record, so it is not drawn.
+  columns: { service: 'Servicio', rate: 'Tarifa base', status: 'Estado', actions: 'Acción' },
   newItem: 'Nuevo servicio',
   editItem: 'Editar servicio',
-  edit: 'Editar',
-  inactivate: 'Inactivar',
-  reactivate: 'Reactivar',
+  edit: 'Gestionar',
+  inactivate: 'Desactivar',
+  reactivate: 'Activar',
   loading: 'Cargando',
   empty: 'Sin resultados',
   requestFailed: 'La solicitud falló.',
   retry: 'Reintentar',
   types: { TOUR: 'Tour', TRANSPORTATION: 'Transporte' } satisfies Record<CatalogServiceType, string>,
+  statuses: { ACTIVE: 'Activo', INACTIVE: 'Inactivo' } satisfies Record<CatalogItem['catalogStatus'], string>,
 } as const;
-
-const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
-
-/** Shows minor units as pesos for reading only; the amount that is typed and sent still goes through money.ts. */
-export function formatCop(minorUnits: number): string {
-  return COP.format(minorUnits / 100);
-}

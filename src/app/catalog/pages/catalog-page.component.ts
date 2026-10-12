@@ -4,7 +4,8 @@ import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
-import { CATALOG_COPY, formatCop } from '../catalog-copy';
+import { CATALOG_COPY } from '../catalog-copy';
+import { formatCop } from '../../shared/format';
 import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
 
 /**
@@ -25,7 +26,7 @@ interface FormTarget {
 /** The reason the service gave, or a generic one when the failure has no ApiError shape. */
 function reasonOf(error: unknown): string {
   const userMessage = (error as Partial<ApiError> | null)?.userMessage;
-  return typeof userMessage === 'string' ? userMessage : 'The request failed.';
+  return typeof userMessage === 'string' ? userMessage : CATALOG_COPY.requestFailed;
 }
 
 @Component({
@@ -39,17 +40,16 @@ function reasonOf(error: unknown): string {
     } @else {
     <header class="crp-page-header">
       <div class="crp-page-header-main">
-        <p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ copy.eyebrow }}</p>
+        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
         <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
-        <p class="crp-page-header-desc">{{ copy.description }}</p>
       </div>
       @if (caps.canRegister && current.kind !== 'loading' && current.kind !== 'error') {
-        <button class="crp-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
+        <button class="crp-operator-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
       }
     </header>
-    <p class="crp-access-note">{{ copy.accessNote }}</p>
     <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
-    <div class="crp-operator-panel-head"><h2>{{ copy.panelTitle }}</h2></div>
+    <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ copy.panelEyebrow }}</p><h2>{{ copy.panelTitle }}</h2></div></div>
+    <p class="crp-operator-copy">{{ copy.panelCopy }}</p>
     <!-- Outside the states: a reload must not take away a form whose save is in flight. -->
     @if (formTarget(); as target) {
       <div class="crp-form-section">
@@ -71,23 +71,25 @@ function reasonOf(error: unknown): string {
     } @else if (current.kind === 'error') {
       <div role="alert" data-state="error">
         <p>{{ copy.requestFailed }}</p>
-        <button class="crp-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button>
+        <button class="crp-operator-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button>
       </div>
     }
     @if (current.kind === 'empty') {
       <p role="status" data-state="empty">{{ copy.empty }}</p>
     } @else if (current.kind === 'data') {
       <div class="crp-table-wrap">
-      <table class="crp-table" data-state="data" [attr.aria-label]="copy.panelTitle">
-        <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.type }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+      <table class="crp-operator-table" data-state="data" [attr.aria-label]="copy.panelTitle">
+        <thead><tr><th scope="col">{{ copy.columns.service }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
         <tbody>
         @for (item of current.items; track item.serviceId) {
           <tr>
-            <td><strong>{{ item.commercialName }}</strong></td>
-            <td>{{ copy.types[item.serviceType] }}</td>
+            <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.serviceType] }}</small></td>
             <td>{{ cop(item.baseRateCents) }}</td>
-            <td><span class="crp-status" [class.crp-is-confirmed]="item.catalogStatus === 'ACTIVE'" [class.crp-is-pending]="item.catalogStatus === 'INACTIVE'">{{ item.catalogStatus }}</span></td>
+            <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.catalogStatus === 'ACTIVE'" [class.crp-is-pending]="item.catalogStatus === 'INACTIVE'">{{ copy.statuses[item.catalogStatus] }}</span></td>
             <td class="crp-row-actions">
+            @if (canEdit) {
+              <button class="crp-row-manage" type="button" [disabled]="saving()" (click)="openForm(item)">{{ copy.edit }}</button>
+            }
             @if (caps.canChangeStatus) {
               <button class="crp-row-toggle" type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
                 @if (item.catalogStatus === 'ACTIVE') {
@@ -96,9 +98,6 @@ function reasonOf(error: unknown): string {
                   {{ copy.reactivate }}
                 }
               </button>
-            }
-            @if (canEdit) {
-              <button class="crp-row-manage" type="button" [disabled]="saving()" (click)="openForm(item)">{{ copy.edit }}</button>
             }
             @if (rowErrors()[item.serviceId]; as reason) {
               <p role="alert">{{ reason }}</p>
