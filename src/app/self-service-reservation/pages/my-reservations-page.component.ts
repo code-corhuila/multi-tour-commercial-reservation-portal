@@ -25,7 +25,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
         @let current = state();
         @switch (current.kind) {
           @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-          @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" (click)="reload()">{{ text.retry }}</button></div> }
+          @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
           @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
           @case ('data') {
             <ul data-state="data" class="self-service-list">
@@ -36,7 +36,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
                     <p>{{ text.departure }}: {{ departure(r.departureAt) }} · {{ travelers(r.people) }}</p>
                   </div>
                   <div class="self-service-card-status">
-                    <span class="crp-operator-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span>
+                    <span class="crp-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span>
                     <strong>{{ text.value }}: {{ cop(r.finalValueCents) }}</strong>
                   </div>
                 </li>
