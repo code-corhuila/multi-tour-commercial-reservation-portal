@@ -38,35 +38,44 @@ describe('landingComposition', () => {
     expect(host.querySelector('.crp-operator-shell .crp-operator-content')).not.toBeNull();
     expect(host.querySelector('.crp-operator-shell .crp-operator-sidebar .crp-operator-nav')).not.toBeNull();
     const header = host.querySelector('.crp-page-header')!;
-    expect(header.querySelector('.crp-page-header-main .crp-page-header-eyebrow')?.textContent).toBe(CATALOG_COPY.eyebrow);
-    expect(header.querySelector('h1.crp-page-header-title.crp-h1')?.textContent).toBe(CATALOG_COPY.title.all);
-    expect(header.querySelector('button.crp-primary.crp-page-header-action')?.textContent).toBe(CATALOG_COPY.newItem);
-    expect(host.querySelector('.crp-access-note')?.textContent).toBe(CATALOG_COPY.accessNote);
-    expect(host.querySelector('.crp-operator-panel .crp-operator-panel-head h2')?.textContent).toBe(CATALOG_COPY.panelTitle);
-    const table = host.querySelector('.crp-table-wrap table.crp-table')!;
-    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(Object.values(CATALOG_COPY.columns));
+    expect(header.querySelector('.crp-page-header-main .crp-page-header-eyebrow')?.textContent).toBe('Catálogos');
+    expect(header.querySelector('h1.crp-page-header-title.crp-h1')?.textContent).toBe('Gestionar catálogo');
+    expect(header.querySelector('button.crp-operator-primary.crp-page-header-action')?.textContent).toBe('Nuevo servicio');
+    const panel = host.querySelector('.crp-operator-panel')!;
+    expect(panel.querySelector('.crp-operator-panel-head .crp-operator-eyebrow')?.textContent).toBe('Tours y atractivos');
+    expect(panel.querySelector('.crp-operator-panel-head h2')?.textContent).toBe('Oferta y tarifas base');
+    expect(panel.querySelector('.crp-operator-copy')?.textContent).toBe('Desactivar evita nuevas reservas; el historial existente se conserva.');
+    const table = host.querySelector('.crp-table-wrap table.crp-operator-table')!;
+    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Servicio', 'Tarifa base', 'Estado', 'Acción']);
     expect(table.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
     for (const row of Array.from(table.querySelectorAll('tbody tr'))) {
       const cells = row.querySelectorAll('td');
-      expect(Object.values(CATALOG_COPY.types)).toContain(cells[1].textContent?.trim());
-      expect(cells[2].textContent?.trim()).toMatch(/^\$\s?\d{1,3}(\.\d{3})*$/);
-      expect(row.querySelector('.crp-status')?.textContent?.trim()).toMatch(/^(ACTIVE|INACTIVE)$/);
-      expect(row.querySelector('button.crp-row-manage, button.crp-row-toggle')).not.toBeNull();
+      expect(['Tour', 'Transporte']).toContain(cells[0].querySelector('small')?.textContent?.trim());
+      expect(cells[1].textContent?.trim()).toMatch(/^\$\d{1,3}(\.\d{3})*$/);
+      expect(row.querySelector('.crp-operator-status')?.textContent?.trim()).toMatch(/^(Activo|Inactivo)$/);
+      expect(Array.from(row.querySelectorAll('button'), (button) => button.textContent?.trim())).toEqual(
+        ['Gestionar', row.querySelector('.crp-is-confirmed') ? 'Desactivar' : 'Activar']);
     }
+    expect(table.textContent).not.toMatch(/ACTIVE|TOUR|TRANSPORTATION/);
   });
 
   it('keeps establishments filters and actions in the landing composition with both status pills', async () => {
     const { host, establishmentsPage } = await openPortal();
     await establishmentsPage();
-    expect(host.querySelector('.crp-page-header h1')?.textContent).toBe(ESTABLISHMENTS_COPY.title.all);
-    expect(host.querySelector('.crp-page-header-action')?.textContent).toBe(ESTABLISHMENTS_COPY.newEstablishment);
-    expect(host.querySelector('.crp-access-note')?.textContent).toBe(ESTABLISHMENTS_COPY.accessNote);
-    expect(host.querySelector('.crp-operator-panel-head h2')?.textContent).toBe(ESTABLISHMENTS_COPY.panelTitle);
+    expect(host.querySelector('.crp-page-header-eyebrow')?.textContent).toBe('Catálogos');
+    expect(host.querySelector('.crp-page-header h1')?.textContent).toBe('Establecimientos asociados');
+    expect(host.querySelector('.crp-access-note')?.textContent).toBe('El Colaborador operativo no tiene acceso a esta gestión. '
+      + 'Estos registros son convenios informativos y no contienen cupos, tarifas ni inventario reservable.');
+    const head = host.querySelector('.crp-operator-panel-head')!;
+    expect(head.querySelector('.crp-operator-eyebrow')?.textContent).toBe('Directorio asociado');
+    expect(head.querySelector('h2')?.textContent).toBe('Activar, inactivar o reactivar');
+    expect(head.querySelector('button.crp-operator-primary')?.textContent).toBe('Agregar establecimiento');
     expect(host.querySelectorAll('.crp-filters select')).toHaveLength(2);
-    const table = host.querySelector('.crp-table')!;
-    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(Object.values(ESTABLISHMENTS_COPY.columns));
-    expect(table.querySelector('.crp-status.crp-is-confirmed')?.textContent).toBe('ACTIVE');
-    expect(table.querySelector('.crp-status.crp-is-pending')?.textContent).toBe('INACTIVE');
+    const table = host.querySelector('.crp-operator-table')!;
+    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado', 'Acción']);
+    expect(table.querySelector('.crp-operator-status.crp-is-confirmed')?.textContent).toBe('Activo');
+    expect(table.querySelector('.crp-operator-status.crp-is-pending')?.textContent).toBe('Inactivo');
+    expect(table.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);
   });
 
   it('retains the same composition in read-only mode without creation or row actions', async () => {
@@ -74,9 +83,9 @@ describe('landingComposition', () => {
     for (const show of [async () => undefined, establishmentsPage]) {
       await show();
       expect(host.querySelector('.crp-page-header h1')).not.toBeNull();
-      expect(host.querySelector('.crp-page-header-action')).toBeNull();
-      expect(host.querySelector('.crp-table tbody button')).toBeNull();
-      expect(host.querySelectorAll('.crp-table tbody tr').length).toBeGreaterThan(0);
+      expect(host.querySelector('.crp-page-header-action, .crp-operator-panel-head button')).toBeNull();
+      expect(host.querySelector('.crp-operator-table tbody button')).toBeNull();
+      expect(host.querySelectorAll('.crp-operator-table tbody tr').length).toBeGreaterThan(0);
     }
   });
 });
