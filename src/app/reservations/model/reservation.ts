@@ -1,4 +1,4 @@
-import { formatMoney } from '../../catalog/model/money';
+import { formatCop } from '../../shared/format';
 
 /** PROPUESTO: field names await the reservation contract (gap G-B). A departure stands in for HU-OPS-001 (gap G-OPS). */
 export type Departure = {
@@ -20,21 +20,31 @@ export type CreateReservationCommand = {
 };
 /** The snapshot fixed at creation; the detail renders it and never recalculates it (RN-RES-003). */
 export type Reservation = {
-  readonly id: string; readonly leadCustomerName: string; readonly departureLabel: string; readonly conditions: string;
+  readonly id: string; readonly leadCustomerName: string; readonly tourName: string; readonly departureDate: string; readonly conditions: string;
   readonly people: number; readonly quote: Quote; readonly status: 'PENDIENTE_DE_PAGO'; readonly financialStatus: 'SIN_PAGO'; readonly seatHeld: false;
 };
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };
 export type ReservationMessages = Partial<Record<keyof ReservationDraft, string>>;
 
 export const RESERVATION_TEXT = {
-  title: 'Reservations', create: 'New reservation', save: 'Create reservation', cancel: 'Cancel', close: 'Close',
-  loading: 'Loading', empty: 'No results', noDepartures: 'No departure is open for reservations.', failed: 'The request failed.', retry: 'Retry',
-  customer: 'Lead customer', departure: 'Departure', services: 'Services', people: 'Number of people', choose: 'Choose one',
-  status: 'Pendiente de pago', financial: 'Sin pago', noSeat: 'No seat is held yet.', conditions: 'Conditions', detail: 'Reservation detail',
-  transport: 'Transport per person', projected: 'Projected value', final: 'Final value',
-  ORIGINAL_VALUE: 'on the original value', PREVIOUS_SUBTOTAL: 'on the previous subtotal',
+  eyebrow: 'Gestión comercial', title: 'Reservas', create: 'Crear reserva', save: 'Registrar reserva', cancel: 'Cancelar', back: 'Volver a reservas', view: 'Ver detalle',
+  listEyebrow: 'Reservas activas', listTitle: 'Seguimiento de reservas', columns: ['Reserva', 'Cliente', 'Servicio', 'Estado', 'Saldo', 'Acción'],
+  loading: 'Cargando…', empty: 'Aún no hay reservas registradas.', noDepartures: 'No hay salidas abiertas para reservas.', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
+  offerEyebrow: '02. Servicios y viajeros', offerTitle: 'Oferta seleccionada', customer: 'Cliente titular', departure: 'Salida concreta', services: 'Servicios',
+  people: 'Cantidad total de viajeros', choose: 'Selecciona una opción', perPerson: 'por persona',
+  conditionsEyebrow: '04. Condiciones', conditionsTitle: 'Reglas aplicables', conditions: 'Condiciones de reserva', chooseDeparture: 'Selecciona una salida para consultar sus condiciones.',
+  valuesEyebrow: 'Valores calculados', valuesTitle: 'Resumen de la reserva', valuesNote: 'Se recalcula con la salida, los servicios, las personas y los descuentos vigentes.',
+  feedback: 'Completa los campos obligatorios para registrar la reserva.',
+  transport: 'Transporte por persona', projected: 'Valor proyectado', applicable: 'Descuentos aplicables', applied: 'Descuentos aplicados', final: 'Valor final', balance: 'Saldo pendiente',
+  ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior',
+  noSeat: 'Aún no se aparta cupo: el cupo se aparta con el primer pago.',
 };
-export const money = formatMoney;
+/** Spanish badges of the screens; a code is never shown. */
+export const STATUS_LABEL: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'Pendiente de pago' };
+export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago' };
+export const money = formatCop;
+/** The sum of the discount lines, written as the screens write a discount: `-$15`, or `$0`. */
+export const discountTotal = (q: Quote) => -q.discounts.reduce((sum, d) => sum + d.amountCents, 0);
 
 /** RBAC: only the administrator and the collaborator create; any other role, known or not, reads. */
 export const canCreateReservations = (actor: { role: string }) => actor.role === 'TENANT_ADMINISTRATOR' || actor.role === 'OPERATIONAL_COLLABORATOR';
@@ -42,7 +52,7 @@ export const canCreateReservations = (actor: { role: string }) => actor.role ===
 export const openDepartures = (all: readonly Departure[]) => all.filter((d) => d.state === 'PROGRAMADA' && d.openForReservations);
 /** RN-RES-007: a read-only comparison; it holds no seat. */
 export const hasCapacity = (departure: Departure, people: number) => people <= departure.effectiveCapacity;
-export const capacityMessage = (d: Departure) => `Not enough capacity on this departure: ${d.effectiveCapacity} seats left. Nothing was created.`;
+export const capacityMessage = (d: Departure) => `No hay cupo suficiente en esta salida: quedan ${d.effectiveCapacity} cupos. No se registró la reserva.`;
 
 /** A whole number of people of at least one, or null. */
 export function peopleOf(text: string): number | null {
@@ -66,10 +76,10 @@ export function quote(services: readonly ServiceOption[], people: number, depart
 
 export function validateReservation(draft: ReservationDraft, departure: Departure | undefined): ReservationMessages {
   const errors: ReservationMessages = {}, people = peopleOf(draft.people);
-  if (!draft.leadCustomerId) errors.leadCustomerId = 'Lead customer required.';
-  if (!departure) errors.departureId = 'Departure required.';
-  if (!draft.serviceIds.length) errors.serviceIds = 'At least one service required.';
-  if (people === null) errors.people = 'Number of people required: a whole number of at least one.';
+  if (!draft.leadCustomerId) errors.leadCustomerId = 'El cliente titular es obligatorio.';
+  if (!departure) errors.departureId = 'La salida es obligatoria.';
+  if (!draft.serviceIds.length) errors.serviceIds = 'Selecciona al menos un servicio.';
+  if (people === null) errors.people = 'La cantidad de viajeros es obligatoria: un número entero de al menos uno.';
   else if (departure && !hasCapacity(departure, people)) errors.people = capacityMessage(departure);
   return errors;
 }
