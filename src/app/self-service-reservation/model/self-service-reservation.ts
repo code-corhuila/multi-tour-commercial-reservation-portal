@@ -57,6 +57,12 @@ export function departureLine(isoDateTime: string): string {
   return time ? `${formatDate(isoDateTime)} · ${time}` : formatDate(isoDateTime);
 }
 
+/** The companions the holder brings: `No requiere acompañantes`, `1 acompañante requerido`. */
+export function companions(people: number): string {
+  const n = people - 1;
+  return n < 1 ? 'No requiere acompañantes' : `${n} ${n === 1 ? 'acompañante requerido' : 'acompañantes requeridos'}`;
+}
+
 export function travelers(people: number): string {
   return `${people} ${people === 1 ? 'viajero' : 'viajeros'}`;
 }
@@ -87,6 +93,19 @@ export function selectionFromQuery(query: string): ReservationSelection | null {
 export const SELF_SERVICE_TEXT = {
   nav: 'Mis reservas',
   confirmTitle: 'Finalizar reserva de tour',
+  backToReserve: 'Volver a fecha y viajeros',
+  pill: 'Selecciona el medio de pago habilitado para esta reserva.',
+  holderTitle: 'Cliente titular',
+  travelersTitle: 'Viajeros',
+  travelersCopy: 'La cantidad total de viajeros determina los acompañantes que deben registrarse. Los documentos no pueden repetirse dentro de la misma reserva.',
+  conditionLines: ['La modificación o cancelación depende de las condiciones vigentes del tour.', 'La disponibilidad y los valores se validan antes de registrar la reserva.'],
+  helpTitle: '¿Necesitas ayuda?',
+  helpLead: 'Asistencia comercial',
+  helpCopy: 'El equipo del operador puede ayudarte a continuar el proceso.',
+  barReservation: 'Reserva',
+  draft: 'Borrador',
+  barTotal: 'Total',
+  barSelected: 'Seleccionado',
   summaryTitle: 'Resumen de reserva',
   basePrice: 'Precio base',
   discounts: 'Descuentos aplicables',
