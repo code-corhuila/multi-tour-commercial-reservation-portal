@@ -15,6 +15,8 @@ import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from './publi
 import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page.component';
 import { ReservationsSource } from './reservations/data/reservations-source';
 import { ReservationsPageComponent } from './reservations/pages/reservations-page.component';
+import { CustomerContext } from './self-service-reservation/data/customer-context';
+import { SelfServiceAreaComponent } from './self-service-reservation/pages/self-service-area.component';
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
 
@@ -59,6 +61,11 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
     isAvailable: (injector) => customersCapabilitiesOf(injector.get(ActorContext).role).canRead && injector.get(CustomersSource, null) !== null,
+  },
+  {
+    key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent, audience: 'customer',
+    // HU-COM-008 DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
+    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
   // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
   { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
