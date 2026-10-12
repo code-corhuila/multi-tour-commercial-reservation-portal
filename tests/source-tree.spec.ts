@@ -4,6 +4,13 @@ import { listSourceFiles } from './source-files';
 // The Angular portal tree of Annex H with `catalog` as the feature (plan.md D-04).
 // Adding or removing a file of src/ is a decision, so it must change this list in the same commit.
 const SPECIFIED_TREE = [
+  'src/app/discounts/model/discount-rule.ts',
+  'src/app/discounts/model/percentage.ts',
+  'src/app/discounts/data/discount-rules-writer.ts',
+  'src/app/discounts/components/discount-rule-form.component.ts',
+  'src/app/discounts/data/discount-rules-source.ts',
+  'src/app/discounts/discounts.routes.ts',
+  'src/app/discounts/pages/discounts-page.component.ts',
   'src/app/app.component.ts',
   'src/app/app.config.ts',
   'src/app/demo/demo-sources.ts',
