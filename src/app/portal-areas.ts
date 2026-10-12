@@ -6,6 +6,7 @@ import { DiscountRulesSource } from './discounts/data/discount-rules-source';
 import { canManageDiscounts } from './discounts/model/discount-rule';
 import { DiscountsPageComponent } from './discounts/pages/discounts-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
+import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from './public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page.component';
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
@@ -37,8 +38,10 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
   },
-  // HU-COM-006: the read-only public offer, the 'Explorar' link of the client header (tours.html).
+  // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
   { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer' },
+  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingOfferPageComponent, audience: 'customer' },
+  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer' },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
