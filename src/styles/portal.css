@@ -119,10 +119,10 @@
 .crp-root .crp-status.crp-is-finalized, .crp-root .crp-operator-status.crp-is-finalized { background: #edf1ed; color: #516458; }
 .crp-root .crp-status.crp-is-cancelled, .crp-root .crp-operator-status.crp-is-cancelled { background: #f6e5e1; color: #a34a38; }
 
-/* Landing form composition: labels and errors stay attached to their controls. */
-.crp-root form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
-.crp-root form > div, .crp-root form > p { margin: 0; }
-.crp-root form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
+/* Landing form composition of the operator screens (client forms keep their own layout): labels and errors stay attached to their controls. */
+.crp-root .crp-operator-shell form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
+.crp-root .crp-operator-shell form > div, .crp-root .crp-operator-shell form > p { margin: 0; }
+.crp-root .crp-operator-shell form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
 .crp-root .crp-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 .crp-root label { display: block; margin: 12px 0 4px; font-size: 0.86rem; font-weight: 700; }
 .crp-root form label { margin-top: 0; }
@@ -173,22 +173,27 @@
   .crp-root .crp-nav { flex-wrap: wrap; }
   .crp-root .crp-operator-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .crp-root .crp-filters > div { flex-basis: 100%; }
-  .crp-root form { grid-template-columns: 1fr; }
+  .crp-root .crp-operator-shell form { grid-template-columns: 1fr; }
 }
 
 /* Client layout of tours.html: sticky header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. */
 .crp-root .crp-client-shell { display: flex; flex-direction: column; min-height: 100%; background: var(--crp-bg); color: var(--crp-text); }
-.crp-root .crp-client-header { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px clamp(20px, 4vw, 60px); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); }
-.crp-root .crp-client-header button { min-height: 36px; padding: 0 4px; border-color: transparent; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
-.crp-root .crp-client-header button:hover:not(:disabled) { border-color: transparent; color: var(--crp-accent-strong); }
+.crp-root .crp-client-header { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px 0; padding-inline: max(clamp(20px, 4vw, 60px), calc((100% - 1320px) / 2)); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); box-shadow: 0 0 0 100vmax #ffffff; clip-path: inset(0 -100vmax); }
+.crp-root .crp-client-header button, .crp-root .crp-client-panel-header button { min-height: 36px; padding: 0 4px; border: 0; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
+.crp-root .crp-client-header button:hover:not(:disabled), .crp-root .crp-client-panel-header button:hover:not(:disabled) { color: var(--crp-accent-strong); }
+.crp-root .crp-client-header button:focus:not(:focus-visible), .crp-root .crp-client-panel-header button:focus:not(:focus-visible) { outline: none; box-shadow: none; }
 .crp-root .crp-client-header .crp-client-brand { color: var(--crp-text); font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
 .crp-root .crp-client-brand span, .crp-root .crp-client-footer-brand span { color: var(--crp-cta); }
 .crp-root .crp-client-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
 .crp-root .crp-client-actions { display: flex; align-items: center; gap: 12px; }
 .crp-root .crp-client-header .crp-client-actions button { color: var(--crp-accent-strong); }
-.crp-root .crp-client-header button.crp-is-active { color: var(--crp-accent-strong); text-decoration: underline; text-underline-offset: 6px; }
-.crp-root .crp-client-content { flex: 1; width: min(100% - 32px, 1320px); margin: 12px auto 40px; padding: 24px 20px 40px; background: var(--crp-surface); }
-.crp-root .crp-client-footer { padding: 48px clamp(20px, 4vw, 60px) 24px; background: #0c1a16; color: #9fb3ac; }
+.crp-root .crp-client-header button.crp-is-active { color: var(--crp-accent-strong); }
+.crp-root .crp-client-content { flex: 1; width: min(100% - 32px, 1680px); margin: 12px auto; padding: 24px 20px 40px; background: var(--crp-surface); }
+/* Compact header of panel-cliente.html and mis-reservas.html, inside the canvas. */
+.crp-root .crp-client-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: -24px -20px 24px; padding: 22px 20px 16px; border-bottom: 1px solid #d7e0de; }
+.crp-root .crp-client-panel-header .crp-client-panel-brand { color: #17252b; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.04em; }
+.crp-root .crp-client-panel-header button:not(.crp-client-panel-brand) { color: #5a6b70; }
+.crp-root .crp-client-footer { padding: 48px 0 24px; padding-inline: max(clamp(20px, 4vw, 60px), calc((100% - 1320px) / 2)); background: #0c1a16; color: #9fb3ac; box-shadow: 0 0 0 100vmax #0c1a16; clip-path: inset(0 -100vmax); }
 .crp-root .crp-client-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; max-width: 760px; padding-bottom: 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 .crp-root .crp-client-footer-grid p { max-width: 34ch; margin: 0; }
 .crp-root .crp-client-footer-brand { display: block; margin-bottom: 8px; color: #ffffff; font-size: 1.2rem; font-weight: 800; }
