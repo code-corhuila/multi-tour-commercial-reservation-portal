@@ -60,6 +60,11 @@ const SPECIFIED_TREE = [
   'src/app/customers/components/customer-form.component.ts',
   'src/app/customers/pages/customers-page.component.ts',
   'src/app/demo/customers-demo.ts',
+  'src/app/demo/public-offer-demo.ts',
+  'src/app/public-offer/data/public-offer-sources.ts',
+  'src/app/public-offer/model/public-offer.ts',
+  'src/app/public-offer/pages/public-offer-page.component.ts',
+  'src/app/public-offer/public-offer-copy.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
