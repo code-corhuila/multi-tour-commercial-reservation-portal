@@ -1,37 +1,52 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Injector, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, computed, inject } from '@angular/core';
 import { ActorContext } from './catalog/data/catalog-api.service';
-import { PORTAL_AREA_LIST, ROLE_LABELS } from './portal-areas';
+import { CLIENT_AREA, CLIENT_LINKS, ClientLink, PORTAL_AREA_LIST, ROLE_LABELS } from './portal-areas';
 import { PortalAudience } from './portal-audience';
+import { PortalNavigation } from './portal-navigation';
 
 /**
  * Shell of the authorized screens, drawn from PORTAL_AREAS: the operator sidebar for an operator, the client
- * header of the client screens for a final customer or a visitor. Internal view state, no router: the container owns the URL.
+ * header and footer of tours.html for a final customer or a visitor. Internal view state, no router: the container owns the URL.
  */
 @Component({
   selector: 'crp-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgComponentOutlet],
+  providers: [PortalNavigation],
   template: `
     @if (audience === 'customer') {
       <div class="crp-client-shell">
         <header class="crp-client-header">
-          <p class="crp-client-brand">MULTI<span>TOUR</span></p>
+          <button type="button" class="crp-client-brand" (click)="open(landing?.key)">MULTI<span>TOUR</span></button>
           <nav class="crp-client-nav" aria-label="Navegación principal del cliente">
-            @for (area of areas; track area.key) {
-              <button type="button" [class.crp-is-active]="area === current()" [attr.aria-current]="area === current() ? 'page' : null"
-                (click)="selected.set(area.key)">{{ area.label }}</button>
-            }
+            @for (link of headerNav; track link.key) { <button type="button" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
+                (click)="open(link.key)">{{ link.label }}</button> }
           </nav>
+          <div class="crp-client-actions">
+            @for (link of headerAccount; track link.key) { <button type="button" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
+                (click)="open(link.key)">{{ link.label }}</button> }
+          </div>
         </header>
-        <section class="crp-client-hero">
-          <p class="crp-client-eyebrow">Portal cliente</p>
-          <p class="crp-client-greeting">Hola, te damos la bienvenida</p>
-          <p>Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.</p>
-        </section>
         <main class="crp-client-content">
           @if (current(); as area) { <ng-container *ngComponentOutlet="area.component" /> }
         </main>
+        <footer class="crp-client-footer">
+          <div class="crp-client-footer-grid">
+            <div>
+              <span class="crp-client-footer-brand">MULTI<span>TOUR</span></span>
+              <p>Plataforma para descubrir, reservar y gestionar experiencias de turismo con operadores locales.</p>
+            </div>
+            <nav class="crp-client-footer-col" aria-label="Explorar">
+              <strong>Explorar</strong>
+              @for (link of footerLinks; track link.key) {
+                @if (navigation.has(link.key)) { <button type="button" (click)="open(link.key)">{{ link.label }}</button> } @else { <span>{{ link.label }}</span> }
+              }
+            </nav>
+            <div class="crp-client-footer-col" aria-label="Cuenta"><strong>Cuenta</strong><span>Ingresar</span><span>Crear cuenta</span></div>
+          </div>
+          <p class="crp-client-footer-bottom">© 2026 Multi Tour. Plataforma para operadores de turismo.</p>
+        </footer>
       </div>
     } @else {
       <div class="crp-operator-shell">
@@ -41,7 +56,7 @@ import { PortalAudience } from './portal-audience';
           <nav class="crp-operator-nav" aria-label="Administración comercial">
             @for (area of areas; track area.key) {
               <button type="button" [class.crp-is-active]="area === current()" [attr.aria-current]="area === current() ? 'page' : null"
-                (click)="selected.set(area.key)">{{ area.label }}</button>
+                (click)="open(area.key)">{{ area.label }}</button>
             }
           </nav>
         </aside>
@@ -54,10 +69,20 @@ import { PortalAudience } from './portal-audience';
 })
 export class PortalShellComponent {
   private readonly injector = inject(Injector);
+  protected readonly navigation = inject(PortalNavigation);
   protected readonly audience = inject(PortalAudience).audience;
   protected readonly areas = inject(PORTAL_AREA_LIST)
     .filter((area) => (area.audience ?? 'operator') === this.audience && (area.isAvailable?.(this.injector) ?? true));
-  protected readonly selected = signal(this.areas[0]?.key);
-  protected readonly current = computed(() => this.areas.find((area) => area.key === this.selected()) ?? this.areas[0]);
+  /** The operator lands on the first area; the customer on the panel cliente when the build has it. */
+  protected readonly landing = (this.audience === 'customer' && this.areas.find((area) => area.key === CLIENT_AREA.panel)) || this.areas[0];
+  protected readonly current = computed(() => this.areas.find((area) => area.key === this.navigation.selected()) ?? this.landing);
   protected readonly roleLabel = ROLE_LABELS[inject(ActorContext).role] ?? ROLE_LABELS.READ_ONLY;
+  private readonly drawn = (links: readonly ClientLink[]) => links.filter((link) => this.areas.some((area) => area.key === link.key));
+  protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);
+  protected readonly headerAccount = this.drawn(CLIENT_LINKS.account);
+  protected readonly footerLinks = CLIENT_LINKS.footer;
+
+  constructor() { this.navigation.register(this.areas.map((area) => area.key)); }
+
+  protected open(key: string | undefined): void { if (key) { this.navigation.open(key); } }
 }

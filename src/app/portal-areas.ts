@@ -9,8 +9,12 @@ import { EstablishmentsPageComponent } from './establishments/pages/establishmen
 import { CustomerContext } from './self-service-reservation/data/customer-context';
 import { SelfServiceAreaComponent } from './self-service-reservation/pages/self-service-area.component';
 import { Audience } from './portal-audience';
+import { CLIENT_AREA } from './portal-navigation';
 
-/** One sidebar item of the operator shell and the page it shows. */
+/** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
+export { CLIENT_AREA };
+
+/** One area of the shell: an item of the operator sidebar, or a client page opened by the client header, footer or a page. */
 export interface PortalArea {
   readonly key: string;
   /** Spanish label of the authorized screen's menu. */
@@ -40,6 +44,15 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
 ]);
+
+export interface ClientLink { readonly key: string; readonly label: string }
+
+/** The links of tours.html: header center, header right ('Perfil' has no story yet) and the Explorar column of the footer. */
+export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer', readonly ClientLink[]>> = Object.freeze({
+  nav: [{ key: CLIENT_AREA.tours, label: 'Explorar' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
+  account: [{ key: CLIENT_AREA.panel, label: 'Mis reservas' }],
+  footer: [{ key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
+});
 
 /** The role line under the brand. */
 export const ROLE_LABELS: Readonly<Record<ActorRole, string>> = Object.freeze({
