@@ -167,7 +167,7 @@ describe('onlyActiveEstablishmentsAppear (AC-PO.5, RN-PO5)', () => {
     const page = await openPage({ page: 'lodging' });
     page.places.requests[0].reply(offer);
     await page.settle();
-    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Contacto de Casa Neiva')]);
+    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Casa Neiva')]);
     expect(page.host.textContent).not.toContain('Hostal La Tatacoa');
   });
 
@@ -175,7 +175,7 @@ describe('onlyActiveEstablishmentsAppear (AC-PO.5, RN-PO5)', () => {
     const page = await openPage({ page: 'gastronomy' });
     page.places.requests[0].reply(offer);
     await page.settle();
-    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Contacto de Sabores del Huila')]);
+    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Sabores del Huila')]);
   });
 
   it('shows loading, error with retry, empty and data for the establishments', async () => {
@@ -417,17 +417,93 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(page.host.querySelector('input')).toBeNull();
   });
 
-  it('draws Gastronomía with the header of gastronomia.html, the restaurant agreement and its search', async () => {
-    const page = await openPage({ page: 'gastronomy' });
-    page.places.requests[0].reply([placeNamed('Sabores del Huila', { establishmentType: 'RESTAURANT' }), placeNamed('Fogón', { establishmentType: 'RESTAURANT' })]);
+  const restaurants = () => [
+    placeNamed('Sabores del Huila', { establishmentType: 'RESTAURANT', contact: { email: 'reservas@sabores.co', phone: '+57 310 555 0220' } }),
+    placeNamed('Fogón', { establishmentType: 'RESTAURANT' }),
+  ];
+  const gastronomy = async () => {
+    const page = await openPage({ page: 'gastronomy', areas: [CLIENT_AREA.panel, CLIENT_AREA.gastronomy] });
+    page.places.requests[0].reply(restaurants());
     await page.settle();
+    const click = async (name: string | RegExp, scope: HTMLElement = page.host) => { fireEvent.click(within(scope).getByRole('button', { name })); await page.settle(); };
+    return { ...page, click };
+  };
+
+  it('draws Gastronomía as gastronomia.html: header, search of restaurants or dishes and the filters', async () => {
+    const page = await gastronomy();
     expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Sabores locales');
     expect(text(page.host.querySelector('h1'))).toBe('Gastronomía');
+    expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Restaurantes y platos del día cerca de tus destinos.');
+    expect(within(page.host).getByLabelText('Buscar restaurantes o platos').getAttribute('placeholder')).toBe('Buscar restaurantes o platos...');
+    const filters = page.host.querySelector('.crp-offer-filters')!;
+    expect(Array.from(filters.querySelectorAll('button'), (b) => text(b))).toEqual(['Todos', 'Restaurantes', 'Platos del día']);
+    expect(text(filters.querySelector('.crp-is-active'))).toBe('Todos');
+    expect(page.host.querySelector('.crp-offer-agreement')).toBeNull();
+    expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-type'))).toBe('Restaurante asociado');
+    await page.search('Buscar restaurantes o platos', 'fog');
+    expect(page.cards('establishments').map((card) => text(card.querySelector('strong')))).toEqual(['Fogón']);
+  });
+
+  it('shows the empty state of the mockup under Platos del día: the story brings no dishes', async () => {
+    const page = await gastronomy();
+    await page.click('Platos del día');
+    expect(text(page.host.querySelector('.crp-offer-filters .crp-is-active'))).toBe('Platos del día');
+    expect(text(page.host.querySelector('[data-state="empty"]'))).toBe('No hay opciones de alimentación disponibles en este momento.');
+    expect(page.host.querySelectorAll('.crp-tour-card')).toHaveLength(0);
+    await page.click('Todos');
+    expect(page.cards('establishments')).toHaveLength(2);
+  });
+
+  it('draws Restaurantes as restaurantes.html and goes back with Volver a gastronomía', async () => {
+    const page = await gastronomy();
+    await page.click('Restaurantes', page.host.querySelector('.crp-offer-filters') as HTMLElement);
+    expect(page.host.textContent).not.toContain('Volver al panel cliente');
+    expect(text(page.host.querySelector('.crp-offer-back'))).toBe('← Volver a gastronomía');
+    expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Establecimientos asociados');
+    expect(text(page.host.querySelector('h1'))).toBe('Restaurantes');
     expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Datos de contacto para coordinar directamente tu visita.');
     expect(text(page.host.querySelector('.crp-offer-agreement p:last-child'))).toBe('Multitour no genera reservas de mesa, no administra tarifas, disponibilidad ni inventario de alimentación.');
-    expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-type'))).toBe('Restaurante asociado');
-    await page.search('Buscar restaurantes por nombre', 'fog');
-    expect(page.cards('establishments').map((card) => text(card.querySelector('strong')))).toEqual(['Fogón']);
+    expect(page.host.querySelector('.crp-offer-filters, input')).toBeNull();
+    expect(page.host.querySelector('.crp-offer-grid')?.classList).toContain('crp-offer-grid-3');
+    const [sabores, fogon] = page.cards('establishments');
+    expect(text(sabores.querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');
+    expect(fogon.querySelector('.crp-establishment-contact')).toBeNull();
+    expect(text(sabores.querySelector('button.crp-offer-link'))).toBe('Ver contacto');
+    await page.click(/Volver a gastronomía/);
+    expect(text(page.host.querySelector('h1'))).toBe('Gastronomía');
+  });
+
+  it('opens detalle-gastronomia.html with Ver contacto: hero, name, category and the Contacto box', async () => {
+    const page = await gastronomy();
+    await page.click('Ver contacto', page.cards('establishments')[0]);
+    const venue = page.host.querySelector('[data-part="venue"]')!;
+    expect(text(venue.querySelector('.crp-offer-back'))).toBe('← Volver a gastronomía');
+    expect(text(venue.querySelector('.crp-page-header-eyebrow'))).toBe('Restaurante asociado');
+    expect(venue.querySelector('img.crp-venue-hero')?.getAttribute('src')).toMatch(/^\/assets\//);
+    expect(text(venue.querySelector('h1'))).toBe('Sabores del Huila');
+    expect(text(venue.querySelector('.crp-venue-category'))).toBe('Restaurante asociado');
+    expect(text(venue.querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');
+    expect(text(venue.querySelector('.crp-venue-contact'))).toBe('Contacto Coordina directamente con el establecimiento. '
+      + 'La plataforma no crea reservas de mesa ni gestiona tarifas, disponibilidad o inventario.');
+    expect(page.host.querySelector('[data-part="establishments"]')).toBeNull();
+    await page.click(/Volver a gastronomía/);
+    expect(page.cards('establishments')).toHaveLength(2);
+  });
+
+  it('opens the contact of a hotel from Alojamiento and goes back with Volver a alojamiento', async () => {
+    const page = await openPage({ page: 'lodging' });
+    page.places.requests[0].reply([placeNamed('Casa Neiva', { commercialInformation: '' })]);
+    await page.settle();
+    fireEvent.click(within(page.cards('establishments')[0]).getByRole('button', { name: 'Ver contacto' }));
+    await page.settle();
+    const venue = page.host.querySelector('[data-part="venue"]')!;
+    expect(text(venue.querySelector('.crp-venue-category'))).toBe('Establecimiento asociado');
+    expect(text(venue.querySelector('.crp-venue-info'))).toBe('Sin información adicional registrada.');
+    expect(venue.querySelector('.crp-establishment-contact')).toBeNull();
+    expect(text(venue.querySelector('.crp-venue-contact p:last-child'))).toBe('La plataforma no crea reservas de habitación ni gestiona tarifas, disponibilidad o inventario.');
+    fireEvent.click(within(page.host).getByRole('button', { name: /Volver a alojamiento/ }));
+    await page.settle();
+    expect(text(page.host.querySelector('h1'))).toBe('Alojamiento');
   });
 
   it('shows no raw code, no ISO date and no booking action of HU-COM-008', async () => {
