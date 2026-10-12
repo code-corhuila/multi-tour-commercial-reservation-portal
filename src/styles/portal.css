@@ -278,3 +278,8 @@
 .crp-root .crp-tour-transport { color: var(--crp-accent-strong); font-weight: 600; }
 .crp-root .crp-establishment-type { color: #5a6b70; font-size: 0.94rem; }
 .crp-root .crp-offer-agreement { margin: 0 0 16px; color: var(--crp-soft); }
+/* Public offer as the client page of tours.html: open sections on the page background, no operator panel. */
+.crp-root .crp-offer-section { margin-top: 28px; }
+.crp-root .crp-offer-section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.crp-root .crp-offer-section-head h2 { margin: 0; color: #17252b; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.03em; }
+.crp-root .crp-offer-section-head p { margin: 0; color: var(--crp-soft); }

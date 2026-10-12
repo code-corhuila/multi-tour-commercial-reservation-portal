@@ -11,6 +11,7 @@ import { DiscountRulesSource } from './discounts/data/discount-rules-source';
 import { canManageDiscounts } from './discounts/model/discount-rule';
 import { DiscountsPageComponent } from './discounts/pages/discounts-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
+import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page.component';
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
 
@@ -47,6 +48,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
   { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
     isAvailable: (injector) => injector.get(CurrentDiscountsSource, null) !== null },
+  // HU-COM-006: the read-only public offer, the 'Explorar' link of the client header (tours.html).
+  { key: 'offer', label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer' },
   {
     key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
