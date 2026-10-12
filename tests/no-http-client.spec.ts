@@ -11,6 +11,8 @@ const FORBIDDEN: ReadonlyArray<readonly [string, RegExp]> = [
   ['fetch(', /\bfetch\s*\(/],
   ['XMLHttpRequest', /\bXMLHttpRequest\b/],
   ['axios', /\baxios\b/],
+  ['localStorage', /\blocalStorage\b/],
+  ['sessionStorage', /\bsessionStorage\b/],
 ];
 
 /** The forbidden constructs found in one piece of source text. */
