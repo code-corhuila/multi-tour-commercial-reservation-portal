@@ -1,10 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
-import { inject } from '@angular/core';
-import { ActorContext } from './catalog/data/catalog-api.service';
-import { customersCapabilitiesOf } from './customers/model/customer-group';
-import { CustomersPageComponent } from './customers/pages/customers-page.component';
+import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page.component';
 
 /**
  * Shell of the authorized screens, drawn from PORTAL_AREAS: the operator sidebar for an operator, the client
@@ -13,7 +10,7 @@ import { CustomersPageComponent } from './customers/pages/customers-page.compone
 @Component({
   selector: 'crp-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogPageComponent, EstablishmentsPageComponent, CustomersPageComponent],
+  imports: [CatalogPageComponent, EstablishmentsPageComponent, PublicOfferPageComponent],
   template: `
     <div class="crp-operator-shell">
     <main class="crp-operator-content">
@@ -22,15 +19,14 @@ import { CustomersPageComponent } from './customers/pages/customers-page.compone
       <nav class="crp-nav" aria-label="Commercial reservation">
         <button type="button" [attr.aria-current]="view() === 'catalog' ? 'page' : null" (click)="view.set('catalog')">Catalog</button>
         <button type="button" [attr.aria-current]="view() === 'establishments' ? 'page' : null" (click)="view.set('establishments')">Establishments</button>
-        @if (people) { <button type="button" [attr.aria-current]="view() === 'customers' ? 'page' : null" (click)="view.set('customers')">People</button> }
+        <button type="button" [attr.aria-current]="view() === 'offer' ? 'page' : null" (click)="view.set('offer')">Offer</button>
       </nav>
     </header>
-    @if (view() === 'catalog') { <app-catalog-page /> } @else if (view() === 'customers') { <app-customers-page /> } @else { <app-establishments-page /> }
+    @if (view() === 'catalog') { <app-catalog-page /> } @else if (view() === 'establishments') { <app-establishments-page /> } @else { <app-public-offer-page /> }
     </main>
     </div>
   `,
 })
 export class PortalShellComponent {
-  protected readonly view = signal<'catalog' | 'establishments' | 'customers'>('catalog');
-  protected readonly people = customersCapabilitiesOf(inject(ActorContext).role).canRead;
+  protected readonly view = signal<'catalog' | 'establishments' | 'offer'>('catalog');
 }
