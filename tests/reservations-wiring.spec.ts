@@ -13,7 +13,7 @@ const mountAs = (roles: string[]) => {
 };
 const goToReservations = async () => {
   await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-  Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Reservations')!.click();
+  Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Reservas')!.click();
   await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Reservations'));
 };
 
