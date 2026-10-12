@@ -25,7 +25,7 @@ async function openPortal(role: 'TENANT_ADMINISTRATOR' | 'READ_ONLY' = 'TENANT_A
   await settle();
   const host: HTMLElement = fixture.nativeElement;
   const establishmentsPage = async () => {
-    Array.from(host.querySelectorAll('nav button')).find((button) => button.textContent === 'Establishments')!
+    Array.from(host.querySelectorAll('nav button')).find((button) => button.textContent?.trim() === 'Establecimientos')!
       .dispatchEvent(new MouseEvent('click'));
     await settle();
   };
@@ -36,6 +36,7 @@ describe('landingComposition', () => {
   it('uses the landing shell, page header, access note, panel and a semantic catalog table', async () => {
     const { host } = await openPortal();
     expect(host.querySelector('.crp-operator-shell .crp-operator-content')).not.toBeNull();
+    expect(host.querySelector('.crp-operator-shell .crp-operator-sidebar .crp-operator-nav')).not.toBeNull();
     const header = host.querySelector('.crp-page-header')!;
     expect(header.querySelector('.crp-page-header-main .crp-page-header-eyebrow')?.textContent).toBe(CATALOG_COPY.eyebrow);
     expect(header.querySelector('h1.crp-page-header-title.crp-h1')?.textContent).toBe(CATALOG_COPY.title.all);
@@ -99,10 +100,17 @@ describe('landingStylesStayInsideThePortal', () => {
       }
     };
     check(style.sheet!.cssRules);
+    expect(css).toMatch(/grid-template-columns:\s*226px/);
+    expect(css).toContain('"Manrope"');
+    for (const token of ['--crp-radius-shell: 20px', '--crp-radius-card: 14px', '--crp-space-1: 4px', '--crp-space-8: 64px', '--crp-success: #17685f', '--crp-success-soft: #ddf0e7']) {
+      expect(css).toContain(token);
+    }
     for (const name of ['operator-shell', 'operator-content', 'operator-panel', 'operator-panel-head',
       'operator-eyebrow', 'table', 'table-wrap', 'status', 'primary', 'outline', 'access-note',
       'page-header', 'page-header-main', 'page-header-eyebrow', 'page-header-title',
-      'page-header-desc', 'page-header-action', 'h1', 'is-confirmed', 'is-pending', 'is-cancelled']) {
+      'page-header-desc', 'page-header-action', 'h1', 'is-confirmed', 'is-pending', 'is-cancelled',
+      'operator-sidebar', 'operator-brand', 'operator-role', 'operator-nav', 'is-active', 'is-execution', 'is-finalized',
+      'operator-primary', 'operator-outline', 'operator-table', 'operator-status']) {
       expect(css).toContain(`.crp-${name}`);
     }
   });
