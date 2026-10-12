@@ -36,9 +36,11 @@ const CLIENT_AREAS: PortalArea[] = [
   CUSTOMER_AREA,
   { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingPageDouble, audience: 'customer' },
   { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyPageDouble, audience: 'customer' },
-  { key: CLIENT_AREA.panel, label: 'Panel cliente', component: PanelPageDouble, audience: 'customer' },
-  { key: CLIENT_AREA.reservations, label: 'Mis reservas', component: ReservationsPageDouble, audience: 'customer' },
+  { key: CLIENT_AREA.panel, label: 'Panel cliente', component: PanelPageDouble, audience: 'customer', clientChrome: 'panel' },
+  { key: CLIENT_AREA.reservations, label: 'Mis reservas', component: ReservationsPageDouble, audience: 'customer', clientChrome: 'panel' },
 ];
+/** The same areas, all with the site chrome of tours.html. */
+const SITE_CLIENT_AREAS: PortalArea[] = CLIENT_AREAS.map((area) => ({ ...area, clientChrome: 'site' }));
 
 async function openShell(role: ActorRole, withDiscounts = true, extra: PortalArea[] = []) {
   const catalog = new DemoCatalogStore();
@@ -58,7 +60,8 @@ async function openShell(role: ActorRole, withDiscounts = true, extra: PortalAre
   const host: HTMLElement = fixture.nativeElement;
   const items = () => Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-operator-sidebar .crp-operator-nav button'));
   const open = async (label: string) => { items().find((b) => b.textContent?.trim() === label)!.click(); await settle(); };
-  return { host, items, open, settle };
+  const navigation = () => fixture.debugElement.injector.get(PortalNavigation);
+  return { host, items, open, settle, navigation };
 }
 
 describe('portalAreasRegistry', () => {
@@ -128,7 +131,7 @@ describe('customerShellHeader', () => {
     Array.from(host.querySelectorAll<HTMLButtonElement>(selector)).find((b) => b.textContent?.trim() === label)!;
 
   it('draws the header of tours.html: brand, Explorar, Alojamiento and Gastronomía in the center, Mis reservas on the right', async () => {
-    const { host } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    const { host } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
     expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
     expect(host.textContent).not.toContain('Solo lectura');
     const brand = host.querySelector('.crp-client-shell > header.crp-client-header .crp-client-brand');
@@ -140,15 +143,23 @@ describe('customerShellHeader', () => {
     expect(host.textContent).not.toMatch(/Perfil|Catálogos|Establecimientos|Descuentos/);
   });
 
-  it('lands on the panel cliente, reached by Mis reservas, and leaves the greeting to that page', async () => {
+  it('lands on the panel cliente and leaves the greeting to that page', async () => {
     const { host } = await openShell('READ_ONLY', true, CLIENT_AREAS);
     expect(host.querySelector('.crp-client-content crp-test-panel-page')).not.toBeNull();
-    expect(button(host, '.crp-client-actions button', 'Mis reservas').getAttribute('aria-current')).toBe('page');
     expect(host.querySelector('.crp-client-greeting')).toBeNull();
   });
 
+  it('opens the reservations list from Mis reservas and marks it active there', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
+    expect(button(host, '.crp-client-actions button', 'Mis reservas').getAttribute('aria-current')).toBeNull();
+    button(host, '.crp-client-actions button', 'Mis reservas').click();
+    await settle();
+    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
+    expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Mis reservas']);
+  });
+
   it('opens the area of each header link and moves the active state with it', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
     button(host, '.crp-client-nav button', 'Gastronomía').click();
     await settle();
     expect(host.querySelector('crp-test-gastronomy-page')).not.toBeNull();
@@ -156,16 +167,29 @@ describe('customerShellHeader', () => {
     expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Gastronomía']);
   });
 
-  it('lets a client page open an area that has no header link through PortalNavigation', async () => {
+  it('lets a client page open another area through PortalNavigation', async () => {
     const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
     host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
     await settle();
     expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
-    expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual([]);
+  });
+
+  it('hands the parameters of PortalNavigation.open to the opened area and clears them on the next opening', async () => {
+    const { host, settle, navigation } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
+    expect(navigation().params()).toEqual({});
+    expect(navigation().open(CLIENT_AREA.reservations, { departure: 'DEP-1', people: '2' })).toBe(true);
+    await settle();
+    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
+    expect(navigation().params()).toEqual({ departure: 'DEP-1', people: '2' });
+    expect(navigation().open('unknown-area', { departure: 'X' })).toBe(false);
+    expect(navigation().params()).toEqual({ departure: 'DEP-1', people: '2' });
+    button(host, '.crp-client-nav button', 'Explorar').click();
+    await settle();
+    expect(navigation().params()).toEqual({});
   });
 
   it('draws the dark footer of tours.html, its Explorar column opening the areas and Cuenta as text', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
     const footer = host.querySelector('.crp-client-shell > footer.crp-client-footer')!;
     expect(footer.querySelector('.crp-client-footer-brand')?.textContent?.trim()).toBe('MULTITOUR');
     expect(footer.textContent).toContain('Plataforma para descubrir, reservar y gestionar experiencias de turismo con operadores locales.');
@@ -193,6 +217,37 @@ describe('customerShellHeader', () => {
     expect(host.querySelector('.crp-client-header')).not.toBeNull();
     expect(host.querySelectorAll('.crp-client-header button:not(.crp-client-brand)').length).toBe(0);
     expect(host.querySelector('app-catalog-page')).toBeNull();
+  });
+});
+
+describe('customerPanelChrome', () => {
+  const texts = (host: HTMLElement, selector: string) => Array.from(host.querySelectorAll(selector)).map((e) => e.textContent?.trim());
+  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand)';
+
+  it('draws the compact header of panel-cliente.html inside the canvas, with Ver catálogo, no avatar and no footer', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    expect(host.querySelector('.crp-client-header')).toBeNull();
+    expect(host.querySelector('.crp-client-footer')).toBeNull();
+    const header = host.querySelector('.crp-client-content > header.crp-client-panel-header')!;
+    expect(header.querySelector('.crp-client-panel-brand')?.textContent?.trim()).toBe('Multi Tour');
+    expect(texts(host, link)).toEqual(['Ver catálogo']);
+    expect(host.textContent).not.toMatch(/Perfil/);
+    host.querySelector<HTMLButtonElement>(link)!.click();
+    await settle();
+    expect(host.querySelector('crp-test-customer-page')).not.toBeNull();
+    expect(host.querySelector('.crp-client-panel-header')).toBeNull();
+    expect(host.querySelector('.crp-client-header')).not.toBeNull();
+    expect(host.querySelector('.crp-client-footer')).not.toBeNull();
+  });
+
+  it('offers Volver al panel on the reservations list', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
+    await settle();
+    expect(texts(host, link)).toEqual(['Volver al panel']);
+    host.querySelector<HTMLButtonElement>(link)!.click();
+    await settle();
+    expect(host.querySelector('crp-test-panel-page')).not.toBeNull();
   });
 });
 
