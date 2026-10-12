@@ -359,8 +359,8 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(detail.querySelector('.crp-offer-validity'))).toBe('Vigente del 01 sep 2026 al 30 sep 2026.');
   });
 
-  it('draws Reservar tour only when the shell can open the reservation of HU-COM-008, and opens it', async () => {
-    const page = await openPage({ areas: [CLIENT_AREA.tours, CLIENT_AREA.reservations] });
+  it('draws Reservar tour only when the shell can open Reservar tour of HU-COM-008, and opens it on the tour', async () => {
+    const page = await openPage({ areas: [CLIENT_AREA.tours, 'reserve'] });
     page.tours.requests[0].reply([tourNamed('Suaza')]);
     await page.settle();
     expect(page.host.textContent).not.toContain('Reservar tour');
@@ -370,7 +370,8 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(reserve.classList).toContain('crp-primary');
     expect(reserve.closest('.crp-offer-summary')).not.toBeNull();
     fireEvent.click(reserve);
-    expect(TestBed.inject(PortalNavigation).selected()).toBe(CLIENT_AREA.reservations);
+    expect(TestBed.inject(PortalNavigation).selected()).toBe('reserve');
+    expect(TestBed.inject(PortalNavigation).params()).toEqual({ tour: 'tour-Suaza' });
   });
 
   it('lays the cards of tours.html out in four columns with 3:2 photos and the price beside Ver detalle', () => {
