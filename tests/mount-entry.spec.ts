@@ -55,10 +55,11 @@ describe('mountEntryContract', () => {
     expect(text()).toContain(ESTABLISHMENTS_COPY.newEstablishment);
   });
 
-  it('fails closed to READ_ONLY for an unknown or empty role: data but no actions', async () => {
+  it('fails closed to the client layout for an unknown or empty role: no operator area and no actions', async () => {
     for (const roles of [['SOMETHING_ELSE'], []]) {
       mountAs(roles);
-      await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(0));
+      await vi.waitFor(() => expect(host.querySelector('.crp-client-header')).toBeTruthy());
+      expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
       expect(text()).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
       cleanup!();
       host.remove();
@@ -78,7 +79,7 @@ describe('mountEntryContract', () => {
 
 describe('mountEntryWiresTheSelfServiceReservation', () => {
   const openSelfService = async () => {
-    await vi.waitFor(() => expect(host.querySelector('[data-state]')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-header .crp-client-nav button')).toBeTruthy());
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.nav)!.click();
   };
   afterEach(() => history.replaceState(null, '', '/'));

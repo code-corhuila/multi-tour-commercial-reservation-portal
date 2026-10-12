@@ -7,6 +7,7 @@ import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstab
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { ESTABLISHMENTS_COPY } from '../src/app/establishments/establishments-copy';
+import { PortalAudience } from '../src/app/portal-audience';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { actorAs } from './actor-context.double';
 
@@ -19,6 +20,8 @@ async function openPortal(role: 'TENANT_ADMINISTRATOR' | 'READ_ONLY' = 'TENANT_A
     { provide: CatalogItemsWriter, useValue: new DemoCatalogWriter(catalog) },
     { provide: AssociatedEstablishmentsSource, useValue: establishments },
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
+    // The operator pages, also for a read-only operator.
+    { provide: PortalAudience, useValue: { audience: 'operator' } },
   ] });
   const fixture = TestBed.createComponent(PortalShellComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
