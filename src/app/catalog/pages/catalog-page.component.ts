@@ -4,6 +4,7 @@ import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
+import { CATALOG_COPY, formatCop } from '../catalog-copy';
 import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
 
 /**
@@ -34,10 +35,25 @@ function reasonOf(error: unknown): string {
   template: `
     @let current = state();
     @if (caps.isDenied) {
-      <p role="alert" data-state="denied">You do not have access to the catalog.</p>
+      <p role="alert" data-state="denied">{{ copy.denied }}</p>
     } @else {
+    <header class="crp-page-header">
+      <div class="crp-page-header-main">
+        <p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
+        <p class="crp-page-header-desc">{{ copy.description }}</p>
+      </div>
+      @if (caps.canRegister && current.kind !== 'loading' && current.kind !== 'error') {
+        <button class="crp-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
+      }
+    </header>
+    <p class="crp-access-note">{{ copy.accessNote }}</p>
+    <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
+    <div class="crp-operator-panel-head"><h2>{{ copy.panelTitle }}</h2></div>
     <!-- Outside the states: a reload must not take away a form whose save is in flight. -->
     @if (formTarget(); as target) {
+      <div class="crp-form-section">
+      <h2>{{ target.item ? copy.editItem : copy.newItem }}</h2>
       <!-- Keyed, so another item or a new one starts a fresh form instead of reusing the old state. -->
       @for (key of [formKey()]; track key) {
         <app-catalog-item-form
@@ -48,49 +64,59 @@ function reasonOf(error: unknown): string {
           (saving)="saving.set($event)"
         />
       }
+      </div>
     }
     @if (current.kind === 'loading') {
-      <p role="status" data-state="loading">Loading</p>
+      <p role="status" data-state="loading">{{ copy.loading }}</p>
     } @else if (current.kind === 'error') {
       <div role="alert" data-state="error">
-        <p>The request failed.</p>
-        <button type="button" (click)="current.retry()">Retry</button>
+        <p>{{ copy.requestFailed }}</p>
+        <button class="crp-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button>
       </div>
-    } @else {
-      @if (caps.canRegister) {
-        <button type="button" [disabled]="saving()" (click)="openForm(undefined)">New item</button>
-      }
     }
     @if (current.kind === 'empty') {
-      <p role="status" data-state="empty">No results</p>
+      <p role="status" data-state="empty">{{ copy.empty }}</p>
     } @else if (current.kind === 'data') {
-      <ul data-state="data">
+      <div class="crp-table-wrap">
+      <table class="crp-table" data-state="data" [attr.aria-label]="copy.panelTitle">
+        <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.type }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+        <tbody>
         @for (item of current.items; track item.serviceId) {
-          <li>
-            {{ item.commercialName }} · {{ item.catalogStatus }}
+          <tr>
+            <td><strong>{{ item.commercialName }}</strong></td>
+            <td>{{ copy.types[item.serviceType] }}</td>
+            <td>{{ cop(item.baseRateCents) }}</td>
+            <td><span class="crp-status" [class.crp-is-confirmed]="item.catalogStatus === 'ACTIVE'" [class.crp-is-pending]="item.catalogStatus === 'INACTIVE'">{{ item.catalogStatus }}</span></td>
+            <td class="crp-row-actions">
             @if (caps.canChangeStatus) {
-              <button type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
+              <button class="crp-row-toggle" type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
                 @if (item.catalogStatus === 'ACTIVE') {
-                  Inactivate
+                  {{ copy.inactivate }}
                 } @else {
-                  Reactivate
+                  {{ copy.reactivate }}
                 }
               </button>
             }
             @if (canEdit) {
-              <button type="button" [disabled]="saving()" (click)="openForm(item)">Edit</button>
+              <button class="crp-row-manage" type="button" [disabled]="saving()" (click)="openForm(item)">{{ copy.edit }}</button>
             }
             @if (rowErrors()[item.serviceId]; as reason) {
               <p role="alert">{{ reason }}</p>
             }
-          </li>
+            </td>
+          </tr>
         }
-      </ul>
+        </tbody>
+      </table>
+      </div>
     }
+    </section>
     }
   `,
 })
 export class CatalogPageComponent {
+  protected readonly copy = CATALOG_COPY;
+  protected readonly cop = formatCop;
   private readonly source = inject(CatalogItemsSource);
   private readonly writer = inject(CatalogItemsWriter);
   private readonly destroyRef = inject(DestroyRef);

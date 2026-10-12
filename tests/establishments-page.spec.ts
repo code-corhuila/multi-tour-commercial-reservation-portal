@@ -1,3 +1,4 @@
+import { ESTABLISHMENTS_COPY } from '../src/app/establishments/establishments-copy';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -42,7 +43,7 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
     source.requests[0].reply([]); await settle();
     expect(regions()).toEqual(['empty']);
     expect(element.querySelector('[role="alert"]')).toBeNull();
-    expect(element.textContent).toContain('No results');
+    expect(element.textContent).toContain(ESTABLISHMENTS_COPY.empty);
   });
   it('RN-PE2 shows an error with a working retry that returns to loading and then data', async () => {
     const { source, settle, regions, element } = await openPage();
@@ -62,10 +63,10 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
       ...establishmentNamed('Restaurant Beta', 'RESTAURANT'), associationStatus: 'INACTIVE',
     }]); await settle();
     expect(regions()).toEqual(['data']);
-    expect(element.querySelectorAll('ul').length).toBe(1);
-    expect(element.querySelectorAll('li').length).toBe(2);
-    for (const text of ['Hotel Alpha', 'Restaurant Beta', 'HOTEL', 'RESTAURANT', 'ACTIVE', 'INACTIVE', 'Contact the establishment directly.']) {
-      expect(element.querySelector('ul')!.textContent).toContain(text);
+    expect(element.querySelectorAll('table').length).toBe(1);
+    expect(element.querySelectorAll('tbody tr').length).toBe(2);
+    for (const text of ['Hotel Alpha', 'Restaurant Beta', ESTABLISHMENTS_COPY.types.HOTEL, ESTABLISHMENTS_COPY.types.RESTAURANT, 'ACTIVE', 'INACTIVE', 'Contact the establishment directly.']) {
+      expect(element.querySelector('table')!.textContent).toContain(text);
     }
     expect(element.querySelector('img, form, button')).toBeNull();
   });
@@ -83,8 +84,8 @@ describe('theNewestRequestReplacesThePreviousOne', () => {
     expect(source.requests.length).toBe(2);
     source.requests[1].reply([establishmentNamed('Fast', 'RESTAURANT')]); await settle();
     source.requests[0].reply([establishmentNamed('Slow')]); await settle();
-    expect(element.querySelector('ul')!.textContent).toContain('Fast');
-    expect(element.querySelector('ul')!.textContent).not.toContain('Slow');
+    expect(element.querySelector('table')!.textContent).toContain('Fast');
+    expect(element.querySelector('table')!.textContent).not.toContain('Slow');
     expect(source.requests[0].isOpen()).toBe(false);
   });
   it('cancels an outstanding request when the page lifetime ends', async () => {
@@ -115,7 +116,7 @@ describe('establishmentAccessUsesTheContainerActor', () => {
       const { source, element, fixture } = await openPage(role, true);
       fixture.componentInstance.reload();
       expect(source.requests).toEqual([]);
-      expect(element.querySelector('ul, select, button')).toBeNull();
+      expect(element.querySelector('table, select, button')).toBeNull();
       expect(element.querySelector('[data-state="denied"]')).not.toBeNull();
     });
     it(`${role} cannot activate the provisional route`, async () => {
@@ -134,7 +135,7 @@ describe('establishmentAccessUsesTheContainerActor', () => {
     it(`${role ?? 'no actor'} reads the list without business actions`, async () => {
       const { source, settle, element } = await openPage(role);
       source.requests[0].reply([establishmentNamed('Readable')]); await settle();
-      expect(element.querySelector('ul')!.textContent).toContain('Readable');
+      expect(element.querySelector('table')!.textContent).toContain('Readable');
       expect(element.querySelector('button, form, img')).toBeNull();
     });
   }
