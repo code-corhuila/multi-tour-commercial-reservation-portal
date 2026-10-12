@@ -7,6 +7,7 @@ import { canManageDiscounts } from './discounts/model/discount-rule';
 import { DiscountsPageComponent } from './discounts/pages/discounts-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
 import { CustomerContext } from './self-service-reservation/data/customer-context';
+import { ClientPanelPageComponent } from './self-service-reservation/pages/client-panel-page.component';
 import { SelfServiceAreaComponent } from './self-service-reservation/pages/self-service-area.component';
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
@@ -38,8 +39,13 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
   },
+  // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {
-    key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent, audience: 'customer',
+    key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer',
+    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+  },
+  {
+    key: CLIENT_AREA.reservations, label: 'Mis reservas', component: SelfServiceAreaComponent, audience: 'customer',
     // HU-COM-008 DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
     isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
