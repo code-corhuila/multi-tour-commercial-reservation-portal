@@ -98,7 +98,7 @@ export class PublicOfferPageComponent {
   private readonly establishments = inject(PublicEstablishmentsSource, { optional: true });
   // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });
-  protected readonly date = signal(new Date().toISOString().slice(0, 10));
+  protected readonly date = signal(new Date().toLocaleDateString('en-CA'));
   private readonly dates = new Subject<string>();
   private readonly placeRequests = new Subject<void>();
 
