@@ -52,7 +52,7 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
     source.requests[0].reply([itemNamed('Alpha'), itemNamed('Beta')]);
     await settle();
     expect(regions()).toEqual(['data']);
-    expect(fixture.nativeElement.querySelectorAll('li').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(2);
     expect(fixture.nativeElement.textContent).toContain('Alpha');
   });
 
