@@ -6,42 +6,55 @@ import { ApiError } from '../../shell-contract';
 import { DiscountRuleFormComponent } from '../components/discount-rule-form.component';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
 import { DiscountRulesSource } from '../data/discount-rules-source';
-import { DISCOUNT_TEXT, DiscountRule, canManageDiscounts, discountValidity, discountValueText } from '../model/discount-rule';
+import { formatDateRange } from '../../shared/format';
+import { DISCOUNT_SELECTS, DISCOUNT_TEXT, DiscountRule, canManageDiscounts, discountValidity, discountValueText } from '../model/discount-rule';
 export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error' } | { kind: 'data'; items: readonly DiscountRule[] };
 @Component({
   selector: 'app-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [DiscountRuleFormComponent],
   template: `
     @if (allowed) {
-      <a href="discounts">{{ text.entry }}</a><h1>{{ text.title }}</h1>
-      @if (writer) { <button [disabled]="busy()" (click)="openForm(null)">{{ text.create }}</button> }
+      <header class="crp-page-header"><div class="crp-page-header-main">
+        <p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ text.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ formOpen() ? (editing() ? text.editTitle : text.newTitle) : text.title }}</h1></div>
+        @if (formOpen()) { <button class="crp-outline crp-page-header-action" type="button" [disabled]="saving()" (click)="formOpen.set(false)">{{ text.back }}</button> }
+        @else if (writer) { <button class="crp-primary crp-page-header-action" type="button" [disabled]="busy()" (click)="openForm(null)">{{ text.create }}</button> }
+      </header>
       @if (formOpen()) { @for (key of [formKey()]; track key) {
         <app-discount-rule-form [rule]="editing()" (saved)="onSaved($event)" (cancelled)="formOpen.set(false)" (saving)="saving.set($event)" />
-      } }
+      } } @else {
+      <section class="crp-discount-hero"><div><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>{{ text.heroTitle }}</h2></div><p>{{ text.heroCopy }}</p></section>
+      <section class="crp-operator-panel" [attr.aria-label]="text.panelTitle">
+      @let current = state();
+      <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.panelEyebrow }}</p><h2>{{ text.panelTitle }}</h2></div>
+        @if (current.kind === 'data') { @let active = inForce(current.items);
+          <span class="crp-operator-status crp-is-confirmed">{{ active }} {{ active === 1 ? 'activa' : 'activas' }}</span> }</div>
       @if (selected(); as rule) {
-        <div role="dialog" aria-modal="true" [attr.aria-label]="text.confirm">
+        <div class="crp-discount-dialog" role="dialog" aria-modal="true" [attr.aria-label]="text.confirm">
           <p>{{ text.confirmation }}</p>
-          <button [disabled]="pending()" (click)="confirm()">{{ text.confirm }}</button>
-          <button [disabled]="pending()" (click)="selected.set(null)">{{ text.cancel }}</button>
+          <button class="crp-primary" type="button" [disabled]="pending()" (click)="confirm()">{{ text.confirm }}</button>
+          <button class="crp-outline" type="button" [disabled]="pending()" (click)="selected.set(null)">{{ text.cancel }}</button>
           @if (actionError()) { <p role="alert">{{ actionError() }}</p> }
         </div>
       }
-      @let current = state();
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ text.failed }}<button [disabled]="busy()" (click)="reload()">{{ text.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><p>{{ text.failed }}</p><button class="crp-outline" type="button" [disabled]="busy()" (click)="reload()">{{ text.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
         @case ('data') {
-          <ul data-state="data">@for (rule of current.items; track rule.id) {
-            <li>{{ rule.name }} · {{ rule.startsOn }} – {{ rule.endsOn }} · {{ rule.priority }} · {{ valueText(rule) }} · {{ validity(rule, today) }}
-              @if (writer) {
-                <button [disabled]="busy()" (click)="openForm(rule)">{{ text.edit }}</button>
-                @if (rule.status === activeStatus) { <button [disabled]="busy()" (click)="ask(rule)">{{ text.inactivate }}</button> }
-              }
+          <ul class="crp-discount-list" data-state="data">@for (rule of current.items; track rule.id) { @let badge = validity(rule, today);
+            <li class="crp-discount-promo"><div><span>{{ rule.name }}</span><strong>{{ valueText(rule) }}</strong>
+              <p>Vigencia: {{ range(rule.startsOn, rule.endsOn) }} · Prioridad {{ rule.priority }} · Base de cálculo: {{ baseLabel(rule) }}</p>
+              <em [class]="'crp-operator-status crp-is-' + badge.tone">{{ badge.label }}</em></div>
+              @if (writer) { <div class="crp-row-actions">
+                <button type="button" [disabled]="busy()" (click)="openForm(rule)">{{ text.edit }}</button>
+                @if (rule.status === activeStatus) { <button class="crp-discount-toggle" type="button" [disabled]="busy()" (click)="ask(rule)">{{ text.inactivate }}</button> }
+              </div> }
             </li>
           }</ul>
         }
       }
-    } @else { <p role="alert">{{ text.denied }}</p> }
+      </section> }
+    } @else { <p role="alert" data-state="denied">{{ text.denied }}</p> }
   `,
 })
 export class DiscountsPageComponent {
@@ -57,6 +70,9 @@ export class DiscountsPageComponent {
   protected readonly text = DISCOUNT_TEXT;
   protected readonly valueText = discountValueText;
   protected readonly validity = discountValidity;
+  protected readonly range = formatDateRange;
+  protected baseLabel(rule: DiscountRule): string { return DISCOUNT_SELECTS[0].options.find(o => o.value === rule.calculationBase)?.label ?? ''; }
+  protected inForce(items: readonly DiscountRule[]): number { return items.filter(r => this.validity(r, this.today).tone === 'confirmed').length; }
   protected readonly today = new Date().toLocaleDateString('en-CA');
   private readonly requests = new Subject<void>();
   private readonly local = signal<DiscountsPageState | null>(null);
