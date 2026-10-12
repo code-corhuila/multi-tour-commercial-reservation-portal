@@ -1,29 +1,35 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
-import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
-import { ReservationsPageComponent } from './reservations/pages/reservations-page.component';
+import { NgComponentOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Injector, computed, inject, signal } from '@angular/core';
+import { ActorContext } from './catalog/data/catalog-api.service';
+import { PORTAL_AREAS, ROLE_LABELS } from './portal-areas';
 
-/** Internal view state instead of a router: the container owns the URL. */
+/** Operator shell of the authorized screens, drawn from PORTAL_AREAS. Internal view state, no router: the container owns the URL. */
 @Component({
   selector: 'crp-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogPageComponent, EstablishmentsPageComponent, ReservationsPageComponent],
+  imports: [NgComponentOutlet],
   template: `
     <div class="crp-operator-shell">
-    <main class="crp-operator-content">
-    <header class="crp-header">
-      <span class="crp-brand">Multi<span>Tour</span> · Reservas</span>
-      <nav class="crp-nav" aria-label="Commercial reservation">
-        <button type="button" [attr.aria-current]="view() === 'catalog' ? 'page' : null" (click)="view.set('catalog')">Catalog</button>
-        <button type="button" [attr.aria-current]="view() === 'establishments' ? 'page' : null" (click)="view.set('establishments')">Establishments</button>
-        <button type="button" [attr.aria-current]="view() === 'reservations' ? 'page' : null" (click)="view.set('reservations')">Reservations</button>
-      </nav>
-    </header>
-    @if (view() === 'catalog') { <app-catalog-page /> } @else if (view() === 'reservations') { <app-reservations-page /> } @else { <app-establishments-page /> }
-    </main>
+      <aside class="crp-operator-sidebar">
+        <p class="crp-operator-brand">MULTITOUR</p>
+        <p class="crp-operator-role">{{ roleLabel }}</p>
+        <nav class="crp-operator-nav" aria-label="Administración comercial">
+          @for (area of areas; track area.key) {
+            <button type="button" [class.crp-is-active]="area === current()" [attr.aria-current]="area === current() ? 'page' : null"
+              (click)="selected.set(area.key)">{{ area.label }}</button>
+          }
+        </nav>
+      </aside>
+      <main class="crp-operator-content">
+        @if (current(); as area) { <ng-container *ngComponentOutlet="area.component" /> }
+      </main>
     </div>
   `,
 })
 export class PortalShellComponent {
-  protected readonly view = signal<'catalog' | 'establishments' | 'reservations'>('catalog');
+  private readonly injector = inject(Injector);
+  protected readonly areas = PORTAL_AREAS.filter((area) => area.isAvailable?.(this.injector) ?? true);
+  protected readonly selected = signal(this.areas[0]?.key);
+  protected readonly current = computed(() => this.areas.find((area) => area.key === this.selected()) ?? this.areas[0]);
+  protected readonly roleLabel = ROLE_LABELS[inject(ActorContext).role] ?? ROLE_LABELS.READ_ONLY;
 }
