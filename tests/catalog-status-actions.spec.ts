@@ -1,3 +1,4 @@
+import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
@@ -29,7 +30,7 @@ async function openList(items: readonly CatalogItem[] = [itemNamed('Alpha'), ina
   await settle();
   source.requests[0].reply(items);
   await settle();
-  const rows = () => Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('li'));
+  const rows = () => Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('tbody tr'));
   const rowOf = (name: string) => rows().find((row) => row.textContent?.includes(name)) as HTMLElement;
   const buttonOf = (name: string) => rowOf(name).querySelector('button') as HTMLButtonElement;
   return { fixture, source, writer, settle, rows, rowOf, buttonOf, items };
@@ -48,7 +49,7 @@ describe('inactivatedItemStaysInTheListAsInactive', () => {
 
     expect(rows()).toHaveLength(2);
     expect(rowOf('Alpha').textContent).toContain('INACTIVE');
-    expect(buttonOf('Alpha').textContent?.trim()).toBe('Reactivate');
+    expect(buttonOf('Alpha').textContent?.trim()).toBe(CATALOG_COPY.reactivate);
     expect(rowOf('Beta').textContent).toContain('INACTIVE');
     expect(source.requests).toHaveLength(1);
   });
@@ -67,15 +68,15 @@ describe('reactivatedItemShowsAsActive', () => {
     expect(rows()).toHaveLength(2);
     expect(rowOf('Beta').textContent).toContain('ACTIVE');
     expect(rowOf('Beta').textContent).not.toContain('INACTIVE');
-    expect(buttonOf('Beta').textContent?.trim()).toBe('Inactivate');
+    expect(buttonOf('Beta').textContent?.trim()).toBe(CATALOG_COPY.inactivate);
   });
 });
 
 describe('oneStatusActionPerItem', () => {
   it('offers only Inactivate on an active item and only Reactivate on an inactive one', async () => {
     const { rowOf } = await openList();
-    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Inactivate', 'Edit']);
-    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Reactivate', 'Edit']);
+    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
+    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.reactivate, CATALOG_COPY.edit]);
   });
 
   it('sends one request for a double click, disables the button while it pends and enables it after', async () => {

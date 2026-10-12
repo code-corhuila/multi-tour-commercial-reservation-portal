@@ -1,3 +1,4 @@
+import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { readFileSync } from 'node:fs';
@@ -38,9 +39,9 @@ async function openPage(items?: readonly CatalogItem[]) {
   const ui = within(host);
   const button = (name: string) => ui.getByRole('button', { name }) as HTMLButtonElement;
   const queryButton = (name: string) => ui.queryByRole('button', { name });
-  const rows = () => Array.from<HTMLElement>(host.querySelectorAll('li'));
+  const rows = () => Array.from<HTMLElement>(host.querySelectorAll('tbody tr'));
   const rowOf = (name: string) => rows().find((row) => row.textContent?.includes(name)) as HTMLElement;
-  const editOf = (name: string) => within(rowOf(name)).getByRole('button', { name: 'Edit' }) as HTMLButtonElement;
+  const editOf = (name: string) => within(rowOf(name)).getByRole('button', { name: CATALOG_COPY.edit }) as HTMLButtonElement;
   const type = (label: string, value: string) => fireEvent.input(ui.getByLabelText(label), { target: { value } });
   const typed = (label: string) => (ui.getByLabelText(label) as HTMLInputElement).value;
   const fillAll = (name = 'Canyon walk') => {
@@ -62,7 +63,7 @@ const stored = (name: string): CatalogItem => ({ ...itemNamed(name), baseRateCen
 describe('listShowsTheNewValuesWithoutAReload', () => {
   it('shows a created item at the top of the list without asking the source again, and closes the form', async () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Gamma');
     await page.click(page.button('Save'));
     page.writer.calls[0].reply(stored('Gamma'));
@@ -104,7 +105,7 @@ describe('listShowsTheNewValuesWithoutAReload', () => {
 describe('registersItemFromTheTypedValues', () => {
   it('sends the exact cents of what was typed and lists the item with those values', async () => {
     const page = await openPage([itemNamed('Alpha')]);
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
     await page.click(page.button('Save'));
 
@@ -131,7 +132,7 @@ describe('newItemFromTheEmptyState', () => {
   it('offers New item on the empty state and leads to the data state after saving', async () => {
     const page = await openPage([]);
     expect(page.host.querySelector('[data-state="empty"]')).not.toBeNull();
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('First one');
     await page.click(page.button('Save'));
     page.writer.calls[0].reply(stored('First one'));
@@ -145,25 +146,25 @@ describe('newItemFromTheEmptyState', () => {
 
   it('offers New item in the data state but not while loading or after an error', async () => {
     const loading = await openPage();
-    expect(loading.queryButton('New item')).toBeNull();
+    expect(loading.queryButton(CATALOG_COPY.newItem)).toBeNull();
     TestBed.resetTestingModule();
 
     const failed = await openPage();
     failed.source.requests[0].fail();
     await failed.settle();
     expect(failed.host.querySelector('[data-state="error"]')).not.toBeNull();
-    expect(failed.queryButton('New item')).toBeNull();
+    expect(failed.queryButton(CATALOG_COPY.newItem)).toBeNull();
     TestBed.resetTestingModule();
 
     const data = await openPage([itemNamed('Alpha')]);
-    expect(data.queryButton('New item')).not.toBeNull();
+    expect(data.queryButton(CATALOG_COPY.newItem)).not.toBeNull();
   });
 });
 
 describe('oneFormAtATime', () => {
   it('keeps a single form when New item and Edit are used one after another, in the mode of the last one', async () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     expect(page.formsOpen()).toBe(1);
     expect(page.typed('Commercial name')).toBe('');
 
@@ -175,14 +176,14 @@ describe('oneFormAtATime', () => {
     expect(page.formsOpen()).toBe(1);
     expect(page.typed('Commercial name')).toBe('Beta');
 
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     expect(page.formsOpen()).toBe(1);
     expect(page.typed('Commercial name')).toBe('');
   });
 
   it('closes the form on Cancel without calling the writer, for a new item and for an edit', async () => {
     const page = await openPage([itemNamed('Alpha')]);
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     page.type('Commercial name', 'Never saved');
     await page.click(page.button('Cancel'));
     expect(page.formsOpen()).toBe(0);
@@ -201,7 +202,7 @@ describe('oneFormAtATime', () => {
 describe('aRefusedSaveKeepsTheFormAndTheList', () => {
   it('leaves the form open with what was typed, shows the reason and leaves the list as it was', async () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
     await page.click(page.button('Save'));
     page.writer.calls[0].fail(apiError({ userMessage: 'The change was refused.' }));
@@ -237,7 +238,7 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
   /** A page with a registration in flight: the form is filled, Save was pressed, the writer has not answered. */
   async function savingPage() {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
     await page.click(page.button('Save'));
     expect(page.writer.calls).toHaveLength(1);
@@ -246,14 +247,14 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
 
   it('disables New item and every Edit while a save is pending', async () => {
     const page = await savingPage();
-    expect(page.button('New item').disabled).toBe(true);
+    expect(page.button(CATALOG_COPY.newItem).disabled).toBe(true);
     expect(page.editOf('Alpha').disabled).toBe(true);
     expect(page.editOf('Beta').disabled).toBe(true);
   });
 
   it('lets the save in flight finish and list its item although another form was tried', async () => {
     const page = await savingPage();
-    await page.click(page.button('New item'));
+    await page.click(page.button(CATALOG_COPY.newItem));
     await page.click(page.editOf('Alpha'));
     expect(page.formsOpen()).toBe(1);
     expect(page.typed('Commercial name')).toBe('Canyon walk');
@@ -285,14 +286,14 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
     refused.writer.calls[0].fail(apiError());
     await refused.settle();
     expect(refused.formsOpen()).toBe(1);
-    expect(refused.button('New item').disabled).toBe(false);
+    expect(refused.button(CATALOG_COPY.newItem).disabled).toBe(false);
     expect(refused.editOf('Alpha').disabled).toBe(false);
     TestBed.resetTestingModule();
 
     const saved = await savingPage();
     saved.writer.calls[0].reply(stored('Canyon walk'));
     await saved.settle();
-    expect(saved.button('New item').disabled).toBe(false);
+    expect(saved.button(CATALOG_COPY.newItem).disabled).toBe(false);
     expect(saved.editOf('Alpha').disabled).toBe(false);
   });
 });
@@ -301,7 +302,7 @@ describe('aRowOffersItsStatusActionPlusEdit', () => {
   it('offers exactly one status action and Edit on each row', async () => {
     const page = await openPage([itemNamed('Alpha'), { ...itemNamed('Beta'), catalogStatus: 'INACTIVE' }]);
     const labels = (name: string) => Array.from(page.rowOf(name).querySelectorAll('button')).map((b) => b.textContent?.trim());
-    expect(labels('Alpha')).toEqual(['Inactivate', 'Edit']);
-    expect(labels('Beta')).toEqual(['Reactivate', 'Edit']);
+    expect(labels('Alpha')).toEqual([CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
+    expect(labels('Beta')).toEqual([CATALOG_COPY.reactivate, CATALOG_COPY.edit]);
   });
 });
