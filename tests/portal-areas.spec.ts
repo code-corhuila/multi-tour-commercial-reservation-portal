@@ -11,6 +11,7 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
+import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
 import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
 import { PortalAudience } from '../src/app/portal-audience';
@@ -67,6 +68,8 @@ describe('portalAreasRegistry', () => {
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
       { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
+      { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
+      { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
   });
@@ -186,7 +189,7 @@ describe('customerShellHeader', () => {
 
   it('shows the customer the public offer under Explorar and no operator page', async () => {
     const { host } = await openShell('READ_ONLY');
-    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar']);
+    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar', 'Alojamiento', 'Gastronomía']);
     expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
     expect(host.querySelector('app-catalog-page')).toBeNull();
     expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.tours)?.audience).toBe('customer');
