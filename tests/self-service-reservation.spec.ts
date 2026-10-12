@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
@@ -10,13 +11,17 @@ import {
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
   CustomerStanding,
+  RESERVATION_FLOW,
   ReservationSelection,
   SELF_SERVICE_TEXT as T,
+  selectionFromParams,
   selectionFromQuery,
   standingOf,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
+import { PORTAL_AREAS } from '../src/app/portal-areas';
+import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
   ControllableMyReservationsSource,
@@ -242,5 +247,95 @@ describe('anInternalOrUnknownRoleIsNotOfferedTheConfirmation', () => {
       expect(p.element.textContent).toContain(T.panelNotCustomer);
       TestBed.resetTestingModule();
     }
+  });
+});
+
+describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)', () => {
+  it('the confirmation shows the summary in pesos and the two conditions, with no payment terms', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Finalizar reserva de tour');
+    const summary = p.element.querySelector('.self-service-summary')!;
+    expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
+    const rows = Array.from(summary.querySelectorAll('dt'), (dt) => `${dt.textContent?.trim()} ${dt.nextElementSibling?.textContent?.trim()}`);
+    expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
+    const consents = Array.from(p.element.querySelectorAll('input[type="checkbox"]'), (box) => box.closest('label')?.textContent?.trim());
+    expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
+    for (const absent of ['Método y plazo de pago', 'Abono', 'Pago total', 'demo-dep-7', 'demo-svc-1', '2026-09-18']) expect(p.element.textContent).not.toContain(absent);
+  });
+  it('the confirmation without a selection says so in Spanish', async () => {
+    const p = await openConfirm({ selection: null });
+    expect(p.element.textContent).toContain('No hay una reserva en curso. Vuelve a Explorar para seleccionar un tour.');
+  });
+  it('Mis reservas draws the header, the history and one card per reservation, never a code', async () => {
+    const p = await openPanel(); p.source.requests[0].reply([reservationFor()]); await p.settle();
+    expect(p.element.querySelector('.crp-page-header-eyebrow')?.textContent?.trim()).toBe('Portal cliente');
+    expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Mis reservas');
+    expect(p.element.querySelector('h2')?.textContent?.trim()).toBe('Historial de reservas');
+    const card = p.element.querySelector('.self-service-card')!;
+    expect(card.querySelector('strong')?.textContent?.trim()).toBe('RES-1843 · Ruta Andina');
+    expect(card.textContent).toContain('Salida: 18 sep 2026 · 06:30 · 2 viajeros');
+    expect(card.querySelector('.crp-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
+    expect(card.textContent).toContain('Valor: $1.299.000');
+    for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-7', '1299000', 'Saldo', 'Medio de pago', 'Responder propuesta']) expect(p.element.textContent).not.toContain(raw);
+  });
+  it('the confirmation uses the client cards of finalizar-reserva, never the operator classes', async () => {
+    const c = await openConfirm(); await c.showMethods();
+    expect(c.element.querySelector('[class*="crp-operator"]')).toBeNull();
+    expect(c.element.querySelector('.self-service-checkout > form.self-service-box')).not.toBeNull();
+    expect(c.element.querySelector('.self-service-checkout > aside.self-service-box.self-service-summary')).not.toBeNull();
+    expect(c.element.querySelector('form button[type="submit"].crp-primary')).not.toBeNull();
+  });
+  it('Mis reservas uses the client classes in every state, never the operator ones', async () => {
+    const p = await openPanel(); p.source.requests[0].fail(); await p.settle();
+    expect(p.element.querySelector('[data-state="error"] button.crp-outline')).not.toBeNull();
+    p.fixture.componentInstance.reload(); await p.settle(); p.source.requests.at(-1)!.reply([reservationFor()]); await p.settle();
+    expect(p.element.querySelector('[class*="crp-operator"]')).toBeNull();
+  });
+  it('Mis reservas without reservations shows the empty text of the mockup', async () => {
+    const p = await openPanel(); p.source.requests[0].reply([]); await p.settle();
+    expect(p.element.textContent).toContain('Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.');
+  });
+});
+
+describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; PR #361)', () => {
+  it('Finalizar reserva is its own customer area and Mis reservas only lists', () => {
+    const finish = PORTAL_AREAS.filter((area) => area.component === ConfirmReservationPageComponent);
+    expect(finish).toHaveLength(1);
+    expect(finish[0]).toMatchObject({ key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', audience: 'customer', clientChrome: 'panel' });
+    expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.reservations)?.component).toBe(MyReservationsPageComponent);
+  });
+
+  it('the confirmation reads the selection Reservar tour opened it with, before the URL (DP-RS1)', async () => {
+    const methods = new ControllablePaymentMethods();
+    const navigation = new PortalNavigation();
+    navigation.register([RESERVATION_FLOW.finish]);
+    navigation.open(RESERVATION_FLOW.finish, { departure: 'dep-9', services: 'svc-3', people: '3' });
+    const quotes: ReservationSelection[] = [];
+    TestBed.configureTestingModule({ providers: [
+      { provide: CustomerContext, useValue: new CustomerAs('FINAL_CUSTOMER') },
+      { provide: PortalNavigation, useValue: navigation },
+      { provide: ReservationSelectionSource, useValue: selectionAt(null) },
+      { provide: PaymentMethodsSource, useValue: methods },
+      { provide: SelectionQuoteSource, useValue: { quote: (selection: ReservationSelection) => { quotes.push(selection); return quoteOf().quote(selection); } } },
+      { provide: ReservationRequester, useValue: new RecordingRequester() },
+      { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() },
+    ] });
+    const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
+    fixture.detectChanges(); await fixture.whenStable();
+    expect(quotes).toEqual([{ departureId: 'dep-9', serviceIds: ['svc-3'], people: 3 }]);
+    expect(selectionFromParams({})).toBeNull();
+  });
+
+  it('Mis reservas has no back link in the body: Volver al panel is in the compact header', async () => {
+    const p = await openPanel('FINAL_CUSTOMER', [CLIENT_AREA.panel, CLIENT_AREA.reservations]);
+    expect(p.element.textContent).not.toContain('Volver al panel');
+  });
+
+  it('Mis reservas sizes its header as mis-reservas.html: 48px title, small dark-green eyebrow', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
+    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-size:\s*3rem/);
+    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-weight:\s*800/);
+    expect(rule('.crp-root .self-service-panel .crp-page-header-eyebrow')).toMatch(/color:\s*#1f4d3d/);
   });
 });
