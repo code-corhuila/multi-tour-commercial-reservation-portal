@@ -79,12 +79,17 @@ describe('theOperatorAndTheCustomerShareOneDemoStore (audit S24)', () => {
     expect((await demo.mine()).map((r) => r.reservationId)).toContain(created.reservationId);
   });
 
-  it('Mis reservas lists only the reservations of the customer, never those of other customers', async () => {
+  it('Mis reservas lists only the reservations of the customer, under the codes the operator reads', async () => {
     const demo = demoAs(['FINAL_CUSTOMER']);
-    const others = (await demo.operator()).map((r) => r.id);
-    expect(others.length).toBeGreaterThan(0);
-    const mine = await demo.mine();
-    for (const id of others) expect(mine.map((r) => r.reservationId)).not.toContain(id);
+    const operator = await demo.operator();
+    const mine = (await demo.mine()).map((r) => r.reservationId);
+    // The seeded RES-1842 is the one of the demo final customer, Laura Gómez; RES-1841 is of another customer.
+    expect(operator.find((r) => r.id === 'RES-1842')?.leadCustomerName).toBe('Laura Gómez (demo)');
+    expect(mine).toEqual(['RES-1842']);
+    const created = await demo.request(TATACOA, 'key-1');
+    expect(operator.length + 1).toBe((await demo.operator()).length);
+    expect((await demo.operator()).find((r) => r.id === created.reservationId)?.leadCustomerName).toBe('Laura Gómez (demo)');
+    expect((await demo.mine()).map((r) => r.reservationId)).toEqual([created.reservationId, 'RES-1842']);
   });
 
   it('lists nothing for a session that is not a final customer', async () => {
