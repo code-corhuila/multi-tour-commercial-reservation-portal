@@ -13,8 +13,8 @@ const extra = (bloodType: string, physicalRestrictions: string) =>
 
 export class DemoCustomersStore extends CustomersSource {
   group: CustomerGroup | null = {
-    groupId: 'demo-group-0', serviceId: 'demo-svc-3', activityName: 'Canotaje en el Rio Suaza', highRisk: true,
-    lead: { personId: 'demo-person-a', fullName: 'Lucia Demo Ficticia', document: 'DEMO-0001', email: 'lucia.demo@example.test', contact: '300 000 0001',
+    groupId: 'demo-group-0', serviceId: 'demo-svc-3', activityName: 'Canotaje en el Río Suaza', highRisk: true,
+    lead: { personId: 'demo-person-a', fullName: 'Lucía Demo Ficticia', document: 'DEMO-0001', email: 'lucia.demo@example.test', contact: '300 000 0001',
       birthDate: '1991-04-12', acceptedTerms: true, highRisk: extra('O+', 'Ninguna') },
     companions: [{ personId: 'demo-person-b', fullName: 'Mateo Demo Ficticio', document: 'DEMO-0002', contact: '300 000 0002',
       birthDate: '2012-08-30', highRisk: extra('A-', 'Usa lentes') }],
