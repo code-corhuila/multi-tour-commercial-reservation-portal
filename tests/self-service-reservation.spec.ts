@@ -164,7 +164,7 @@ describe('confirmsTheSelectionAndCreatesAPendingPaymentReservation', () => {
     p.requester.calls[0].reply(reservationFor()); await p.settle();
     const created = p.element.querySelector('.self-service-created')!;
     for (const shown of [T.created, 'RES-1843', '$1.299.000', 'Pendiente de pago']) expect(created.textContent).toContain(shown);
-    expect(created.querySelector('.crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
+    expect(created.querySelector('.crp-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
     for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', '1299000.00']) expect(p.element.textContent).not.toContain(raw);
   });
   it('offers only the enabled payment methods', async () => {
@@ -288,9 +288,22 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const card = p.element.querySelector('.self-service-card')!;
     expect(card.querySelector('strong')?.textContent?.trim()).toBe('RES-1843 · Ruta Andina');
     expect(card.textContent).toContain('Salida: 18 sep 2026 · 06:30 · 2 viajeros');
-    expect(card.querySelector('.crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
+    expect(card.querySelector('.crp-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
     expect(card.textContent).toContain('Valor: $1.299.000');
     for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-7', '1299000', 'Saldo', 'Medio de pago', 'Responder propuesta']) expect(p.element.textContent).not.toContain(raw);
+  });
+  it('the confirmation uses the client cards of finalizar-reserva, never the operator classes', async () => {
+    const c = await openConfirm(); await c.showMethods();
+    expect(c.element.querySelector('[class*="crp-operator"]')).toBeNull();
+    expect(c.element.querySelector('.self-service-checkout > form.self-service-box')).not.toBeNull();
+    expect(c.element.querySelector('.self-service-checkout > aside.self-service-box.self-service-summary')).not.toBeNull();
+    expect(c.element.querySelector('form button[type="submit"].crp-primary')).not.toBeNull();
+  });
+  it('Mis reservas uses the client classes in every state, never the operator ones', async () => {
+    const p = await openPanel(); p.source.requests[0].fail(); await p.settle();
+    expect(p.element.querySelector('[data-state="error"] button.crp-outline')).not.toBeNull();
+    p.fixture.componentInstance.reload(); await p.settle(); p.source.requests.at(-1)!.reply([reservationFor()]); await p.settle();
+    expect(p.element.querySelector('[class*="crp-operator"]')).toBeNull();
   });
   it('Mis reservas without reservations shows the empty text of the mockup', async () => {
     const p = await openPanel(); p.source.requests[0].reply([]); await p.settle();
