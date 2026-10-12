@@ -207,8 +207,13 @@
   .crp-root .crp-discount-promo { align-items: flex-start; flex-direction: column; }
 }
 
-/* HU-COM-004: current discounts breakdown. */
+/* HU-COM-004: admin-aplicar-descuento.html and the values block of admin-crear-reserva.html. */
 .crp-root .current-discounts-services { list-style: none; padding: 0; display: grid; gap: 16px; }
+.crp-root .current-discounts-services h3 { margin: 0 0 8px; font-size: 1rem; }
+.crp-root .current-discounts-summary { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 18px; }
+.crp-root .current-discounts-summary div { display: grid; gap: 5px; }
+.crp-root .current-discounts-summary span { color: #718084; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
 .crp-root .current-discounts-lines { margin: 8px 0; padding-left: 20px; }
 .crp-root .current-discounts-lines li { margin: 4px 0; }
-.crp-root .current-discounts-final { font-size: 1.05rem; }
+.crp-root .current-discounts-wide { grid-column: 1 / -1; }
+.crp-root .current-discounts-note { color: var(--crp-soft); font-size: 0.86rem; }

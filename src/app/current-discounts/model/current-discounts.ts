@@ -15,12 +15,19 @@ export type DiscountLine = {
 };
 export type Breakdown = { readonly baseCents: number; readonly lines: readonly DiscountLine[]; readonly finalCents: number };
 
+/** Texts of admin-aplicar-descuento.html and of the values block of admin-crear-reserva.html (12-ux-ui/authorized-screens.md). */
 export const CURRENT_DISCOUNTS_TEXT = {
-  title: 'Current discounts', entry: 'Current discounts', date: 'Date consulted', loading: 'Loading', empty: 'No services to price',
-  failed: 'The request failed.', retry: 'Retry', base: 'Base value', final: 'Final value', subtotal: 'Subtotal', additional: 'Additional discount',
-  reason: 'Reason', authorizedBy: 'Authorized by', apply: 'Apply additional discount',
-  bases: { ORIGINAL_VALUE: 'on the original value', PREVIOUS_SUBTOTAL: 'on the previous subtotal' },
-};
+  eyebrow: 'Descuento adicional', title: 'Aplicar descuento', valuesStep: '01. Descuentos vigentes', valuesTitle: 'Valores por servicio',
+  authorizationStep: '02. Descuento adicional', authorizationTitle: 'Autorización', date: 'Fecha de consulta', validOn: 'Vigentes al',
+  loading: 'Cargando descuentos vigentes…', empty: 'No hay servicios para calcular en esta fecha.', failed: 'No fue posible cargar los valores.',
+  applyFailed: 'No fue posible aplicar el descuento.', retry: 'Reintentar', base: 'Valor proyectado', discounts: 'Descuentos aplicables',
+  final: 'Valor final', subtotal: 'Subtotal', additional: 'Descuento adicional', reason: 'Motivo', authorizedBy: 'Autorizado por',
+  apply: 'Aplicar descuento', service: 'Servicio', value: 'Valor del descuento', type: 'Tipo de valor', reasonField: 'Motivo (obligatorio)',
+  reasonHint: 'Describe el motivo del descuento adicional',
+  note: 'Solo el Administrador puede autorizar descuentos adicionales; el motivo y quien autoriza quedan registrados.',
+  types: [{ value: 'PERCENTAGE', label: 'Porcentaje' }, { value: 'FIXED_AMOUNT', label: 'Valor fijo' }],
+  bases: { ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior' },
+} as const;
 
 /** RBAC matrix, "Authorize an additional discount": only the Tenant Administrator. */
 export function canAuthorizeAdditionalDiscount(actor: { role: string }): boolean { return actor.role === 'TENANT_ADMINISTRATOR'; }
@@ -59,8 +66,8 @@ export const EMPTY_ADDITIONAL: AdditionalDraft = { value: '', reason: '', type: 
 export function validateAdditional(draft: AdditionalDraft): AdditionalMessages {
   const errors: AdditionalMessages = {};
   const value = draft.type === 'PERCENTAGE' ? parsePercentage(draft.value) : parseMoney(draft.value);
-  if (value.kind === 'invalid' || value.minorUnits < 1) errors.value = 'A positive value with at most two decimals is required; percentages cannot exceed 100.';
-  if (!draft.reason.trim()) errors.reason = 'Reason required.';
+  if (value.kind === 'invalid' || value.minorUnits < 1) errors.value = 'Ingresa un valor positivo con máximo dos decimales; el porcentaje no puede superar 100.';
+  if (!draft.reason.trim()) errors.reason = 'El motivo es obligatorio.';
   return errors;
 }
 
