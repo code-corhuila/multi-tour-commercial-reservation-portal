@@ -33,6 +33,13 @@ export const PUBLIC_OFFER_COPY = {
   agreementEyebrow: 'Información del convenio',
   agreementTitle: 'Coordina directamente con el establecimiento',
   contact: 'Contacto:',
+  seeContact: 'Ver contacto',
+  filters: [['all', 'Todos'], ['restaurants', 'Restaurantes'], ['dishes', 'Platos del día']],
+  noDishes: 'No hay opciones de alimentación disponibles en este momento.',
+  venueTitle: 'Contacto',
+  venueCoordinate: 'Coordina directamente con el establecimiento.',
+  venueNoBooking: { HOTEL: 'La plataforma no crea reservas de habitación ni gestiona tarifas, disponibilidad o inventario.', RESTAURANT: 'La plataforma no crea reservas de mesa ni gestiona tarifas, disponibilidad o inventario.' },
+  venueNoInfo: 'Sin información adicional registrada.',
   loadingTours: 'Cargando tours…',
   loadingEstablishments: 'Cargando establecimientos…',
   empty: 'Sin resultados para esta consulta.',
@@ -41,12 +48,16 @@ export const PUBLIC_OFFER_COPY = {
   types: { HOTEL: 'Establecimiento asociado', RESTAURANT: 'Restaurante asociado' },
   pages: {
     HOTEL: {
-      eyebrow: 'Establecimientos asociados', title: 'Alojamiento', search: '',
+      eyebrow: 'Establecimientos asociados', title: 'Alojamiento', search: '', searchHint: '', back: 'Volver a alojamiento',
       description: 'Consulta datos de contacto de establecimientos asociados al operador.',
       agreement: 'Multitour no genera reservas de habitación, no administra tarifas, disponibilidad ni inventario. La coordinación se realiza directamente con cada establecimiento.',
     },
     RESTAURANT: {
-      eyebrow: 'Sabores locales', title: 'Gastronomía', search: 'Buscar restaurantes por nombre',
+      eyebrow: 'Sabores locales', title: 'Gastronomía', search: 'Buscar restaurantes o platos', searchHint: 'Buscar restaurantes o platos...',
+      back: 'Volver a gastronomía', description: 'Restaurantes y platos del día cerca de tus destinos.', agreement: '',
+    },
+    RESTAURANTS: {
+      eyebrow: 'Establecimientos asociados', title: 'Restaurantes', search: '', searchHint: '', back: 'Volver a restaurantes',
       description: 'Datos de contacto para coordinar directamente tu visita.',
       agreement: 'Multitour no genera reservas de mesa, no administra tarifas, disponibilidad ni inventario de alimentación.',
     },
