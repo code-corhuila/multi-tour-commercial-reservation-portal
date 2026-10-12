@@ -52,7 +52,7 @@ describe('registersAnEstablishmentAndItAppearsAsPublished', () => {
     const { click, element, writer } = await openPage();
     await click(ESTABLISHMENTS_COPY.newEstablishment); await click(ESTABLISHMENTS_COPY.newEstablishment);
     expect(element.querySelectorAll('form').length).toBe(1);
-    await click('Cancel'); expect(element.querySelector('form')).toBeNull();
+    await click('Cancelar'); expect(element.querySelector('form')).toBeNull();
     expect(writer.registrations).toEqual([]);
     await click(ESTABLISHMENTS_COPY.newEstablishment); expect(element.querySelectorAll('form').length).toBe(1);
   });

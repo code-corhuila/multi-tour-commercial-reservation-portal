@@ -45,10 +45,10 @@ async function openPage(items?: readonly CatalogItem[]) {
   const type = (label: string, value: string) => fireEvent.input(ui.getByLabelText(label), { target: { value } });
   const typed = (label: string) => (ui.getByLabelText(label) as HTMLInputElement).value;
   const fillAll = (name = 'Canyon walk') => {
-    type('Commercial name', name);
-    type('Base rate', '12.50');
-    type('Base operational cost', '7');
-    type('Configured capacity', '18');
+    type('Nombre comercial', name);
+    type('Tarifa base', '12.50');
+    type('Costo operativo base', '7');
+    type('Capacidad configurada', '18');
   };
   const click = async (element: HTMLElement) => {
     fireEvent.click(element);
@@ -65,7 +65,7 @@ describe('listShowsTheNewValuesWithoutAReload', () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Gamma');
-    await page.click(page.button('Save'));
+    await page.click(page.button('Guardar servicio'));
     page.writer.calls[0].reply(stored('Gamma'));
     await page.settle();
 
@@ -81,11 +81,11 @@ describe('listShowsTheNewValuesWithoutAReload', () => {
   it('shows the new values of an edited item in its own place without asking the source again', async () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.editOf('Alpha'));
-    expect(page.typed('Commercial name')).toBe('Alpha');
-    page.type('Commercial name', 'Alpha renamed');
-    page.type('Base rate', '20');
-    page.type('Configured capacity', '18'); // a tour needs it, and Alpha had none
-    await page.click(page.button('Save'));
+    expect(page.typed('Nombre comercial')).toBe('Alpha');
+    page.type('Nombre comercial', 'Alpha renamed');
+    page.type('Tarifa base', '20');
+    page.type('Capacidad configurada', '18'); // a tour needs it, and Alpha had none
+    await page.click(page.button('Guardar servicio'));
     expect(page.writer.calls[0]).toMatchObject({
       kind: 'update',
       serviceId: itemNamed('Alpha').serviceId,
@@ -107,7 +107,7 @@ describe('registersItemFromTheTypedValues', () => {
     const page = await openPage([itemNamed('Alpha')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
-    await page.click(page.button('Save'));
+    await page.click(page.button('Guardar servicio'));
 
     expect(page.writer.calls).toHaveLength(1);
     expect(page.writer.calls[0]).toMatchObject({
@@ -134,7 +134,7 @@ describe('newItemFromTheEmptyState', () => {
     expect(page.host.querySelector('[data-state="empty"]')).not.toBeNull();
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('First one');
-    await page.click(page.button('Save'));
+    await page.click(page.button('Guardar servicio'));
     page.writer.calls[0].reply(stored('First one'));
     await page.settle();
 
@@ -166,31 +166,31 @@ describe('oneFormAtATime', () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Commercial name')).toBe('');
+    expect(page.typed('Nombre comercial')).toBe('');
 
     await page.click(page.editOf('Alpha'));
     expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Commercial name')).toBe('Alpha');
+    expect(page.typed('Nombre comercial')).toBe('Alpha');
 
     await page.click(page.editOf('Beta'));
     expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Commercial name')).toBe('Beta');
+    expect(page.typed('Nombre comercial')).toBe('Beta');
 
     await page.click(page.button(CATALOG_COPY.newItem));
     expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Commercial name')).toBe('');
+    expect(page.typed('Nombre comercial')).toBe('');
   });
 
   it('closes the form on Cancel without calling the writer, for a new item and for an edit', async () => {
     const page = await openPage([itemNamed('Alpha')]);
     await page.click(page.button(CATALOG_COPY.newItem));
-    page.type('Commercial name', 'Never saved');
-    await page.click(page.button('Cancel'));
+    page.type('Nombre comercial', 'Never saved');
+    await page.click(page.button('Cancelar'));
     expect(page.formsOpen()).toBe(0);
 
     await page.click(page.editOf('Alpha'));
-    page.type('Commercial name', 'Never saved either');
-    await page.click(page.button('Cancel'));
+    page.type('Nombre comercial', 'Never saved either');
+    await page.click(page.button('Cancelar'));
     expect(page.formsOpen()).toBe(0);
 
     expect(page.writer.calls).toHaveLength(0);
@@ -204,15 +204,15 @@ describe('aRefusedSaveKeepsTheFormAndTheList', () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
-    await page.click(page.button('Save'));
+    await page.click(page.button('Guardar servicio'));
     page.writer.calls[0].fail(apiError({ userMessage: 'The change was refused.' }));
     await page.settle();
 
     expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Commercial name')).toBe('Canyon walk');
-    expect(page.typed('Base rate')).toBe('12.50');
-    expect(page.typed('Base operational cost')).toBe('7');
-    expect(page.typed('Configured capacity')).toBe('18');
+    expect(page.typed('Nombre comercial')).toBe('Canyon walk');
+    expect(page.typed('Tarifa base')).toBe('12.50');
+    expect(page.typed('Costo operativo base')).toBe('7');
+    expect(page.typed('Capacidad configurada')).toBe('18');
     expect(page.host.textContent).toContain('The change was refused.');
     expect(page.rows().map((row) => row.textContent)).toEqual([expect.stringContaining('Alpha'), expect.stringContaining('Beta')]);
     expect(page.source.requests).toHaveLength(1);
@@ -240,7 +240,7 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
-    await page.click(page.button('Save'));
+    await page.click(page.button('Guardar servicio'));
     expect(page.writer.calls).toHaveLength(1);
     return page;
   }
@@ -257,7 +257,7 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
     await page.click(page.button(CATALOG_COPY.newItem));
     await page.click(page.editOf('Alpha'));
     expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Commercial name')).toBe('Canyon walk');
+    expect(page.typed('Nombre comercial')).toBe('Canyon walk');
 
     page.writer.calls[0].reply(stored('Canyon walk'));
     await page.settle();
