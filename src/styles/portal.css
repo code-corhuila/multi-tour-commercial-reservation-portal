@@ -130,6 +130,10 @@
 .crp-root form > div, .crp-root form > p { margin: 0; }
 .crp-root form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
 .crp-root .crp-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+/* Screen 11 forms: numbered panels with a two-column grid. */
+.crp-root .crp-form-panel { grid-column: 1 / -1; margin: 0; padding: 20px; border: 1px solid #dce8e1; border-radius: var(--crp-radius-card); background: var(--crp-surface); }
+.crp-root .crp-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.crp-root .crp-form-grid small { display: block; margin-top: 4px; color: var(--crp-soft); font-size: 0.78rem; }
 .crp-root label { display: block; margin: 12px 0 4px; font-size: 0.86rem; font-weight: 700; }
 .crp-root form label { margin-top: 0; }
 .crp-root input:not([type="checkbox"]), .crp-root select, .crp-root textarea {
@@ -176,6 +180,7 @@
   .crp-root .crp-operator-panel { padding: 20px; }
   .crp-root .crp-page-header { align-items: flex-start; flex-direction: column; }
   .crp-root .crp-page-header-action { width: 100%; }
+  .crp-root .crp-form-grid { grid-template-columns: 1fr; }
   .crp-root .crp-nav { flex-wrap: wrap; }
   .crp-root .crp-operator-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .crp-root .crp-filters > div { flex-basis: 100%; }

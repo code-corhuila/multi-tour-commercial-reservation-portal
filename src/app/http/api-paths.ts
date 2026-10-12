@@ -17,7 +17,7 @@ type Init = Parameters<PortalApiClient['request']>[1];
 export function toPageError(error: unknown): ApiError {
   const e = error as Partial<ApiError> | null;
   if (typeof e?.message !== 'string' || typeof e.code !== 'string') {
-    return { status: 0, code: 'UNKNOWN', message: 'The request failed.', details: [], traceId: '', userMessage: 'The request failed.' };
+    return { status: 0, code: 'UNKNOWN', message: 'The request failed.', details: [], traceId: '', userMessage: 'La solicitud falló.' };
   }
   return { status: e.status ?? 0, code: e.code, message: e.message, details: Array.isArray(e.details) ? e.details : [], traceId: e.traceId ?? '', userMessage: e.message };
 }
