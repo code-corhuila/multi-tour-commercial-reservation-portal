@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
 import { ActorContext } from '../../catalog/data/catalog-api.service';
 import { capabilitiesOf } from '../../catalog/model/catalog-item';
 import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
+import { ESTABLISHMENTS_COPY } from '../establishments-copy';
 import { AssociatedEstablishmentsWriter } from '../data/associated-establishments-writer';
 import { PageState } from '../../catalog/pages/catalog-page.component';
 import { AssociatedEstablishmentsSource, canReadEstablishments } from '../data/associated-establishments-source';
@@ -23,61 +24,92 @@ export type EstablishmentsPageState = Exclude<PageState, { kind: 'data' }>
   imports: [EstablishmentFormComponent],
   template: `
     @if (!canRead) {
-      <p role="alert" data-state="denied">You do not have access to associated establishments.</p>
+      <p role="alert" data-state="denied">{{ copy.denied }}</p>
     } @else {
-      <h1>Associated establishments</h1>
+      <header class="crp-page-header">
+      <div class="crp-page-header-main">
+        <p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title[establishmentType() ?? 'all'] }}</h1>
+        <p class="crp-page-header-desc">{{ copy.description }}</p>
+      </div>
       @if (canWrite) {
-        <button type="button" [disabled]="saving()" (click)="openForm()">New establishment</button>
+        <button class="crp-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm()">{{ copy.newEstablishment }}</button>
       }
+      </header>
+      <p class="crp-access-note">{{ copy.accessNote }}</p>
+      <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
+      <div class="crp-operator-panel-head"><h2>{{ copy.panelTitle }}</h2></div>
       @if (formOpen()) {
+        <div class="crp-form-section"><h2>{{ copy.newEstablishment }}</h2>
         @for (key of [formKey()]; track key) {
           <app-establishment-form (saved)="onSaved($event)" (cancelled)="formOpen.set(false)" (saving)="saving.set($event)" />
         }
+        </div>
       }
+      <div class="crp-filters">
+      <div>
       <label for="establishment-type">Establishment type</label>
       <select id="establishment-type" aria-label="Establishment type" [disabled]="saving()"
         [value]="filters().establishmentType ?? ''" (change)="chooseType($event)">
-        @for (type of types; track type) { <option [value]="type">{{ type }}</option> }
+        @for (type of types; track type) { <option [value]="type" [selected]="filters().establishmentType === type">{{ copy.types[type] }}</option> }
       </select>
+      </div>
+      <div>
       <label for="association-status">Association status</label>
       <select id="association-status" aria-label="Association status" [disabled]="saving()"
         [value]="filters().associationStatus ?? ''" (change)="chooseStatus($event)">
         <option value="">All statuses</option>
         @for (status of statuses; track status) { <option [value]="status">{{ status }}</option> }
       </select>
+      </div>
       @if (filters().establishmentType || filters().associationStatus) {
-        <button type="button" [disabled]="saving()" (click)="clearFilters()">Clear filters</button>
+        <button class="crp-outline" type="button" [disabled]="saving()" (click)="clearFilters()">Clear filters</button>
       }
+      </div>
       @let current = state();
       @switch (current.kind) {
-        @case ('loading') { <p role="status" data-state="loading">Loading</p> }
+        @case ('loading') { <p role="status" data-state="loading">{{ copy.loading }}</p> }
         @case ('error') {
           <div role="alert" data-state="error">
-            <p>The request failed.</p>
-            <button type="button" [disabled]="saving()" (click)="current.retry()">Retry</button>
+            <p>{{ copy.requestFailed }}</p>
+            <button class="crp-outline" type="button" [disabled]="saving()" (click)="current.retry()">{{ copy.retry }}</button>
           </div>
         }
-        @case ('empty') { <p role="status" data-state="empty">No results</p> }
+        @case ('empty') { <p role="status" data-state="empty">{{ copy.empty }}</p> }
         @case ('data') {
-          <ul data-state="data">
+          <div class="crp-table-wrap">
+          <table class="crp-table" data-state="data" [attr.aria-label]="copy.panelTitle">
+            <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.type }}</th><th scope="col">{{ copy.columns.info }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+            <tbody>
             @for (item of current.items; track item.associationId) {
-              <li>{{ item.commercialName }} · {{ item.establishmentType }} · {{ item.associationStatus }}
-                <p>{{ item.commercialInformation }}</p>
+              <tr>
+                <td><strong>{{ item.commercialName }}</strong></td>
+                <td>{{ copy.types[item.establishmentType] }}</td>
+                <td>{{ item.commercialInformation }}</td>
+                <td><span class="crp-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ item.associationStatus }}</span></td>
+                <td class="crp-row-actions">
                 @if (canWrite) {
-                  <button type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="changeStatus(item)">
-                    {{ item.associationStatus === 'ACTIVE' ? 'Inactivate' : 'Reactivate' }}
+                  <button class="crp-row-toggle" type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="changeStatus(item)">
+                    {{ item.associationStatus === 'ACTIVE' ? copy.inactivate : copy.reactivate }}
                   </button>
                 }
                 @if (rowErrors()[item.associationId]; as reason) { <p role="alert">{{ reason }}</p> }
-              </li>
+                </td>
+              </tr>
             }
-          </ul>
+            </tbody>
+          </table>
+          </div>
         }
       }
+      </section>
     }
   `,
 })
-export class EstablishmentsPageComponent {
+export class EstablishmentsPageComponent implements OnInit {
+  protected readonly copy = ESTABLISHMENTS_COPY;
+  /** Which kind the hub asked for; it is the first filter, and the person may still change it. */
+  readonly establishmentType = input<EstablishmentType | undefined>(undefined);
   private readonly source = inject(AssociatedEstablishmentsSource);
   // Without the container's writer this slice stays readable; no local adapter is substituted.
   private readonly writer = inject(AssociatedEstablishmentsWriter, { optional: true });
@@ -117,7 +149,11 @@ export class EstablishmentsPageComponent {
     ),
   )));
 
-  constructor() { this.reload(); }
+  ngOnInit(): void {
+    const wanted = this.establishmentType();
+    if (wanted !== undefined) { this.filters.set({ establishmentType: wanted }); }
+    this.reload();
+  }
 
   reload(): void {
     if (this.canRead && !this.saving()) { this.local.set(null); this.requests.next(this.filters()); }

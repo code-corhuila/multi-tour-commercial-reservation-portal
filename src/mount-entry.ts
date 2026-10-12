@@ -5,6 +5,7 @@ import { ActorRole } from './app/catalog/model/catalog-item';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from './app/demo/demo-sources';
 import { AssociatedEstablishmentsSource } from './app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from './app/establishments/data/associated-establishments-writer';
+import { PORTAL_IDENTIFIER } from './app/hub/catalogs-hub.component';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps } from './app/shell-contract';
 
@@ -43,6 +44,7 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
     providers: [
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
+      { provide: PORTAL_IDENTIFIER, useValue: props.identifier },
       { provide: CatalogItemsSource, useValue: catalog },
       { provide: CatalogItemsWriter, useValue: new DemoCatalogWriter(catalog) },
       { provide: AssociatedEstablishmentsSource, useValue: establishments },

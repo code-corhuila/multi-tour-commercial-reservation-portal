@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
-import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
+import { CATALOG_COPY, formatCop } from '../catalog-copy';
+import { CatalogItem, CatalogServiceType, capabilitiesOf } from '../model/catalog-item';
 
 /**
  * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
@@ -32,12 +33,27 @@ function reasonOf(error: unknown): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CatalogItemFormComponent],
   template: `
-    @let current = state();
+    @let current = view();
     @if (caps.isDenied) {
-      <p role="alert" data-state="denied">You do not have access to the catalog.</p>
+      <p role="alert" data-state="denied">{{ copy.denied }}</p>
     } @else {
+    <header class="crp-page-header">
+      <div class="crp-page-header-main">
+        <p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title[serviceType() ?? 'all'] }}</h1>
+        <p class="crp-page-header-desc">{{ copy.description }}</p>
+      </div>
+      @if (caps.canRegister && current.kind !== 'loading' && current.kind !== 'error') {
+        <button class="crp-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
+      }
+    </header>
+    <p class="crp-access-note">{{ copy.accessNote }}</p>
+    <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
+    <div class="crp-operator-panel-head"><h2>{{ copy.panelTitle }}</h2></div>
     <!-- Outside the states: a reload must not take away a form whose save is in flight. -->
     @if (formTarget(); as target) {
+      <div class="crp-form-section">
+      <h2>{{ target.item ? copy.editItem : copy.newItem }}</h2>
       <!-- Keyed, so another item or a new one starts a fresh form instead of reusing the old state. -->
       @for (key of [formKey()]; track key) {
         <app-catalog-item-form
@@ -48,49 +64,61 @@ function reasonOf(error: unknown): string {
           (saving)="saving.set($event)"
         />
       }
+      </div>
     }
     @if (current.kind === 'loading') {
-      <p role="status" data-state="loading">Loading</p>
+      <p role="status" data-state="loading">{{ copy.loading }}</p>
     } @else if (current.kind === 'error') {
       <div role="alert" data-state="error">
-        <p>The request failed.</p>
-        <button type="button" (click)="current.retry()">Retry</button>
+        <p>{{ copy.requestFailed }}</p>
+        <button class="crp-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button>
       </div>
-    } @else {
-      @if (caps.canRegister) {
-        <button type="button" [disabled]="saving()" (click)="openForm(undefined)">New item</button>
-      }
     }
     @if (current.kind === 'empty') {
-      <p role="status" data-state="empty">No results</p>
+      <p role="status" data-state="empty">{{ copy.empty }}</p>
     } @else if (current.kind === 'data') {
-      <ul data-state="data">
+      <div class="crp-table-wrap">
+      <table class="crp-table" data-state="data" [attr.aria-label]="copy.panelTitle">
+        <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.type }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+        <tbody>
         @for (item of current.items; track item.serviceId) {
-          <li>
-            {{ item.commercialName }} · {{ item.catalogStatus }}
+          <tr>
+            <td><strong>{{ item.commercialName }}</strong></td>
+            <td>{{ copy.types[item.serviceType] }}</td>
+            <td>{{ cop(item.baseRateCents) }}</td>
+            <td><span class="crp-status" [class.crp-is-confirmed]="item.catalogStatus === 'ACTIVE'" [class.crp-is-pending]="item.catalogStatus === 'INACTIVE'">{{ item.catalogStatus }}</span></td>
+            <td class="crp-row-actions">
             @if (caps.canChangeStatus) {
-              <button type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
+              <button class="crp-row-toggle" type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
                 @if (item.catalogStatus === 'ACTIVE') {
-                  Inactivate
+                  {{ copy.inactivate }}
                 } @else {
-                  Reactivate
+                  {{ copy.reactivate }}
                 }
               </button>
             }
             @if (canEdit) {
-              <button type="button" [disabled]="saving()" (click)="openForm(item)">Edit</button>
+              <button class="crp-row-manage" type="button" [disabled]="saving()" (click)="openForm(item)">{{ copy.edit }}</button>
             }
             @if (rowErrors()[item.serviceId]; as reason) {
               <p role="alert">{{ reason }}</p>
             }
-          </li>
+            </td>
+          </tr>
         }
-      </ul>
+        </tbody>
+      </table>
+      </div>
     }
+    </section>
     }
   `,
 })
 export class CatalogPageComponent {
+  protected readonly copy = CATALOG_COPY;
+  protected readonly cop = formatCop;
+  /** Which kind of service the hub asked for; without it the page lists every kind. */
+  readonly serviceType = input<CatalogServiceType | undefined>(undefined);
   private readonly source = inject(CatalogItemsSource);
   private readonly writer = inject(CatalogItemsWriter);
   private readonly destroyRef = inject(DestroyRef);
@@ -106,6 +134,16 @@ export class CatalogPageComponent {
   protected readonly canEdit = this.caps.canEditCommercialFields || this.caps.canEditDescription;
 
   readonly state = signal<PageState>({ kind: 'loading' });
+  /** The state as shown: the requested kind only, and empty when none of that kind is left. */
+  protected readonly view = computed<PageState>(() => {
+    const current = this.state();
+    const wanted = this.serviceType();
+    if (current.kind !== 'data' || wanted === undefined) {
+      return current;
+    }
+    const items = current.items.filter((item) => item.serviceType === wanted);
+    return items.length === 0 ? { kind: 'empty' } : { kind: 'data', items };
+  });
   /** Per row, apart from the four states of the page: one item pending never blanks the others. */
   private readonly pendingIds = signal<Readonly<Record<string, true>>>({});
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});

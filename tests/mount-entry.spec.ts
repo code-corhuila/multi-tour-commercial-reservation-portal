@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
 import type { MountProps } from '../src/app/shell-contract';
+import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
+import { ESTABLISHMENTS_COPY } from '../src/app/establishments/establishments-copy';
+import { HUB_COPY } from '../src/app/hub/hub-copy';
 
 const request = vi.fn();
 const propsFor = (roles: string[]): MountProps => ({
@@ -16,9 +19,11 @@ const mountAs = (roles: string[]) => {
   cleanup = entry.mount(host, propsFor(roles));
 };
 const text = () => host.textContent ?? '';
-const goToEstablishments = async () => {
-  await vi.waitFor(() => expect(host.querySelector('[data-state="data"]')).toBeTruthy());
-  Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Establishments'))!.click();
+const press = (label: string, index = 0) =>
+  Array.from(host.querySelectorAll('button')).filter((b) => b.textContent?.trim() === label)[index]!.click();
+const openFromHub = async (label: string, index = 0) => {
+  await vi.waitFor(() => expect(host.querySelector('.crp-catalog-grid')).toBeTruthy());
+  press(label, index);
 };
 
 afterEach(() => {
@@ -39,20 +44,23 @@ describe('mountEntryContract', () => {
 
   it('shows the demo catalog and establishments with their actions to the administrator', async () => {
     mountAs(['TENANT_ADMINISTRATOR']);
-    await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] li').length).toBeGreaterThan(3));
-    expect(text()).toContain('New item');
-    expect(text()).toMatch(/Inactivate|Reactivate/);
-    await goToEstablishments();
-    await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Associated establishments'));
-    await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] li').length).toBeGreaterThan(3));
-    expect(text()).toContain('New establishment');
+    await openFromHub(HUB_COPY.cards.tours.action);
+    await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(1));
+    expect(text()).toContain(CATALOG_COPY.newItem);
+    expect(text()).toMatch(new RegExp(`${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}`));
+    press(HUB_COPY.back);
+    await openFromHub(HUB_COPY.cards.lodging.action, 0);
+    await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(ESTABLISHMENTS_COPY.title.HOTEL));
+    await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(1));
+    expect(text()).toContain(ESTABLISHMENTS_COPY.newEstablishment);
   });
 
   it('fails closed to READ_ONLY for an unknown or empty role: data but no actions', async () => {
     for (const roles of [['SOMETHING_ELSE'], []]) {
       mountAs(roles);
-      await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] li').length).toBeGreaterThan(0));
-      expect(text()).not.toMatch(/New item|Inactivate|Reactivate|Edit/);
+      await openFromHub(HUB_COPY.cards.tours.action);
+      await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(0));
+      expect(text()).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
       cleanup!();
       host.remove();
     }

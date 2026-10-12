@@ -1,3 +1,4 @@
+import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
@@ -43,17 +44,17 @@ async function openAs(actor?: ActorContext, items = [itemNamed('Alpha'), itemNam
   return { source, writer, host, ui, settle, buttonNames, click };
 }
 
-const CHANGING_ACTIONS = ['New item', 'Edit', 'Inactivate', 'Reactivate', 'Save'];
+const CHANGING_ACTIONS = [CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.reactivate, 'Save'];
 
 describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
   it('offers only Edit on a row, with no New item and no status action', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    expect(page.buttonNames()).toEqual(['Edit', 'Edit']);
+    expect(page.buttonNames()).toEqual([CATALOG_COPY.edit, CATALOG_COPY.edit]);
   });
 
   it('shows the name and none of the rate, cost, capacity, type, transport or risk controls', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    await page.click(within(page.host.querySelector('li') as HTMLElement).getByRole('button', { name: 'Edit' }));
+    await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
     expect((page.ui.getByLabelText('Commercial name') as HTMLInputElement).value).toBe('Alpha');
     for (const label of ['Base rate', 'Base operational cost', 'Configured capacity', 'Service type', 'Transport required', 'High risk']) {
       expect(page.ui.queryByLabelText(label), label).toBeNull();
@@ -62,7 +63,7 @@ describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
 
   it('sends a command with the commercial name and nothing else', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    await page.click(within(page.host.querySelector('li') as HTMLElement).getByRole('button', { name: 'Edit' }));
+    await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
     fireEvent.input(page.ui.getByLabelText('Commercial name'), { target: { value: 'Alpha renamed' } });
     await page.click(page.ui.getByRole('button', { name: 'Save' }));
 
@@ -73,12 +74,12 @@ describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
 
     page.writer.calls[0].reply({ ...itemNamed('Alpha'), commercialName: 'Alpha renamed' });
     await page.settle();
-    expect(page.host.querySelector('li')?.textContent).toContain('Alpha renamed');
+    expect(page.host.querySelector('tbody tr')?.textContent).toContain('Alpha renamed');
   });
 
   it('still requires the commercial name and sends nothing without it', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    await page.click(within(page.host.querySelector('li') as HTMLElement).getByRole('button', { name: 'Edit' }));
+    await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
     fireEvent.input(page.ui.getByLabelText('Commercial name'), { target: { value: '  ' } });
     await page.click(page.ui.getByRole('button', { name: 'Save' }));
     expect(page.writer.calls).toHaveLength(0);
@@ -89,7 +90,7 @@ describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
 describe('collaboratorOfANonEnablingTenantSeesNoSaveAction', () => {
   it('reads the list and offers no New item, Edit, Inactivate, Reactivate or Save', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', false), [itemNamed('Alpha'), { ...itemNamed('Beta'), catalogStatus: 'INACTIVE' }]);
-    expect(page.host.querySelectorAll('li')).toHaveLength(2);
+    expect(page.host.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(page.buttonNames()).toEqual([]);
     for (const name of CHANGING_ACTIONS) {
       expect(page.ui.queryByRole('button', { name }), name).toBeNull();
@@ -111,7 +112,7 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
   it.each<ActorRole>(['MANAGER', 'ANALYST'])('lets the %s read the list with no action that changes it', async (role) => {
     const page = await openAs(actorAs(role));
     expect(page.source.requests).toHaveLength(1);
-    expect(page.host.querySelectorAll('li')).toHaveLength(2);
+    expect(page.host.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(page.buttonNames()).toEqual([]);
   });
 
@@ -119,7 +120,7 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
     const page = await openAs(actorAs('ACCOUNTANT'));
     expect(page.source.requests).toHaveLength(0);
     expect(page.ui.getByRole('alert').textContent?.trim()).not.toBe('');
-    expect(page.host.querySelector('li')).toBeNull();
+    expect(page.host.querySelector('tbody tr')).toBeNull();
     expect(page.buttonNames()).toEqual([]);
   });
 });
@@ -127,12 +128,12 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
 describe('theAdministratorSeesEveryAction', () => {
   it('offers every action when the Administrator is provided explicitly', async () => {
     const page = await openAs(actorAs('TENANT_ADMINISTRATOR'));
-    expect(page.buttonNames()).toEqual(['New item', 'Inactivate', 'Edit', 'Inactivate', 'Edit']);
+    expect(page.buttonNames()).toEqual([CATALOG_COPY.newItem, CATALOG_COPY.inactivate, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
   });
 
   it('opens the full form with every control', async () => {
     const page = await openAs(actorAs('TENANT_ADMINISTRATOR'));
-    await page.click(page.ui.getByRole('button', { name: 'New item' }));
+    await page.click(page.ui.getByRole('button', { name: CATALOG_COPY.newItem }));
     for (const label of ['Commercial name', 'Base rate', 'Base operational cost', 'Configured capacity', 'Service type', 'Transport required', 'High risk']) {
       expect(page.ui.queryByLabelText(label), label).not.toBeNull();
     }
@@ -166,9 +167,9 @@ describe('theDefaultActorFailsClosed', () => {
     expect(fallback.role).toBe('READ_ONLY');
     expect(fallback.collaboratorMayEditDescription).toBe(false);
     expect(page.source.requests).toHaveLength(1);
-    expect(page.host.querySelectorAll('li')).toHaveLength(2);
+    expect(page.host.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(page.buttonNames()).toEqual([]);
-    for (const name of ['New item', 'Edit', 'Inactivate', 'Reactivate']) {
+    for (const name of [CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.reactivate]) {
       expect(page.ui.queryByRole('button', { name }), name).toBeNull();
     }
   });
