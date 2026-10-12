@@ -1,0 +1,153 @@
+/* Visual identity of the Multi Tour landing (tokens from landing/main.css), scoped to the portal root.
+   No global selectors and no font CDN: the shell CSP is default-src 'self'. */
+.crp-root {
+  --crp-bg: #f5f7f7;
+  --crp-surface: #ffffff;
+  --crp-muted: #eef2f1;
+  --crp-line: #d7e0de;
+  --crp-line-strong: #c3d0cc;
+  --crp-text: #17252b;
+  --crp-soft: #5a6b70;
+  --crp-accent: #2f6b57;
+  --crp-accent-strong: #1f4d3d;
+  --crp-accent-soft: rgba(47, 107, 87, 0.1);
+  --crp-cta: #e9a23b;
+  --crp-cta-strong: #c07f22;
+  --crp-error: #b34a4a;
+  --crp-error-soft: #fbe9e9;
+  --crp-info: #2d6480;
+  --crp-info-soft: #e3eef5;
+  --crp-warning: #a4621e;
+  --crp-warning-soft: #fff1dc;
+  --crp-shadow: 0 12px 28px rgba(23, 37, 43, 0.07);
+  --crp-radius-panel: 16px;
+  --crp-radius-control: 10px;
+  --crp-radius-pill: 999px;
+  --crp-focus: 0 0 0 3px rgba(31, 77, 61, 0.35);
+  display: block;
+  min-height: 100%;
+  padding: 24px;
+  background: var(--crp-bg);
+  color: var(--crp-text);
+  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.crp-root *, .crp-root *::before, .crp-root *::after { box-sizing: border-box; }
+
+/* Header */
+.crp-root .crp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1240px;
+  margin: 0 auto 24px;
+  padding: 14px 20px;
+  background: var(--crp-surface);
+  border: 1px solid var(--crp-line);
+  border-radius: var(--crp-radius-panel);
+}
+.crp-root .crp-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+.crp-root .crp-brand span { color: var(--crp-cta); }
+.crp-root .crp-nav { display: flex; gap: 8px; }
+.crp-root .crp-nav button { background: transparent; border-color: transparent; color: var(--crp-soft); }
+.crp-root .crp-nav button:hover { background: var(--crp-accent-soft); color: var(--crp-accent-strong); }
+.crp-root .crp-nav button[aria-current="page"] { background: var(--crp-accent-soft); border-color: var(--crp-accent); color: var(--crp-accent-strong); }
+
+/* Panel */
+.crp-root .crp-panel {
+  display: block;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--crp-surface);
+  border: 1px solid var(--crp-line);
+  border-radius: var(--crp-radius-panel);
+  box-shadow: var(--crp-shadow);
+}
+.crp-root h1 { margin: 0 0 16px; font-size: 1.6rem; line-height: 1.2; letter-spacing: -0.02em; }
+
+/* Buttons: the amber call to action is reserved for the one primary action, "New ...". */
+.crp-root button {
+  min-height: 40px;
+  padding: 6px 16px;
+  background: var(--crp-surface);
+  color: var(--crp-accent-strong);
+  border: 1px solid var(--crp-line-strong);
+  border-radius: var(--crp-radius-control);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.crp-root button:hover:not(:disabled) { border-color: var(--crp-accent); background: var(--crp-accent-soft); }
+.crp-root button:disabled { opacity: 0.55; cursor: not-allowed; }
+.crp-root button[type="submit"],
+.crp-root .crp-panel > app-catalog-page > button:first-of-type { background: var(--crp-cta); border-color: var(--crp-cta-strong); color: var(--crp-text); }
+.crp-root button[type="submit"]:hover:not(:disabled),
+.crp-root .crp-panel > app-catalog-page > button:first-of-type:hover:not(:disabled) { background: var(--crp-cta-strong); }
+.crp-root button:focus-visible, .crp-root input:focus-visible, .crp-root select:focus-visible, .crp-root textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--crp-focus);
+}
+
+/* Table-like list: one row per item, name and status on the left, actions on the right. */
+.crp-root ul[data-state="data"] { margin: 16px 0 0; padding: 0; list-style: none; border: 1px solid var(--crp-line); border-radius: 12px; overflow: hidden; }
+.crp-root ul[data-state="data"] > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 14px 16px;
+  background: var(--crp-surface);
+  font-weight: 700;
+}
+.crp-root ul[data-state="data"] > li + li { border-top: 1px solid var(--crp-line); }
+.crp-root ul[data-state="data"] > li:nth-child(even) { background: var(--crp-muted); }
+.crp-root ul[data-state="data"] > li p:not([role]) { flex-basis: 100%; margin: 0; color: var(--crp-soft); font-weight: 400; font-size: 0.9rem; }
+.crp-root ul[data-state="data"] > li button { margin-left: auto; }
+.crp-root ul[data-state="data"] > li button ~ button { margin-left: 0; }
+
+/* Form: label above the control, the error right under its field. */
+.crp-root form { display: grid; gap: 12px; max-width: 560px; margin: 16px 0; padding: 20px; background: var(--crp-muted); border: 1px solid var(--crp-line); border-radius: 12px; }
+.crp-root form > div, .crp-root form > p { margin: 0; }
+.crp-root label { display: block; margin: 12px 0 4px; font-size: 0.86rem; font-weight: 700; }
+.crp-root form label { margin-top: 0; }
+.crp-root input:not([type="checkbox"]), .crp-root select, .crp-root textarea {
+  width: 100%;
+  max-width: 560px;
+  min-height: 42px;
+  padding: 8px 12px;
+  background: var(--crp-surface);
+  color: var(--crp-text);
+  border: 1px solid var(--crp-line-strong);
+  border-radius: var(--crp-radius-control);
+  font: inherit;
+}
+.crp-root input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--crp-accent); vertical-align: middle; }
+.crp-root input[aria-invalid="true"], .crp-root select[aria-invalid="true"], .crp-root textarea[aria-invalid="true"] { border-color: var(--crp-error); background: var(--crp-error-soft); }
+
+/* The four states: loading, empty, error, denied. Never conveyed by colour alone (each has its text). */
+.crp-root [role="status"], .crp-root [role="alert"] {
+  margin: 8px 0;
+  padding: 10px 14px;
+  border-radius: var(--crp-radius-control);
+  border: 1px solid var(--crp-line);
+  font-size: 0.9rem;
+}
+.crp-root [data-state="loading"] { background: var(--crp-info-soft); border-color: var(--crp-info); color: var(--crp-info); }
+.crp-root [data-state="empty"] { background: var(--crp-muted); color: var(--crp-soft); }
+.crp-root [role="alert"] { background: var(--crp-error-soft); border-color: var(--crp-error); color: var(--crp-error); font-weight: 600; }
+.crp-root [data-state="denied"] { background: var(--crp-warning-soft); border-color: var(--crp-warning); color: var(--crp-warning); }
+.crp-root [data-state="error"] { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.crp-root [data-state="error"] p { margin: 0; }
+.crp-root [role="alert"] + [role="alert"] { margin-top: 4px; }
+.crp-root input + [role="alert"], .crp-root select + [role="alert"], .crp-root textarea + [role="alert"] { margin: 4px 0 0; padding: 0; border: 0; background: none; font-size: 0.82rem; }
+
+@media (max-width: 720px) {
+  .crp-root { padding: 12px; }
+  .crp-root .crp-panel { padding: 16px; }
+  .crp-root ul[data-state="data"] > li button { margin-left: 0; }
+}

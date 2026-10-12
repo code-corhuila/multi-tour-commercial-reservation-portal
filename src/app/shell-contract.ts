@@ -19,3 +19,10 @@ export interface ApiError {
   traceId: string;
   userMessage: string;
 }
+
+/** What the container hands to `mount` (ADR-006 F4); mirrors multi-tour-front `core/client/types.ts`. */
+export interface MountProps {
+  identifier?: string;
+  apiClient: { request<T>(path: string, init?: unknown): Promise<T> };
+  session: { readonly roles: string[]; open(answer: unknown): void; close(): void };
+}
