@@ -389,8 +389,10 @@
 .crp-root .crp-panel-card-actions { display: flex; justify-content: flex-end; padding-top: 14px; border-top: 1px solid #e7ece9; }
 .crp-root .crp-panel-quick { margin-top: 32px; }
 .crp-root .crp-panel-quick ul, .crp-root .crp-panel-discounts ul, .crp-root .crp-panel-featured ul { margin: 0; padding: 0; list-style: none; }
-.crp-root .crp-panel-quick button { display: flex; gap: 14px; width: 100%; min-height: 0; padding: 12px 0; border: 0; border-bottom: 1px solid #e7ece9; border-radius: 0; background: none; color: var(--crp-soft); font-weight: 400; text-align: left; }
-.crp-root .crp-panel-quick button > span:first-child { display: inline-grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 999px; background: #eef2f1; color: #5a6b70; font-size: 0.78rem; }
+.crp-root .crp-panel-quick .crp-panel-quick-item { display: flex; justify-content: flex-start; align-items: flex-start; gap: 16px; width: 100%; min-height: 0; padding: 16px 0; border: 0; border-top: 1px solid #e7ece9; border-radius: 0; background: none; color: var(--crp-soft); font-weight: 400; text-align: left; }
+.crp-root .crp-panel-quick li:first-child .crp-panel-quick-item { border-top: 0; padding-top: 0; }
+.crp-root .crp-panel-quick-copy { display: grid; gap: 4px; }
+.crp-root .crp-panel-quick-icon { display: inline-grid; flex: none; place-items: center; width: 40px; height: 40px; border-radius: 999px; background: #eef2f1; color: #5a6b70; font-size: 0.78rem; }
 .crp-root .crp-panel-quick strong { display: block; color: #17252b; }
 .crp-root .crp-panel-promo { display: grid; gap: 6px; margin-bottom: 12px; padding: 16px; border: 1px solid #d7e0de; border-radius: 16px; }
 .crp-root .crp-panel-promo-tag { width: max-content; padding: 4px 10px; border-radius: 999px; background: #2f6b57; color: #ffffff; font-size: 0.74rem; font-weight: 800; }
