@@ -128,7 +128,7 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
 describe('theAdministratorSeesEveryAction', () => {
   it('offers every action when the Administrator is provided explicitly', async () => {
     const page = await openAs(actorAs('TENANT_ADMINISTRATOR'));
-    expect(page.buttonNames()).toEqual([CATALOG_COPY.newItem, CATALOG_COPY.inactivate, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
+    expect(page.buttonNames()).toEqual([CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.edit, CATALOG_COPY.inactivate]);
   });
 
   it('opens the full form with every control', async () => {
