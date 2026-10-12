@@ -24,4 +24,6 @@ export interface PublicEstablishment {
 export interface TourValue {
   readonly baseRateCents: number;
   readonly currentValueCents: number;
+  /** The tag of the discount applied, e.g. "20% de descuento", written by HU-COM-004; the view never derives it. */
+  readonly discountLabel?: string;
 }
