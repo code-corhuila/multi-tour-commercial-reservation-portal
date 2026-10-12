@@ -181,16 +181,23 @@ describe('reservarTourShowsOneOfTheFourStates', () => {
   });
 });
 
-describe('reservarTourKeepsTheColumnOfTheMockup (travel-booking-content, sticky bar, Ver condiciones +)', () => {
+describe('reservarTourKeepsTheColumnOfTheMockup (travel-booking-content, fixed bar, Ver condiciones +)', () => {
   const css = readFileSync('src/styles/portal.css', 'utf8');
   const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
 
-  it('lays the cards in a column of min(100%, 1100px) and keeps the bottom bar in that same column', () => {
+  it('lays the cards in a column of min(100%, 1100px) and keeps the bottom bar fixed over that same column', () => {
     expect(rule('.crp-root .crp-booking-content')).toMatch(/width:\s*min\(100%, 1100px\)/);
     const bar = rule('.crp-root .crp-booking-bar');
-    expect(bar).toMatch(/position:\s*sticky;/);
-    expect(bar).toMatch(/width:\s*min\(100%, 1100px\);\s*margin:\s*0 auto/);
-    expect(bar).not.toMatch(/translateX|left:/);
+    expect(bar).toMatch(/position:\s*fixed;/);
+    expect(bar).toMatch(/left:\s*50%;/);
+    expect(bar).toMatch(/transform:\s*translateX\(-50%\);/);
+    expect(bar).toMatch(/width:\s*min\(calc\(100% - 48px\), 1100px\);/);
+  });
+
+  it('leaves room under the last card for the bottom bar, as travel-booking-page (104px, 170px when it stacks)', () => {
+    expect(rule('.crp-root .crp-booking-content')).toMatch(/padding:\s*24px 0 144px;/);
+    const narrow = css.slice(css.lastIndexOf('@media (max-width: 760px)'));
+    expect(narrow).toMatch(/\.crp-root \.crp-booking-content \{ padding-bottom: 210px; \}/);
   });
 
   it('draws Ver condiciones with + and - instead of the disclosure triangle', async () => {
