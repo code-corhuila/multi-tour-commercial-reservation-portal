@@ -8,6 +8,8 @@ import { EstablishmentsPageComponent } from './establishments/pages/establishmen
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CatalogPageComponent, EstablishmentsPageComponent],
   template: `
+    <div class="crp-operator-shell">
+    <main class="crp-operator-content">
     <header class="crp-header">
       <span class="crp-brand">Multi<span>Tour</span> · Reservas</span>
       <nav class="crp-nav" aria-label="Commercial reservation">
@@ -15,9 +17,9 @@ import { EstablishmentsPageComponent } from './establishments/pages/establishmen
         <button type="button" [attr.aria-current]="view() === 'establishments' ? 'page' : null" (click)="view.set('establishments')">Establishments</button>
       </nav>
     </header>
-    <main class="crp-panel">
-      @if (view() === 'catalog') { <app-catalog-page /> } @else { <app-establishments-page /> }
+    @if (view() === 'catalog') { <app-catalog-page /> } @else { <app-establishments-page /> }
     </main>
+    </div>
   `,
 })
 export class PortalShellComponent {
