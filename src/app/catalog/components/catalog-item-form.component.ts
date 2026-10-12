@@ -187,9 +187,11 @@ let nextFormId = 0;
         </div>
       }
       }
-      <button type="submit" [disabled]="pending()">Save</button>
+      <div class="crp-form-actions">
+      <button class="crp-primary" type="submit" [disabled]="pending()">Save</button>
       <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
-      <button type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancel</button>
+      <button class="crp-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancel</button>
+      </div>
       @for (text of formMessages(); track $index) {
         <p role="alert">{{ text }}</p>
       }
