@@ -149,7 +149,7 @@ describe('currentDiscountsAreWiredInTheMountEntry', () => {
     const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 1 } }));
     cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } });
     await vi.waitFor(() => expect(host.querySelector('nav')).toBeTruthy());
-    Array.from(host.querySelectorAll('nav button')).find((b) => b.textContent === 'Current discounts')!.dispatchEvent(new Event('click'));
+    Array.from(host.querySelectorAll('nav button')).find((b) => b.textContent?.trim() === 'Descuentos vigentes')!.dispatchEvent(new Event('click'));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-line]').length).toBeGreaterThan(0));
     expect(host.querySelector('form')).not.toBeNull();
   });
