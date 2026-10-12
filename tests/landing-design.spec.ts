@@ -118,3 +118,20 @@ describe('landingStylesStayInsideThePortal', () => {
     }
   });
 });
+
+describe('customerHeaderAndFooterSpanTheViewport', () => {
+  const ruleOf = (css: string, selector: string) => {
+    const start = css.indexOf(`\n${selector} {`);
+    return start < 0 ? '' : css.slice(start, css.indexOf('}', start));
+  };
+
+  it('bleeds the client header and the dark footer to both edges while their content stays centered like tours.html', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    for (const selector of ['.crp-root .crp-client-header', '.crp-root .crp-client-footer']) {
+      const rule = ruleOf(css, selector);
+      expect(rule, selector).toMatch(/box-shadow:\s*0 0 0 100vmax/);
+      expect(rule, selector).toMatch(/clip-path:\s*inset\(0 -100vmax\)/);
+      expect(rule, selector).toMatch(/padding-inline:\s*max\(clamp\(20px, 4vw, 60px\), calc\(\(100% - 1320px\) \/ 2\)\)/);
+    }
+  });
+});
