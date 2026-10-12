@@ -27,13 +27,13 @@ describe('theAdditionalDiscountIsLastWithItsReasonAndAuthor', () => {
     const lines = page.lines();
     expect(lines).toHaveLength(2);
     expect(lines[0]).toContain('Season');
-    for (const text of ['Additional discount', 'Loyal customer', 'Laura Demo', '90000.00', '4500.00', '85500.00']) expect(lines[1]).toContain(text);
-    expect(page.element.textContent).toContain('85500.00');
+    for (const text of ['Descuento adicional', 'Loyal customer', 'Autorizado por Laura Demo', '$90.000', '-$4.500', '$85.500']) expect(lines[1]).toContain(text);
+    expect(page.element.querySelector('.current-discounts-final')?.textContent).toContain('$85.500');
   });
 
   it('takes the authorizer from the stored answer, never from a field the person types', async () => {
     const page = await withData();
-    expect(Array.from(page.element.querySelectorAll('form label'), (label) => label.textContent?.trim())).toEqual(['Value', 'Reason', 'Value type']);
+    expect(Array.from(page.element.querySelectorAll('form label'), (label) => label.textContent?.trim())).toEqual(['Valor del descuento', 'Tipo de valor', 'Motivo (obligatorio)']);
   });
 });
 
@@ -41,17 +41,17 @@ describe('anEmptyReasonOrValueIsRefusedBesideItsField', () => {
   it('shows each error beside its field and sends nothing', async () => {
     const page = await withData();
     await submit(page);
-    expect(page.errorFor('reason')).toContain('Reason required');
-    expect(page.errorFor('value')).toContain('positive value');
+    expect(page.errorFor('reason')).toContain('El motivo es obligatorio');
+    expect(page.errorFor('value')).toContain('valor positivo');
     for (const value of ['0', '-3', 'abc']) {
       await fillAdditional(page, value, 'Loyal customer');
       await submit(page);
-      expect(page.errorFor('value')).toContain('positive value');
+      expect(page.errorFor('value')).toContain('valor positivo');
       expect(page.errorFor('reason')).toBeFalsy();
     }
     await fillAdditional(page, '5', '   ');
     await submit(page);
-    expect(page.errorFor('reason')).toContain('Reason required');
+    expect(page.errorFor('reason')).toContain('El motivo es obligatorio');
     expect(page.writer.calls).toHaveLength(0);
   });
 });
@@ -115,21 +115,21 @@ describe('theValueViewShowsOneOfTheFourStates', () => {
     expect(page.state()).toBe('loading');
     page.source.requests[0].fail(); await page.settle();
     expect(page.state()).toBe('error');
-    Array.from(page.element.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Retry')!.click(); await page.settle();
+    Array.from(page.element.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Reintentar')!.click(); await page.settle();
     expect(page.state()).toBe('loading');
     page.source.requests[1].reply([]); await page.settle();
     expect(page.state()).toBe('empty');
     page.fixture.componentInstance.reload(); page.source.requests[2].reply([serviceNamed('Tatacoa')]); await page.settle();
     expect(page.state()).toBe('data');
-    expect(page.element.textContent).toContain('100000.00');
+    expect(page.element.textContent).toContain('$100.000');
   });
 
   it('shows only the base value for a service with no rule in force', async () => {
     const page = await openCurrentDiscounts('ANALYST');
     page.source.requests[0].reply([serviceNamed('Pitalito', [ruleNamed('Old', 1, { endsOn: '2020-01-01' })])]); await page.settle();
     expect(page.lines()).toEqual([]);
-    expect(page.element.textContent).toContain('100000.00');
-    expect(page.element.textContent).not.toContain('Final value');
+    expect(page.element.textContent).toContain('$100.000');
+    expect(page.element.textContent).not.toContain('Valor final');
   });
 
   it('asks the source again for the date the person picks (DP-CD1)', async () => {
@@ -138,6 +138,64 @@ describe('theValueViewShowsOneOfTheFourStates', () => {
     expect(page.element.querySelector(`label[for="${date.id}"]`)).not.toBeNull();
     date.value = '2026-03-01'; date.dispatchEvent(new Event('change')); await page.settle();
     expect(page.source.requests.at(-1)!.date).toBe('2026-03-01');
+  });
+});
+
+describe('theScreenFollowsTheAuthorizedMockup', () => {
+  // 12-ux-ui/authorized-screens.md, HU-COM-004: admin-aplicar-descuento.html and the values block of admin-crear-reserva.html.
+  const text = (element: Element, selector: string) => Array.from(element.querySelectorAll(selector), (node) => node.textContent?.trim());
+
+  it('draws the header and the two numbered panels in Spanish', async () => {
+    const page = await withData();
+    expect(page.element.querySelector('.crp-page-header-eyebrow')?.textContent?.trim()).toBe('Descuento adicional');
+    expect(page.element.querySelector('h1')?.textContent?.trim()).toBe('Aplicar descuento');
+    expect(text(page.element, '.crp-operator-panel > .crp-operator-eyebrow')).toEqual(['01. Descuentos vigentes', '02. Descuento adicional']);
+    expect(text(page.element, '.crp-operator-panel > h2')).toEqual(['Valores por servicio', 'Autorización']);
+    expect(page.submitButton().textContent?.trim()).toBe('Aplicar descuento');
+    expect(text(page.element, 'select[name="type"] option')).toEqual(['Porcentaje', 'Valor fijo']);
+  });
+
+  it('shows the values block with formatted money and dates, and numbers each discount once', async () => {
+    const page = await withData();
+    expect(text(page.element, '.current-discounts-summary span')).toEqual(['Valor proyectado', 'Descuentos aplicables', 'Valor final']);
+    expect(text(page.element, '.current-discounts-summary strong')).toEqual(['$100.000', '-$10.000', '$90.000']);
+    expect(page.element.querySelector('ol [data-line]')).not.toBeNull();
+    expect(page.lines()[0].replace(/\s+/g, ' ').trim()).toBe('Season · sobre el valor original $100.000 · -$10.000 · Subtotal $90.000');
+    expect(page.element.textContent).toMatch(/Vigentes al \d{2} [a-z]{3} \d{4}/);
+  });
+
+  it('never shows raw codes or unformatted amounts', async () => {
+    const page = await withData();
+    expect(page.element.textContent).not.toMatch(/\d\.\d{2}(?!\d)/);
+    for (const raw of ['ORIGINAL_VALUE', 'PREVIOUS_SUBTOTAL', 'PERCENTAGE', 'FIXED_AMOUNT', 'ACTIVE', 'svc-']) {
+      expect(page.element.textContent).not.toContain(raw);
+    }
+  });
+
+  it('offers the services to choose and applies the discount to the chosen one', async () => {
+    const page = await openCurrentDiscounts();
+    page.source.requests[0].reply([serviceNamed('Tatacoa'), serviceNamed('Pitalito')]); await page.settle();
+    const service = page.element.querySelector<HTMLSelectElement>('select[name="service"]')!;
+    expect(page.element.querySelector(`label[for="${service.id}"]`)?.textContent?.trim()).toBe('Servicio');
+    expect(text(page.element, 'select[name="service"] option')).toEqual(['Tatacoa', 'Pitalito']);
+    service.value = 'svc-Pitalito'; service.dispatchEvent(new Event('change')); await page.settle();
+    await fillAdditional(page);
+    await submit(page);
+    expect(page.writer.calls[0].command.serviceId).toBe('svc-Pitalito');
+  });
+
+  it('draws only the first panel for a role that cannot authorize', async () => {
+    const page = await withData('MANAGER');
+    expect(text(page.element, '.crp-operator-panel > .crp-operator-eyebrow')).toEqual(['01. Descuentos vigentes']);
+  });
+
+  it('writes the four states in Spanish', async () => {
+    const page = await openCurrentDiscounts();
+    expect(page.element.querySelector('[data-state="loading"]')?.textContent).toContain('Cargando');
+    page.source.requests[0].fail(); await page.settle();
+    expect(page.element.querySelector('[data-state="error"]')?.textContent).toContain('No fue posible cargar');
+    page.fixture.componentInstance.reload(); page.source.requests[1].reply([]); await page.settle();
+    expect(page.element.querySelector('[data-state="empty"]')?.textContent).toContain('No hay servicios');
   });
 });
 
