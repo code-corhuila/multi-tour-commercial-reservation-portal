@@ -154,3 +154,10 @@ describe('formGridStaysInTheOperatorShell', () => {
     expect(css).toMatch(/\n\.crp-root \.crp-operator-shell form \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   });
 });
+
+describe('discountScreenStacksAtPhoneWidth', () => {
+  it('stacks the operator forms and the discount grid in one column without touching a client form', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    expect(css).toMatch(/\n {2}\.crp-root \.crp-operator-shell form, \.crp-root \.crp-discount-grid, \.crp-root \.crp-discount-hero \{ grid-template-columns: 1fr; \}/);
+  });
+});
