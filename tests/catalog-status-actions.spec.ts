@@ -49,9 +49,9 @@ describe('inactivatedItemStaysInTheListAsInactive', () => {
     await settle();
 
     expect(rows()).toHaveLength(2);
-    expect(rowOf('Alpha').textContent).toContain('Inactivo');
+    expect(rowOf('Alpha').textContent).toContain('INACTIVE');
     expect(buttonOf('Alpha').textContent?.trim()).toBe(CATALOG_COPY.reactivate);
-    expect(rowOf('Beta').textContent).toContain('Inactivo');
+    expect(rowOf('Beta').textContent).toContain('INACTIVE');
     expect(source.requests).toHaveLength(1);
   });
 });
@@ -67,8 +67,8 @@ describe('reactivatedItemShowsAsActive', () => {
     await settle();
 
     expect(rows()).toHaveLength(2);
-    expect(rowOf('Beta').textContent).toContain('Activo');
-    expect(rowOf('Beta').textContent).not.toContain('Inactivo');
+    expect(rowOf('Beta').textContent).toContain('ACTIVE');
+    expect(rowOf('Beta').textContent).not.toContain('INACTIVE');
     expect(buttonOf('Beta').textContent?.trim()).toBe(CATALOG_COPY.inactivate);
   });
 });
@@ -76,8 +76,8 @@ describe('reactivatedItemShowsAsActive', () => {
 describe('oneStatusActionPerItem', () => {
   it('offers only Inactivate on an active item and only Reactivate on an inactive one', async () => {
     const { rowOf } = await openList();
-    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.edit, CATALOG_COPY.inactivate]);
-    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.edit, CATALOG_COPY.reactivate]);
+    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
+    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.reactivate, CATALOG_COPY.edit]);
   });
 
   it('sends one request for a double click, disables the button while it pends and enables it after', async () => {
