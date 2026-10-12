@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
-import { formatCop, formatDate } from '../../shared/format';
+import { formatCop, formatDate, formatDateRange } from '../../shared/format';
 import { PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
 import { PublicTour, TourValue } from '../model/public-offer';
 import { PUBLIC_OFFER_COPY, matchesSearch, photoAt } from '../public-offer-copy';
@@ -27,11 +27,14 @@ export function partOf<A, T>(requests: Subject<A>, read: (arg: A) => Observable<
 
 export const unavailable = () => throwError(() => new Error('The container provides no public offer port'));
 
-/** "Volver al panel cliente", drawn only when the shell can open the panel (HU-COM-008). */
-export function backToPanel(): (() => void) | null {
+/** Opens a client area through the shell, or null when the shell cannot show it. */
+export function openerOf(key: string): (() => void) | null {
   const navigation = inject(PortalNavigation, { optional: true });
-  return navigation?.has(CLIENT_AREA.panel) ? () => navigation.open(CLIENT_AREA.panel) : null;
+  return navigation?.has(key) ? () => navigation.open(key) : null;
 }
+
+/** "Volver al panel cliente", drawn only when the shell can open the panel (HU-COM-008). */
+export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA.panel); }
 
 /** tours.html and detalle-tour.html. Read-only for everyone (plan D-07): it reads no actor and offers no reservation. */
 @Component({
@@ -47,7 +50,7 @@ export function backToPanel(): (() => void) | null {
             <h1 class="crp-page-header-title crp-h1">{{ priced.tour.commercialName }}</h1>
             <h2>{{ copy.validityTitle }}</h2>
             <dl class="crp-offer-facts">
-              <div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ copy.availableOnDay }} {{ day(date()) }}</dd></div>
+              <div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div>
               @if (priced.tour.transportIncluded) { &ngsp;<div><dt>{{ copy.transport }}</dt>&ngsp;<dd>{{ copy.transportIncluded }}</dd></div> }
             </dl>
             <section class="crp-offer-conditions"><h2>{{ copy.conditionsTitle }}</h2>
@@ -56,29 +59,36 @@ export function backToPanel(): (() => void) | null {
           </div>
           <aside class="crp-offer-summary">
             <p class="crp-offer-summary-eyebrow">{{ copy.summary }}</p>
-            @if (discounted(priced)) {
-              &ngsp;<span class="crp-tour-discount-tag">{{ tag(priced) }}</span>&ngsp;<p>{{ copy.before }} {{ money(priced.value.baseRateCents) }}</p>&ngsp;
-            }
-            <p class="crp-offer-from">{{ copy.from }}: <span data-value="current">{{ money(priced.value.currentValueCents) }}</span></p>
+            <div class="crp-offer-summary-price">
+              @if (discounted(priced)) {
+                &ngsp;<span class="crp-tour-discount-tag">{{ tag(priced) }}</span>&ngsp;<small>{{ copy.before }} {{ money(priced.value.baseRateCents) }}</small>&ngsp;
+              }
+              <p class="crp-offer-from">{{ copy.from }}: <span data-value="current">{{ money(priced.value.currentValueCents) }}</span></p>
+            </div>&ngsp;
+            <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div></dl>
+            @if (priced.tour.validity; as range) { <p class="crp-offer-validity">{{ copy.validFrom }} {{ day(range.from) }} {{ copy.validTo }} {{ day(range.to) }}.</p> }
+            @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" (click)="reserve()">{{ copy.reserve }}</button> }
           </aside>
         </div>
       </article>
     } @else {
       @if (back) { <button type="button" class="crp-offer-back" (click)="back()"><span aria-hidden="true">←</span>&ngsp;<span>{{ copy.back }}</span></button> }
-      <header class="crp-page-header">
+      <header class="crp-page-header crp-offer-head">
         <div class="crp-page-header-main">
           <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
           <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
           <p class="crp-page-header-desc">{{ copy.description }}</p>
         </div>
         <div class="crp-page-header-action crp-offer-search">
-          <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchTours" #query (keydown.enter)="search.set(query.value)" />
+          <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchToursHint" #query (keydown.enter)="search.set(query.value)" />
           <button type="button" class="crp-primary" (click)="search.set(query.value)">{{ copy.search }}</button>
-          <label for="public-offer-date">{{ copy.date }}</label>
-          <input id="public-offer-date" type="date" [value]="date()" (change)="choose($event)" />
         </div>
       </header>
-      <p class="crp-offer-date" data-date>{{ copy.availableOn }} {{ day(date()) }}</p>
+      <div class="crp-offer-when">
+        <span data-date>{{ copy.availableOn }} {{ day(date()) }}</span>
+        <label for="public-offer-date">{{ copy.date }}</label>
+        <input id="public-offer-date" type="date" [value]="date()" (change)="choose($event)" />
+      </div>
       <section class="crp-offer-section" data-part="tours" [attr.aria-label]="copy.toursList">
         @let tours = toursState();
         @switch (tours.kind) {
@@ -96,8 +106,7 @@ export function backToPanel(): (() => void) | null {
                     @if (discounted(priced)) { <span class="crp-tour-discount-tag">{{ tag(priced) }}</span> }
                   </div>
                   <div class="crp-tour-body">
-                    <strong>{{ priced.tour.commercialName }}</strong>
-                    @if (priced.tour.transportIncluded) { <p class="crp-tour-transport">{{ copy.transportIncluded }}</p> }
+                    <strong [title]="priced.tour.commercialName">{{ priced.tour.commercialName }}</strong>
                     <div class="crp-tour-meta">
                       <div class="crp-tour-price">
                         @if (discounted(priced)) { <small>{{ copy.before }} <del data-value="base">{{ money(priced.value.baseRateCents) }}</del></small>&ngsp; }
@@ -119,6 +128,8 @@ export function backToPanel(): (() => void) | null {
 export class PublicOfferPageComponent {
   protected readonly copy = PUBLIC_OFFER_COPY;
   protected readonly back = backToPanel();
+  /** "Reservar tour" opens the reservation of HU-COM-008, drawn only when the shell has it (AC-PO.7: no form here). */
+  protected readonly reserve = openerOf(CLIENT_AREA.reservations);
   private readonly offer = inject(PublicOfferSource, { optional: true });
   // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });
@@ -154,6 +165,12 @@ export class PublicOfferPageComponent {
   protected money(cents: number): string { return formatCop(cents); }
 
   protected day(isoDate: string): string { return formatDate(isoDate); }
+
+  /** The validity the offer port declares, or the consulted date when it declares none. */
+  protected validity(priced: PricedTour): string {
+    const range = priced.tour.validity;
+    return range ? formatDateRange(range.from, range.to) : `${this.copy.availableOnDay} ${formatDate(this.date())}`;
+  }
 
   private valueOf(tour: PublicTour, date: string): TourValue {
     return this.value?.valueOf(tour, date) ?? { baseRateCents: tour.baseRateCents, currentValueCents: tour.baseRateCents };
