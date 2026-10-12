@@ -18,6 +18,8 @@ import {
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
+import { SelfServiceAreaComponent } from '../src/app/self-service-reservation/pages/self-service-area.component';
+import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
   ControllableMyReservationsSource,
@@ -67,11 +69,12 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
   return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm };
 }
 
-async function openPanel(standing: CustomerStanding = 'FINAL_CUSTOMER') {
+async function openPanel(standing: CustomerStanding = 'FINAL_CUSTOMER', areas?: readonly string[]) {
   const source = new ControllableMyReservationsSource();
   TestBed.configureTestingModule({ providers: [
     { provide: CustomerContext, useValue: new CustomerAs(standing) },
     { provide: MyReservationsSource, useValue: source },
+    ...(areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(areas); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(MyReservationsPageComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
@@ -278,7 +281,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
   });
   it('the confirmation without a selection says so in Spanish', async () => {
     const p = await openConfirm({ selection: null });
-    expect(p.element.textContent).toContain('Elige un tour, la fecha y los viajeros en el catálogo para finalizar tu reserva.');
+    expect(p.element.textContent).toContain('No hay una reserva en curso. Vuelve a Explorar para seleccionar un tour.');
   });
   it('Mis reservas draws the header, the history and one card per reservation, never a code', async () => {
     const p = await openPanel(); p.source.requests[0].reply([reservationFor()]); await p.settle();
@@ -308,5 +311,43 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
   it('Mis reservas without reservations shows the empty text of the mockup', async () => {
     const p = await openPanel(); p.source.requests[0].reply([]); await p.settle();
     expect(p.element.textContent).toContain('Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.');
+  });
+});
+
+describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; PR #361)', () => {
+  async function openArea(selection: ReservationSelection | null) {
+    TestBed.configureTestingModule({ providers: [
+      { provide: CustomerContext, useValue: new CustomerAs('FINAL_CUSTOMER') },
+      { provide: MyReservationsSource, useValue: new ControllableMyReservationsSource() },
+      { provide: ReservationSelectionSource, useValue: selectionAt(selection) },
+      { provide: PaymentMethodsSource, useValue: new ControllablePaymentMethods() },
+      { provide: SelectionQuoteSource, useValue: quoteOf() },
+      { provide: ReservationRequester, useValue: new RecordingRequester() },
+      { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() },
+    ] });
+    const fixture = TestBed.createComponent(SelfServiceAreaComponent);
+    fixture.detectChanges(); await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows only Mis reservas when no reservation is in progress', async () => {
+    const area = await openArea(null);
+    expect(area.querySelector('app-confirm-reservation-page')).toBeNull();
+    expect(area.querySelector('app-my-reservations-page')).not.toBeNull();
+  });
+
+  it('opens Finalizar reserva de tour above Mis reservas when the URL carries a selection', async () => {
+    const area = await openArea(SELECTION);
+    expect(Array.from(area.querySelectorAll('h1'), (h) => h.textContent?.trim())).toEqual(['Finalizar reserva de tour', 'Mis reservas']);
+  });
+
+  it('Mis reservas offers Volver al panel cliente only when the shell can open the panel', async () => {
+    expect((await openPanel()).element.textContent).not.toContain('Volver al panel cliente');
+    TestBed.resetTestingModule();
+    const p = await openPanel('FINAL_CUSTOMER', [CLIENT_AREA.panel, CLIENT_AREA.reservations]);
+    const back = buttonNamed(p.element, '← Volver al panel cliente')!;
+    expect(back.closest('.self-service-panel')).not.toBeNull();
+    back.click();
+    expect(TestBed.inject(PortalNavigation).selected()).toBe(CLIENT_AREA.panel);
   });
 });
