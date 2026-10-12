@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
@@ -10,11 +11,16 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
-import { PORTAL_AREAS, ROLE_LABELS } from '../src/app/portal-areas';
+import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
+import { PortalAudience } from '../src/app/portal-audience';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { actorAs } from './actor-context.double';
 
-async function openShell(role: ActorRole, withDiscounts = true) {
+@Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
+class CustomerPageDouble {}
+const CUSTOMER_AREA: PortalArea = { key: 'explore', label: 'Explorar', component: CustomerPageDouble, audience: 'customer' };
+
+async function openShell(role: ActorRole, withDiscounts = true, extra: PortalArea[] = []) {
   const catalog = new DemoCatalogStore();
   const establishments = new DemoEstablishmentsStore();
   TestBed.configureTestingModule({ providers: [
@@ -24,6 +30,7 @@ async function openShell(role: ActorRole, withDiscounts = true) {
     { provide: AssociatedEstablishmentsSource, useValue: establishments },
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
     ...(withDiscounts ? [{ provide: DiscountRulesSource, useValue: new DemoDiscountRulesStore() }] : []),
+    ...(extra.length ? [{ provide: PORTAL_AREA_LIST, useValue: [...PORTAL_AREAS, ...extra] }] : []),
   ] });
   const fixture = TestBed.createComponent(PortalShellComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
@@ -84,8 +91,54 @@ describe('operatorShellSidebar', () => {
     expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos']);
   });
 
-  it('names an unknown role as read only', async () => {
+  it('shows the operator no customer area', async () => {
+    const { host, items } = await openShell('TENANT_ADMINISTRATOR', true, [CUSTOMER_AREA]);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Descuentos']);
+    expect(host.querySelector('.crp-client-header')).toBeNull();
+  });
+});
+
+describe('customerShellHeader', () => {
+  const links = (host: HTMLElement) => Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-client-header .crp-client-nav button'));
+
+  it('gives a visitor without an operator role the client layout with only customer areas', async () => {
+    const { host } = await openShell('READ_ONLY', true, [CUSTOMER_AREA]);
+    expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
+    expect(host.textContent).not.toContain('Solo lectura');
+    expect(host.querySelector('.crp-client-shell > header.crp-client-header .crp-client-brand')?.textContent?.trim()).toBe('MULTITOUR');
+    expect(host.querySelector('.crp-client-nav')?.getAttribute('aria-label')).toBe('Navegación principal del cliente');
+    expect(links(host).map((b) => b.textContent?.trim())).toEqual(['Explorar']);
+    expect(host.textContent).not.toMatch(/Catálogos|Establecimientos|Descuentos/);
+    expect(host.querySelector('.crp-client-eyebrow')?.textContent?.trim()).toBe('Portal cliente');
+    expect(host.querySelector('.crp-client-greeting')?.textContent?.trim()).toMatch(/^Hola/);
+    expect(links(host)[0].getAttribute('aria-current')).toBe('page');
+    expect(host.querySelector('.crp-client-content crp-test-customer-page')).not.toBeNull();
+  });
+
+  it('draws the client layout with no area when the build has no customer area', async () => {
     const { host } = await openShell('READ_ONLY');
-    expect(host.querySelector('.crp-operator-role')?.textContent?.trim()).toBe('Solo lectura');
+    expect(host.querySelector('.crp-client-header')).not.toBeNull();
+    expect(links(host)).toEqual([]);
+    expect(host.querySelector('app-catalog-page')).toBeNull();
+  });
+});
+
+describe('portalAudience', () => {
+  const audienceOf = (role: ActorRole) => {
+    TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs(role) }] });
+    return TestBed.inject(PortalAudience).audience;
+  };
+
+  it('is the operator for an operator role', () => {
+    expect(audienceOf('OPERATIONAL_COLLABORATOR')).toBe('operator');
+  });
+
+  it('is the customer when no operator role exists', () => {
+    expect(audienceOf('READ_ONLY')).toBe('customer');
+  });
+
+  it('keeps the foundation areas for operators', () => {
+    const foundation = PORTAL_AREAS.filter((area) => ['catalog', 'establishments', 'discounts'].includes(area.key));
+    expect(foundation.every((area) => (area.audience ?? 'operator') === 'operator')).toBe(true);
   });
 });
