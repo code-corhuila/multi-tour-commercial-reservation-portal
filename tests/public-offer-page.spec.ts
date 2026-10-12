@@ -250,7 +250,14 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Catálogo de experiencias');
     expect(text(page.host.querySelector('h1'))).toBe('Tours');
     expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Explora los tours disponibles y consulta sus detalles.');
-    expect(within(page.host).getByLabelText('Buscar tours por nombre').getAttribute('placeholder')).toBe('Buscar tours por nombre');
+    expect(within(page.host).getByLabelText('Buscar tours por nombre o destino').getAttribute('placeholder')).toBe('Buscar tours por nombre o destino...');
+    const header = page.host.querySelector('header.crp-offer-head')!;
+    const action = header.querySelector('.crp-page-header-action.crp-offer-search')!;
+    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON', 'LABEL']);
+    expect(text(action.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
+    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBe(action);
+    expect(page.host.querySelector('.crp-offer-when, [data-date]')).toBeNull();
+    expect(page.host.textContent).not.toMatch(/Disponibles el|Fecha de consulta/);
     expect(page.part('tours').getAttribute('aria-label')).toBe('Listado de tours disponibles');
     expect(text(page.part('tours').querySelector('[data-state="loading"]'))).toBe('Cargando tours…');
     expect(page.host.querySelector('.crp-operator-panel, .crp-operator-panel-head')).toBeNull();
