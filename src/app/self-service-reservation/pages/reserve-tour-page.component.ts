@@ -57,7 +57,7 @@ type Loaded = { kind: 'loading' | 'error' } | { kind: 'empty'; noTour: boolean }
           </article>
           <article class="crp-booking-note">
             <strong>{{ t.conditionsTitle }}</strong><p>{{ t.conditionsCopy }}</p>
-            <details><summary>{{ t.seeConditions }}</summary>
+            <details class="crp-booking-conditions"><summary>{{ t.seeConditions }}</summary>
               @if (departure()?.conditions; as conditions) { <ul><li>{{ conditions }}</li></ul> } @else { <p>{{ t.noConditions }}</p> }
             </details>
           </article>
