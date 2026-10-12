@@ -26,10 +26,10 @@
   --crp-focus: 0 0 0 3px rgba(31, 77, 61, 0.35);
   display: block;
   min-height: 100%;
-  padding: 24px;
+  padding: 0;
   background: var(--crp-bg);
   color: var(--crp-text);
-  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -42,12 +42,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: 1240px;
-  margin: 0 auto 24px;
-  padding: 14px 20px;
-  background: var(--crp-surface);
-  border: 1px solid var(--crp-line);
-  border-radius: var(--crp-radius-panel);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--crp-line);
 }
 .crp-root .crp-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
 .crp-root .crp-brand span { color: var(--crp-cta); }
@@ -56,63 +53,64 @@
 .crp-root .crp-nav button:hover { background: var(--crp-accent-soft); color: var(--crp-accent-strong); }
 .crp-root .crp-nav button[aria-current="page"] { background: var(--crp-accent-soft); border-color: var(--crp-accent); color: var(--crp-accent-strong); }
 
-/* Panel */
-.crp-root .crp-panel {
-  display: block;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 24px;
-  background: var(--crp-surface);
-  border: 1px solid var(--crp-line);
-  border-radius: var(--crp-radius-panel);
-  box-shadow: var(--crp-shadow);
-}
-.crp-root h1 { margin: 0 0 16px; font-size: 1.6rem; line-height: 1.2; letter-spacing: -0.02em; }
+/* Landing operator layout without a second shell sidebar. */
+.crp-root .crp-operator-shell { display: block; min-height: 100%; color: #1c292b; background: var(--crp-bg); }
+.crp-root .crp-operator-content { width: min(1180px, 100%); margin: 0 auto; padding: 32px clamp(20px, 4vw, 56px) 56px; }
+.crp-root .crp-operator-panel { margin-top: 22px; padding: 30px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: var(--crp-radius-panel); }
+.crp-root .crp-operator-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+.crp-root .crp-operator-panel h2 { margin: 4px 0 0; color: #172728; font-size: 1.18rem; letter-spacing: -0.045em; }
+.crp-root .crp-operator-eyebrow, .crp-root .crp-page-header-eyebrow { margin: 0; color: #667579; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
+.crp-root .crp-page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--crp-line); }
+.crp-root .crp-page-header-main { display: grid; gap: 8px; max-width: 62ch; }
+.crp-root .crp-h1 { display: block; margin: 0; font-family: inherit; font-size: clamp(2rem, 1.5rem + 2vw, 3.5rem); font-weight: 700; line-height: 1.04; letter-spacing: -0.025em; color: var(--crp-text); }
+.crp-root .crp-page-header-title { display: block; font-size: clamp(1.35rem, 1.15rem + 0.6vw, 1.7rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+.crp-root .crp-page-header-desc { display: block; max-width: 58ch; margin: 0; color: var(--crp-soft); font-size: 0.88rem; }
+.crp-root .crp-page-header-action { flex: 0 0 auto; }
+.crp-root .crp-access-note { margin: 0 0 18px; padding: 12px 14px; border: 1px solid #dce9e2; border-radius: 10px; background: #f4faf7; color: #5c6c6b; font-size: 0.78rem; line-height: 1.45; }
+.crp-root .crp-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
+.crp-root .crp-filters > div { flex: 1 1 200px; }
+.crp-root .crp-form-section { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--crp-line); }
 
-/* Buttons: the amber call to action is reserved for the one primary action, "New ...". */
-.crp-root button {
-  min-height: 40px;
-  padding: 6px 16px;
-  background: var(--crp-surface);
-  color: var(--crp-accent-strong);
-  border: 1px solid var(--crp-line-strong);
-  border-radius: var(--crp-radius-control);
-  font: inherit;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-.crp-root button:hover:not(:disabled) { border-color: var(--crp-accent); background: var(--crp-accent-soft); }
-.crp-root button:disabled { opacity: 0.55; cursor: not-allowed; }
-.crp-root button[type="submit"],
-.crp-root .crp-panel > app-catalog-page > button:first-of-type { background: var(--crp-cta); border-color: var(--crp-cta-strong); color: var(--crp-text); }
-.crp-root button[type="submit"]:hover:not(:disabled),
-.crp-root .crp-panel > app-catalog-page > button:first-of-type:hover:not(:disabled) { background: var(--crp-cta-strong); }
+/* Landing controls: green primary action, outlined secondary action. */
+.crp-root button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border: 1px solid #bcd4ca; border-radius: var(--crp-radius-control); background: #f5faf7; color: #1f4d3d; font: inherit; font-size: 0.86rem; font-weight: 700; letter-spacing: -0.005em; cursor: pointer; transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease; }
+.crp-root .crp-primary, .crp-root button[type="submit"] { border-color: #2f6b57; background: #2f6b57; color: #fff; box-shadow: none; }
+.crp-root .crp-primary:hover:not(:disabled), .crp-root button[type="submit"]:hover:not(:disabled) { background: #1f4d3d; }
+.crp-root .crp-outline { border-color: #bcd4ca; background: #f5faf7; color: #1f4d3d; }
+.crp-root button:hover:not(:disabled):not(.crp-primary):not([type="submit"]) { border-color: var(--crp-accent); }
+.crp-root button:active:not(:disabled) { transform: translateY(1px); }
+.crp-root button:disabled { border-color: #d7e2dc; background: #eef3f0; color: #93a29d; cursor: not-allowed; }
 .crp-root button:focus-visible, .crp-root input:focus-visible, .crp-root select:focus-visible, .crp-root textarea:focus-visible {
   outline: none;
   box-shadow: var(--crp-focus);
 }
 
-/* Table-like list: one row per item, name and status on the left, actions on the right. */
-.crp-root ul[data-state="data"] { margin: 16px 0 0; padding: 0; list-style: none; border: 1px solid var(--crp-line); border-radius: 12px; overflow: hidden; }
-.crp-root ul[data-state="data"] > li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 14px 16px;
-  background: var(--crp-surface);
-  font-weight: 700;
-}
-.crp-root ul[data-state="data"] > li + li { border-top: 1px solid var(--crp-line); }
-.crp-root ul[data-state="data"] > li:nth-child(even) { background: var(--crp-muted); }
-.crp-root ul[data-state="data"] > li p:not([role]) { flex-basis: 100%; margin: 0; color: var(--crp-soft); font-weight: 400; font-size: 0.9rem; }
-.crp-root ul[data-state="data"] > li button { margin-left: auto; }
-.crp-root ul[data-state="data"] > li button ~ button { margin-left: 0; }
+/* Semantic tables and textual status pills from the landing. */
+.crp-root .crp-table-wrap { overflow-x: auto; }
+.crp-root .crp-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
+.crp-root .crp-table th { padding: 16px 12px 12px; color: #748084; font-size: 0.69rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.crp-root .crp-table td { padding: 16px 12px; border-top: 1px solid #e4ebe6; color: var(--crp-soft); font-size: 0.86rem; vertical-align: middle; }
+.crp-root .crp-table strong { color: #203234; }
+.crp-root .crp-table button { min-height: 34px; width: max-content; padding: 0 11px; border: 1px solid transparent; border-radius: 8px; font-size: 0.78rem; font-weight: 800; }
+.crp-root .crp-table .crp-row-manage { background: #e7f4ef; color: #0c7168; }
+.crp-root .crp-table .crp-row-manage:hover:not(:disabled) { background: #d6ece4; }
+.crp-root .crp-table .crp-row-toggle { border-color: #e4c6ba; background: #fff8f4; color: #a94f35; }
+.crp-root .crp-table .crp-row-toggle:hover:not(:disabled) { border-color: #c8846f; background: #fff1ea; }
+.crp-root .crp-table button:disabled { border-color: #d7e2dc; background: #eef3f0; color: #93a29d; }
+.crp-root .crp-row-actions { white-space: nowrap; }
+.crp-root .crp-row-actions button + button { margin-left: 16px; }
+.crp-root .crp-row-actions [role="alert"] { white-space: normal; }
+.crp-root .crp-status { display: inline-flex; width: max-content; padding: 6px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
+.crp-root .crp-status.crp-is-confirmed { background: #ddf0e7; color: #17685f; }
+.crp-root .crp-status.crp-is-pending { background: #fff1dc; color: #a4621e; }
+.crp-root .crp-status.crp-is-execution { background: #e3eef5; color: #2d6480; }
+.crp-root .crp-status.crp-is-finalized { background: #edf1ed; color: #516458; }
+.crp-root .crp-status.crp-is-cancelled { background: #f6e5e1; color: #a34a38; }
 
-/* Form: label above the control, the error right under its field. */
-.crp-root form { display: grid; gap: 12px; max-width: 560px; margin: 16px 0; padding: 20px; background: var(--crp-muted); border: 1px solid var(--crp-line); border-radius: 12px; }
+/* Landing form composition: labels and errors stay attached to their controls. */
+.crp-root form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
 .crp-root form > div, .crp-root form > p { margin: 0; }
+.crp-root form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
+.crp-root .crp-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 .crp-root label { display: block; margin: 12px 0 4px; font-size: 0.86rem; font-weight: 700; }
 .crp-root form label { margin-top: 0; }
 .crp-root input:not([type="checkbox"]), .crp-root select, .crp-root textarea {
@@ -147,7 +145,11 @@
 .crp-root input + [role="alert"], .crp-root select + [role="alert"], .crp-root textarea + [role="alert"] { margin: 4px 0 0; padding: 0; border: 0; background: none; font-size: 0.82rem; }
 
 @media (max-width: 720px) {
-  .crp-root { padding: 12px; }
-  .crp-root .crp-panel { padding: 16px; }
-  .crp-root ul[data-state="data"] > li button { margin-left: 0; }
+  .crp-root .crp-operator-content { padding: 24px 16px 40px; }
+  .crp-root .crp-operator-panel { padding: 20px; }
+  .crp-root .crp-page-header { align-items: flex-start; flex-direction: column; }
+  .crp-root .crp-page-header-action { width: 100%; }
+  .crp-root .crp-nav { flex-wrap: wrap; }
+  .crp-root .crp-filters > div { flex-basis: 100%; }
+  .crp-root form { grid-template-columns: 1fr; }
 }
