@@ -99,7 +99,7 @@ describe('theValueComesFromTheValuePort (AC-PO.4, RN-PO4)', () => {
     const page = await openPage();
     page.tours.requests[0].reply([tourNamed('Tatacoa', { baseRateCents: 18_000_000 })]);
     await page.settle();
-    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('180000.00');
+    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('$180.000');
     expect(card(page).querySelector('[data-value="base"]')).toBeNull();
   });
 
@@ -112,8 +112,8 @@ describe('theValueComesFromTheValuePort (AC-PO.4, RN-PO4)', () => {
     await page.chooseDate('2026-11-22');
     page.tours.requests[1].reply([tourNamed('Tatacoa', { baseRateCents: 18_000_000 })]);
     await page.settle();
-    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('162000.00');
-    expect(card(page).querySelector('[data-value="base"]')?.textContent).toContain('180000.00');
+    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('$162.000');
+    expect(card(page).querySelector('[data-value="base"]')?.textContent).toContain('$180.000');
     expect(asked.at(-1)?.[1]).toBe('2026-11-22');
   });
 
@@ -198,5 +198,69 @@ describe('theOfferIsReadOnlyAndLeaksNothing (AC-PO.1, AC-PO.6, AC-PO.7, RN-PO7)'
     const code = listSourceFiles().filter((file) => file.startsWith('src/app/public-offer/'))
       .map((file) => withoutComments(readFileSync(file, 'utf8'))).join('\n');
     expect(code).not.toMatch(/ActorContext|session|Idempotency/i);
+  });
+});
+
+describe('theOfferFollowsItsAuthorizedScreens (tours.html, alojamiento.html, restaurantes.html; PR #361)', () => {
+  const discounted = new (class extends TourValueSource {
+    override valueOf(tour: PublicTour): TourValue {
+      return { baseRateCents: tour.baseRateCents, currentValueCents: tour.commercialName === 'Suaza' ? 103_920_000 : tour.baseRateCents };
+    }
+  })();
+  const text = (node: Element | null | undefined) => node?.textContent?.replace(/\s+/g, ' ').trim();
+
+  it('draws the header and the numbered panels in Spanish', async () => {
+    const page = await openPage();
+    expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Catálogo de experiencias');
+    expect(text(page.host.querySelector('h1'))).toBe('Tours y establecimientos asociados');
+    expect(text(page.part('tours').querySelector('h2'))).toBe('01. Tours disponibles');
+    expect(text(page.part('establishments').querySelector('h2'))).toBe('02. Establecimientos asociados');
+    expect(text(page.part('tours').querySelector('[data-state="loading"]'))).toBe('Cargando tours…');
+    expect(text(page.part('establishments').querySelector('[data-state="loading"]'))).toBe('Cargando establecimientos…');
+  });
+
+  it('writes the chosen date as the screens do, never as an ISO date', async () => {
+    const page = await openPage();
+    await page.chooseDate('2026-11-22');
+    expect(text(page.part('tours').querySelector('[data-date]'))).toBe('Disponibles el 22 nov 2026');
+  });
+
+  it('draws a tour card as tours.html: name, from-value in pesos, discount tag and transport', async () => {
+    const page = await openPage({ value: discounted });
+    page.tours.requests[0].reply([tourNamed('Suaza', { baseRateCents: 129_900_000, transportIncluded: true }), tourNamed('Pitalito')]);
+    await page.settle();
+    const [suaza, pitalito] = page.cards('tours');
+    expect(text(suaza.querySelector('strong'))).toBe('Suaza');
+    expect(text(suaza.querySelector('.crp-tour-price'))).toBe('Antes: $1.299.000 Desde $1.039.200');
+    expect(text(suaza.querySelector('.crp-tour-discount-tag'))).toBe('Con descuento');
+    expect(text(suaza.querySelector('.crp-tour-transport'))).toBe('Transporte incluido');
+    expect(text(pitalito.querySelector('.crp-tour-price'))).toBe('Desde $18.000');
+    expect(pitalito.querySelector('.crp-tour-discount-tag')).toBeNull();
+    expect(pitalito.querySelector('.crp-tour-transport')).toBeNull();
+  });
+
+  it('draws an establishment as alojamiento.html and restaurantes.html, with the contact only when it exists', async () => {
+    const page = await openPage();
+    page.places.requests[0].reply([
+      placeNamed('Casa Neiva'), placeNamed('Sabores del Huila', { establishmentType: 'RESTAURANT', commercialInformation: '' }),
+    ]);
+    await page.settle();
+    const [hotel, restaurant] = page.cards('establishments');
+    expect(text(hotel.querySelector('strong'))).toBe('Casa Neiva');
+    expect(text(hotel.querySelector('.crp-establishment-type'))).toBe('Hotel asociado');
+    expect(text(hotel.querySelector('.crp-establishment-contact'))).toBe('Contacto: Contacto de Casa Neiva: 300 000 0000');
+    expect(text(restaurant.querySelector('.crp-establishment-type'))).toBe('Restaurante asociado');
+    expect(restaurant.querySelector('.crp-establishment-contact')).toBeNull();
+    expect(text(page.part('establishments'))).toContain('Coordina directamente con el establecimiento');
+  });
+
+  it('shows no raw code, no ISO date and no booking action of HU-COM-008', async () => {
+    const page = await openPage({ value: discounted });
+    await page.chooseDate('2026-11-22');
+    page.tours.requests[1].reply([tourNamed('Suaza', { baseRateCents: 129_900_000 })]);
+    page.places.requests[0].reply([placeNamed('Casa Neiva'), placeNamed('Sabores', { establishmentType: 'RESTAURANT' })]);
+    await page.settle();
+    const all = page.host.textContent ?? '';
+    expect(all).not.toMatch(/\bHOTEL\b|\bRESTAURANT\b|\d{4}-\d{2}-\d{2}|\d\.\d{2}(?!\d)|Reservar/);
   });
 });
