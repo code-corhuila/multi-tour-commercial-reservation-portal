@@ -331,7 +331,7 @@
 }
 /* HU-COM-008 finalizar-reserva.html (21): pill, main cards, summary aside and the bottom bar of reservar-tour. */
 .crp-root .self-service-confirm { display: block; margin: 0; }
-.crp-root .crp-finish-content { display: grid; gap: 18px; width: min(100%, 1100px); margin: 0 auto; padding: 24px 0 40px; }
+.crp-root .crp-finish-content { display: grid; gap: 18px; width: min(100%, 1100px); margin: 0 auto; padding: 24px 0 144px; }
 .crp-root .crp-finish-pill { justify-self: center; display: inline-flex; align-items: center; min-height: 38px; margin: 0; padding: 0 16px; border-radius: 999px; background: #eef6f1; color: #2f6b57; font-size: 0.92rem; font-weight: 800; }
 .crp-root .crp-finish-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 24px; align-items: start; }
 .crp-root .crp-finish-main, .crp-root .crp-finish-aside { display: grid; gap: 18px; }
@@ -344,9 +344,13 @@
 .crp-root .crp-finish-travelers > span { display: block; margin-bottom: 12px; color: #17252b; font-size: 0.94rem; }
 .crp-root .crp-finish-conditions ul { margin: 14px 0; padding-left: 32px; color: #17252b; font-size: 0.92rem; }
 .crp-root .crp-finish-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding-bottom: 18px; border-bottom: 1px solid #e7ece9; }
-.crp-root .crp-finish-media { min-height: 136px; border-radius: 18px; background: #dfe9e5; }
+.crp-root .crp-finish-media { min-height: 136px; overflow: hidden; border-radius: 18px; background: #dfe9e5; }
+.crp-root .crp-finish-media img { display: block; width: 100%; height: 100%; min-height: 136px; object-fit: cover; }
 .crp-root .crp-finish-summary .self-service-summary-copy { margin: 0; }
 .crp-root .crp-finish-summary .self-service-summary-copy strong { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.25; }
 .crp-root .crp-finish-help { background: #f8fbfa; }
 .crp-root .crp-finish-help strong { display: block; margin-bottom: 6px; color: #17252b; }
 .crp-root .crp-finish-help span { color: #5a6b70; font-size: 0.96rem; line-height: 1.6; }
+@media (max-width: 760px) {
+  .crp-root .crp-finish-content { padding-bottom: 210px; }
+}

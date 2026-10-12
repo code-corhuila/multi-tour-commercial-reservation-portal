@@ -7,7 +7,7 @@ import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { PortalNavigation } from '../../portal-navigation';
-import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
+import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, tourPhoto, travelers } from '../model/self-service-reservation';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
 
@@ -72,7 +72,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
             <aside class="crp-finish-aside">
               <article class="crp-booking-card self-service-summary" aria-labelledby="self-service-summary-title">
                 <h2 id="self-service-summary-title">{{ text.summaryTitle }}</h2>
-                <div class="crp-finish-summary"><div class="crp-finish-media" aria-hidden="true"></div>
+                <div class="crp-finish-summary"><div class="crp-finish-media" aria-hidden="true">@if (photo(selection!.serviceIds[0]); as src) { <img [src]="src" alt="" /> }</div>
                   <p class="self-service-summary-copy"><strong>{{ current.quote.tourName }}</strong>&ngsp;<span>{{ date(current.quote.departureAt) }}</span>&ngsp;<span>{{ travelers(selection!.people) }}</span></p></div>
                 <dl class="self-service-pricing">
                   <dt>{{ text.basePrice }}</dt><dd>{{ cop(current.quote.baseValueCents) }}</dd>
@@ -105,6 +105,7 @@ export class ConfirmReservationPageComponent {
   protected readonly date = formatDate;
   protected readonly travelers = travelers;
   protected readonly companions = companions;
+  protected readonly photo = tourPhoto;
   protected readonly flow = RESERVATION_FLOW;
   protected readonly holder = [
     { id: 'crp-holder-name', label: 'Nombre completo', type: 'text', placeholder: 'Nombre completo' },
