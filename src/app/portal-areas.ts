@@ -24,8 +24,9 @@ export interface PortalArea {
   readonly isAvailable?: (injector: Injector) => boolean;
   /** Who sees it (PortalAudience): the operator sidebar, the default, or the client header. */
   readonly audience?: Audience;
-  /** Client chrome: 'site' (tours.html header and footer, the default) or 'panel' (compact header of panel-cliente.html, no footer). */
-  readonly clientChrome?: 'site' | 'panel';
+  /** Client chrome: 'site' (tours.html header and footer, the default), 'panel' (compact header of panel-cliente.html, no footer)
+   *  or 'none' (a flow screen that draws its own top bar). */
+  readonly clientChrome?: 'site' | 'panel' | 'none';
 }
 
 /** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
