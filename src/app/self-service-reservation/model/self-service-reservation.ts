@@ -121,3 +121,62 @@ export const SELF_SERVICE_TEXT = {
   empty: 'Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.',
   panelNotCustomer: 'Inicia sesión como cliente para ver tus reservas.',
 } as const;
+
+/** The keys of the client areas of this story that a page opens with parameters (PortalNavigation.open). */
+export const RESERVATION_FLOW = Object.freeze({ reserve: 'reserve', finish: 'finish' } as const);
+
+/** DP-RS1 inside the shell: the parameters of the last opening, read as the URL query is. */
+export function selectionFromParams(params: Readonly<Record<string, string>>): ReservationSelection | null {
+  return selectionFromQuery(new URLSearchParams({ ...params }).toString());
+}
+
+/** Accent- and case-blind comparison of a departure's tour name with a catalog name (no tour id on a departure yet, G-OPS). */
+export function sameTour(a: string, b: string): boolean {
+  const plain = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').trim().toLowerCase();
+  return plain(a) === plain(b);
+}
+
+/** `2026-11` to `Noviembre de 2026`. */
+export function monthLabel(yearMonth: string): string {
+  const names = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const [year, month] = yearMonth.split('-').map(Number);
+  const name = names[month - 1] ?? '';
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} de ${year}`;
+}
+
+/** The texts of reservar-tour.html (authorized screen 20). */
+export const RESERVE_TEXT = {
+  back: 'Volver al tour',
+  title: 'Seleccionar salida y viajeros',
+  from: 'Desde',
+  departures: 'Salidas disponibles',
+  previous: 'Mes anterior',
+  next: 'Mes siguiente',
+  weekdays: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
+  conditionsTitle: 'Condiciones de reserva',
+  conditionsCopy: 'Consulta las condiciones aplicables a este tour antes de continuar.',
+  seeConditions: 'Ver condiciones',
+  noConditions: 'No hay condiciones adicionales configuradas para este tour.',
+  travelersTitle: 'Cantidad de viajeros',
+  travelers: 'Viajeros',
+  travelersCopy: 'Incluye al titular y sus acompañantes.',
+  fewer: 'Quitar un viajero',
+  more: 'Agregar un viajero',
+  capacityOk: 'Disponibilidad validada para la cantidad de viajeros seleccionada.',
+  chooseDeparture: 'Selecciona una salida disponible.',
+  selected: 'Salida seleccionada:',
+  singleDeparture: 'Cada reserva corresponde a una única salida.',
+  projected: 'Valor proyectado',
+  discount: 'Descuento vigente',
+  final: 'Valor final',
+  selection: 'Seleccionado',
+  noDate: 'Sin fecha seleccionada',
+  continue: 'Continuar reserva',
+  noTour: 'Tour no disponible',
+  noTourCopy: 'Este tour ya no está activo o no existe. Vuelve a Explorar para elegir otro.',
+  noDepartures: 'Este tour no tiene salidas abiertas para reservas en este momento.',
+} as const;
+
+export function overCapacity(seats: number): string {
+  return `La cantidad seleccionada supera la capacidad disponible (${seats} ${seats === 1 ? 'viajero' : 'viajeros'}).`;
+}
