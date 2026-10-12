@@ -35,7 +35,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
   },
   {
-    key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent,
+    key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent, audience: 'customer',
     // HU-COM-008 DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
     isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
