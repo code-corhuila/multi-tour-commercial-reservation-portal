@@ -3,12 +3,20 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
-import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
+import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CATALOG_COPY } from '../catalog-copy';
 import { formatCop } from '../../shared/format';
-import { CatalogItem } from '../model/catalog-item';
-import { PageState } from '../../shared/page-state';
-import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
+
+/**
+ * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
+ * combinations for four legal states, and the illegal ones are the blank screens Annex H forbids.
+ */
+export type PageState =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly retry: () => void }
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'data'; readonly items: readonly CatalogItem[] };
 
 /** The one form the page may show: registering (no item) or changing the given item. */
 interface FormTarget {
