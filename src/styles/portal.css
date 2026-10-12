@@ -192,9 +192,8 @@
   .crp-root .crp-nav { flex-wrap: wrap; }
   .crp-root .crp-operator-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .crp-root .crp-filters > div { flex-basis: 100%; }
-  .crp-root form, .crp-root .crp-discount-grid, .crp-root .crp-discount-hero { grid-template-columns: 1fr; }
+  .crp-root .crp-operator-shell form, .crp-root .crp-discount-grid, .crp-root .crp-discount-hero { grid-template-columns: 1fr; }
   .crp-root .crp-discount-promo { align-items: flex-start; flex-direction: column; }
-  .crp-root .crp-operator-shell form { grid-template-columns: 1fr; }
 }
 
 /* Client layout of tours.html: sticky header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. */
