@@ -20,7 +20,7 @@ export const departureOf = (n: number, over: Partial<Departure> = {}): Departure
 export const serviceOf = (name: string, baseRateCents: number, over: Partial<CatalogItem> = {}): CatalogItem =>
   ({ ...itemNamed(name), serviceId: `svc-${name}`, baseRateCents, ...over });
 export const reservationOf = (id: string, over: Partial<Reservation> = {}): Reservation => ({
-  id, leadCustomerName: 'Lead Demo', departureLabel: 'Tour 1 · 2026-11-07', conditions: 'Demo conditions', people: 2,
+  id, leadCustomerName: 'Lead Demo', tourName: 'Tour 1', departureDate: '2026-11-07', conditions: 'Demo conditions', people: 2,
   quote: { services: [{ name: 'Kayak', cents: 4000 }], transportCents: 1000, projectedCents: 5000, discounts: [], finalCents: 5000 },
   status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, ...over,
 });

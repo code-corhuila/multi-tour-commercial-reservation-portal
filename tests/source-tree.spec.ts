@@ -49,6 +49,7 @@ const SPECIFIED_TREE = [
   'src/app/demo/reservations-demo.ts',
   'src/app/reservations/components/reservation-breakdown.component.ts',
   'src/app/reservations/components/reservation-form.component.ts',
+  'src/app/reservations/components/reservation-view.component.ts',
   'src/app/reservations/data/departures-source.ts',
   'src/app/reservations/data/reservation-integrations.ts',
   'src/app/reservations/data/reservations-source.ts',

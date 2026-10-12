@@ -26,10 +26,10 @@ const errorBeside = (element: HTMLElement, name: string) => {
 describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
   it('offers one departure at a time, only Programada and open, among labelled fields', async () => {
     const { element } = await openForm();
-    const select = within(element).getByLabelText('Departure') as HTMLSelectElement;
+    const select = within(element).getByLabelText('Salida concreta') as HTMLSelectElement;
     expect(select.multiple).toBe(false);
     expect(Array.from(select.options).map((o) => o.value).filter(Boolean)).toEqual(['dep-1', 'dep-4']);
-    for (const label of ['Lead customer', 'Number of people']) expect(within(element).getByLabelText(label)).toBeTruthy();
+    for (const label of ['Cliente titular', 'Cantidad total de viajeros']) expect(within(element).getByLabelText(label)).toBeTruthy();
     expect(within(element).queryByLabelText(/Closed/)).toBeNull();
   });
 });
@@ -38,17 +38,17 @@ describe('missingMandatoryDataIsNamedBesideEachFieldAndNothingIsSent', () => {
   it('names the customer, the departure, the services and the people beside their fields', async () => {
     const { element, submit, writer } = await openForm();
     await submit();
-    expect(errorBeside(element, 'leadCustomerId')).toContain('Lead customer required');
-    expect(errorBeside(element, 'departureId')).toContain('Departure required');
-    expect(errorBeside(element, 'people')).toContain('Number of people required');
-    expect(element.querySelector('fieldset')!.textContent).toContain('At least one service required');
+    expect(errorBeside(element, 'leadCustomerId')).toContain('El cliente titular es obligatorio');
+    expect(errorBeside(element, 'departureId')).toContain('La salida es obligatoria');
+    expect(errorBeside(element, 'people')).toContain('La cantidad de viajeros es obligatoria');
+    expect(element.querySelector('fieldset')!.textContent).toContain('Selecciona al menos un servicio');
     expect(writer.calls).toHaveLength(0);
   });
 
   it('names only the lead customer when it is the one missing', async () => {
     const { element, choose, tick, type, submit, writer } = await openForm();
     await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2'); await submit();
-    expect(errorBeside(element, 'leadCustomerId')).toContain('Lead customer required');
+    expect(errorBeside(element, 'leadCustomerId')).toContain('El cliente titular es obligatorio');
     expect(errorBeside(element, 'people')).toBe('');
     expect(writer.calls).toHaveLength(0);
   });
@@ -58,7 +58,7 @@ describe('notEnoughCapacityCreatesNothingAndSaysSo', () => {
   it('blocks the submit when the people exceed the effective capacity of the departure', async () => {
     const { element, fill, submit, writer } = await openForm();
     await fill('3', 'dep-4'); await submit();
-    expect(errorBeside(element, 'people')).toContain('Not enough capacity');
+    expect(errorBeside(element, 'people')).toContain('No hay cupo suficiente');
     expect(writer.calls).toHaveLength(0);
   });
 
@@ -66,7 +66,7 @@ describe('notEnoughCapacityCreatesNothingAndSaysSo', () => {
     const { element, fill, submit, writer, settle, created } = await openForm();
     await fill(); await submit();
     writer.calls[0].fail(apiError({ status: 409, code: 'insufficient-capacity' })); await settle();
-    expect(errorBeside(element, 'people')).toContain('Not enough capacity');
+    expect(errorBeside(element, 'people')).toContain('No hay cupo suficiente');
     expect(created).toHaveLength(0);
   });
 });
@@ -77,12 +77,12 @@ describe('eachDiscountLineNamesItsBaseInTheOrderApplied', () => {
     discounts.lines = [{ name: 'Early bird', base: 'ORIGINAL_VALUE', amountCents: 1000 }, { name: 'Group', base: 'PREVIOUS_SUBTOTAL', amountCents: 500 }];
     await fill(); await settle();
     const breakdown = element.querySelector('.reservation-breakdown')!;
-    expect(breakdown.textContent).toContain('Kayak'); expect(breakdown.textContent).toContain('59.97');
-    expect(breakdown.textContent).toContain('Transport per person'); expect(breakdown.textContent).toContain('15.00');
+    expect(breakdown.textContent).toContain('Kayak'); expect(breakdown.textContent).toContain('$60');
+    expect(breakdown.textContent).toContain('Transporte por persona'); expect(breakdown.textContent).toContain('$15');
     expect(Array.from(breakdown.querySelectorAll('[data-discount]')).map((d) => d.textContent?.trim()))
-      .toEqual(['Early bird (on the original value)', 'Group (on the previous subtotal)']);
-    expect(breakdown.querySelector('[data-value="projected"]')!.textContent).toContain('74.97');
-    expect(breakdown.querySelector('[data-value="final"]')!.textContent).toContain('59.97');
+      .toEqual(['Early bird (sobre el valor original)', 'Group (sobre el subtotal anterior)']);
+    expect(breakdown.querySelector('[data-value="projected"]')!.textContent).toContain('$75');
+    expect(breakdown.querySelector('[data-value="final"]')!.textContent).toContain('$60');
     expect(discounts.bases.at(-1)).toBe(7497);
   });
 });
@@ -92,7 +92,7 @@ describe('submitIsDisabledWhileASubmissionIsPending and aRetriedCreationReusesIt
     const { fill, submit, writer, button } = await openForm();
     await fill(); await submit(); await submit();
     expect(writer.calls).toHaveLength(1);
-    expect(button('Create reservation')!.disabled).toBe(true);
+    expect(button('Registrar reserva')!.disabled).toBe(true);
     expect(writer.calls[0].command).toMatchObject({ leadCustomerId: 'cus-1', departureId: 'dep-1', serviceIds: ['svc-Kayak'], people: 3 });
     expect(writer.calls[0].command.quote.projectedCents).toBe(7497);
   });
@@ -121,14 +121,14 @@ describe('everyScreenShowsOneOfTheFourStates (form)', () => {
     expect(element.querySelector('[data-state="loading"]')).not.toBeNull();
     answers.error(new Error('down')); await settle();
     expect(element.querySelector('[data-state="error"]')).not.toBeNull();
-    answers = new Subject(); await click('Retry');
+    answers = new Subject(); await click('Reintentar');
     answers.next([departureOf(1)]); answers.complete(); await settle();
     expect(element.querySelector('form[data-state="data"]')).not.toBeNull();
   });
 
   it('shows the empty state when no departure is open, and the error state when the source throws', async () => {
     const empty = await openForm({ departures: new StubDepartures(() => of([departureOf(1, { state: 'CANCELADA' })])) });
-    expect(empty.element.querySelector('[data-state="empty"]')?.textContent).toContain('No departure is open');
+    expect(empty.element.querySelector('[data-state="empty"]')?.textContent).toContain('No hay salidas abiertas para reservas');
     TestBed.resetTestingModule();
     const failing = await openForm({ departures: new StubDepartures(() => throwError(() => new Error('x'))) });
     expect(failing.element.querySelector('[data-state="error"] button')).not.toBeNull();
