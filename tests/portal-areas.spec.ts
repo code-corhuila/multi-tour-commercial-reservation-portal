@@ -245,6 +245,28 @@ describe('customerPanelChrome', () => {
   });
 });
 
+@Component({ selector: 'crp-test-flow-page', template: '<header class="flow-bar">Volver al tour</header>' })
+class FlowPageDouble {}
+@Component({ selector: 'crp-test-go-flow', template: '<button type="button" class="go" (click)="nav.open(\'flow\')">Reservar</button>' })
+class GoFlowPageDouble { protected readonly nav = inject(PortalNavigation); }
+
+describe('customerFlowChrome', () => {
+  const FLOW_AREAS: PortalArea[] = [
+    { key: CLIENT_AREA.panel, label: 'Panel cliente', component: GoFlowPageDouble, audience: 'customer', clientChrome: 'panel' },
+    { key: 'flow', label: 'Reservar tour', component: FlowPageDouble, audience: 'customer', clientChrome: 'none' },
+  ];
+
+  it('draws no client header, panel header or footer on a flow screen with its own top bar, inside the canvas', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, FLOW_AREAS);
+    host.querySelector<HTMLButtonElement>('crp-test-go-flow .go')!.click();
+    await settle();
+    expect(host.querySelector('.crp-client-content > crp-test-flow-page .flow-bar')).not.toBeNull();
+    expect(host.querySelector('.crp-client-header')).toBeNull();
+    expect(host.querySelector('.crp-client-panel-header')).toBeNull();
+    expect(host.querySelector('.crp-client-footer')).toBeNull();
+  });
+});
+
 describe('portalAudience', () => {
   const audienceOf = (role: ActorRole) => {
     TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs(role) }] });

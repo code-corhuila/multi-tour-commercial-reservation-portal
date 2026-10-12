@@ -146,3 +146,11 @@ describe('customerHeaderAndFooterSpanTheViewport', () => {
     expect(ruleOf(css, '.crp-root .crp-client-header button.crp-is-active')).not.toMatch(/text-decoration|border|background/);
   });
 });
+
+describe('formGridStaysInTheOperatorShell', () => {
+  it('lays forms in two columns only inside the operator shell, never in a client form', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    expect(css).not.toMatch(/\.crp-root form\s*[{>,]/);
+    expect(css).toMatch(/\n\.crp-root \.crp-operator-shell form \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  });
+});
