@@ -53,10 +53,11 @@ describe('mountEntryContract', () => {
     expect(text()).toContain(ESTABLISHMENTS_COPY.newEstablishment);
   });
 
-  it('fails closed to READ_ONLY for an unknown or empty role: data but no actions', async () => {
+  it('fails closed to the client layout for an unknown or empty role: no operator area and no actions', async () => {
     for (const roles of [['SOMETHING_ELSE'], []]) {
       mountAs(roles);
-      await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(0));
+      await vi.waitFor(() => expect(host.querySelector('.crp-client-header')).toBeTruthy());
+      expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
       // The panel copy names "Desactivar" as prose, so the actions are looked for among the buttons.
       const buttons = Array.from(host.querySelectorAll('button'), (button) => button.textContent?.trim() ?? '').join('|');
       expect(buttons).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
