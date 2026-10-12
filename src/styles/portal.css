@@ -253,12 +253,27 @@
 .crp-root .crp-offer-summary .crp-offer-from { font-size: 1.7rem; }
 .crp-root .crp-offer-validity { color: #26363a; font-size: 0.94rem; }
 .crp-root .crp-offer-reserve { min-height: 48px; border-radius: 12px; font-weight: 800; }
+.crp-root .crp-offer-grid.crp-offer-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.crp-root .crp-offer-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.crp-root .crp-offer-filters button { min-height: 38px; padding: 0 14px; border: 1px solid #d7e0de; border-radius: 999px; background: #ffffff; color: #45555c; font-size: 0.9rem; font-weight: 700; }
+.crp-root .crp-offer-filters button.crp-is-active { border-color: #17252b; background: #17252b; color: #ffffff; }
+.crp-root .crp-offer-link { justify-self: start; min-height: 0; padding: 0; border: 0; background: none; color: #2f6b57; font-weight: 700; }
+.crp-root .crp-venue-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #d7e0de; }
+.crp-root .crp-venue-top .crp-offer-back { margin-bottom: 0; }
+.crp-root .crp-venue-hero { display: block; width: 100%; height: clamp(180px, 26vw, 290px); margin-top: 26px; border-radius: 16px; object-fit: cover; box-shadow: 0 18px 34px rgba(28, 35, 38, 0.06); }
+.crp-root .crp-venue h1 { margin-top: 32px; font-size: clamp(2rem, 1.6rem + 1vw, 2.6rem); }
+.crp-root .crp-venue-category { margin: 16px 0; color: #17252b; }
+.crp-root .crp-venue-box { display: grid; gap: 16px; max-width: 490px; padding: 16px; border: 1px solid #d7e0de; border-radius: 20px; background: #fbfcfc; }
+.crp-root .crp-venue-box p { margin: 0; line-height: 1.6; }
+.crp-root .crp-venue-contact { padding: 4px 20px 20px; border: 1px solid #ece6d8; border-radius: 16px; background: #fffdf7; }
+.crp-root .crp-venue-contact h2 { margin: 18px 0 12px; font-size: 1rem; }
+.crp-root .crp-venue-contact p + p { margin-top: 12px; }
 @media (max-width: 1080px) {
-  .crp-root .crp-offer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .crp-root .crp-offer-grid, .crp-root .crp-offer-grid.crp-offer-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .crp-root .crp-offer-detail-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
-  .crp-root .crp-offer-grid { grid-template-columns: 1fr; }
+  .crp-root .crp-offer-grid, .crp-root .crp-offer-grid.crp-offer-grid-3 { grid-template-columns: 1fr; }
 }
