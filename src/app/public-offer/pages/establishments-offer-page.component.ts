@@ -5,7 +5,12 @@ import { PublicEstablishment } from '../model/public-offer';
 import { PUBLIC_OFFER_COPY, matchesSearch, photoAt } from '../public-offer-copy';
 import { backToPanel, partOf, unavailable } from './public-offer-page.component';
 
-type Shown = PublicEstablishment & { readonly photo: string };
+type Shown = PublicEstablishment & { readonly photo: string; readonly lines: readonly string[] };
+
+/** The contact fields the data has, in the order of the screens: email, phone, address. */
+function contactLines({ contact }: PublicEstablishment): readonly string[] {
+  return [contact?.email, contact?.phone, contact?.address].filter((line): line is string => !!line?.trim());
+}
 
 /** alojamiento.html (hotels) or gastronomia.html with the restaurants of restaurantes.html: information and contact only (GAP-04). */
 @Component({
@@ -45,8 +50,11 @@ type Shown = PublicEstablishment & { readonly photo: string };
                 <div class="crp-tour-media"><img [src]="place.photo" [alt]="place.commercialName" loading="lazy" /></div>
                 <div class="crp-tour-body">
                   <strong>{{ place.commercialName }}</strong>
-                  <span class="crp-establishment-type">{{ copy.types[place.establishmentType] }}</span>
-                  @if (place.commercialInformation.trim()) { <p class="crp-establishment-contact">{{ copy.contact }} {{ place.commercialInformation }}</p> }
+                  <span class="crp-establishment-type">{{ copy.types[place.establishmentType] }}@if (place.region) { &ngsp;· {{ place.region }} }</span>
+                  @if (place.commercialInformation.trim()) { <p class="crp-establishment-info">{{ place.commercialInformation }}</p> }
+                  @if (place.lines.length) {
+                    <p class="crp-establishment-contact">{{ copy.contact }}&ngsp;@for (line of place.lines; track $index) { <span>{{ line }}</span>&ngsp; }</p>
+                  }
                 </div>
               </li>
             }
@@ -68,7 +76,7 @@ export class EstablishmentsOfferComponent implements OnInit {
   protected readonly placesState = partOf(this.requests, () => (this.establishments?.listActive() ?? unavailable()).pipe(
     // RN-PO5: an inactive association never reaches the screen, even if the port returns it.
     map((places) => places.filter((place) => place.active && place.establishmentType === this.kind())
-      .map((place, position): Shown => ({ ...place, photo: photoAt(position + 1) }))),
+      .map((place, position): Shown => ({ ...place, photo: photoAt(position + 1), lines: contactLines(place) }))),
   ), () => this.requests.next());
 
   ngOnInit(): void { this.requests.next(); }
