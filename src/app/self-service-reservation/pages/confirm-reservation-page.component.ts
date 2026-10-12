@@ -22,11 +22,11 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
       @let current = state();
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" (click)="reload()">{{ text.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ selection ? text.noMethods : text.noSelection }}</p> }
         @case ('data') {
           <div class="self-service-checkout" data-state="data">
-            <form class="crp-operator-panel" (submit)="$event.preventDefault(); confirm()" novalidate>
+            <form class="self-service-box" (submit)="$event.preventDefault(); confirm()" novalidate>
               <h2>{{ text.conditionsTitle }}</h2>
               <p class="self-service-note">{{ text.conditionsCopy }}</p>
               @for (consent of consents; track consent.key) {
@@ -43,9 +43,9 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
               </select>
               <p id="self-service-method-error" class="self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
               @if (standing === 'OTHER') { <p role="status">{{ text.notCustomer }}</p> }
-              @else { <button type="submit" class="crp-operator-primary" [disabled]="pending()">{{ text.confirm }}</button> }
+              @else { <button type="submit" class="crp-primary" [disabled]="pending()">{{ text.confirm }}</button> }
             </form>
-            <aside class="crp-operator-panel self-service-summary" aria-labelledby="self-service-summary-title">
+            <aside class="self-service-box self-service-summary" aria-labelledby="self-service-summary-title">
               <h2 id="self-service-summary-title">{{ text.summaryTitle }}</h2>
               <p class="self-service-summary-copy"><strong>{{ current.quote.tourName }}</strong>
                 <span>{{ date(current.quote.departureAt) }}</span><span>{{ travelers(selection!.people) }}</span></p>
@@ -62,7 +62,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
       @if (refusal()) { <p role="alert">{{ refusal() }}</p> }
       @if (created(); as r) {
         <p role="status" class="self-service-created">{{ text.created }}: <strong>{{ r.reservationId }}</strong> · {{ text.final }}
-          {{ cop(r.finalValueCents) }} <span class="crp-operator-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span></p>
+          {{ cop(r.finalValueCents) }} <span class="crp-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span></p>
       }
     </section>
   `,

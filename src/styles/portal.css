@@ -400,7 +400,8 @@
 /* HU-COM-008 as finalizar-reserva.html and mis-reservas.html: phone width first (RNF-RS1). */
 .crp-root .self-service-confirm + .self-service-panel { margin-top: 40px; }
 .crp-root .self-service-checkout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); gap: 22px; align-items: start; }
-.crp-root .self-service-checkout .crp-operator-panel { margin-top: 0; }
+.crp-root .self-service-box { padding: 22px 24px; background: var(--crp-surface); border: 1px solid #d7e0de; border-radius: 20px; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); }
+.crp-root .self-service-box h2 { margin: 0 0 16px; color: #17252b; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.03em; }
 .crp-root .self-service-checkout form { display: block; }
 .crp-root .self-service-consent { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 10px; font-size: 0.9rem; }
 .crp-root .self-service-consent input { margin-top: 4px; }
@@ -414,7 +415,7 @@
 .crp-root .self-service-pricing dt:last-of-type, .crp-root .self-service-total { padding-top: 12px; border-top: 1px solid #e7ece9; color: #17252b; font-weight: 800; }
 .crp-root .self-service-total { font-size: 1.7rem; letter-spacing: -0.03em; }
 .crp-root .self-service-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
-.crp-root .self-service-card { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; padding: 22px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: var(--crp-radius-card); overflow-wrap: anywhere; }
+.crp-root .self-service-card { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; padding: 22px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: 20px; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); overflow-wrap: anywhere; }
 .crp-root .self-service-card-copy { display: grid; gap: 6px; }
 .crp-root .self-service-card-copy strong { color: #17252b; font-size: 1.2rem; }
 .crp-root .self-service-card-copy p { margin: 0; color: #5a6b70; }
@@ -423,4 +424,21 @@
 @media (max-width: 760px) {
   .crp-root .self-service-checkout, .crp-root .self-service-card { grid-template-columns: 1fr; }
   .crp-root .self-service-card-status { justify-items: start; }
+}
+/* Client layout of the authorized client screens (tours.html header, panel-cliente.html greeting): no sidebar, no role line. */
+.crp-root .crp-client-shell { min-height: 100%; background: var(--crp-bg); color: var(--crp-text); }
+.crp-root .crp-client-header { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px clamp(20px, 4vw, 56px); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); }
+.crp-root .crp-client-brand { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; color: var(--crp-text); }
+.crp-root .crp-client-brand span { color: var(--crp-cta); }
+.crp-root .crp-client-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
+.crp-root .crp-client-nav button, .crp-root .crp-client-nav button:hover:not(:disabled) { min-height: 36px; padding: 0 4px; border-color: transparent; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
+.crp-root .crp-client-nav button:hover:not(:disabled), .crp-root .crp-client-nav button.crp-is-active { color: var(--crp-accent-strong); text-decoration: underline; text-underline-offset: 6px; }
+.crp-root .crp-client-hero, .crp-root .crp-client-content { width: min(100%, 1180px); margin: 0 auto; padding: 26px clamp(20px, 4vw, 56px) 0; }
+.crp-root .crp-client-hero { display: grid; gap: 12px; }
+.crp-root .crp-client-hero p { margin: 0; max-width: 760px; color: var(--crp-soft); }
+.crp-root .crp-client-hero .crp-client-eyebrow { color: var(--crp-accent); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
+.crp-root .crp-client-hero .crp-client-greeting { color: var(--crp-text); font-size: clamp(1.8rem, 1.5rem + 1.2vw, 2.6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.05em; }
+.crp-root .crp-client-content { padding-bottom: 56px; }
+@media (max-width: 720px) {
+  .crp-root .crp-client-nav { order: 3; width: 100%; justify-content: center; gap: 16px; padding-top: 10px; border-top: 1px solid var(--crp-line); }
 }
