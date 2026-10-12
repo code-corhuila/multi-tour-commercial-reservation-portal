@@ -7,6 +7,7 @@ import {
   PaymentMethodsSource,
   ReservationRequester,
   ReservationSelectionSource,
+  SelectionQuoteSource,
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
   CustomerStanding,
@@ -24,6 +25,7 @@ import {
   CustomerAs,
   METHODS,
   noCapacity,
+  quoteOf,
   RecordingRequester,
   reservationFor,
   SELECTION,
@@ -42,6 +44,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: CustomerContext, useValue: customer },
     { provide: ReservationSelectionSource, useValue: selectionAt(options.selection === undefined ? SELECTION : options.selection) },
     { provide: PaymentMethodsSource, useValue: methods },
+    { provide: SelectionQuoteSource, useValue: quoteOf() },
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
   ] });
@@ -55,8 +58,13 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     const select = element.querySelector('select') as HTMLSelectElement;
     select.value = code; select.dispatchEvent(new Event('change')); await settle();
   };
+  const accept = async () => {
+    for (const box of Array.from(element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))) { box.click(); }
+    await settle();
+  };
+  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); };
   const confirm = async () => { buttonNamed(element, T.confirm)!.click(); await settle(); };
-  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, confirm };
+  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm };
 }
 
 async function openPanel(standing: CustomerStanding = 'FINAL_CUSTOMER') {
@@ -146,16 +154,18 @@ describe('everySelfServiceScreenShowsOneOfTheFourStates', () => {
 });
 
 describe('confirmsTheSelectionAndCreatesAPendingPaymentReservation', () => {
-  it('shows the selection, sends it with the method, and shows the values the service returned', async () => {
+  it('summarizes the selection, sends it with the method, and shows the values the service returned', async () => {
     const p = await openConfirm(); await p.showMethods();
-    for (const shown of ['demo-dep-7', 'demo-svc-1', 'demo-svc-2']) expect(p.element.textContent).toContain(shown);
-    await p.choose('BANK_TRANSFER'); await p.confirm();
+    for (const shown of ['Ruta Andina', '18 sep 2026', '2 viajeros']) expect(p.element.textContent).toContain(shown);
+    await p.fill(); await p.confirm();
     expect(p.requester.calls).toHaveLength(1);
     expect(p.requester.calls[0].selection).toEqual(SELECTION);
     expect(p.requester.calls[0].paymentMethod).toBe('BANK_TRANSFER');
     p.requester.calls[0].reply(reservationFor()); await p.settle();
-    const text = p.element.textContent ?? '';
-    for (const shown of [T.created, 'demo-res-1', '360000.00', 'PENDING_PAYMENT', 'SIN_PAGO']) expect(text).toContain(shown);
+    const created = p.element.querySelector('.self-service-created')!;
+    for (const shown of [T.created, 'RES-1843', '$1.299.000', 'Pendiente de pago']) expect(created.textContent).toContain(shown);
+    expect(created.querySelector('.crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
+    for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', '1299000.00']) expect(p.element.textContent).not.toContain(raw);
   });
   it('offers only the enabled payment methods', async () => {
     const p = await openConfirm(); await p.showMethods();
@@ -173,22 +183,31 @@ describe('aMissingFieldShowsItsErrorBesideItAndSubmitWaits', () => {
     expect(select.getAttribute('aria-invalid')).toBe('true');
     expect(p.element.querySelector(`#${select.getAttribute('aria-describedby')}`)?.textContent).toContain(T.methodMissing);
     expect(p.element.querySelector(`label[for="${select.id}"]`)?.textContent).toContain(T.method);
+    const box = p.element.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    expect(p.element.querySelector(`#${box.getAttribute('aria-describedby')}`)?.textContent).toContain(T.mustAccept);
+  });
+  it('creates nothing until both conditions are accepted', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER');
+    p.element.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click(); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.textContent).toContain(T.mustAccept);
   });
   it('disables the confirmation while a request is pending', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.confirm();
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     expect(buttonNamed(p.element, T.confirm)!.disabled).toBe(true);
   });
 });
 
 describe('aRetriedConfirmationReusesItsIdempotencyKey', () => {
   it('a double click sends one request', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER');
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
     const button = buttonNamed(p.element, T.confirm)!;
     button.click(); button.click(); await p.settle();
     expect(p.requester.calls).toHaveLength(1);
   });
   it('a retry after an error sends the same key, and a new intention after success gets a new one', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER');
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
     await p.confirm(); p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
     expect(p.element.textContent).toContain('Try again later.');
     await p.confirm();
@@ -201,14 +220,14 @@ describe('aRetriedConfirmationReusesItsIdempotencyKey', () => {
 
 describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
   it('reports the refusal and shows no created reservation', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.confirm();
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity()); await p.settle();
     expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
     expect(p.element.textContent).not.toContain(T.created);
     expect(buttonNamed(p.element, T.confirm)!.disabled).toBe(false);
   });
   it('prefers the message the container decided, when there is one', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.confirm();
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity({ userMessage: 'Sold out for that date.' })); await p.settle();
     expect(p.element.querySelector('[role="alert"]')?.textContent).toContain('Sold out for that date.');
   });
@@ -216,14 +235,14 @@ describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
 
 describe('withoutSessionConfirmAsksToSignInAndKeepsTheSelection (AC-RS.2)', () => {
   it('asks the container to sign in, sends nothing, and the remounted screen still has the selection', async () => {
-    const before = await openConfirm({ standing: 'NO_SESSION' }); await before.showMethods(); await before.choose('BANK_TRANSFER');
+    const before = await openConfirm({ standing: 'NO_SESSION' }); await before.showMethods(); await before.fill();
     await before.confirm();
     expect(before.customer.signInRequests).toBe(1);
     expect(before.requester.calls).toHaveLength(0);
     expect(before.element.textContent).toContain(T.signIn);
     TestBed.resetTestingModule();
     const after = await openConfirm({ standing: 'FINAL_CUSTOMER' }); await after.showMethods();
-    expect(after.element.textContent).toContain('demo-dep-7');
+    expect(after.element.textContent).toContain('Ruta Andina');
     expect(buttonNamed(after.element, T.confirm)).toBeDefined();
   });
 });
@@ -231,7 +250,7 @@ describe('withoutSessionConfirmAsksToSignInAndKeepsTheSelection (AC-RS.2)', () =
 describe('anInternalOrUnknownRoleIsNotOfferedTheConfirmation', () => {
   it('shows the selection read-only, with no confirm action', async () => {
     const p = await openConfirm({ standing: 'OTHER' }); await p.showMethods();
-    expect(p.element.textContent).toContain('demo-dep-7');
+    expect(p.element.textContent).toContain('Ruta Andina');
     expect(buttonNamed(p.element, T.confirm)).toBeUndefined();
     expect(p.element.textContent).toContain(T.notCustomer);
   });
@@ -242,5 +261,39 @@ describe('anInternalOrUnknownRoleIsNotOfferedTheConfirmation', () => {
       expect(p.element.textContent).toContain(T.panelNotCustomer);
       TestBed.resetTestingModule();
     }
+  });
+});
+
+describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)', () => {
+  it('the confirmation shows the summary in pesos and the two conditions, with no payment terms', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Finalizar reserva de tour');
+    const summary = p.element.querySelector('.self-service-summary')!;
+    expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
+    const rows = Array.from(summary.querySelectorAll('dt'), (dt) => `${dt.textContent?.trim()} ${dt.nextElementSibling?.textContent?.trim()}`);
+    expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
+    const consents = Array.from(p.element.querySelectorAll('input[type="checkbox"]'), (box) => box.closest('label')?.textContent?.trim());
+    expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
+    for (const absent of ['Método y plazo de pago', 'Abono', 'Pago total', 'demo-dep-7', 'demo-svc-1', '2026-09-18']) expect(p.element.textContent).not.toContain(absent);
+  });
+  it('the confirmation without a selection says so in Spanish', async () => {
+    const p = await openConfirm({ selection: null });
+    expect(p.element.textContent).toContain('Elige un tour, la fecha y los viajeros en el catálogo para finalizar tu reserva.');
+  });
+  it('Mis reservas draws the header, the history and one card per reservation, never a code', async () => {
+    const p = await openPanel(); p.source.requests[0].reply([reservationFor()]); await p.settle();
+    expect(p.element.querySelector('.crp-page-header-eyebrow')?.textContent?.trim()).toBe('Portal cliente');
+    expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Mis reservas');
+    expect(p.element.querySelector('h2')?.textContent?.trim()).toBe('Historial de reservas');
+    const card = p.element.querySelector('.self-service-card')!;
+    expect(card.querySelector('strong')?.textContent?.trim()).toBe('RES-1843 · Ruta Andina');
+    expect(card.textContent).toContain('Salida: 18 sep 2026 · 06:30 · 2 viajeros');
+    expect(card.querySelector('.crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
+    expect(card.textContent).toContain('Valor: $1.299.000');
+    for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-7', '1299000', 'Saldo', 'Medio de pago', 'Responder propuesta']) expect(p.element.textContent).not.toContain(raw);
+  });
+  it('Mis reservas without reservations shows the empty text of the mockup', async () => {
+    const p = await openPanel(); p.source.requests[0].reply([]); await p.settle();
+    expect(p.element.textContent).toContain('Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.');
   });
 });

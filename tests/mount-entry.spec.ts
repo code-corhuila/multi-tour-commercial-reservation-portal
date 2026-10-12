@@ -91,6 +91,8 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     await openSelfService();
     await vi.waitFor(() => expect(host.querySelectorAll('.self-service-panel [data-state="data"] li').length).toBeGreaterThan(0));
     expect(host.querySelectorAll('.self-service-panel button')).toHaveLength(0);
+    expect(host.querySelector('.self-service-panel')?.textContent).toContain('Pendiente de pago');
+    for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-1', 'demo-res']) expect(host.textContent).not.toContain(raw);
   });
 
   it('without a session, confirming asks the container to sign in on the same URL', async () => {
@@ -102,6 +104,7 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     await vi.waitFor(() => expect(host.querySelector('select')).toBeTruthy());
     const select = host.querySelector('select') as HTMLSelectElement;
     select.value = select.options[1].value; select.dispatchEvent(new Event('change'));
+    host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.confirm)!.click();
     await vi.waitFor(() => expect(asked).toHaveBeenCalledTimes(1));
     expect(location.search).toContain('departure=demo-dep-1');
