@@ -45,8 +45,10 @@ let nextFormId = 0;
           <p [id]="id('image') + '-help'">{{ guidance }}</p>
           @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
         </div>
-        <button type="submit" [disabled]="pending()">Save</button>
-        <button type="button" [disabled]="pending()" (click)="cancel()">Cancel</button>
+        <div class="crp-form-actions">
+        <button class="crp-primary" type="submit" [disabled]="pending()">Save</button>
+        <button class="crp-outline" type="button" [disabled]="pending()" (click)="cancel()">Cancel</button>
+      </div>
       </form>
     }
   `,
