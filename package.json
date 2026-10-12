@@ -6,6 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "build:module": "ng run commercial-reservation-portal:module && node scripts/pack-module.mjs",
+    "build:module:demo": "ng run commercial-reservation-portal:module:demo && node scripts/pack-module.mjs",
     "test": "ng test --no-watch"
   },
   "dependencies": {
