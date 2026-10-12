@@ -43,7 +43,7 @@ describe('registersAnEstablishmentAndItAppearsAsPublished', () => {
       expect(element.querySelectorAll('[data-state]').length).toBe(1);
       expect(element.querySelector('[data-state="data"]')).not.toBeNull();
       expect(element.querySelector('tbody tr')!.textContent).toContain('Newest');
-      expect(element.querySelector('tbody tr')!.textContent).toContain('ACTIVE');
+      expect(element.querySelector('tbody tr')!.textContent).toContain('Activo');
       expect(element.querySelectorAll('tbody tr').length).toBe(empty ? 1 : 2);
       expect(source.requests.length).toBe(1); expect(element.querySelector('form')).toBeNull();
     });
@@ -90,7 +90,7 @@ describe('inactivatedEstablishmentStaysInTheListAsInactive', () => {
     expect(writer.transitions).toHaveLength(1); expect(writer.transitions[0].argumentCount).toBe(1);
     expect(writer.transitions[0].id).toBe(item.associationId);
     writer.transitions[0].reply({ ...item, associationStatus: 'INACTIVE' }); await settle();
-    expect(element.querySelectorAll('tbody tr').length).toBe(1); expect(element.querySelector('tbody tr')!.textContent).toContain('INACTIVE');
+    expect(element.querySelectorAll('tbody tr').length).toBe(1); expect(element.querySelector('tbody tr')!.textContent).toContain('Inactivo');
     expect(button(ESTABLISHMENTS_COPY.reactivate).disabled).toBe(false);
   });
   it('shows a rejection by the row without changing its status and allows retry', async () => {
@@ -98,7 +98,7 @@ describe('inactivatedEstablishmentStaysInTheListAsInactive', () => {
     source.requests[0].reply([establishmentNamed('Alpha')]); await settle(); await click(ESTABLISHMENTS_COPY.inactivate);
     writer.transitions[0].fail(apiError({ userMessage: 'Status change refused.' })); await settle();
     expect(element.querySelector('tbody tr [role="alert"]')!.textContent).toContain('Status change refused.');
-    expect(element.querySelector('tbody tr')!.textContent).toContain('ACTIVE'); expect(element.querySelector('tbody tr')!.textContent).not.toContain('INACTIVE');
+    expect(element.querySelector('tbody tr')!.textContent).toContain('Activo'); expect(element.querySelector('tbody tr')!.textContent).not.toContain('Inactivo');
     expect(button(ESTABLISHMENTS_COPY.inactivate).disabled).toBe(false); await click(ESTABLISHMENTS_COPY.inactivate); expect(writer.transitions.length).toBe(2);
   });
   it('allows a different row to act while one is pending', async () => {
@@ -109,7 +109,7 @@ describe('inactivatedEstablishmentStaysInTheListAsInactive', () => {
     expect(writer.transitions.length).toBe(2);
     writer.transitions[1].reply({ ...establishmentNamed('Beta'), associationStatus: 'INACTIVE' }); await settle();
     writer.transitions[0].reply({ ...establishmentNamed('Alpha'), associationStatus: 'INACTIVE' }); await settle();
-    expect(Array.from(element.querySelectorAll('tbody tr')).every((row) => row.textContent?.includes('INACTIVE'))).toBe(true);
+    expect(Array.from(element.querySelectorAll('tbody tr')).every((row) => row.textContent?.includes('Inactivo'))).toBe(true);
   });
 });
 describe('reactivatedEstablishmentShowsAsActive', () => {
@@ -119,8 +119,8 @@ describe('reactivatedEstablishmentShowsAsActive', () => {
     source.requests[0].reply([item]); await settle(); await click(ESTABLISHMENTS_COPY.reactivate);
     expect(writer.transitions[0].kind).toBe('reactivate'); expect(writer.transitions[0].argumentCount).toBe(1);
     writer.transitions[0].reply({ ...item, associationStatus: 'ACTIVE' }); await settle();
-    expect(element.querySelector('tbody tr')!.textContent).not.toContain('INACTIVE');
-    expect(element.querySelector('tbody tr')!.textContent).toContain('ACTIVE');
+    expect(element.querySelector('tbody tr')!.textContent).not.toContain('Inactivo');
+    expect(element.querySelector('tbody tr')!.textContent).toContain('Activo');
   });
 });
 describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
