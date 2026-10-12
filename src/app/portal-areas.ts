@@ -33,8 +33,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
   },
-  // HU-COM-006 (plan D-01): the read-only public offer, for every role.
-  { key: 'offer', label: 'Oferta', component: PublicOfferPageComponent },
+  // HU-COM-006: the read-only public offer, the 'Explorar' link of the client header (tours.html).
+  { key: 'offer', label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer' },
 ]);
 
 /** The role line under the brand. */

@@ -206,3 +206,8 @@
 @media (max-width: 720px) {
   .crp-root .crp-client-nav { order: 3; width: 100%; justify-content: center; gap: 16px; padding-top: 10px; border-top: 1px solid var(--crp-line); }
 }
+/* Public offer as the client page of tours.html: open sections on the page background, no operator panel. */
+.crp-root .crp-offer-section { margin-top: 28px; }
+.crp-root .crp-offer-section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.crp-root .crp-offer-section-head h2 { margin: 0; color: #17252b; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.03em; }
+.crp-root .crp-offer-section-head p { margin: 0; color: var(--crp-soft); }
