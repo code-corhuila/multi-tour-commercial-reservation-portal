@@ -6,6 +6,8 @@ import { listSourceFiles } from './source-files';
 const SPECIFIED_TREE = [
   'src/app/app.component.ts',
   'src/app/app.config.ts',
+  'src/app/demo/demo-sources.ts',
+  'src/app/portal-shell.component.ts',
   'src/app/catalog/catalog.routes.ts',
   'src/app/catalog/components/catalog-item-form.component.ts',
   'src/app/catalog/data/catalog-api.service.ts',
@@ -23,6 +25,8 @@ const SPECIFIED_TREE = [
   'src/bootstrap.ts',
   'src/index.html',
   'src/main.ts',
+  'src/mount-entry.ts',
+  'src/styles/portal.css',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
