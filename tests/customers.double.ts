@@ -42,7 +42,7 @@ export function sensitiveAccess(granted: boolean): SensitiveDataAccess {
 /** Invented people only (RN-PC9). */
 export function personNamed(fullName: string, document: string, withHighRisk = true): Person {
   return {
-    personId: `p-${document}`, fullName, document, contact: `${document}@example.test`, birthDate: '1990-05-01',
+    personId: `p-${document}`, fullName, document, email: `${document.replace(/\s+/g, '').toLowerCase()}@example.test`, contact: '300 000 0000', birthDate: '1990-05-01',
     ...(withHighRisk ? { highRisk: { informedConsent: true, bloodType: 'AB-', emergencyContact: 'Contacto Ficticio 300', physicalRestrictions: 'Asma leve' } } : {}),
   };
 }
