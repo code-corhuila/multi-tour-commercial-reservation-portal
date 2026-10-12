@@ -1,4 +1,4 @@
-import { Injector, Type } from '@angular/core';
+import { InjectionToken, Injector, Type } from '@angular/core';
 import { ActorContext } from './catalog/data/catalog-api.service';
 import { ActorRole } from './catalog/model/catalog-item';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
@@ -8,6 +8,7 @@ import { DiscountsPageComponent } from './discounts/pages/discounts-page.compone
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
 import { CustomerContext } from './self-service-reservation/data/customer-context';
 import { SelfServiceAreaComponent } from './self-service-reservation/pages/self-service-area.component';
+import { Audience } from './portal-audience';
 
 /** One sidebar item of the operator shell and the page it shows. */
 export interface PortalArea {
@@ -17,7 +18,12 @@ export interface PortalArea {
   readonly component: Type<unknown>;
   /** Drawn only when this answers true; absent means always drawn. */
   readonly isAvailable?: (injector: Injector) => boolean;
+  /** Who sees it (PortalAudience): the operator sidebar, the default, or the client header. */
+  readonly audience?: Audience;
 }
+
+/** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
+export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTAL_AREA_LIST', { factory: () => PORTAL_AREAS });
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([

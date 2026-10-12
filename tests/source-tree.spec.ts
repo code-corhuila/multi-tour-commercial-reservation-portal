@@ -16,6 +16,7 @@ const SPECIFIED_TREE = [
   'src/app/demo/demo-sources.ts',
   'src/app/demo/discounts-demo.ts',
   'src/app/portal-areas.ts',
+  'src/app/portal-audience.ts',
   'src/app/shared/format.ts',
   'src/app/http/api-paths.ts',
   'src/app/http/catalog-api-sources.ts',
