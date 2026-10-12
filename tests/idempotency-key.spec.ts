@@ -19,17 +19,17 @@ async function openForm(options: { item?: CatalogItem; controlKeys?: boolean; ke
     inputs: options.item ? { item: options.item } : {},
   });
   const fill = () => {
-    fireEvent.input(screen.getByLabelText('Commercial name'), { target: { value: 'Canyon walk' } });
-    fireEvent.input(screen.getByLabelText('Base rate'), { target: { value: '12.50' } });
-    fireEvent.input(screen.getByLabelText('Base operational cost'), { target: { value: '7' } });
-    fireEvent.input(screen.getByLabelText('Configured capacity'), { target: { value: '18' } });
+    fireEvent.input(screen.getByLabelText('Nombre comercial'), { target: { value: 'Canyon walk' } });
+    fireEvent.input(screen.getByLabelText('Tarifa base'), { target: { value: '12.50' } });
+    fireEvent.input(screen.getByLabelText('Costo operativo base'), { target: { value: '7' } });
+    fireEvent.input(screen.getByLabelText('Capacidad configurada'), { target: { value: '18' } });
   };
   const settle = async () => {
     await view.fixture.whenStable();
     view.fixture.detectChanges();
   };
   const save = async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar servicio' }));
     await settle();
   };
   return { writer, keys, view, fill, save, settle };
@@ -42,7 +42,7 @@ describe('doubleSubmitSendsOneIdempotencyKey', () => {
   it('sends one create with one key when the same intention is submitted twice', async () => {
     const { writer, keys, view, fill } = await openForm();
     fill();
-    const button = screen.getByRole('button', { name: 'Save' });
+    const button = screen.getByRole('button', { name: 'Guardar servicio' });
     fireEvent.click(button);
     fireEvent.click(button);
     fireEvent.submit(view.container.querySelector('form') as HTMLFormElement);
