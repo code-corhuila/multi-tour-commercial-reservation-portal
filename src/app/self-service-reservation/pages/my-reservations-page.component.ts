@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
+import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
@@ -14,6 +15,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="self-service-panel" aria-labelledby="self-service-panel-title">
+      @if (back) { <button type="button" class="self-service-back" (click)="back.open(panel)"><span aria-hidden="true">←</span>&ngsp;<span>{{ text.backToPanel }}</span></button> }
       <header class="crp-page-header"><div class="crp-page-header-main">
         <p class="crp-page-header-eyebrow">{{ text.panelEyebrow }}</p>
         <h1 id="self-service-panel-title" class="crp-page-header-title">{{ text.panelTitle }}</h1>
@@ -53,6 +55,10 @@ export class MyReservationsPageComponent {
   protected readonly cop = formatCop;
   protected readonly departure = departureLine;
   protected readonly travelers = travelers;
+  /** Volver al panel cliente: only when the shell can open the panel. */
+  protected readonly panel = CLIENT_AREA.panel;
+  private readonly navigation = inject(PortalNavigation, { optional: true });
+  protected readonly back = this.navigation?.has(CLIENT_AREA.panel) ? this.navigation : null;
   protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
