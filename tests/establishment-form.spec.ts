@@ -54,7 +54,7 @@ describe('eachFieldHasItsLabelAndItsErrorBesideItThroughAriaDescribedby', () => 
       const control = field(name);
       expect(element.querySelector(`label[for="${control.id}"]`)).not.toBeNull();
       expect(control.getAttribute('aria-invalid')).toBe('true');
-      expect(errorFor(name)).toMatch(/required/i);
+      expect(errorFor(name)).toMatch(/obligatori/i);
       expect(control.parentElement!.querySelector('[role="alert"]')).not.toBeNull();
     }
     expect(writer.registrations).toEqual([]);
