@@ -12,7 +12,6 @@ import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/a
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
-import { PORTAL_AREAS, ROLE_LABELS } from '../src/app/portal-areas';
 import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
@@ -20,7 +19,7 @@ import { actorAs } from './actor-context.double';
 
 @Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
 class CustomerPageDouble {}
-const CUSTOMER_AREA: PortalArea = { key: 'explore', label: 'Explorar', component: CustomerPageDouble, audience: 'customer' };
+const CUSTOMER_AREA: PortalArea = { key: 'explore', label: 'Área de prueba', component: CustomerPageDouble, audience: 'customer' };
 
 async function openShell(role: ActorRole, withDiscounts = true, extra: PortalArea[] = []) {
   const catalog = new DemoCatalogStore();
@@ -49,7 +48,7 @@ describe('portalAreasRegistry', () => {
       { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
-      { key: 'offer', label: 'Oferta', component: PublicOfferPageComponent },
+      { key: 'offer', label: 'Explorar', component: PublicOfferPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
   });
@@ -67,7 +66,7 @@ describe('operatorShellSidebar', () => {
     expect(host.querySelector('.crp-operator-shell > main.crp-operator-content')).not.toBeNull();
     expect(host.querySelector('.crp-operator-brand')?.textContent?.trim()).toBe('MULTITOUR');
     expect(host.querySelector('.crp-operator-role')?.textContent?.trim()).toBe('Administrador del tenant');
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Descuentos', 'Oferta']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Descuentos']);
     expect(items()[0].classList.contains('crp-is-active')).toBe(true);
     expect(items()[0].getAttribute('aria-current')).toBe('page');
     expect(host.querySelector('app-catalog-page')).not.toBeNull();
@@ -86,12 +85,12 @@ describe('operatorShellSidebar', () => {
   it('hides Descuentos from a role that cannot manage discounts', async () => {
     const { host, items } = await openShell('OPERATIONAL_COLLABORATOR');
     expect(host.querySelector('.crp-operator-role')?.textContent?.trim()).toBe('Colaborador operativo');
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Oferta']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos']);
   });
 
   it('hides Descuentos when the build supplies no discount source', async () => {
     const { items } = await openShell('TENANT_ADMINISTRATOR', false);
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Oferta']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos']);
   });
 
   it('shows the operator no customer area', async () => {
@@ -110,19 +109,20 @@ describe('customerShellHeader', () => {
     expect(host.textContent).not.toContain('Solo lectura');
     expect(host.querySelector('.crp-client-shell > header.crp-client-header .crp-client-brand')?.textContent?.trim()).toBe('MULTITOUR');
     expect(host.querySelector('.crp-client-nav')?.getAttribute('aria-label')).toBe('Navegación principal del cliente');
-    expect(links(host).map((b) => b.textContent?.trim())).toEqual(['Explorar']);
-    expect(host.textContent).not.toMatch(/Catálogos|Establecimientos|Descuentos/);
+    // HU-COM-006: the public offer is the first customer area.
+    expect(links(host).map((b) => b.textContent?.trim())).toEqual(['Explorar', 'Área de prueba']);
     expect(host.querySelector('.crp-client-eyebrow')?.textContent?.trim()).toBe('Portal cliente');
     expect(host.querySelector('.crp-client-greeting')?.textContent?.trim()).toMatch(/^Hola/);
     expect(links(host)[0].getAttribute('aria-current')).toBe('page');
-    expect(host.querySelector('.crp-client-content crp-test-customer-page')).not.toBeNull();
+    expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
   });
 
-  it('draws the client layout with no area when the build has no customer area', async () => {
+  it('shows the customer the public offer under Explorar and no operator page', async () => {
     const { host } = await openShell('READ_ONLY');
-    expect(host.querySelector('.crp-client-header')).not.toBeNull();
-    expect(links(host)).toEqual([]);
+    expect(links(host).map((b) => b.textContent?.trim())).toEqual(['Explorar']);
+    expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
     expect(host.querySelector('app-catalog-page')).toBeNull();
+    expect(PORTAL_AREAS.find((area) => area.key === 'offer')?.audience).toBe('customer');
   });
 });
 

@@ -63,18 +63,18 @@ describe('theDemoBuildProvidesTheOfferPorts', () => {
   });
 });
 
-describe('theShellOffersTheOfferToEveryRole (plan D-01)', () => {
+describe('theShellOffersTheOfferToTheCustomer (PR #361)', () => {
   let cleanup: (() => void) | undefined;
   let host: HTMLElement;
   afterEach(() => { cleanup?.(); host.remove(); });
 
-  it('shows the Oferta entry to an unknown role and opens the read-only view', async () => {
+  it('shows the Explorar entry of the client header to an unknown role and opens the read-only view', async () => {
     host = document.createElement('div');
     document.body.append(host);
     const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 0 } }));
     cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles: ['SOMETHING_ELSE'], open: () => undefined, close: () => undefined } });
-    await vi.waitFor(() => expect(Array.from(host.querySelectorAll('nav button')).some((b) => b.textContent?.trim() === 'Oferta')).toBe(true));
-    Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Oferta')!.click();
+    await vi.waitFor(() => expect(Array.from(host.querySelectorAll('nav button')).some((b) => b.textContent?.trim() === 'Explorar')).toBe(true));
+    Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Explorar')!.click();
     await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(PUBLIC_OFFER_COPY.title));
   });
 });
