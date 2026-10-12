@@ -83,7 +83,7 @@ describe('mountEntryContract', () => {
 
 describe('mountEntryWiresTheSelfServiceReservation', () => {
   const openSelfService = async () => {
-    await vi.waitFor(() => expect(host.querySelector('[data-state]')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-header .crp-client-nav button')).toBeTruthy());
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.nav)!.click();
   };
   afterEach(() => history.replaceState(null, '', '/'));
