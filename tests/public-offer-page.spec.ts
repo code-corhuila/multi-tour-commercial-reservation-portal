@@ -272,7 +272,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(within(page.host).getByLabelText('Buscar tours por nombre o destino').getAttribute('placeholder')).toBe('Buscar tours por nombre o destino...');
     const header = page.host.querySelector('header.crp-offer-head')!;
     const action = header.querySelector('.crp-page-header-action.crp-offer-search')!;
-    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['LABEL', 'INPUT', 'BUTTON']);
+    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON', 'LABEL']);
     expect(text(action.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
     expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBe(action);
     expect(page.host.querySelector('.crp-offer-when, [data-date]')).toBeNull();
