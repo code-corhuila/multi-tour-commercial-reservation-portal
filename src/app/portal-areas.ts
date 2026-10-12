@@ -20,6 +20,11 @@ export interface PortalArea {
   readonly audience?: Audience;
 }
 
+/** Keys of the client areas the client header and footer open; a story registers its client area under one of them. */
+export const CLIENT_AREA = Object.freeze({
+  panel: 'client-panel', tours: 'tours', lodging: 'lodging', gastronomy: 'gastronomy', reservations: 'my-reservations',
+} as const);
+
 /** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
 export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTAL_AREA_LIST', { factory: () => PORTAL_AREAS });
 
@@ -33,11 +38,6 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
   },
 ]);
-
-/** Keys of the client areas the client header and footer open; a story registers its client area under one of them. */
-export const CLIENT_AREA = Object.freeze({
-  panel: 'client-panel', tours: 'tours', lodging: 'lodging', gastronomy: 'gastronomy', reservations: 'my-reservations',
-} as const);
 
 export interface ClientLink { readonly key: string; readonly label: string }
 
