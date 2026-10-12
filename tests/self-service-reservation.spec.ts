@@ -41,7 +41,7 @@ import {
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
 
-async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys } = {}) {
+async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys; areas?: readonly string[] } = {}) {
   const customer = new CustomerAs(options.standing ?? 'FINAL_CUSTOMER');
   const methods = new ControllablePaymentMethods();
   const requester = new RecordingRequester();
@@ -53,6 +53,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: SelectionQuoteSource, useValue: quoteOf() },
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
+    ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
@@ -213,15 +214,33 @@ describe('aRetriedConfirmationReusesItsIdempotencyKey', () => {
     button.click(); button.click(); await p.settle();
     expect(p.requester.calls).toHaveLength(1);
   });
-  it('a retry after an error sends the same key, and a new intention after success gets a new one', async () => {
+  it('a retry after an error sends the same key, and success makes no new key', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill();
     await p.confirm(); p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
     expect(p.element.textContent).toContain('Try again later.');
     await p.confirm();
     expect(p.requester.calls[1].idempotencyKey).toBe(p.requester.calls[0].idempotencyKey);
     p.requester.calls[1].reply(reservationFor()); await p.settle();
-    expect(p.keys.generated.length).toBe(2);
-    expect(p.keys.generated[1]).not.toBe(p.requester.calls[0].idempotencyKey);
+    expect(p.keys.generated.length).toBe(1);
+  });
+});
+
+describe('aCreatedReservationCannotBeConfirmedAgain (audit S23, AC-RS.6)', () => {
+  it('after success the confirm action is gone and a new submit sends nothing', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].reply(reservationFor()); await p.settle();
+    expect(buttonNamed(p.element, T.confirm)).toBeUndefined();
+    p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
+    expect(p.requester.calls).toHaveLength(1);
+    expect(p.keys.generated).toHaveLength(1);
+  });
+
+  it('shows the success state with Ver mis reservas, which opens Mis reservas', async () => {
+    const p = await openConfirm({ areas: [CLIENT_AREA.reservations] }); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].reply(reservationFor()); await p.settle();
+    expect(p.element.querySelector('[role="status"].self-service-created')?.textContent).toContain('RES-1843');
+    buttonNamed(p.element, 'Ver mis reservas')!.click(); await p.settle();
+    expect(TestBed.inject(PortalNavigation).selected()).toBe(CLIENT_AREA.reservations);
   });
 });
 
