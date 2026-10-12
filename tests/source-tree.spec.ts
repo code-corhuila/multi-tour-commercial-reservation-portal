@@ -41,6 +41,13 @@ const SPECIFIED_TREE = [
   'src/main.ts',
   'src/mount-entry.ts',
   'src/styles/portal.css',
+  'src/app/current-discounts/model/current-discounts.ts',
+  'src/app/current-discounts/data/current-discounts-source.ts',
+  'src/app/current-discounts/data/additional-discount-writer.ts',
+  'src/app/current-discounts/components/current-discounts-value.component.ts',
+  'src/app/current-discounts/components/additional-discount-form.component.ts',
+  'src/app/current-discounts/pages/current-discounts-page.component.ts',
+  'src/app/demo/current-discounts-demo.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
