@@ -33,7 +33,8 @@ let formSequence = 0;
         </div>
         <p class="current-discounts-note">{{ text.note }}</p>
         @if (failure()) { <p role="alert">{{ failure() }}</p> }
-        <div class="crp-form-actions"><button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ text.apply }}</button></div>
+        <div class="crp-form-actions"><button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="clear()">{{ text.cancel }}</button>
+          <button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ text.apply }}</button></div>
       </form>
     }
   `,
@@ -55,6 +56,7 @@ export class AdditionalDiscountFormComponent {
   protected edit(field: keyof AdditionalDraft, event: Event): void {
     if (!this.pending()) this.draft.update((d) => ({ ...d, [field]: (event.target as HTMLInputElement).value }));
   }
+  protected clear(): void { this.attempted.set(false); this.failure.set(''); this.draft.set(EMPTY_ADDITIONAL); }
   protected submit(event: Event): void {
     event.preventDefault(); if (!this.allowed || this.pending()) return;
     this.attempted.set(true); this.failure.set('');

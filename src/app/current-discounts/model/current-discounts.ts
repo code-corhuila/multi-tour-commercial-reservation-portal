@@ -22,7 +22,7 @@ export const CURRENT_DISCOUNTS_TEXT = {
   loading: 'Cargando descuentos vigentes…', empty: 'No hay servicios para calcular en esta fecha.', failed: 'No fue posible cargar los valores.',
   applyFailed: 'No fue posible aplicar el descuento.', retry: 'Reintentar', base: 'Valor proyectado', discounts: 'Descuentos aplicables',
   final: 'Valor final', subtotal: 'Subtotal', additional: 'Descuento adicional', reason: 'Motivo', authorizedBy: 'Autorizado por',
-  apply: 'Aplicar descuento', service: 'Servicio', value: 'Valor del descuento', type: 'Tipo de valor', reasonField: 'Motivo (obligatorio)',
+  apply: 'Aplicar descuento', cancel: 'Cancelar', service: 'Servicio', value: 'Valor del descuento', type: 'Tipo de valor', reasonField: 'Motivo (obligatorio)',
   reasonHint: 'Describe el motivo del descuento adicional',
   note: 'Solo el Administrador puede autorizar descuentos adicionales; el motivo y quien autoriza quedan registrados.',
   types: [{ value: 'PERCENTAGE', label: 'Porcentaje' }, { value: 'FIXED_AMOUNT', label: 'Valor fijo' }],
