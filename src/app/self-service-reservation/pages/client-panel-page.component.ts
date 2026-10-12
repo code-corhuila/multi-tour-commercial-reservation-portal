@@ -114,7 +114,7 @@ function discountTag(rule: DiscountRule): string {
         @if (quick.length) {
         <section class="crp-panel-quick"><h2>{{ t.quick }}</h2>
           <ul>@for (action of quick; track action.key) {
-            <li><button type="button" (click)="go(action.key)"><span aria-hidden="true">{{ action.icon }}</span>&ngsp;<span><strong>{{ action.title }}</strong>&ngsp;<span>{{ action.copy }}</span></span></button></li>
+            <li><button type="button" class="crp-panel-quick-item" (click)="go(action.key)"><span class="crp-panel-quick-icon" aria-hidden="true">{{ action.icon }}</span>&ngsp;<span class="crp-panel-quick-copy"><strong>{{ action.title }}</strong>&ngsp;<span>{{ action.copy }}</span></span></button></li>
           }</ul>
         </section>
         }
