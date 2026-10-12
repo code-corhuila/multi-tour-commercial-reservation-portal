@@ -10,7 +10,7 @@ import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
-import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
+import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState, tourPhoto } from '../model/self-service-reservation';
 
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
@@ -43,8 +43,6 @@ const QUICK = [
   { key: CLIENT_AREA.tours, icon: 'NR', title: 'Nueva reserva', copy: 'Inicia una nueva reserva' },
   { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Gastronomía', copy: 'Explora opciones gastronómicas disponibles.' },
 ];
-/** Self-hosted photos of the multi-tour-front container (same origin, CSP img-src 'self'). */
-const PHOTOS = ['/assets/destino-sendero-del-condor.jpg', '/assets/destino-bahia-esmeralda.jpg', '/assets/destino-cascadas-de-iraka.jpg', '/assets/mountain-hero.jpg'];
 const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 
 type Part<T> = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly T[] };
@@ -139,8 +137,8 @@ function discountTag(rule: DiscountRule): string {
         @case ('error') { <p role="alert">{{ text.failed }}</p> }
         @case ('empty') { <p role="status">{{ t.noFeatured }}</p> }
         @case ('data') {
-          <ul>@for (item of f.items; track item.serviceId; let i = $index) {
-            <li><img [src]="photos[i % photos.length]" [alt]="item.commercialName" loading="lazy" />
+          <ul>@for (item of f.items; track item.serviceId) {
+            <li><img [src]="photo(item.serviceId)" [alt]="item.commercialName" loading="lazy" />
               <div class="crp-panel-featured-body"><strong>{{ item.commercialName }}</strong>
                 <div class="crp-panel-featured-meta"><small>{{ t.from }}</small>&ngsp;<em>{{ cop(item.baseRateCents) }}</em></div>&ngsp;
                 @if (has(area.tours)) { <button type="button" class="crp-panel-link" (click)="go(area.tours)">{{ t.detail }}</button> }
@@ -155,7 +153,7 @@ export class ClientPanelPageComponent {
   protected readonly t = PANEL_TEXT;
   protected readonly text = SELF_SERVICE_TEXT;
   protected readonly area = CLIENT_AREA;
-  protected readonly photos = PHOTOS;
+  protected readonly photo = tourPhoto;
   protected readonly cop = formatCop;
   protected readonly date = formatDate;
   protected readonly tag = discountTag;
