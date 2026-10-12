@@ -62,6 +62,7 @@ const SPECIFIED_TREE = [
   'src/app/self-service-reservation/pages/client-panel-page.component.ts',
   'src/app/self-service-reservation/pages/confirm-reservation-page.component.ts',
   'src/app/self-service-reservation/pages/my-reservations-page.component.ts',
+  'src/app/self-service-reservation/pages/reserve-tour-page.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
