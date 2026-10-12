@@ -321,7 +321,7 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
   it('Finalizar reserva is its own customer area and Mis reservas only lists', () => {
     const finish = PORTAL_AREAS.filter((area) => area.component === ConfirmReservationPageComponent);
     expect(finish).toHaveLength(1);
-    expect(finish[0]).toMatchObject({ key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', audience: 'customer', clientChrome: 'panel' });
+    expect(finish[0]).toMatchObject({ key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', audience: 'customer', clientChrome: 'none' });
     expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.reservations)?.component).toBe(MyReservationsPageComponent);
   });
 
@@ -351,11 +351,14 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
     expect(p.element.textContent).not.toContain('Volver al panel');
   });
 
-  it('Mis reservas sizes its header as mis-reservas.html: 48px title, small dark-green eyebrow', () => {
+  it('Mis reservas sizes its header as mis-reservas.html: 48px title without margins, small dark-green eyebrow, 1rem description', () => {
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-size:\s*3rem/);
     expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-weight:\s*800/);
     expect(rule('.crp-root .self-service-panel .crp-page-header-eyebrow')).toMatch(/color:\s*#1f4d3d/);
+    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/margin:\s*0;/);
+    expect(rule('.crp-root .self-service-panel .crp-page-header-desc')).toMatch(/font-size:\s*1rem;\s*line-height:\s*1\.65/);
+    expect(rule('.crp-root .self-service-panel .crp-page-header-desc + .crp-page-header-desc')).toMatch(/margin-top:\s*8px;\s*color:\s*#17252b/);
   });
 });
