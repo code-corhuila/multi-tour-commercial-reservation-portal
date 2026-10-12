@@ -188,8 +188,8 @@ describe('oneFormAtATime', () => {
   it('closes the form on Cancel without calling the writer, for a new item and for an edit', async () => {
     const page = await openPage([itemNamed('Alpha')]);
     await page.click(page.button(CATALOG_COPY.newItem));
-    page.type('Nombre comercial', 'Never saved');
-    await page.click(page.button('Cancelar'));
+    page.type('Commercial name', 'Never saved');
+    await page.click(page.button('Cancel'));
     expect(page.formsOpen()).toBe(0);
 
     await page.click(page.editOf('Alpha'));
@@ -306,7 +306,7 @@ describe('aRowOffersItsStatusActionPlusEdit', () => {
   it('offers exactly one status action and Edit on each row', async () => {
     const page = await openPage([itemNamed('Alpha'), { ...itemNamed('Beta'), catalogStatus: 'INACTIVE' }]);
     const labels = (name: string) => Array.from(page.rowOf(name).querySelectorAll('button')).map((b) => b.textContent?.trim());
-    expect(labels('Alpha')).toEqual([CATALOG_COPY.edit, CATALOG_COPY.inactivate]);
-    expect(labels('Beta')).toEqual([CATALOG_COPY.edit, CATALOG_COPY.reactivate]);
+    expect(labels('Alpha')).toEqual([CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
+    expect(labels('Beta')).toEqual([CATALOG_COPY.reactivate, CATALOG_COPY.edit]);
   });
 });

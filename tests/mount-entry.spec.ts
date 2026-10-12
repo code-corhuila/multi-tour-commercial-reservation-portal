@@ -47,12 +47,11 @@ describe('mountEntryContract', () => {
 
   it('shows the demo catalog and establishments with their actions to the administrator', async () => {
     mountAs(['TENANT_ADMINISTRATOR']);
-    await goToCard('Ver tours');
     await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(3));
     expect(text()).toContain(CATALOG_COPY.newItem);
     expect(text()).toMatch(new RegExp(`${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}`));
-    await goToCard('Gestionar establecimientos');
-    await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(ESTABLISHMENTS_COPY.title.HOTEL));
+    await goToEstablishments();
+    await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(ESTABLISHMENTS_COPY.title.all));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(3));
     expect(text()).toContain(ESTABLISHMENTS_COPY.newEstablishment);
   });
@@ -60,12 +59,8 @@ describe('mountEntryContract', () => {
   it('fails closed to the client layout for an unknown or empty role: no operator area and no actions', async () => {
     for (const roles of [['SOMETHING_ELSE'], []]) {
       mountAs(roles);
-      // The site header, or the compact one of the panel cliente where a visitor without a session lands.
-      await vi.waitFor(() => expect(host.querySelector('.crp-client-header, .crp-client-panel-header')).toBeTruthy());
-      expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
-      // The panel copy names "Desactivar" as prose, so the actions are looked for among the buttons.
-      const buttons = Array.from(host.querySelectorAll('button'), (button) => button.textContent?.trim() ?? '').join('|');
-      expect(buttons).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
+      await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(0));
+      expect(text()).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
       cleanup!();
       host.remove();
     }

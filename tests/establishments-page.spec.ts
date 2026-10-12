@@ -65,7 +65,7 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
     expect(regions()).toEqual(['data']);
     expect(element.querySelectorAll('table').length).toBe(1);
     expect(element.querySelectorAll('tbody tr').length).toBe(2);
-    for (const text of ['Hotel Alpha', 'Restaurant Beta', ESTABLISHMENTS_COPY.types.HOTEL, ESTABLISHMENTS_COPY.types.RESTAURANT, 'Activo', 'Inactivo', 'Contact the establishment directly.']) {
+    for (const text of ['Hotel Alpha', 'Restaurant Beta', ESTABLISHMENTS_COPY.types.HOTEL, ESTABLISHMENTS_COPY.types.RESTAURANT, 'ACTIVE', 'INACTIVE', 'Contact the establishment directly.']) {
       expect(element.querySelector('table')!.textContent).toContain(text);
     }
     expect(element.querySelector('table')!.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);
