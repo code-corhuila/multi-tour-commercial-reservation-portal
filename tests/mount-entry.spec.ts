@@ -58,10 +58,10 @@ describe('mountEntryContract', () => {
   it('fails closed to the client layout for an unknown or empty role: no operator area and no actions', async () => {
     for (const roles of [['SOMETHING_ELSE'], []]) {
       mountAs(roles);
-      await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(0));
-      // The panel copy names "Desactivar" as prose, so the actions are looked for among the buttons.
-      const buttons = Array.from(host.querySelectorAll('button'), (button) => button.textContent?.trim() ?? '').join('|');
-      expect(buttons).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
+      // The site header, or the compact one of the panel cliente where a visitor without a session lands.
+      await vi.waitFor(() => expect(host.querySelector('.crp-client-header, .crp-client-panel-header')).toBeTruthy());
+      expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
+      expect(text()).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
       cleanup!();
       host.remove();
     }
@@ -79,11 +79,11 @@ describe('mountEntryContract', () => {
 });
 
 describe('mountEntryWiresTheSelfServiceReservation', () => {
-  // The client layout lands on the panel cliente; Ver mis reservas opens the area, and a selection in the URL opens it at once.
+  // The client layout lands on the panel cliente; Ver mis reservas opens the list, and a selection in the URL opens Finalizar reserva at once.
   const openSelfService = async () => {
-    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-client-panel-page, .crp-client-content app-self-service-area')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-client-panel-page')).toBeTruthy());
     Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-panel-card button')).find((b) => b.textContent?.trim() === 'Ver mis reservas')?.click();
-    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-self-service-area')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-my-reservations-page')).toBeTruthy());
   };
   afterEach(() => history.replaceState(null, '', '/'));
 
@@ -91,8 +91,9 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     mountAs(['FINAL_CUSTOMER']);
     await openSelfService();
     await vi.waitFor(() => expect(host.querySelectorAll('.self-service-panel [data-state="data"] li').length).toBeGreaterThan(0));
-    // Only Volver al panel cliente, a way back: no action on a reservation.
-    expect(Array.from(host.querySelectorAll('.self-service-panel button'), (b) => b.className)).toEqual(['self-service-back']);
+    // No action on a reservation, and no back link in the body: Volver al panel is in the compact header.
+    expect(host.querySelectorAll('.self-service-panel button')).toHaveLength(0);
+    expect(host.querySelector('.crp-client-panel-header')?.textContent).toContain('Volver al panel');
     expect(host.querySelector('.self-service-panel')?.textContent).toContain('Pendiente de pago');
     for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-1', 'demo-res']) expect(host.textContent).not.toContain(raw);
   });
@@ -102,8 +103,7 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     mountAs([]);
     const asked = vi.fn();
     host.addEventListener(SIGN_IN_REQUESTED_EVENT, asked);
-    await openSelfService();
-    await vi.waitFor(() => expect(host.querySelector('select')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-confirm-reservation-page select')).toBeTruthy());
     const select = host.querySelector('select') as HTMLSelectElement;
     select.value = select.options[1].value; select.dispatchEvent(new Event('change'));
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.confirm)!.click();

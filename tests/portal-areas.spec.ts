@@ -21,7 +21,9 @@ import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
-import { SelfServiceAreaComponent } from '../src/app/self-service-reservation/pages/self-service-area.component';
+import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
+import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
+import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { actorAs } from './actor-context.double';
 import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
@@ -70,7 +72,9 @@ describe('portalAreasRegistry', () => {
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
       { key: 'client-panel', label: 'Mis reservas', component: ClientPanelPageComponent },
-      { key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent },
+      { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
+      { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
+      { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
