@@ -11,7 +11,7 @@ export class ControllableDiscountRulesSource extends DiscountRulesSource {
     });
   }
 }
-export function discountNamed(tourName = 'Promotion', priority = 1): DiscountRule {
-  return { id: tourName, tourId: `tour-${tourName}`, tourName, startsOn: '2026-01-01', endsOn: '2026-12-31', priority,
-    calculationBase: 'ORIGINAL_VALUE', percentageBasisPoints: 1250, stackable: false, status: 'ACTIVE' };
+export function discountNamed(name = 'Promotion', priority = 1): DiscountRule {
+  return { id: name, name, startsOn: '2026-01-01', endsOn: '2026-12-31', priority,
+    calculationBase: 'ORIGINAL_VALUE', type: 'PERCENTAGE', percentageBasisPoints: 1250, status: 'ACTIVE' };
 }
