@@ -85,3 +85,11 @@ describe('customers demo store', () => {
     expect(demoSensitiveDataAccess(['TENANT_ADMINISTRATOR']).granted).toBe(false);
   });
 });
+
+describe('theDemoGroupIsWrittenWithSpanishAccents', () => {
+  it('names the demo lead and the demo activity with their accents', () => {
+    const group = new DemoCustomersStore().group!;
+    expect(group.lead.fullName).toBe('Lucía Demo Ficticia');
+    expect(group.activityName).toBe('Canotaje en el Río Suaza');
+  });
+});
