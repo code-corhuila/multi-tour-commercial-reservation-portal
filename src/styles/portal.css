@@ -339,13 +339,30 @@
 .crp-root .customers-form .crp-form-actions { margin-top: 18px; }
 @media (max-width: 720px) { .crp-root .customers-grid { grid-template-columns: 1fr; } }
 .crp-root .customers-error { margin: 0; color: var(--crp-error); }
-/* HU-COM-008 self-service reservation: phone width first (RNF-RS1). */
-.crp-root .self-service-confirm, .crp-root .self-service-panel { margin-top: 22px; padding: clamp(16px, 4vw, 30px); background: var(--crp-surface); border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); }
-.crp-root .self-service-selection { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0 0 16px; }
-.crp-root .self-service-selection dt { font-weight: 700; color: var(--crp-soft); }
-.crp-root .self-service-selection dd { margin: 0; overflow-wrap: anywhere; }
+/* HU-COM-008 as finalizar-reserva.html and mis-reservas.html: phone width first (RNF-RS1). */
+.crp-root .self-service-confirm + .self-service-panel { margin-top: 40px; }
+.crp-root .self-service-checkout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); gap: 22px; align-items: start; }
+.crp-root .self-service-checkout .crp-operator-panel { margin-top: 0; }
+.crp-root .self-service-checkout form { display: block; }
+.crp-root .self-service-consent { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 10px; font-size: 0.9rem; }
+.crp-root .self-service-consent input { margin-top: 4px; }
 .crp-root .self-service-confirm select { display: block; width: 100%; max-width: 360px; min-height: 42px; margin: 6px 0 4px; }
 .crp-root .self-service-field-error { min-height: 1.2em; margin: 0 0 12px; color: #a3312a; font-size: 0.82rem; }
-.crp-root .self-service-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.crp-root .self-service-list li { padding: 12px 14px; border: 1px solid var(--crp-line); border-radius: 10px; overflow-wrap: anywhere; }
+.crp-root .self-service-summary-copy { display: grid; gap: 4px; margin: 16px 0 0; color: var(--crp-soft); }
+.crp-root .self-service-summary-copy strong { color: #17252b; font-size: 1.05rem; }
+.crp-root .self-service-pricing { display: grid; grid-template-columns: 1fr auto; gap: 14px 16px; margin: 18px 0 0; }
+.crp-root .self-service-pricing dt { color: #5a6b70; }
+.crp-root .self-service-pricing dd { margin: 0; color: #17252b; font-weight: 700; text-align: right; }
+.crp-root .self-service-pricing dt:last-of-type, .crp-root .self-service-total { padding-top: 12px; border-top: 1px solid #e7ece9; color: #17252b; font-weight: 800; }
+.crp-root .self-service-total { font-size: 1.7rem; letter-spacing: -0.03em; }
+.crp-root .self-service-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.crp-root .self-service-card { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; padding: 22px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: var(--crp-radius-card); overflow-wrap: anywhere; }
+.crp-root .self-service-card-copy { display: grid; gap: 6px; }
+.crp-root .self-service-card-copy strong { color: #17252b; font-size: 1.2rem; }
+.crp-root .self-service-card-copy p { margin: 0; color: #5a6b70; }
+.crp-root .self-service-card-status { display: grid; justify-items: end; gap: 8px; }
 .crp-root .self-service-note, .crp-root .self-service-created { margin: 0 0 12px; color: var(--crp-soft); font-size: 0.86rem; }
+@media (max-width: 760px) {
+  .crp-root .self-service-checkout, .crp-root .self-service-card { grid-template-columns: 1fr; }
+  .crp-root .self-service-card-status { justify-items: start; }
+}

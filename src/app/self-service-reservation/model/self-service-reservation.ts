@@ -1,3 +1,5 @@
+import { formatDate } from '../../shared/format';
+
 /** What the customer chose in the public offer (HU-COM-006). DP-RS1: it travels in the URL, never in storage. */
 export interface ReservationSelection {
   readonly departureId: string;
@@ -13,7 +15,11 @@ export interface PaymentMethod {
 
 /** A reservation as the customer reads it. The values are the service's, in cents; the portal computes none. */
 export interface CustomerReservation {
+  /** The code the customer reads, e.g. RES-1843. */
   readonly reservationId: string;
+  readonly tourName: string;
+  /** ISO date-time of the departure. */
+  readonly departureAt: string;
   readonly departureId: string;
   readonly serviceIds: readonly string[];
   readonly people: number;
@@ -21,6 +27,38 @@ export interface CustomerReservation {
   readonly finalValueCents: number;
   readonly reservationStatus: string;
   readonly paymentStatus: string;
+}
+
+/** The summary of a selection before it is confirmed, in cents, from the calculation of HU-COM-007 (RN-RS4). */
+export interface SelectionQuote {
+  readonly tourName: string;
+  readonly departureAt: string;
+  readonly baseValueCents: number;
+  readonly discountCents: number;
+  readonly finalValueCents: number;
+}
+
+/** Spanish badge and its class for a reservation state; an unknown code is never shown (authorized screens P4). */
+const RESERVATION_STATES: Readonly<Record<string, readonly [string, string]>> = {
+  PENDING_PAYMENT: ['Pendiente de pago', 'crp-is-pending'],
+  CONFIRMED: ['Confirmada', 'crp-is-confirmed'],
+  IN_EXECUTION: ['En ejecución', 'crp-is-execution'],
+  FINALIZED: ['Finalizada', 'crp-is-finalized'],
+  CANCELLED: ['Cancelada', 'crp-is-cancelled'],
+};
+
+export function reservationState(code: string): readonly [label: string, cssClass: string] {
+  return RESERVATION_STATES[code] ?? ['Por definir', ''];
+}
+
+/** `2026-09-18T06:30:00` to `18 sep 2026 · 06:30`. */
+export function departureLine(isoDateTime: string): string {
+  const time = /T(\d{2}:\d{2})/.exec(isoDateTime)?.[1];
+  return time ? `${formatDate(isoDateTime)} · ${time}` : formatDate(isoDateTime);
+}
+
+export function travelers(people: number): string {
+  return `${people} ${people === 1 ? 'viajero' : 'viajeros'}`;
 }
 
 /** DP-RS2: who is looking, as far as this area cares. Anything not a final customer is OTHER (fails closed). */
@@ -45,32 +83,40 @@ export function selectionFromQuery(query: string): ReservationSelection | null {
   return { departureId, serviceIds, people };
 }
 
+/** The texts of finalizar-reserva.html and mis-reservas.html (authorized screens 20, 21 and mis-reservas). */
 export const SELF_SERVICE_TEXT = {
   nav: 'Mis reservas',
-  confirmTitle: 'Confirm your reservation',
-  panelTitle: 'My reservations',
-  loading: 'Loading…',
-  failed: 'We could not load this. Try again.',
-  retry: 'Retry',
-  noSelection: 'Choose services in the offer first.',
-  noMethods: 'No payment method is enabled for this agency yet.',
-  empty: 'You have no reservations yet.',
-  departure: 'Departure',
-  services: 'Services',
-  people: 'People',
-  method: 'Payment method',
-  chooseMethod: 'Choose one',
-  methodMissing: 'Choose a payment method.',
-  confirm: 'Confirm reservation',
-  signIn: 'Sign in or register to confirm. Your selection stays here.',
-  noCapacity: 'There are not enough seats on this departure. Nothing was reserved.',
-  refused: 'The reservation was not created. Try again.',
-  created: 'Reservation created',
-  notCustomer: 'Only a signed-in customer can confirm a reservation here.',
-  panelNotCustomer: 'Sign in as a customer to see your reservations.',
-  projected: 'Projected value',
-  final: 'Final value',
-  status: 'Status',
-  payment: 'Payment',
-  readOnly: 'Your reservations are shown as they are. Contact the agency for any question about them.',
+  confirmTitle: 'Finalizar reserva de tour',
+  summaryTitle: 'Resumen de reserva',
+  basePrice: 'Precio base',
+  discounts: 'Descuentos aplicables',
+  final: 'Valor final',
+  conditionsTitle: 'Condiciones de reserva',
+  conditionsCopy: 'Reserva únicamente el tour y la salida seleccionada. La alimentación indicada forma parte del paquete cuando corresponda; hospedaje y alimentación no son servicios reservables.',
+  acceptConditions: 'Confirmo que acepto las condiciones aplicables a esta reserva.',
+  acceptTerms: 'Acepto los términos y condiciones.',
+  mustAccept: 'Acepta las condiciones y los términos para confirmar.',
+  method: 'Medio de pago',
+  chooseMethod: 'Selecciona uno',
+  methodMissing: 'Selecciona un medio de pago.',
+  confirm: 'Confirmar reserva',
+  loading: 'Cargando…',
+  failed: 'No pudimos cargar esta información.',
+  retry: 'Reintentar',
+  noSelection: 'Elige un tour, la fecha y los viajeros en el catálogo para finalizar tu reserva.',
+  noMethods: 'El operador todavía no tiene medios de pago habilitados.',
+  signIn: 'Inicia sesión o regístrate para confirmar. Tu selección se conserva.',
+  noCapacity: 'No hay cupos suficientes en esta salida. No se creó ninguna reserva.',
+  refused: 'No se creó la reserva. Inténtalo de nuevo.',
+  created: 'Reserva creada',
+  notCustomer: 'Solo un cliente con sesión iniciada puede confirmar una reserva aquí.',
+  panelEyebrow: 'Portal cliente',
+  panelTitle: 'Mis reservas',
+  panelDesc: 'Consulta el estado de tus reservas propias, activas y pasadas, dentro del operador actual.',
+  readOnly: 'Para cambios o cancelaciones, comunícate con el operador.',
+  historyTitle: 'Historial de reservas',
+  departure: 'Salida',
+  value: 'Valor',
+  empty: 'Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.',
+  panelNotCustomer: 'Inicia sesión como cliente para ver tus reservas.',
 } as const;
