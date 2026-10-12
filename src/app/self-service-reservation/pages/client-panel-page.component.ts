@@ -10,7 +10,7 @@ import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
-import { CustomerReservation, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
+import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
 
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
@@ -24,6 +24,8 @@ const PANEL_TEXT = {
   noActive: 'No tienes reservas activas',
   noActiveCopy: 'Explora el catálogo y selecciona los servicios para comenzar una nueva reserva.',
   seeReservations: 'Ver mis reservas',
+  consult: 'Consulta en Mis reservas',
+  own: 'Reservas propias',
   quick: 'Acciones rápidas',
   discounts: 'Descuentos vigentes',
   noDiscounts: 'No hay descuentos vigentes en este momento.',
@@ -101,13 +103,15 @@ function discountTag(rule: DiscountRule): string {
                 @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
                 @default {
                   @let summary = summarize(s.kind === 'data' ? s.items : []);
-                  <div [attr.data-state]="s.kind"><strong>{{ summary.title }}</strong><p>{{ summary.detail }}</p>
+                  <div class="crp-panel-card-main" [attr.data-state]="s.kind"><div><strong>{{ summary.title }}</strong><p>{{ summary.detail }}</p>
                     @if (summary.codes) { <small>{{ summary.codes }}</small> }</div>
+                    <div class="crp-panel-card-status"><span class="crp-panel-card-pill">{{ t.consult }}</span>&ngsp;<small>{{ t.own }}</small></div></div>
                 }
               }
             } @else { <p role="status">{{ text.panelNotCustomer }}</p> }
             @if (has(area.reservations)) {
-              <div class="crp-panel-card-actions"><button type="button" class="crp-primary" (click)="go(area.reservations)">{{ t.seeReservations }}</button></div>
+              <div class="crp-panel-card-actions"><button type="button" class="crp-primary" (click)="go(area.reservations)">{{ t.seeReservations }}</button>
+                <button type="button" class="crp-panel-ghost" (click)="go(area.reservations)">{{ t.seeReservations }}</button></div>
             }
           </article>
         </section>
@@ -178,7 +182,7 @@ export class ClientPanelPageComponent {
   constructor() {
     this.reload();
     // DP-RS1: a selection in the URL means a reservation in progress, so Finalizar reserva opens at once.
-    if (inject(ReservationSelectionSource).current()) { afterNextRender(() => this.go(CLIENT_AREA.reservations)); }
+    if (inject(ReservationSelectionSource).current()) { afterNextRender(() => this.go(RESERVATION_FLOW.finish)); }
   }
 
   reload(): void { if (this.isCustomer) { this.requests.next(); } }

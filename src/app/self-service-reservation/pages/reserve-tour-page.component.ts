@@ -1,26 +1,23 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/data/catalog-api.service';
+import { CatalogItem } from '../../catalog/model/catalog-item';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { DeparturesSource } from '../../reservations/data/departures-source';
-import { DepartureCapacity } from '../../reservations/data/departure-capacity';
-import { Departure, openDepartures } from '../../reservations/data/departures-source';
+import { Departure, hasCapacity, openDepartures } from '../../reservations/model/reservation';
 import { formatCop, formatDate } from '../../shared/format';
 import { SelectionQuoteSource } from '../data/reservation-confirmation-ports';
-import { RESERVATION_FLOW, RESERVE_TEXT, SELF_SERVICE_TEXT, ReservationSelection, sameTour, travelers } from '../model/self-service-reservation';
+import { RESERVATION_FLOW, RESERVE_TEXT, SELF_SERVICE_TEXT, ReservationSelection, monthLabel, overCapacity, sameTour, travelers } from '../model/self-service-reservation';
 
 type Loaded = { kind: 'loading' | 'error' } | { kind: 'empty'; noTour: boolean }
-  | { kind: 'data'; tour: CatalogItem; departures: readonly Departure[] };
+  | { kind: 'data'; tour: CatalogItem; departures: readonly Departure[]; months: readonly string[] };
 
 /**
  * HU-COM-008 as reservar-tour.html (screen 20): the open departures of the tour, from the DeparturesSource of
  * HU-COM-007, and the number of travelers. The values come from the quote port; the view adds nothing up.
  */
-@Component({ imports: [ReadErrorComponent],
+@Component({
   selector: 'app-reserve-tour-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -32,28 +29,35 @@ type Loaded = { kind: 'loading' | 'error' } | { kind: 'empty'; noTour: boolean }
       @let s = loaded();
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
         @case ('empty') {
           @if (s.noTour) { <div class="crp-booking-card" data-state="empty"><strong>{{ t.noTour }}</strong><p>{{ t.noTourCopy }}</p></div> }
           @else { <p class="crp-booking-card" data-state="empty">{{ t.noDepartures }}</p> }
         }
         @case ('data') {
           <article class="crp-booking-card" data-state="data">
-            <div class="crp-booking-card-head"><div><h2>{{ s.tour.commercialName }}</h2><p>{{ t.category }}</p></div><span class="crp-booking-price-tag">{{ t.from }} {{ cop(s.tour.baseRateCents) }}</span></div>
-            <h3 class="crp-booking-list-title">{{ t.listTitle }}</h3>
-            <p class="crp-booking-reference">{{ t.listCopy }}</p>
-            <div class="crp-departure-list" role="radiogroup" [attr.aria-label]="t.listTitle">
-              @for (d of s.departures; track d.id) {
-                <label class="crp-departure-option" [class.crp-is-active]="d === departure()" [class.crp-is-full]="!seatRule.hasSeats(d)">
-                  <input type="radio" name="departure" [value]="d.id" [checked]="d === departure()" (change)="chosen.set(d.id)" />
-                  <strong>{{ date(d.date) }}</strong>&ngsp;<span>{{ !seatRule.hasSeats(d) ? t.full : t.seats(d.effectiveCapacity) }}</span>
-                </label>
-              }
-            </div>
+            <div class="crp-booking-card-head"><h2>{{ s.tour.commercialName }}</h2><span class="crp-booking-price-tag">{{ t.from }} {{ cop(s.tour.baseRateCents) }}</span></div>
+            @if (calendar(); as c) {
+              <div class="crp-booking-calendar-head">
+                <div><strong>{{ c.label }}</strong><span>{{ t.departures }}</span></div>
+                <div class="crp-booking-calendar-nav">
+                  <button type="button" [attr.aria-label]="t.previous" [disabled]="month() === 0" (click)="month.set(month() - 1)">‹</button>
+                  <button type="button" [attr.aria-label]="t.next" [disabled]="month() >= s.months.length - 1" (click)="month.set(month() + 1)">›</button>
+                </div>
+              </div>
+              <div class="crp-booking-weekdays" aria-hidden="true">@for (w of t.weekdays; track $index) { <span>{{ w }}</span> }</div>
+              <div class="crp-booking-days">
+                @for (x of c.spacers; track $index) { <span class="crp-booking-day-spacer"></span> }
+                @for (d of c.days; track d.day) {
+                  <button type="button" class="crp-booking-day" [class.crp-is-active]="!!d.departure && d.departure === departure()" [disabled]="!d.departure"
+                    [attr.aria-pressed]="d.departure ? d.departure === departure() : null" (click)="chosen.set(d.departure!.id)">{{ d.day }}</button>
+                }
+              </div>
+            }
           </article>
           <article class="crp-booking-note">
             <strong>{{ t.conditionsTitle }}</strong><p>{{ t.conditionsCopy }}</p>
-            <details class="crp-booking-conditions"><summary>{{ t.seeConditions }}</summary>
+            <details><summary>{{ t.seeConditions }}</summary>
               @if (departure()?.conditions; as conditions) { <ul><li>{{ conditions }}</li></ul> } @else { <p>{{ t.noConditions }}</p> }
             </details>
           </article>
@@ -68,7 +72,7 @@ type Loaded = { kind: 'loading' | 'error' } | { kind: 'empty'; noTour: boolean }
               </div>
             </div>
             <p class="crp-booking-capacity" [class.crp-is-error]="!fits()" aria-live="polite">{{ capacity() }}</p>
-            <p class="crp-booking-reference"><strong>{{ t.packageLead }}</strong> {{ t.package }}</p>
+            @if (departure(); as d) { <p class="crp-booking-reference"><strong>{{ t.selected }}</strong> {{ date(d.date) }}. {{ t.singleDeparture }}</p> }
           </article>
         }
       }
@@ -93,35 +97,35 @@ export class ReserveTourPageComponent {
   protected readonly travelers = travelers;
   protected readonly Math = Math;
   private readonly navigation = inject(PortalNavigation, { optional: true });
-  /** DP-RS1, 008- H-D10: the tour "Reservar tour" opened this area with; the portal reads no address. */
-  private readonly tourId = this.navigation?.params()['tour'] ?? '';
+  /** DP-RS1: the tour "Reservar tour" opened this area with, else the one of the URL. */
+  private readonly tourId = this.navigation?.params()['tour'] ?? new URLSearchParams(globalThis.location?.search ?? '').get('tour') ?? '';
   private readonly catalog = inject(CatalogItemsSource);
   private readonly departures = inject(DeparturesSource);
-  protected readonly seatRule = inject(DepartureCapacity);
   private readonly requests = new Subject<void>();
   protected readonly chosen = signal('');
   protected readonly people = signal(1);
+  protected readonly month = signal(0);
 
   readonly loaded = toSignal(this.requests.pipe(switchMap(() => forkJoin({ items: this.catalog.list(), all: this.departures.list() }).pipe(
     map(({ items, all }): Loaded => {
       const tour = items.find((item) => item.serviceId === this.tourId && item.serviceType === 'TOUR' && item.catalogStatus === 'ACTIVE');
       const departures = tour ? openDepartures(all).filter((d) => sameTour(d.tourName, tour.commercialName)).sort((a, b) => a.date.localeCompare(b.date)) : [];
       if (!tour || !departures.length) return { kind: 'empty', noTour: !tour };
-      return { kind: 'data', tour, departures };
+      return { kind: 'data', tour, departures, months: [...new Set(departures.map((d) => d.date.slice(0, 7)))] };
     }),
-    catchError((error) => of<Loaded>({ kind: 'error', ...readFailure(error) })),
+    catchError(() => of<Loaded>({ kind: 'error' })),
     startWith<Loaded>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as Loaded });
 
-  /** The chosen departure, the first one with room until the customer picks another. */
+  /** The chosen departure, the first one until the customer picks another. */
   protected readonly departure = computed(() => {
     const s = this.loaded();
-    return s.kind === 'data' ? s.departures.find((d) => d.id === this.chosen()) ?? s.departures.find((d) => this.seatRule.hasSeats(d)) ?? s.departures[0] : undefined;
+    return s.kind === 'data' ? s.departures.find((d) => d.id === this.chosen()) ?? s.departures[0] : undefined;
   });
-  protected readonly fits = computed(() => { const d = this.departure(); return !!d && this.seatRule.fits(d, this.people()); });
+  protected readonly fits = computed(() => { const d = this.departure(); return !!d && hasCapacity(d, this.people()); });
   protected readonly capacity = computed(() => {
     const d = this.departure();
-    return !d ? '' : !this.seatRule.hasSeats(d) ? this.t.capacityFull : this.fits() ? this.t.capacityOk(d.effectiveCapacity) : this.t.capacityShort(d.effectiveCapacity, this.people());
+    return !d ? this.t.chooseDeparture : this.fits() ? this.t.capacityOk : overCapacity(d.effectiveCapacity);
   });
   private readonly current = computed((): ReservationSelection | null => {
     const d = this.departure();
@@ -131,6 +135,19 @@ export class ReserveTourPageComponent {
   protected readonly selection = computed(() => (this.fits() ? this.current() : null));
   private readonly quotes = inject(SelectionQuoteSource);
   protected readonly quote = toSignal(toObservable(this.current).pipe(switchMap((s) => (s ? this.quotes.quote(s).pipe(catchError(() => of(null))) : of(null)))), { initialValue: null });
+
+  protected readonly calendar = computed(() => {
+    const s = this.loaded();
+    if (s.kind !== 'data') return null;
+    const yearMonth = s.months[Math.min(this.month(), s.months.length - 1)];
+    const [year, month] = yearMonth.split('-').map(Number);
+    const byDay = new Map(s.departures.filter((d) => d.date.startsWith(yearMonth)).map((d) => [Number(d.date.slice(8, 10)), d]));
+    return {
+      label: monthLabel(yearMonth),
+      spacers: Array.from({ length: new Date(year, month - 1, 1).getDay() }),
+      days: Array.from({ length: new Date(year, month, 0).getDate() }, (_, i) => ({ day: i + 1, departure: byDay.get(i + 1) })),
+    };
+  });
 
   constructor() { this.reload(); }
 

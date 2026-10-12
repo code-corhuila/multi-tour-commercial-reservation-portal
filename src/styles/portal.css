@@ -446,11 +446,11 @@
 .crp-root .crp-panel-hero { display: grid; gap: 12px; }
 .crp-root .crp-panel-hero > p { max-width: 640px; margin: 0; color: var(--crp-soft); }
 .crp-root .crp-panel-hero .crp-panel-eyebrow { color: #4a5a5f; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
-.crp-root .crp-panel-hero h1 { margin: 0; color: #17252b; font-size: clamp(2rem, 1.6rem + 1.4vw, 2.8rem); line-height: 1.1; letter-spacing: -0.05em; }
+.crp-root .crp-panel-hero h1 { margin: 0; color: #17252b; font-size: 3.1rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.05em; }
 .crp-root .crp-panel-search { display: grid; gap: 14px; margin-top: 12px; padding: 22px 18px; border: 1px solid #d7e0de; border-radius: 22px; background: linear-gradient(180deg, #f4f8f7, #fffdf8); }
 .crp-root .crp-panel-search label { color: #17252b; font-size: 0.8rem; font-weight: 800; }
 .crp-root .crp-panel-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
-.crp-root .crp-panel-search-row input { min-height: 44px; padding: 0 14px; border: 1px solid #d7e0de; border-radius: 10px; }
+.crp-root .crp-panel-search-row input { max-width: none; min-height: 44px; padding: 0 14px; border: 1px solid #d7e0de; border-radius: 10px; }
 .crp-root .crp-panel-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .crp-root .crp-panel-chips button { min-height: 32px; padding: 0 12px; border-color: #d7e0de; border-radius: 999px; background: #ffffff; color: #45555c; font-size: 0.8rem; }
 .crp-root .crp-panel-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 56px; margin-top: 28px; }
@@ -459,18 +459,19 @@
 .crp-root .crp-panel-card strong { display: block; color: #17252b; font-size: 1.05rem; }
 .crp-root .crp-panel-card p, .crp-root .crp-panel-discounts p, .crp-root .crp-panel-featured p { margin: 4px 0; color: var(--crp-soft); }
 .crp-root .crp-panel-card small { color: #7a8588; font-size: 0.74rem; }
-.crp-root .crp-panel-card-actions { display: flex; justify-content: flex-end; padding-top: 14px; border-top: 1px solid #e7ece9; }
+.crp-root .crp-panel-card-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid #e7ece9; }
 .crp-root .crp-panel-quick { margin-top: 32px; }
 .crp-root .crp-panel-quick ul, .crp-root .crp-panel-discounts ul, .crp-root .crp-panel-featured ul { margin: 0; padding: 0; list-style: none; }
 .crp-root .crp-panel-quick button { display: flex; gap: 14px; width: 100%; min-height: 0; padding: 12px 0; border: 0; border-bottom: 1px solid #e7ece9; border-radius: 0; background: none; color: var(--crp-soft); font-weight: 400; text-align: left; }
 .crp-root .crp-panel-quick button > span:first-child { display: inline-grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 999px; background: #eef2f1; color: #5a6b70; font-size: 0.78rem; }
 .crp-root .crp-panel-quick strong { display: block; color: #17252b; }
+.crp-root .crp-panel-quick-copy > span { color: #45555c; }
 .crp-root .crp-panel-promo { display: grid; gap: 6px; margin-bottom: 12px; padding: 16px; border: 1px solid #d7e0de; border-radius: 16px; }
 .crp-root .crp-panel-promo-tag { width: max-content; padding: 4px 10px; border-radius: 999px; background: #2f6b57; color: #ffffff; font-size: 0.74rem; font-weight: 800; }
 .crp-root .crp-panel-featured { margin-top: 36px; }
-.crp-root .crp-panel-featured ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 16px; }
+.crp-root .crp-panel-featured ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .crp-root .crp-panel-featured li { overflow: hidden; border: 1px solid #d7e0de; border-radius: 20px; background: #ffffff; }
-.crp-root .crp-panel-featured img { display: block; width: 100%; height: 200px; object-fit: cover; }
+.crp-root .crp-panel-featured img { display: block; width: 100%; height: 240px; object-fit: cover; }
 .crp-root .crp-panel-featured-body { display: grid; gap: 10px; padding: 16px; }
 .crp-root .crp-panel-featured-body strong { padding-bottom: 12px; border-bottom: 1px solid #e7ece9; color: #17252b; }
 .crp-root .crp-panel-featured-meta { display: flex; align-items: baseline; justify-content: space-between; }
@@ -478,5 +479,58 @@
 .crp-root .crp-panel-featured-meta em { color: #17252b; font-size: 1.3rem; font-style: normal; font-weight: 800; }
 .crp-root .crp-panel-link { justify-self: start; min-height: 0; padding: 0; border: 0; background: none; color: #2f6b57; font-weight: 800; }
 @media (max-width: 760px) {
-  .crp-root .crp-panel-layout { grid-template-columns: 1fr; gap: 28px; }
+  .crp-root .crp-panel-layout, .crp-root .crp-panel-featured ul { grid-template-columns: 1fr; gap: 28px; }
+  .crp-root .crp-panel-hero h1 { font-size: 2.2rem; }
+}
+.crp-root .crp-panel-card-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; }
+.crp-root .crp-panel-card-status { display: grid; justify-items: end; align-content: start; gap: 8px; }
+.crp-root .crp-panel-card-pill { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; background: #fff3e5; color: #f08b25; font-size: 0.8rem; font-weight: 800; }
+.crp-root .crp-panel-card-actions .crp-panel-ghost { border-color: transparent; background: transparent; color: #2f6b57; font-size: 0.86rem; font-weight: 800; }
+/* HU-COM-008 mis-reservas.html: 48px title over a full-width line, small dark-green eyebrow, a divider inside each card. */
+.crp-root .self-service-panel .crp-page-header { margin: 0 -20px 40px; padding: 0 20px 28px; }
+.crp-root .self-service-panel .crp-page-header-eyebrow { color: #1f4d3d; font-size: 0.68rem; letter-spacing: 0.08em; }
+.crp-root .self-service-panel .crp-page-header-title { font-size: 3rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
+.crp-root .self-service-card::after { content: ""; grid-column: 1 / -1; border-top: 1px solid #e6e9e7; }
+/* HU-COM-008 reservar-tour.html (20): topbar, tour card with the calendar, conditions, travelers and the sticky bar. */
+.crp-root .crp-booking-topbar { display: grid; grid-template-columns: 220px minmax(0, 1fr) 220px; align-items: center; gap: 16px; margin: -24px -20px 0; padding: 18px 28px; border-bottom: 1px solid #e8ece9; }
+.crp-root .crp-booking-topbar h1 { margin: 0; color: #17252b; font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; text-align: center; }
+.crp-root .crp-booking-back { justify-self: start; gap: 12px; min-height: 42px; padding: 0; border: 0; background: none; color: #1f4f57; font-size: 0.96rem; font-weight: 700; }
+.crp-root .crp-booking-back > span:first-child { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 1px solid #d7e4e1; border-radius: 999px; background: #f4faf8; color: #2f6b57; }
+.crp-root .crp-booking-content { display: grid; gap: 18px; width: min(100%, 880px); margin: 0 auto; padding: 24px 0 140px; }
+.crp-root .crp-booking-card, .crp-root .crp-booking-note { margin: 0; padding: 22px 24px; border: 1px solid #d7e0de; border-radius: 20px; background: #ffffff; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); }
+.crp-root .crp-booking-card-head, .crp-root .crp-booking-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.crp-root .crp-booking-card-head h2, .crp-root .crp-booking-card-title { margin: 0; color: #17252b; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.03em; }
+.crp-root .crp-booking-price-tag { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border-radius: 999px; background: #eef6fb; color: #2f6b57; font-weight: 800; }
+.crp-root .crp-booking-calendar-head > div:first-child { display: grid; gap: 6px; }
+.crp-root .crp-booking-calendar-head strong { color: #17252b; font-size: 1.2rem; font-weight: 800; }
+.crp-root .crp-booking-calendar-head span, .crp-root .crp-booking-note p, .crp-root .crp-booking-guest-row span { color: #5a6b70; font-size: 0.95rem; }
+.crp-root .crp-booking-calendar-nav button { width: 34px; min-height: 34px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: #17252b; font-size: 1.2rem; font-weight: 800; }
+.crp-root .crp-booking-calendar-nav button:disabled { background: transparent; opacity: 0.3; }
+.crp-root .crp-booking-weekdays, .crp-root .crp-booking-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+.crp-root .crp-booking-weekdays span { color: #748289; font-size: 0.84rem; font-weight: 700; text-align: center; }
+.crp-root .crp-booking-day { min-height: 42px; padding: 0; border: 1px solid #d7e0de; border-radius: 999px; background: #ffffff; color: #17252b; font-weight: 700; }
+.crp-root .crp-booking-day.crp-is-active { border-color: #2f6b57; background: #2f6b57; color: #ffffff; }
+.crp-root .crp-booking-day:disabled { border-color: #edf0ee; background: #f5f7f6; color: #a7b0ad; }
+.crp-root .crp-booking-note { background: #eef6fb; }
+.crp-root .crp-booking-note strong { color: #2f6b57; }
+.crp-root .crp-booking-note p { margin: 8px 0 0; }
+.crp-root .crp-booking-note summary { margin-top: 14px; color: #2f6b57; font-size: 0.9rem; font-weight: 800; cursor: pointer; }
+.crp-root .crp-booking-note ul { margin: 10px 0 0; padding-left: 18px; color: #45575a; font-size: 0.9rem; }
+.crp-root .crp-booking-guest-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+.crp-root .crp-booking-guest-row p { margin: 0; }
+.crp-root .crp-booking-counter { display: inline-flex; align-items: center; gap: 14px; }
+.crp-root .crp-booking-counter button { width: 38px; min-height: 38px; padding: 0; border: 1px solid #d7e0de; border-radius: 999px; background: #ffffff; color: #17252b; font-size: 1.2rem; }
+.crp-root .crp-booking-capacity { margin: 0; color: #247367; font-size: 0.88rem; font-weight: 700; }
+.crp-root .crp-booking-capacity.crp-is-error { color: #ad4b34; }
+.crp-root .crp-booking-reference { margin: 8px 0 0; color: #5a6b70; line-height: 1.6; }
+.crp-root .crp-booking-reference strong { color: #17252b; }
+.crp-root .crp-booking-bar { position: fixed; z-index: 20; bottom: 22px; left: 50%; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.8fr) auto; align-items: center; gap: 24px; width: min(100% - 48px, 1080px); padding: 12px 14px 12px 18px; border: 1px solid #d7e3df; border-radius: 18px; background: rgba(255, 254, 251, 0.97); box-shadow: 0 14px 34px rgba(25, 53, 49, 0.14); transform: translateX(-50%); }
+.crp-root .crp-booking-bar-pricing { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.crp-root .crp-booking-bar span { display: block; color: #5a6b70; font-size: 0.84rem; font-weight: 700; text-transform: uppercase; }
+.crp-root .crp-booking-bar strong { display: block; margin-top: 4px; color: #17252b; font-size: 1.1rem; font-weight: 800; }
+.crp-root .crp-booking-continue { min-height: 50px; min-width: 190px; padding: 0 24px; border-radius: 12px; font-weight: 800; }
+@media (max-width: 760px) {
+  .crp-root .crp-booking-topbar { grid-template-columns: 1fr; padding: 14px 16px; }
+  .crp-root .crp-booking-topbar h1 { font-size: 1.5rem; }
+  .crp-root .crp-booking-bar, .crp-root .crp-booking-bar-pricing { grid-template-columns: 1fr; gap: 10px; }
 }
