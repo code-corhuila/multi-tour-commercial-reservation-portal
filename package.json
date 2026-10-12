@@ -5,6 +5,7 @@
   "scripts": {
     "start": "ng serve",
     "build": "ng build",
+    "build:module": "ng run commercial-reservation-portal:module && node scripts/pack-module.mjs",
     "test": "ng test --no-watch"
   },
   "dependencies": {
