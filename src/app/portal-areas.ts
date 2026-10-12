@@ -22,6 +22,8 @@ export interface PortalArea {
   readonly isAvailable?: (injector: Injector) => boolean;
   /** Who sees it (PortalAudience): the operator sidebar, the default, or the client header. */
   readonly audience?: Audience;
+  /** Client chrome: 'site' (tours.html header and footer, the default) or 'panel' (compact header of panel-cliente.html, no footer). */
+  readonly clientChrome?: 'site' | 'panel';
 }
 
 /** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
@@ -40,10 +42,11 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
 
 export interface ClientLink { readonly key: string; readonly label: string }
 
-/** The links of tours.html: header center, header right ('Perfil' has no story yet) and the Explorar column of the footer. */
-export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer', readonly ClientLink[]>> = Object.freeze({
+/** Links of tours.html (header center, header right without 'Perfil', footer Explorar) and of the compact header: panel, other panel areas. */
+export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer' | 'panel', readonly ClientLink[]>> = Object.freeze({
   nav: [{ key: CLIENT_AREA.tours, label: 'Explorar' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
-  account: [{ key: CLIENT_AREA.panel, label: 'Mis reservas' }],
+  account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }],
+  panel: [{ key: CLIENT_AREA.tours, label: 'Ver catálogo' }, { key: CLIENT_AREA.panel, label: 'Volver al panel' }],
   footer: [{ key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
 });
 
