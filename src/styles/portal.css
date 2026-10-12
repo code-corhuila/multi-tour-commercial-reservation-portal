@@ -207,3 +207,9 @@
   .crp-root .crp-client-content { width: 100%; margin: 0; padding: 20px 16px 32px; }
   .crp-root .crp-client-footer-grid { grid-template-columns: 1fr; gap: 24px; }
 }
+
+/* HU-COM-004: current discounts breakdown. */
+.crp-root .current-discounts-services { list-style: none; padding: 0; display: grid; gap: 16px; }
+.crp-root .current-discounts-lines { margin: 8px 0; padding-left: 20px; }
+.crp-root .current-discounts-lines li { margin: 4px 0; }
+.crp-root .current-discounts-final { font-size: 1.05rem; }
