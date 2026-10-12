@@ -63,7 +63,7 @@ describe('catalogSourcesOverTheApiClient', () => {
   it('turns a failure without the envelope into a generic error the page can show', async () => {
     const { client } = fakeClient({ fail: new TypeError('network') });
     const error = await firstValueFrom(new CatalogApiSource(client).list()).catch((e) => e);
-    expect(error).toMatchObject({ userMessage: 'The request failed.', details: [] });
+    expect(error).toMatchObject({ userMessage: 'La solicitud falló.', details: [] });
   });
 });
 
