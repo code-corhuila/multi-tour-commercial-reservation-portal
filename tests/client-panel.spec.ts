@@ -11,7 +11,7 @@ import { PortalNavigation } from '../src/app/portal-navigation';
 import { CustomerContext } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import { ReservationSelectionSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
-import { CustomerStanding, RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
+import { CustomerStanding, RESERVATION_FLOW, ReservationSelection, tourPhoto } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
 import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION, selectionAt } from './self-service-reservation.double';
 
@@ -169,6 +169,7 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
     const cards = Array.from(p.host.querySelectorAll('.crp-panel-featured li'));
     expect(cards.map((card) => card.querySelector('strong')?.textContent?.trim())).toEqual(['Tour 1', 'Tour 4', 'Tour 5', 'Tour 6']);
     expect(cards[0].querySelector('img')?.getAttribute('src')).toMatch(/^\/assets\/[\w-]+\.jpg$/);
+    expect(cards.map((card) => card.querySelector('img')?.getAttribute('src'))).toEqual(['svc-1', 'svc-4', 'svc-5', 'svc-6'].map(tourPhoto));
     expect(cards[0].querySelector('img')?.getAttribute('alt')).toBe('Tour 1');
     expect(cards[0].textContent?.replace(/\s+/g, ' ')).toContain('Desde $181.000 Ver detalle');
     expect(p.host.textContent).not.toMatch(/9\.000\.000|\$90\.000|capacidad|cupo/i);

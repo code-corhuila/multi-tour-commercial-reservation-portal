@@ -18,6 +18,7 @@ import {
   selectionFromParams,
   selectionFromQuery,
   standingOf,
+  tourPhoto,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
@@ -291,7 +292,8 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
     const summary = p.element.querySelector('.crp-finish-aside .self-service-summary')!;
     expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
-    expect(summary.querySelector('.crp-finish-media')).not.toBeNull();
+    expect(summary.querySelector('.crp-finish-media img')?.getAttribute('src')).toBe(tourPhoto('demo-svc-1'));
+    expect(tourPhoto('demo-svc-1')).toMatch(/^\/assets\/[\w-]+\.jpg$/);
     expect(summary.querySelector('.self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
     const rows = Array.from(summary.querySelectorAll('dt'), (dt) => (dt.textContent?.trim() ?? '') + ' ' + (dt.nextElementSibling?.textContent?.trim() ?? ''));
     expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
@@ -302,6 +304,13 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     for (const absent of ['Método y plazo de pago', 'Abono', 'Pago total', 'Monto a abonar', 'Continuar al pago', 'demo-dep-7', 'demo-svc-1', '2026-09-18']) {
       expect(p.element.textContent).not.toContain(absent);
     }
+  });
+
+  it('the summary photo is the photo of the tour in the featured cards, and no photo leaves the neutral block', () => {
+    expect(tourPhoto('svc-1')).toBe(tourPhoto('svc-1'));
+    expect(new Set(['svc-1', 'svc-2', 'svc-3', 'svc-4', 'svc-5', 'svc-6'].map(tourPhoto)).size).toBeGreaterThan(1);
+    expect(tourPhoto('')).toBeNull();
+    expect(tourPhoto(undefined)).toBeNull();
   });
 
   it('Volver a fecha y viajeros reopens Reservar tour on the same tour', async () => {
@@ -344,7 +353,8 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
-    expect(rule('.crp-root .crp-finish-content')).toMatch(/width:\s*min\(100%, 1100px\);\s*margin:\s*0 auto;\s*padding:\s*24px 0 40px;/);
+    expect(rule('.crp-root .crp-finish-content')).toMatch(/width:\s*min\(100%, 1100px\);\s*margin:\s*0 auto;\s*padding:\s*24px 0 144px;/);
+    expect(css).toMatch(/@media \(max-width: 760px\) \{[^@]*\.crp-root \.crp-finish-content \{ padding-bottom: 210px; \}/);
     expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 1\.6fr\) minmax\(260px, 1fr\)/);
   });
   it('Mis reservas uses the client classes in every state, never the operator ones', async () => {

@@ -196,8 +196,7 @@ describe('reservarTourKeepsTheColumnOfTheMockup (travel-booking-content, fixed b
 
   it('leaves room under the last card for the bottom bar, as travel-booking-page (104px, 170px when it stacks)', () => {
     expect(rule('.crp-root .crp-booking-content')).toMatch(/padding:\s*24px 0 144px;/);
-    const narrow = css.slice(css.lastIndexOf('@media (max-width: 760px)'));
-    expect(narrow).toMatch(/\.crp-root \.crp-booking-content \{ padding-bottom: 210px; \}/);
+    expect(css).toMatch(/@media \(max-width: 760px\) \{[^@]*\.crp-root \.crp-booking-content \{ padding-bottom: 210px; \}/);
   });
 
   it('draws Ver condiciones with + and - instead of the disclosure triangle', async () => {
