@@ -46,7 +46,7 @@ export function selectionFromQuery(query: string): ReservationSelection | null {
 }
 
 export const SELF_SERVICE_TEXT = {
-  nav: 'Reserve',
+  nav: 'Mis reservas',
   confirmTitle: 'Confirm your reservation',
   panelTitle: 'My reservations',
   loading: 'Loading…',

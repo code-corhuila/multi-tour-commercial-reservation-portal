@@ -25,7 +25,7 @@ const mountAs = (roles: string[]) => {
 const text = () => host.textContent ?? '';
 const goToEstablishments = async () => {
   await vi.waitFor(() => expect(host.querySelector('[data-state="data"]')).toBeTruthy());
-  Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Establishments'))!.click();
+  Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Establecimientos'))!.click();
 };
 
 afterEach(() => {
