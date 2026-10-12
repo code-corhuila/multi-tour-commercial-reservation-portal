@@ -1,16 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject } from 'rxjs';
+import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
+import { ActorRole } from '../src/app/catalog/model/catalog-item';
 import { AdditionalDiscountWriter } from '../src/app/current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../src/app/current-discounts/data/current-discounts-source';
 import { AdditionalDiscount, AdditionalDiscountCommand, ApplicableRule, PricedService } from '../src/app/current-discounts/model/current-discounts';
-import { DiscountBreakdowns } from '../src/app/current-discounts/data/discount-breakdowns';
-import { DemoDiscountBreakdowns } from '../src/app/demo/discount-calculation';
 import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
-import { ActorRole } from '../src/app/shared/portal-capabilities';
-import { ActorContext } from '../src/app/shared/actor-context';
-import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 /** A rule shaped as HU-COM-003's DiscountRule; in force all 2026 unless a test says otherwise. */
 export function ruleNamed(name: string, priority: number, overrides: Partial<ApplicableRule> = {}): ApplicableRule {
@@ -44,7 +41,7 @@ export class ControllableAdditionalDiscountWriter extends AdditionalDiscountWrit
 export async function openCurrentDiscounts(role: ActorRole = 'TENANT_ADMINISTRATOR') {
   const source = new ControllableCurrentDiscountsSource(), writer = new ControllableAdditionalDiscountWriter(), keys = new ControllableIdempotencyKeys();
   TestBed.configureTestingModule({ providers: [{ provide: CurrentDiscountsSource, useValue: source },
-    { provide: AdditionalDiscountWriter, useValue: writer }, { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }, { provide: IdempotencyKeys, useValue: keys },
+    { provide: AdditionalDiscountWriter, useValue: writer }, { provide: IdempotencyKeys, useValue: keys },
     { provide: ActorContext, useValue: actorAs(role) }] });
   const fixture = TestBed.createComponent(CurrentDiscountsPageComponent);
   const element: HTMLElement = fixture.nativeElement;
