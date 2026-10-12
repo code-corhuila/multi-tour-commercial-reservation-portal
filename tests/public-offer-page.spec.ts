@@ -228,6 +228,16 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, alojamiento.html, res
     expect(text(page.part('establishments').querySelector('[data-state="loading"]'))).toBe('Cargando establecimientos…');
   });
 
+  it('uses the client page of tours.html, not the operator panels', async () => {
+    const page = await openPage();
+    page.tours.requests[0].fail();
+    await page.settle();
+    expect(page.host.querySelector('.crp-operator-panel, .crp-operator-panel-head, .crp-operator-outline')).toBeNull();
+    expect(Array.from(page.host.querySelectorAll('.crp-offer-section'), (section) => section.getAttribute('data-part'))).toEqual(['tours', 'establishments']);
+    expect(page.part('tours').querySelector('.crp-offer-section-head h2')).not.toBeNull();
+    expect(page.part('tours').querySelector('[data-state="error"] button.crp-outline')).not.toBeNull();
+  });
+
   it('writes the chosen date as the screens do, never as an ISO date', async () => {
     const page = await openPage();
     await page.chooseDate('2026-11-22');

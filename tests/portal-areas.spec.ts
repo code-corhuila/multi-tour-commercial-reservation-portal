@@ -13,6 +13,7 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
+import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
 import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
@@ -71,6 +72,7 @@ describe('portalAreasRegistry', () => {
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
       { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
+      { key: 'offer', label: 'Explorar', component: PublicOfferPageComponent },
       { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
@@ -210,11 +212,12 @@ describe('customerShellHeader', () => {
     expect(host.querySelector('.crp-client-content crp-test-customer-page')).not.toBeNull();
   });
 
-  it('draws the client layout with no area when the build has no customer area', async () => {
+  it('shows the customer the public offer under Explorar and no operator page', async () => {
     const { host } = await openShell('READ_ONLY');
-    expect(host.querySelector('.crp-client-header')).not.toBeNull();
-    expect(host.querySelectorAll('.crp-client-header button:not(.crp-client-brand)').length).toBe(0);
+    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar']);
+    expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
     expect(host.querySelector('app-catalog-page')).toBeNull();
+    expect(PORTAL_AREAS.find((area) => area.key === 'offer')?.audience).toBe('customer');
   });
 });
 
