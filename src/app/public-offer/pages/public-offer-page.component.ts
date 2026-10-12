@@ -44,12 +44,12 @@ const unavailable = () => throwError(() => new Error('The container provides no 
         </div>
       </div>
     </header>
-    <section class="crp-operator-panel" data-part="tours" [attr.aria-label]="copy.tours">
-      <div class="crp-operator-panel-head"><h2>{{ copy.tours }}</h2><p data-date>{{ copy.availableOn }} {{ day(date()) }}</p></div>
+    <section class="crp-offer-section" data-part="tours" [attr.aria-label]="copy.tours">
+      <div class="crp-offer-section-head"><h2>{{ copy.tours }}</h2><p data-date>{{ copy.availableOn }} {{ day(date()) }}</p></div>
       @let tours = toursState();
       @switch (tours.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loadingTours }}</p> }
-        @case ('error') { <div role="alert" data-state="error"><p>{{ copy.requestFailed }}</p><button class="crp-operator-outline" type="button" (click)="tours.retry()">{{ copy.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><p>{{ copy.requestFailed }}</p><button class="crp-outline" type="button" (click)="tours.retry()">{{ copy.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ copy.empty }}</p> }
         @case ('data') {
           <ul class="crp-offer-grid" data-state="data">
@@ -69,13 +69,13 @@ const unavailable = () => throwError(() => new Error('The container provides no 
         }
       }
     </section>
-    <section class="crp-operator-panel" data-part="establishments" [attr.aria-label]="copy.establishments">
-      <div class="crp-operator-panel-head"><h2>{{ copy.establishments }}</h2></div>
+    <section class="crp-offer-section" data-part="establishments" [attr.aria-label]="copy.establishments">
+      <div class="crp-offer-section-head"><h2>{{ copy.establishments }}</h2></div>
       <p class="crp-offer-agreement"><strong>{{ copy.agreementTitle }}</strong> {{ copy.agreement }}</p>
       @let places = placesState();
       @switch (places.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loadingEstablishments }}</p> }
-        @case ('error') { <div role="alert" data-state="error"><p>{{ copy.requestFailed }}</p><button class="crp-operator-outline" type="button" (click)="places.retry()">{{ copy.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><p>{{ copy.requestFailed }}</p><button class="crp-outline" type="button" (click)="places.retry()">{{ copy.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ copy.empty }}</p> }
         @case ('data') {
           <ul class="crp-offer-grid" data-state="data">
