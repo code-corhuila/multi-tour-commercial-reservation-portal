@@ -1,6 +1,8 @@
 import { Provider } from '@angular/core';
 import { CatalogItemsSource, CatalogItemsWriter } from './catalog/data/catalog-api.service';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from './demo/demo-sources';
+import { DemoDiscountRulesStore } from './demo/discounts-demo';
+import { DiscountRulesSource } from './discounts/data/discount-rules-source';
 import { AssociatedEstablishmentsSource } from './establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from './establishments/data/associated-establishments-writer';
 import { PortalApiClient } from './shell-contract';
@@ -17,6 +19,7 @@ export function sourceProviders(_client: PortalApiClient): Provider[] {
     { provide: CatalogItemsWriter, useValue: new DemoCatalogWriter(catalog) },
     { provide: AssociatedEstablishmentsSource, useValue: establishments },
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
+    { provide: DiscountRulesSource, useValue: new DemoDiscountRulesStore() },
     { provide: PublicOfferSource, useValue: new DemoPublicOfferSource(catalog) },
     { provide: PublicEstablishmentsSource, useValue: new DemoPublicEstablishmentsSource(establishments) },
   ];
