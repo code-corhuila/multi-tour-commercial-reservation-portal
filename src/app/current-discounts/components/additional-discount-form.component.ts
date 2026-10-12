@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { defer, finalize } from 'rxjs';
 import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
-import { DISCOUNT_SELECTS } from '../../discounts/model/discount-rule';
 import { ApiError } from '../../shell-contract';
 import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
 import { AdditionalDiscount, AdditionalDraft, CURRENT_DISCOUNTS_TEXT, EMPTY_ADDITIONAL, additionalCommand,
@@ -15,21 +14,26 @@ let formSequence = 0;
   template: `
     @if (allowed) {
       <form novalidate class="current-discounts-form" [attr.aria-busy]="pending()" (submit)="submit($event)">
-        @for (field of fields; track field.name) {
-          <div><label [for]="id(field.name)">{{ field.label }}</label>
-            <input type="text" [name]="field.name" [id]="id(field.name)" [value]="draft()[field.name]" [disabled]="pending()"
-              [attr.aria-invalid]="messages()[field.name] ? 'true' : null" [attr.aria-describedby]="messages()[field.name] ? id(field.name) + '-error' : null"
-              (input)="edit(field.name, $event)">
-            @if (messages()[field.name]; as reason) { <p role="alert" [id]="id(field.name) + '-error'">{{ reason }}</p> }
-          </div>
-        }
-        <div><label [for]="id('type')">{{ types.label }}</label>
+        <div><label [for]="id('value')">{{ text.value }}</label>
+          <input type="text" name="value" inputmode="decimal" [id]="id('value')" [value]="draft().value" [disabled]="pending()"
+            [attr.aria-invalid]="messages().value ? 'true' : null" [attr.aria-describedby]="messages().value ? id('value') + '-error' : null"
+            (input)="edit('value', $event)">
+          @if (messages().value; as reason) { <p role="alert" [id]="id('value') + '-error'">{{ reason }}</p> }
+        </div>
+        <div><label [for]="id('type')">{{ text.type }}</label>
           <select name="type" [id]="id('type')" [value]="draft().type" [disabled]="pending()" (change)="edit('type', $event)">
-            @for (option of types.options; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
+            @for (option of text.types; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
           </select>
         </div>
-        <button type="submit" [disabled]="pending()">{{ text.apply }}</button>
+        <div class="current-discounts-wide"><label [for]="id('reason')">{{ text.reasonField }}</label>
+          <textarea name="reason" [id]="id('reason')" [placeholder]="text.reasonHint" [value]="draft().reason" [disabled]="pending()"
+            [attr.aria-invalid]="messages().reason ? 'true' : null" [attr.aria-describedby]="messages().reason ? id('reason') + '-error' : null"
+            (input)="edit('reason', $event)"></textarea>
+          @if (messages().reason; as reason) { <p role="alert" [id]="id('reason') + '-error'">{{ reason }}</p> }
+        </div>
+        <p class="current-discounts-note">{{ text.note }}</p>
         @if (failure()) { <p role="alert">{{ failure() }}</p> }
+        <div class="crp-form-actions"><button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ text.apply }}</button></div>
       </form>
     }
   `,
@@ -42,8 +46,7 @@ export class AdditionalDiscountFormComponent {
   private readonly lifetime = inject(DestroyRef);
   private key = this.keys.generate(); private fingerprint: string | null = null;
   private readonly prefix = `current-discounts-form-${formSequence++}`;
-  protected readonly text = CURRENT_DISCOUNTS_TEXT; protected readonly types = DISCOUNT_SELECTS[1];
-  protected readonly fields = [{ name: 'value', label: 'Value' }, { name: 'reason', label: CURRENT_DISCOUNTS_TEXT.reason }] as const;
+  protected readonly text = CURRENT_DISCOUNTS_TEXT;
   protected readonly draft = signal<AdditionalDraft>(EMPTY_ADDITIONAL);
   protected readonly pending = signal(false); protected readonly failure = signal('');
   private readonly attempted = signal(false);
@@ -64,7 +67,7 @@ export class AdditionalDiscountFormComponent {
         next: (stored) => {
           this.key = this.keys.generate(); this.fingerprint = null; this.attempted.set(false); this.draft.set(EMPTY_ADDITIONAL); this.saved.emit(stored);
         },
-        error: (error: Partial<ApiError> | null) => this.failure.set(error?.userMessage ?? this.text.failed),
+        error: (error: Partial<ApiError> | null) => this.failure.set(error?.userMessage ?? this.text.applyFailed),
       });
   }
 }

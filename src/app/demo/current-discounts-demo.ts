@@ -14,7 +14,7 @@ const SERVICES: readonly PricedService[] = [
     rule('demo-rule-1', 'Temporada de vacaciones', 1, { percentageBasisPoints: 1250 }),
     rule('demo-rule-2', 'Grupo familiar', 2, { calculationBase: 'PREVIOUS_SUBTOTAL', type: 'FIXED_AMOUNT', amountCents: 1_000_000, percentageBasisPoints: undefined }),
   ] },
-  { serviceId: 'demo-svc-2', serviceName: 'Ruta del cafe en Pitalito', baseCents: 14_500_000, rules: [
+  { serviceId: 'demo-svc-2', serviceName: 'Ruta del café en Pitalito', baseCents: 14_500_000, rules: [
     rule('demo-rule-3', 'Promocion de lanzamiento', 1, { endsOn: '2025-12-31' }),
     rule('demo-rule-4', 'Convenio suspendido', 2, { status: 'INACTIVE' }),
   ] },
