@@ -19,10 +19,16 @@ describe('highRiskActivityRefusesTheLeadWithoutTheExtraData', () => {
     expect(missingHighRiskData({}, false)).toEqual([]);
   });
   it('refuses a lead without the terms and without the extra data', () => {
-    const draft = { serviceId: 'svc-1', fullName: 'Lider Ficticio', document: 'X1', contact: 'x@example.test', birthDate: '1990-01-01', acceptedTerms: '' };
+    const draft = { serviceId: 'svc-1', fullName: 'Lider Ficticio', document: 'X1', email: 'x@example.test', contact: '300 000 0001', birthDate: '1990-01-01', acceptedTerms: '' };
     const messages = validatePerson(draft, 'lead', true, null);
     expect(Object.keys(messages).sort()).toEqual(['acceptedTerms', 'bloodType', 'emergencyContact', 'informedConsent', 'physicalRestrictions']);
     expect(validatePerson({ ...draft, ...complete, acceptedTerms: 'true' }, 'lead', true, null)).toEqual({});
+  });
+  it('asks the lead for a valid e-mail and says why in Spanish', () => {
+    const draft = { serviceId: 'svc-1', fullName: 'Lider Ficticio', document: 'X1', contact: '300', birthDate: '1990-01-01', acceptedTerms: 'true' };
+    expect(validatePerson(draft, 'lead', false, null)).toEqual({ email: 'Obligatorio.' });
+    expect(validatePerson({ ...draft, email: 'sin-arroba' }, 'lead', false, null)).toEqual({ email: 'Escribe un correo válido.' });
+    expect(validatePerson({ ...draft, email: 'a@b.co' }, 'lead', true, null).bloodType).toBe('Obligatorio para una actividad de riesgo.');
   });
 });
 

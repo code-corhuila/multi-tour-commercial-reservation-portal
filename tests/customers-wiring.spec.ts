@@ -18,7 +18,7 @@ describe('customers wiring in the mounted portal', () => {
     await vi.waitFor(() => expect(peopleEntry()).toBeTruthy());
     peopleEntry()!.click();
     await vi.waitFor(() => expect(host.querySelector('.customers-page [data-state="data"]')).toBeTruthy());
-    expect(host.textContent).toContain('Restricted');
+    expect(host.textContent).toContain('Restringido');
     expect(request.mock.calls.every(([path]) => !String(path).includes('customer'))).toBe(true);
   });
 
