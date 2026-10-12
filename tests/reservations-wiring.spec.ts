@@ -14,7 +14,7 @@ const mountAs = (roles: string[]) => {
 const goToReservations = async () => {
   await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
   Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Reservas')!.click();
-  await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Reservations'));
+  await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Reservas'));
 };
 
 afterEach(() => { cleanup?.(); host.remove(); request.mockClear(); });
@@ -24,13 +24,13 @@ describe('the reservations area is wired into the shell', () => {
     mountAs(['OPERATIONAL_COLLABORATOR']);
     await goToReservations();
     await vi.waitFor(() => expect(host.querySelector('[data-state="empty"], [data-state="data"]')).toBeTruthy());
-    expect(host.textContent).toContain('New reservation');
+    expect(host.textContent).toContain('Crear reserva');
   });
 
   it('leaves an unknown role reading, with no create action', async () => {
     mountAs(['SOMETHING_ELSE']);
     await goToReservations();
     await vi.waitFor(() => expect(host.querySelector('[data-state="empty"], [data-state="data"]')).toBeTruthy());
-    expect(host.textContent).not.toContain('New reservation');
+    expect(host.textContent).not.toContain('Crear reserva');
   });
 });
