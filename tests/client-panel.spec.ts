@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { readFileSync } from 'node:fs';
 import { of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
@@ -161,6 +162,19 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('keeps the panel when the featured tours cannot be read', async () => {
     const p = await openPanel({ catalog: 'fails' });
     expect(p.text('.crp-panel-featured [role="alert"]')).toBe('No pudimos cargar esta información.');
+  });
+
+  it('lays each quick action out as a left-aligned row: icon circle, then title over text, divided like mt-divider-list', async () => {
+    const p = await openPanel();
+    const item = p.host.querySelector('.crp-panel-quick button.crp-panel-quick-item');
+    expect(item?.children[0]?.classList.contains('crp-panel-quick-icon')).toBe(true);
+    expect(item?.children[1]?.classList.contains('crp-panel-quick-copy')).toBe(true);
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const row = css.match(/\.crp-root \.crp-panel-quick \.crp-panel-quick-item \{([^}]*)\}/)?.[1] ?? '';
+    expect(row).toMatch(/justify-content:\s*flex-start/);
+    expect(row).toMatch(/align-items:\s*flex-start/);
+    expect(row).toMatch(/text-align:\s*left/);
+    expect(css).toMatch(/\.crp-root \.crp-panel-quick-copy \{[^}]*display:\s*grid/);
   });
 
   it('draws no link to an area the build does not have', async () => {
