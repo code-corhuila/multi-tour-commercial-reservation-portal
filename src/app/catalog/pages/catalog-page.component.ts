@@ -5,13 +5,20 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
-import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
+import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CATALOG_COPY } from '../catalog-copy';
-import { formatCop, formatDateRange } from '../../shared/format';
-import { CatalogItem } from '../model/catalog-item';
-import { PageState } from '../../shared/page-state';
-import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { PortalNavigation } from '../../portal-navigation';
+import { formatCop } from '../../shared/format';
+import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
+
+/**
+ * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
+ * combinations for four legal states, and the illegal ones are the blank screens Annex H forbids.
+ */
+export type PageState =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly retry: () => void }
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'data'; readonly items: readonly CatalogItem[] };
 
 /** The one form the page may show: registering (no item) or changing the given item. */
 interface FormTarget {
@@ -36,11 +43,11 @@ function reasonOf(error: unknown): string {
     <header class="crp-page-header">
       <div class="crp-page-header-main">
         <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
-        <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
       </div>
       <span class="crp-page-header-action crp-header-actions">
       @if (caps.canRegister && current.kind !== 'loading' && current.kind !== 'error') {
-        <button class="crp-operator-primary" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
+        <button class="crp-operator-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
       }
       @if (navigation) {
         <button class="crp-operator-outline" type="button" (click)="navigation.open('catalog')">{{ copy.backToCatalogs }}</button>
@@ -70,7 +77,7 @@ function reasonOf(error: unknown): string {
       <p role="status" data-state="loading">{{ copy.loading }}</p>
     } @else if (current.kind === 'error') {
       <div role="alert" data-state="error">
-        <p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p>
+        <p>{{ copy.requestFailed }}</p>
         <button class="crp-operator-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button>
       </div>
     }
@@ -79,13 +86,12 @@ function reasonOf(error: unknown): string {
     } @else if (current.kind === 'data') {
       <div class="crp-table-wrap">
       <table class="crp-operator-table" data-state="data" [attr.aria-label]="copy.panelTitle">
-        <thead><tr><th scope="col">{{ copy.columns.service }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.validity }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+        <thead><tr><th scope="col">{{ copy.columns.service }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
         <tbody>
         @for (item of current.items; track item.serviceId) {
           <tr>
-            <td>{{ item.commercialName }}</td>
+            <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.serviceType] }}</small></td>
             <td>{{ cop(item.baseRateCents) }}</td>
-            <td>{{ validity(item) }}</td>
             <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.catalogStatus === 'ACTIVE'" [class.crp-is-pending]="item.catalogStatus === 'INACTIVE'">{{ copy.statuses[item.catalogStatus] }}</span></td>
             <td class="crp-row-actions">
             @if (canEdit) {

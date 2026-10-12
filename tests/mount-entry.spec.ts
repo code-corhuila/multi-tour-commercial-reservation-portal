@@ -60,7 +60,9 @@ describe('mountEntryContract', () => {
     for (const roles of [['SOMETHING_ELSE'], []]) {
       mountAs(roles);
       await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(0));
-      expect(text()).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
+      // The panel copy names "Desactivar" as prose, so the actions are looked for among the buttons.
+      const buttons = Array.from(host.querySelectorAll('button'), (button) => button.textContent?.trim() ?? '').join('|');
+      expect(buttons).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
       cleanup!();
       host.remove();
     }

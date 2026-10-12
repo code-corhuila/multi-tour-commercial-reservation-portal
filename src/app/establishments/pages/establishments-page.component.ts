@@ -29,12 +29,9 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
     } @else {
       <header class="crp-page-header">
       <div class="crp-page-header-main">
-        <p class="crp-page-header-eyebrow">{{ fixedType ? copy.eyebrowOf[fixedType] : copy.eyebrow }}</p>
-        <h1 class="crp-page-header-title crp-h1">{{ copy.title[fixedType ?? 'all'] }}</h1>
+        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
       </div>
-      @if (navigation?.has('catalog')) {
-        <button class="crp-operator-outline crp-page-header-action" type="button" (click)="navigation?.open('catalog')">{{ copy.backToCatalogs }}</button>
-      }
       </header>
       <p class="crp-access-note">{{ fixedType ? copy.noteOf[fixedType] : copy.accessNote }}</p>
       <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
@@ -77,7 +74,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loading }}</p> }
         @case ('error') {
           <div role="alert" data-state="error">
-            <p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p>
+            <p>{{ copy.requestFailed }}</p>
             <button class="crp-operator-outline" type="button" [disabled]="saving()" (click)="current.retry()">{{ copy.retry }}</button>
           </div>
         }
@@ -85,13 +82,14 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
         @case ('data') {
           <div class="crp-table-wrap">
           <table class="crp-operator-table" data-state="data" [attr.aria-label]="copy.panelTitle">
-            <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.info }}</th><th scope="col">{{ copy.columns.status }}</th>@if (canWrite) { <th scope="col">{{ copy.columns.actions }}</th> }</tr></thead>
+            <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.info }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
             <tbody>
             @for (item of current.items; track item.associationId) {
               <tr>
                 <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.establishmentType] }}</small></td>
                 <td>{{ item.commercialInformation }}</td>
                 <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ copy.statuses[item.associationStatus] }}</span></td>
+                <td class="crp-row-actions">
                 @if (canWrite) {
                 <td class="crp-row-actions">
                   <button class="crp-row-toggle" type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="changeStatus(item)">
