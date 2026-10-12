@@ -461,7 +461,8 @@
   .crp-root .crp-booking-bar, .crp-root .crp-booking-bar-pricing { grid-template-columns: 1fr; gap: 10px; }
 }
 /* HU-COM-008 finalizar-reserva.html (21): pill, main cards, summary aside and the bottom bar of reservar-tour. */
-.crp-root .crp-finish-content { display: grid; gap: 18px; width: min(100%, 980px); margin: 0 auto; padding: 24px 0 140px; }
+.crp-root .self-service-confirm { display: block; margin: 0; }
+.crp-root .crp-finish-content { display: grid; gap: 18px; width: min(100%, 1100px); margin: 0 auto; padding: 24px 0 40px; }
 .crp-root .crp-finish-pill { justify-self: center; display: inline-flex; align-items: center; min-height: 38px; margin: 0; padding: 0 16px; border-radius: 999px; background: #eef6f1; color: #2f6b57; font-size: 0.92rem; font-weight: 800; }
 .crp-root .crp-finish-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 24px; align-items: start; }
 .crp-root .crp-finish-main, .crp-root .crp-finish-aside { display: grid; gap: 18px; }
