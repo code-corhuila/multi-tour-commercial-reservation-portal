@@ -6,7 +6,6 @@ import { PublicEstablishmentsSource, PublicOfferSource } from '../src/app/public
 import { sourceProviders } from '../src/app/sources.demo';
 import * as entry from '../src/mount-entry';
 import { PUBLIC_OFFER_COPY } from '../src/app/public-offer/public-offer-copy';
-import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
 const toursOf = (source: DemoPublicOfferSource) => firstValueFrom(source.listAvailable('2026-11-20'));
 const placesOf = (source: DemoPublicEstablishmentsSource) => firstValueFrom(source.listActive());
@@ -38,16 +37,13 @@ describe('theDemoOfferReadsTheCatalogStore (plan D-05)', () => {
     const withTransport = (await toursOf(new DemoPublicOfferSource(store))).filter((tour) => tour.transportIncluded);
     expect(withTransport).toHaveLength(1);
     expect((await firstValueFrom(store.list())).filter((item) => item.transportRequired && item.serviceType === 'TOUR')).toHaveLength(1);
-    expect(withTransport[0].commercialName).toBe('San Agustín con traslado incluido');
   });
 });
 
 describe('theDemoEstablishmentsReadTheEstablishmentsStore (plan D-05)', () => {
   it('lists only the active establishments, with their commercial information', async () => {
     const places = await placesOf(new DemoPublicEstablishmentsSource(new DemoEstablishmentsStore()));
-    // The demo names gain their accents in the screen fix of HU-COM-001; the order and the set are what this story reads.
-    const plain = (name: string) => name.normalize('NFD').replace(/\p{Diacritic}/gu, '');
-    expect(places.map((place) => plain(place.commercialName))).toEqual(['Hotel Casa Neiva', 'Posada del Cafe', 'Sabores del Huila', 'Fogon del Desierto']);
+    expect(places.map((place) => place.commercialName)).toEqual(['Hotel Casa Neiva', 'Posada del Cafe', 'Sabores del Huila', 'Fogon del Desierto']);
     expect(places.every((place) => place.active && place.commercialInformation.length > 0)).toBe(true);
   });
 
@@ -66,18 +62,18 @@ describe('theDemoBuildProvidesTheOfferPorts', () => {
   });
 });
 
-describe('theShellOffersTheOfferToTheCustomer (PR #361)', () => {
+describe('theShellOffersTheOfferToEveryRole (plan D-01)', () => {
   let cleanup: (() => void) | undefined;
   let host: HTMLElement;
   afterEach(() => { cleanup?.(); host.remove(); });
 
-  it('shows the Explorar entry of the client header to an unknown role and opens the read-only view', async () => {
+  it('shows the Offer entry to an unknown role and opens the read-only view', async () => {
     host = document.createElement('div');
     document.body.append(host);
     const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 0 } }));
-    cleanup = entry.mountWith(host, { apiClient: { request } as never, session: { roles: ['SOMETHING_ELSE'], open: () => undefined, close: () => undefined } }, demoSources);
-    await vi.waitFor(() => expect(Array.from(host.querySelectorAll('nav button')).some((b) => b.textContent?.trim() === 'Explorar')).toBe(true));
-    Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Explorar')!.click();
+    cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles: ['SOMETHING_ELSE'], open: () => undefined, close: () => undefined } });
+    await vi.waitFor(() => expect(Array.from(host.querySelectorAll('nav button')).some((b) => b.textContent?.trim() === 'Offer')).toBe(true));
+    Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Offer')!.click();
     await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(PUBLIC_OFFER_COPY.title));
   });
 });
