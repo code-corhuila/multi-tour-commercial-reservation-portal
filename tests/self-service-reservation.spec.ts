@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
@@ -11,14 +12,16 @@ import {
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
   CustomerStanding,
+  RESERVATION_FLOW,
   ReservationSelection,
   SELF_SERVICE_TEXT as T,
+  selectionFromParams,
   selectionFromQuery,
   standingOf,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
-import { SelfServiceAreaComponent } from '../src/app/self-service-reservation/pages/self-service-area.component';
+import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
@@ -315,39 +318,44 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
 });
 
 describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; PR #361)', () => {
-  async function openArea(selection: ReservationSelection | null) {
+  it('Finalizar reserva is its own customer area and Mis reservas only lists', () => {
+    const finish = PORTAL_AREAS.filter((area) => area.component === ConfirmReservationPageComponent);
+    expect(finish).toHaveLength(1);
+    expect(finish[0]).toMatchObject({ key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', audience: 'customer', clientChrome: 'panel' });
+    expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.reservations)?.component).toBe(MyReservationsPageComponent);
+  });
+
+  it('the confirmation reads the selection Reservar tour opened it with, before the URL (DP-RS1)', async () => {
+    const methods = new ControllablePaymentMethods();
+    const navigation = new PortalNavigation();
+    navigation.register([RESERVATION_FLOW.finish]);
+    navigation.open(RESERVATION_FLOW.finish, { departure: 'dep-9', services: 'svc-3', people: '3' });
+    const quotes: ReservationSelection[] = [];
     TestBed.configureTestingModule({ providers: [
       { provide: CustomerContext, useValue: new CustomerAs('FINAL_CUSTOMER') },
-      { provide: MyReservationsSource, useValue: new ControllableMyReservationsSource() },
-      { provide: ReservationSelectionSource, useValue: selectionAt(selection) },
-      { provide: PaymentMethodsSource, useValue: new ControllablePaymentMethods() },
-      { provide: SelectionQuoteSource, useValue: quoteOf() },
+      { provide: PortalNavigation, useValue: navigation },
+      { provide: ReservationSelectionSource, useValue: selectionAt(null) },
+      { provide: PaymentMethodsSource, useValue: methods },
+      { provide: SelectionQuoteSource, useValue: { quote: (selection: ReservationSelection) => { quotes.push(selection); return quoteOf().quote(selection); } } },
       { provide: ReservationRequester, useValue: new RecordingRequester() },
       { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() },
     ] });
-    const fixture = TestBed.createComponent(SelfServiceAreaComponent);
+    const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
     fixture.detectChanges(); await fixture.whenStable();
-    return fixture.nativeElement as HTMLElement;
-  }
-
-  it('shows only Mis reservas when no reservation is in progress', async () => {
-    const area = await openArea(null);
-    expect(area.querySelector('app-confirm-reservation-page')).toBeNull();
-    expect(area.querySelector('app-my-reservations-page')).not.toBeNull();
+    expect(quotes).toEqual([{ departureId: 'dep-9', serviceIds: ['svc-3'], people: 3 }]);
+    expect(selectionFromParams({})).toBeNull();
   });
 
-  it('opens Finalizar reserva de tour above Mis reservas when the URL carries a selection', async () => {
-    const area = await openArea(SELECTION);
-    expect(Array.from(area.querySelectorAll('h1'), (h) => h.textContent?.trim())).toEqual(['Finalizar reserva de tour', 'Mis reservas']);
-  });
-
-  it('Mis reservas offers Volver al panel cliente only when the shell can open the panel', async () => {
-    expect((await openPanel()).element.textContent).not.toContain('Volver al panel cliente');
-    TestBed.resetTestingModule();
+  it('Mis reservas has no back link in the body: Volver al panel is in the compact header', async () => {
     const p = await openPanel('FINAL_CUSTOMER', [CLIENT_AREA.panel, CLIENT_AREA.reservations]);
-    const back = buttonNamed(p.element, '← Volver al panel cliente')!;
-    expect(back.closest('.self-service-panel')).not.toBeNull();
-    back.click();
-    expect(TestBed.inject(PortalNavigation).selected()).toBe(CLIENT_AREA.panel);
+    expect(p.element.textContent).not.toContain('Volver al panel');
+  });
+
+  it('Mis reservas sizes its header as mis-reservas.html: 48px title, small dark-green eyebrow', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
+    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-size:\s*3rem/);
+    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-weight:\s*800/);
+    expect(rule('.crp-root .self-service-panel .crp-page-header-eyebrow')).toMatch(/color:\s*#1f4d3d/);
   });
 });

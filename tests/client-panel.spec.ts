@@ -11,11 +11,11 @@ import { PortalNavigation } from '../src/app/portal-navigation';
 import { CustomerContext } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import { ReservationSelectionSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
-import { CustomerStanding, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
+import { CustomerStanding, RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
 import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION, selectionAt } from './self-service-reservation.double';
 
-const ALL_AREAS = Object.values(CLIENT_AREA);
+const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
 const rule = (overrides: Partial<DiscountRule>): DiscountRule => ({
   id: 'r1', name: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
   type: 'PERCENTAGE', percentageBasisPoints: 2000, status: 'ACTIVE', ...overrides,
@@ -62,7 +62,9 @@ afterEach(() => TestBed.resetTestingModule());
 describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)', () => {
   it('is the Mis reservas area of the client header', () => {
     const panel = PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.panel);
-    expect(panel).toMatchObject({ label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer' });
+    expect(panel).toMatchObject({ label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel' });
+    // panel-cliente.html and mis-reservas.html both use the compact header, without the footer (PR #361).
+    expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.reservations)?.clientChrome).toBe('panel');
   });
 
   it('greets the customer as panel-cliente.html, with no name because the session carries none', async () => {
@@ -99,8 +101,23 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
     expect(p.text('.crp-panel-card p')).toBe('1 Pendiente de pago · 2 Confirmada');
     expect(p.text('.crp-panel-card small')).toBe('RES-1843 · RES-1844 · RES-1846');
     expect(p.host.textContent).not.toMatch(/PENDING_PAYMENT|CONFIRMED|RES-1845/);
+    expect(p.text('.crp-panel-card-pill')).toBe('Consulta en Mis reservas');
+    expect(p.text('.crp-panel-card-status small')).toBe('Reservas propias');
+    const actions = Array.from(p.host.querySelectorAll('.crp-panel-card-actions button'));
+    expect(actions.map((b) => [b.textContent?.trim(), b.className])).toEqual([['Ver mis reservas', 'crp-primary'], ['Ver mis reservas', 'crp-panel-ghost']]);
     await p.click('.crp-panel-card button', 'Ver mis reservas');
     expect(p.navigation.selected()).toBe(CLIENT_AREA.reservations);
+  });
+
+  it('sizes the panel as panel-cliente.html: big greeting, full-width search, two wide featured cards, grey quick texts', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
+    expect(rule('.crp-root .crp-panel-hero h1')).toMatch(/font-size:\s*3\.1rem/);
+    expect(rule('.crp-root .crp-panel-hero h1')).toMatch(/font-weight:\s*800/);
+    expect(rule('.crp-root .crp-panel-search-row input')).toMatch(/max-width:\s*none/);
+    expect(rule('.crp-root .crp-panel-featured ul')).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+    expect(rule('.crp-root .crp-panel-featured img')).toMatch(/height:\s*240px/);
+    expect(rule('.crp-root .crp-panel-quick-copy > span')).toMatch(/color:\s*#45555c/);
   });
 
   it('says there are no active reservations, and offers a retry when they fail', async () => {
@@ -186,6 +203,6 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
 
   it('goes straight to Finalizar reserva when the URL carries a selection', async () => {
     const p = await openPanel({ selection: SELECTION });
-    await vi.waitFor(() => expect(p.navigation.selected()).toBe(CLIENT_AREA.reservations));
+    await vi.waitFor(() => expect(p.navigation.selected()).toBe(RESERVATION_FLOW.finish));
   });
 });
