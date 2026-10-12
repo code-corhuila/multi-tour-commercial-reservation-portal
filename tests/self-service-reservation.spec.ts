@@ -336,6 +336,17 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(c.element.querySelector('form .crp-finish-layout > aside.crp-finish-aside > .crp-booking-card.self-service-summary')).not.toBeNull();
     expect(c.element.querySelector('form .crp-booking-bar button[type="submit"].crp-primary')).not.toBeNull();
   });
+  it('the confirmation stacks top bar, two-column body and bottom bar, never under a generic form grid', async () => {
+    const c = await openConfirm(); await c.showMethods();
+    const form = c.element.querySelector('form.self-service-confirm')!;
+    expect(Array.from(form.children, (child) => child.classList[0])).toEqual(['crp-booking-topbar', 'crp-finish-content', 'crp-booking-bar']);
+    expect(Array.from(form.querySelectorAll('.crp-finish-layout > *'), (column) => column.classList[0])).toEqual(['crp-finish-main', 'crp-finish-aside']);
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
+    expect(rule('.crp-root .self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
+    expect(rule('.crp-root .crp-finish-content')).toMatch(/width:\s*min\(100%, 1100px\);\s*margin:\s*0 auto;\s*padding:\s*24px 0 40px;/);
+    expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 1\.6fr\) minmax\(260px, 1fr\)/);
+  });
   it('Mis reservas uses the client classes in every state, never the operator ones', async () => {
     const p = await openPanel(); p.source.requests[0].fail(); await p.settle();
     expect(p.element.querySelector('[data-state="error"] button.crp-outline')).not.toBeNull();
