@@ -288,3 +288,20 @@ describe('portalAudience', () => {
     expect(foundation.every((area) => (area.audience ?? 'operator') === 'operator')).toBe(true);
   });
 });
+
+describe('demoDataSpeaksSpanishWithAccents', () => {
+  it('writes the visible demo names and texts with their Spanish accents', () => {
+    const catalog = new DemoCatalogStore();
+    const tours = ['demo-svc-2', 'demo-svc-3'].map((id) => catalog.find(id).commercialName);
+    expect(tours).toEqual(['Ruta del café en Pitalito', 'Canotaje en el Río Suaza']);
+    const places = new DemoEstablishmentsStore().items.map((e) => `${e.commercialName} | ${e.commercialInformation}`);
+    expect(places).toEqual([
+      'Hotel Casa Neiva | Habitaciones con vista al río Magdalena.',
+      'Posada del Café | Alojamiento rural entre cafetales.',
+      'Hostal La Tatacoa | Cerrado por remodelación.',
+      'Sabores del Huila | Cocina típica: asado huilense y tamal.',
+      'Fogón del Desierto | Cabrito al horno de barro.',
+      'Café Altura | Desayunos de montaña.',
+    ]);
+  });
+});
