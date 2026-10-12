@@ -3,11 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemsWriter } from '../data/catalog-api.service';
 import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
+import { MoneyRejection, formatMoney, parseMoney } from '../model/money';
 import { CATALOG_COPY } from '../catalog-copy';
 import { formatCop } from '../../shared/format';
-import { focusFirstError } from '../../shared/focus';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
-import { MoneyRejection, formatMoney, parseMoney } from '../../shared/money';
 
 // Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
 // DP-01 (what a tour is) and G-H (who owns the operational cost).
