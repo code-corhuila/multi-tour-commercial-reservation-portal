@@ -236,10 +236,9 @@
 .crp-root .crp-operator-shell form > div, .crp-root .crp-operator-shell form > p { margin: 0; }
 .crp-root .crp-operator-shell form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
 .crp-root .crp-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
-.crp-root .crp-operator-shell textarea { max-width: none; min-height: 92px; resize: vertical; }
 /* Screen 11 forms: numbered panels with a two-column grid. */
-.crp-root .crp-form-panel { grid-column: 1 / -1; margin: 0; padding: 20px; border: 1px solid var(--crp-line-green); border-radius: var(--crp-radius-card); background: var(--crp-surface); }
-.crp-root .crp-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.crp-root .crp-form-panel { grid-column: 1 / -1; margin: 0; padding: 20px; border: 1px solid #dce8e1; border-radius: var(--crp-radius-card); background: var(--crp-surface); }
+.crp-root .crp-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
 .crp-root .crp-form-grid small { display: block; margin-top: 4px; color: var(--crp-soft); font-size: 0.78rem; }
 .crp-root label { display: block; margin: 12px 0 4px; font-size: 0.86rem; font-weight: 700; }
 .crp-root form label { margin-top: 0; }

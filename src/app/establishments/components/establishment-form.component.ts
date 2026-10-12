@@ -8,8 +8,6 @@ import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '..
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
 import { ESTABLISHMENTS_COPY } from '../establishments-copy';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
-import { FilePickerComponent } from '../../shared/file-picker.component';
 
 type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;
@@ -59,11 +57,10 @@ let nextFormId = 0;
         <p class="crp-operator-eyebrow">02. Imagen</p>
         <div>
           <label [for]="id('image')">Imagen</label>
-          <app-file-picker inputName="image" [inputId]="id('image')" [accept]="acceptedTypes" [disabled]="pending()" [file]="image()"
-            [invalid]="!!messages().image" [describedBy]="describedBy('image')" (chosen)="chooseImage($event)">
-            <p [id]="id('image') + '-help'">{{ guidance }}</p>
-            @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
-          </app-file-picker>
+          <input type="file" name="image" [id]="id('image')" [accept]="acceptedTypes" [disabled]="pending()"
+            [attr.aria-invalid]="messages().image ? 'true' : null" [attr.aria-describedby]="describedBy('image')" (change)="chooseImage($event)">
+          <p [id]="id('image') + '-help'">{{ guidance }}</p>
+          @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
         </div>
         </section>
         <div class="crp-form-actions">
