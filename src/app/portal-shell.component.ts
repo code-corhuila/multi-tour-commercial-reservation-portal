@@ -17,7 +17,7 @@ import { PortalNavigation } from './portal-navigation';
   template: `
     @if (audience === 'customer') {
       <div class="crp-client-shell">
-        @if (!panel()) {
+        @if (chrome() === 'site') {
         <header class="crp-client-header">
           <button type="button" class="crp-client-brand" (click)="open(landing?.key)">MULTI<span>TOUR</span></button>
           <nav class="crp-client-nav" aria-label="Navegación principal del cliente">
@@ -31,7 +31,7 @@ import { PortalNavigation } from './portal-navigation';
         </header>
         }
         <main class="crp-client-content">
-          @if (panel()) {
+          @if (chrome() === 'panel') {
             <header class="crp-client-panel-header">
               <button type="button" class="crp-client-panel-brand" (click)="open(landing?.key)">Multi Tour</button>
               @if (panelLink(); as link) { <button type="button" (click)="open(link.key)">{{ link.label }}</button> }
@@ -39,7 +39,7 @@ import { PortalNavigation } from './portal-navigation';
           }
           @if (current(); as area) { <ng-container *ngComponentOutlet="area.component" /> }
         </main>
-        @if (!panel()) {
+        @if (chrome() === 'site') {
         <footer class="crp-client-footer">
           <div class="crp-client-footer-grid">
             <div>
@@ -91,7 +91,7 @@ export class PortalShellComponent {
   protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);
   protected readonly headerAccount = this.drawn(CLIENT_LINKS.account);
   protected readonly footerLinks = CLIENT_LINKS.footer;
-  protected readonly panel = computed(() => this.current()?.clientChrome === 'panel');
+  protected readonly chrome = computed(() => this.current()?.clientChrome ?? 'site');
   /** 'Ver catálogo' on the panel cliente, 'Volver al panel' on the other panel areas; only when the build has the target. */
   protected readonly panelLink = computed(() =>
     this.drawn([CLIENT_LINKS.panel[this.current()?.key === CLIENT_AREA.panel ? 0 : 1]])[0]);
