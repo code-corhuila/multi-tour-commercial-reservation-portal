@@ -373,12 +373,12 @@
 .crp-root .self-service-panel .crp-page-header-desc { font-size: 1rem; line-height: 1.65; }
 .crp-root .self-service-panel .crp-page-header-desc + .crp-page-header-desc { margin-top: 8px; color: #17252b; }
 .crp-root .self-service-card::after { content: ""; grid-column: 1 / -1; border-top: 1px solid #e6e9e7; }
-/* HU-COM-008 reservar-tour.html (20): topbar, tour card with the calendar, conditions, travelers and the sticky bar. */
+/* HU-COM-008 reservar-tour.html (20): topbar, tour card with the calendar, conditions, travelers and the fixed bar; the content keeps the bar height (104px, 170px stacked) free under the last card. */
 .crp-root .crp-booking-topbar { display: grid; grid-template-columns: 220px minmax(0, 1fr) 220px; align-items: center; gap: 16px; margin: -24px -20px 0; padding: 18px 28px; border-bottom: 1px solid #e8ece9; }
 .crp-root .crp-booking-topbar h1 { margin: 0; color: #17252b; font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; text-align: center; }
 .crp-root .crp-booking-back { justify-self: start; gap: 12px; min-height: 42px; padding: 0; border: 0; background: none; color: #1f4f57; font-size: 0.96rem; font-weight: 700; }
 .crp-root .crp-booking-back > span:first-child { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 1px solid #d7e4e1; border-radius: 999px; background: #f4faf8; color: #2f6b57; }
-.crp-root .crp-booking-content { display: grid; gap: 18px; width: min(100%, 1100px); margin: 0 auto; padding: 24px 0 40px; }
+.crp-root .crp-booking-content { display: grid; gap: 18px; width: min(100%, 1100px); margin: 0 auto; padding: 24px 0 144px; }
 .crp-root .crp-booking-card, .crp-root .crp-booking-note { margin: 0; padding: 22px 24px; border: 1px solid #d7e0de; border-radius: 20px; background: #ffffff; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); }
 .crp-root .crp-booking-card-head, .crp-root .crp-booking-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .crp-root .crp-booking-card-head h2, .crp-root .crp-booking-card-title { margin: 0; color: #17252b; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.03em; }
@@ -409,7 +409,7 @@
 .crp-root .crp-booking-capacity.crp-is-error { color: #ad4b34; }
 .crp-root .crp-booking-reference { margin: 8px 0 0; color: #5a6b70; line-height: 1.6; }
 .crp-root .crp-booking-reference strong { color: #17252b; }
-.crp-root .crp-booking-bar { position: sticky; z-index: 20; bottom: 22px; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.8fr) auto; align-items: center; gap: 24px; width: min(100%, 1100px); margin: 0 auto; padding: 12px 14px 12px 18px; border: 1px solid #d7e3df; border-radius: 18px; background: rgba(255, 254, 251, 0.97); box-shadow: 0 14px 34px rgba(25, 53, 49, 0.14); }
+.crp-root .crp-booking-bar { position: fixed; z-index: 20; bottom: 22px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.8fr) auto; align-items: center; gap: 24px; width: min(calc(100% - 48px), 1100px); margin: 0; padding: 12px 14px 12px 18px; border: 1px solid #d7e3df; border-radius: 18px; background: rgba(255, 254, 251, 0.97); box-shadow: 0 14px 34px rgba(25, 53, 49, 0.14); }
 .crp-root .crp-booking-bar-pricing { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .crp-root .crp-booking-bar span { display: block; color: #5a6b70; font-size: 0.84rem; font-weight: 700; text-transform: uppercase; }
 .crp-root .crp-booking-bar strong { display: block; margin-top: 4px; color: #17252b; font-size: 1.1rem; font-weight: 800; }
@@ -418,6 +418,7 @@
   .crp-root .crp-booking-topbar { grid-template-columns: 1fr; padding: 14px 16px; }
   .crp-root .crp-booking-topbar h1 { font-size: 1.5rem; }
   .crp-root .crp-booking-bar, .crp-root .crp-booking-bar-pricing { grid-template-columns: 1fr; gap: 10px; }
+  .crp-root .crp-booking-content { padding-bottom: 210px; }
 }
 /* HU-COM-008 finalizar-reserva.html (21): pill, main cards, summary aside and the bottom bar of reservar-tour. */
 .crp-root .crp-finish-content { display: grid; gap: 18px; width: min(100%, 980px); margin: 0 auto; padding: 24px 0 140px; }
