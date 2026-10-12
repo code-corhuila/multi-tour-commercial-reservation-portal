@@ -63,6 +63,7 @@ const SPECIFIED_TREE = [
   'src/app/demo/public-offer-demo.ts',
   'src/app/public-offer/data/public-offer-sources.ts',
   'src/app/public-offer/model/public-offer.ts',
+  'src/app/public-offer/pages/establishments-offer-page.component.ts',
   'src/app/public-offer/pages/public-offer-page.component.ts',
   'src/app/public-offer/public-offer-copy.ts',
 ];
