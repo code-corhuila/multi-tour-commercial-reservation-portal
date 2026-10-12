@@ -48,7 +48,7 @@ describe('missing mandatory data and capacity, as rules', () => {
   });
   it('refuses more people than the effective capacity, and accepts exactly the capacity', () => {
     const full = { leadCustomerId: 'c', departureId: 'dep-1', serviceIds: ['s'], people: '3' };
-    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 2 })).people).toContain('Not enough capacity');
+    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 2 })).people).toContain('No hay cupo suficiente');
     expect(validateReservation(full, departureOf(1, { effectiveCapacity: 3 }))).toEqual({});
     expect(hasCapacity(departureOf(1, { effectiveCapacity: 3 }), 4)).toBe(false);
   });
