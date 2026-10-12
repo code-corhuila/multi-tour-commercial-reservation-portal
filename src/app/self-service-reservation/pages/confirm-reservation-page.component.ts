@@ -5,7 +5,7 @@ import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
-import { PaymentMethodsSource, ReservationRequester, ReservationSelectionSource, SelectionQuoteSource } from '../data/reservation-confirmation-ports';
+import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CustomerReservation, PaymentMethod, SELF_SERVICE_TEXT, SelectionQuote, reservationState, travelers } from '../model/self-service-reservation';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
@@ -78,7 +78,7 @@ export class ConfirmReservationPageComponent {
   ] as const;
   private readonly customer = inject(CustomerContext);
   protected readonly standing = this.customer.standing;
-  protected readonly selection = inject(ReservationSelectionSource).current();
+  protected readonly selection = injectSelection();
   private readonly methods = inject(PaymentMethodsSource);
   private readonly quotes = inject(SelectionQuoteSource);
   private readonly requester = inject(ReservationRequester);

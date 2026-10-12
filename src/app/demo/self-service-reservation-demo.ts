@@ -1,5 +1,8 @@
 import { Provider } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, forkJoin, map, of, throwError } from 'rxjs';
+import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
+import { DeparturesSource } from '../reservations/data/departures-source';
+import { quote } from '../reservations/model/reservation';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from '../self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuote } from '../self-service-reservation/model/self-service-reservation';
@@ -55,12 +58,17 @@ export class DemoReservationRequester extends ReservationRequester {
   }
 }
 
-/** The values the calculation of HU-COM-007 would return: no discount in the demo. */
+/** The calculation of HU-COM-007 (quote), reused over its departures and the catalog rates; no discount until HU-COM-004. */
 export class DemoSelectionQuotes extends SelectionQuoteSource {
+  constructor(private readonly departures: DeparturesSource, private readonly catalog: CatalogItemsSource) { super(); }
   override quote(selection: ReservationSelection): Observable<SelectionQuote> {
-    const [tourName, departureAt] = tourOf(selection.departureId);
-    const value = DEMO_PRICE_PER_PERSON_CENTS * selection.people;
-    return of({ tourName, departureAt, baseValueCents: value, discountCents: 0, finalValueCents: value });
+    return forkJoin({ all: this.departures.list(), items: this.catalog.list() }).pipe(map(({ all, items }) => {
+      const departure = all.find((d) => d.id === selection.departureId);
+      if (!departure) throw new Error('Unknown departure');
+      const services = items.filter((i) => selection.serviceIds.includes(i.serviceId)).map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents }));
+      const q = quote(services, selection.people, departure, () => []);
+      return { tourName: departure.tourName, departureAt: departure.date, baseValueCents: q.projectedCents, discountCents: q.projectedCents - q.finalCents, finalValueCents: q.finalCents };
+    }));
   }
 }
 
@@ -69,7 +77,7 @@ export function selfServiceDemoProviders(): Provider[] {
   return [
     { provide: MyReservationsSource, useValue: store },
     { provide: PaymentMethodsSource, useValue: new DemoPaymentMethods() },
-    { provide: SelectionQuoteSource, useValue: new DemoSelectionQuotes() },
+    { provide: SelectionQuoteSource, useFactory: (d: DeparturesSource, c: CatalogItemsSource) => new DemoSelectionQuotes(d, c), deps: [DeparturesSource, CatalogItemsSource] },
     { provide: ReservationRequester, useValue: new DemoReservationRequester(store) },
   ];
 }
