@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { readFileSync } from 'node:fs';
 import { Observable, Subject, of } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
@@ -67,10 +68,10 @@ async function openReserve(options: Options = {}) {
 afterEach(() => TestBed.resetTestingModule());
 
 describe('reservarTourIsItsOwnCustomerArea (reservar-tour.html, screen 20)', () => {
-  it('is one customer entry of PORTAL_AREAS with the compact chrome', () => {
+  it('is one customer entry of PORTAL_AREAS with no client chrome: its own top bar', () => {
     const entries = PORTAL_AREAS.filter((area) => area.component === ReserveTourPageComponent);
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({ key: RESERVATION_FLOW.reserve, label: 'Reservar tour', audience: 'customer', clientChrome: 'panel' });
+    expect(entries[0]).toMatchObject({ key: RESERVATION_FLOW.reserve, label: 'Reservar tour', audience: 'customer', clientChrome: 'none' });
   });
 
   it('draws the topbar, the tour of the parameters and its starting price', async () => {
@@ -177,5 +178,27 @@ describe('reservarTourShowsOneOfTheFourStates', () => {
     TestBed.resetTestingModule();
     const unknown = await openReserve({ tour: 'svc-404' });
     expect(unknown.text('[data-state="empty"]')).toContain('Tour no disponible');
+  });
+});
+
+describe('reservarTourKeepsTheColumnOfTheMockup (travel-booking-content, sticky bar, Ver condiciones +)', () => {
+  const css = readFileSync('src/styles/portal.css', 'utf8');
+  const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
+
+  it('lays the cards in a column of min(100%, 1100px) and keeps the bottom bar in that same column', () => {
+    expect(rule('.crp-root .crp-booking-content')).toMatch(/width:\s*min\(100%, 1100px\)/);
+    const bar = rule('.crp-root .crp-booking-bar');
+    expect(bar).toMatch(/position:\s*sticky;/);
+    expect(bar).toMatch(/width:\s*min\(100%, 1100px\);\s*margin:\s*0 auto/);
+    expect(bar).not.toMatch(/translateX|left:/);
+  });
+
+  it('draws Ver condiciones with + and - instead of the disclosure triangle', async () => {
+    const p = await openReserve();
+    expect(p.text('.crp-booking-note details.crp-booking-conditions > summary')).toBe('Ver condiciones');
+    expect(rule('.crp-root .crp-booking-conditions summary')).toMatch(/list-style:\s*none/);
+    expect(rule('.crp-root .crp-booking-conditions summary::-webkit-details-marker')).toMatch(/display:\s*none/);
+    expect(rule('.crp-root .crp-booking-conditions summary::after')).toMatch(/content:\s*"\+"/);
+    expect(rule('.crp-root .crp-booking-conditions[open] summary::after')).toMatch(/content:\s*"-"/);
   });
 });
