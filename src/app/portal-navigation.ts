@@ -12,6 +12,8 @@ export const CLIENT_AREA = Object.freeze({
 @Injectable()
 export class PortalNavigation {
   readonly selected = signal<string | undefined>(undefined);
+  /** Parameters of the last opening (e.g. { departure, services, people }); every opening replaces them. */
+  readonly params = signal<Readonly<Record<string, string>>>({});
   private keys: readonly string[] = [];
 
   /** The shell declares the areas it can show. */
@@ -19,5 +21,11 @@ export class PortalNavigation {
 
   has(key: string): boolean { return this.keys.includes(key); }
 
-  open(key: string): void { if (this.has(key)) { this.selected.set(key); } }
+  /** Opens an area with optional parameters; false, and nothing changes, when the build has no such area. */
+  open(key: string, params: Readonly<Record<string, string>> = {}): boolean {
+    if (!this.has(key)) { return false; }
+    this.params.set(params);
+    this.selected.set(key);
+    return true;
+  }
 }
