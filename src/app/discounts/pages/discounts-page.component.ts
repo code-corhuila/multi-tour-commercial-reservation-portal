@@ -7,11 +7,8 @@ import { ApiError } from '../../shell-contract';
 import { DiscountRuleFormComponent } from '../components/discount-rule-form.component';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
 import { DiscountRulesSource } from '../data/discount-rules-source';
-import { DISCOUNT_TEXT } from '../discounts-copy';
-import { DiscountRule, discountDetail, discountValueText } from '../model/discount-rule';
-import { DISCOUNTS_PAGE_PANELS, PortalSlotOutlet } from '../../shared/portal-slots';
-import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { formatDateRange } from '../../shared/format';
+import { DISCOUNT_SELECTS, DISCOUNT_TEXT, DiscountRule, canManageDiscounts, discountValidity, discountValueText } from '../model/discount-rule';
 export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error' } | { kind: 'data'; items: readonly DiscountRule[] };
 @Component({
   selector: 'app-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, DiscountRuleFormComponent, PortalSlotOutlet],
@@ -42,12 +39,12 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
       }
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error"><p><crp-read-error [state]="current" [fallback]="text.failed" /></p><button class="crp-outline" type="button" [disabled]="busy()" (click)="reload()">{{ text.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><p>{{ text.failed }}</p><button class="crp-outline" type="button" [disabled]="busy()" (click)="reload()">{{ text.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
         @case ('data') {
-          <ul class="crp-discount-list" data-state="data">@for (rule of current.items; track rule.id) { @let badge = rule.validity;
-            <li class="crp-discount-promo"><div><span>{{ rule.tourName }}</span><strong>{{ valueText(rule) }}</strong>
-              <p>{{ detail(rule) }}</p>
+          <ul class="crp-discount-list" data-state="data">@for (rule of current.items; track rule.id) { @let badge = validity(rule, today);
+            <li class="crp-discount-promo"><div><span>{{ rule.name }}</span><strong>{{ valueText(rule) }}</strong>
+              <p>Vigencia: {{ range(rule.startsOn, rule.endsOn) }} · Prioridad {{ rule.priority }} · Base de cálculo: {{ baseLabel(rule) }}</p>
               <em [class]="'crp-operator-status crp-is-' + badge.tone">{{ badge.label }}</em></div>
               @if (writer) { <div class="crp-row-actions">
                 <button type="button" [disabled]="busy()" (click)="openForm(rule)">{{ text.edit }}</button>
@@ -57,8 +54,7 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
           }</ul>
         }
       }
-      </section>
-      <ng-container *crpSlot="panels" /> }
+      </section> }
     } @else { <p role="alert" data-state="denied">{{ text.denied }}</p> }
   `,
 })
@@ -74,9 +70,11 @@ export class DiscountsPageComponent {
   protected readonly activeStatus: DiscountRule['status'] = 'ACTIVE';
   protected readonly text = DISCOUNT_TEXT;
   protected readonly valueText = discountValueText;
-  protected readonly detail = discountDetail;
-  protected readonly panels = DISCOUNTS_PAGE_PANELS;
-  protected inForce(items: readonly DiscountRule[]): number { return items.filter(r => r.validity.inForce).length; }
+  protected readonly validity = discountValidity;
+  protected readonly range = formatDateRange;
+  protected baseLabel(rule: DiscountRule): string { return DISCOUNT_SELECTS[0].options.find(o => o.value === rule.calculationBase)?.label ?? ''; }
+  protected inForce(items: readonly DiscountRule[]): number { return items.filter(r => this.validity(r, this.today).tone === 'confirmed').length; }
+  protected readonly today = new Date().toLocaleDateString('en-CA');
   private readonly requests = new Subject<void>();
   private readonly local = signal<DiscountsPageState | null>(null);
   private readonly listed = toSignal(this.requests.pipe(switchMap(() => this.source.list().pipe(
