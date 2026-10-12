@@ -7,6 +7,7 @@ import { MountProps } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
 import { currentDiscountsProviders } from './app/demo/current-discounts-demo';
 import { customersDemoProviders } from './app/demo/customers-demo';
+import { reservationDemoProviders } from './app/demo/reservations-demo';
 
 const KNOWN_ROLES: readonly string[] = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT'];
 
@@ -44,6 +45,7 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
       ...sourceProviders(props.apiClient),
       ...currentDiscountsProviders(), // DEMO until G-API: no adapter over apiClient yet (DD-1)
       ...customersDemoProviders(props.session.roles),
+      ...reservationDemoProviders(),
     ],
   }).then((created) => {
     app = created;
