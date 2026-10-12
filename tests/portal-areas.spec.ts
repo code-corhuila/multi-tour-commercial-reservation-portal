@@ -15,6 +15,7 @@ import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } 
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
+import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
 import { SelfServiceAreaComponent } from '../src/app/self-service-reservation/pages/self-service-area.component';
 import { actorAs } from './actor-context.double';
@@ -70,6 +71,7 @@ describe('portalAreasRegistry', () => {
       { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
+      { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent },
       { key: 'client-panel', label: 'Mis reservas', component: ClientPanelPageComponent },
       { key: 'my-reservations', label: 'Mis reservas', component: SelfServiceAreaComponent },
     ]);
