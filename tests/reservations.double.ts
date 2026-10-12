@@ -1,3 +1,4 @@
+import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of } from 'rxjs';
 import { ActorContext, CatalogItemsSource, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
@@ -82,7 +83,7 @@ export function reservationProviders(over: { role?: string; departures?: Departu
 }
 
 /** Creates a component and returns helpers that act as a person would. */
-export async function screenOf<T>(component: new (...args: never[]) => T, providers: unknown[]) {
+export async function screenOf<T>(component: Type<T>, providers: unknown[]) {
   TestBed.configureTestingModule({ providers: providers as never });
   const fixture = TestBed.createComponent(component), element: HTMLElement = fixture.nativeElement;
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
