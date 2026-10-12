@@ -176,20 +176,29 @@
   .crp-root form { grid-template-columns: 1fr; }
 }
 
-/* Client layout of the authorized client screens (tours.html header, panel-cliente.html greeting): no sidebar, no role line. */
-.crp-root .crp-client-shell { min-height: 100%; background: var(--crp-bg); color: var(--crp-text); }
-.crp-root .crp-client-header { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px clamp(20px, 4vw, 56px); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); }
-.crp-root .crp-client-brand { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; color: var(--crp-text); }
-.crp-root .crp-client-brand span { color: var(--crp-cta); }
+/* Client layout of tours.html: sticky header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. */
+.crp-root .crp-client-shell { display: flex; flex-direction: column; min-height: 100%; background: var(--crp-bg); color: var(--crp-text); }
+.crp-root .crp-client-header { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px clamp(20px, 4vw, 60px); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); }
+.crp-root .crp-client-header button { min-height: 36px; padding: 0 4px; border-color: transparent; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
+.crp-root .crp-client-header button:hover:not(:disabled) { border-color: transparent; color: var(--crp-accent-strong); }
+.crp-root .crp-client-header .crp-client-brand { color: var(--crp-text); font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+.crp-root .crp-client-brand span, .crp-root .crp-client-footer-brand span { color: var(--crp-cta); }
 .crp-root .crp-client-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
-.crp-root .crp-client-nav button, .crp-root .crp-client-nav button:hover:not(:disabled) { min-height: 36px; padding: 0 4px; border-color: transparent; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
-.crp-root .crp-client-nav button:hover:not(:disabled), .crp-root .crp-client-nav button.crp-is-active { color: var(--crp-accent-strong); text-decoration: underline; text-underline-offset: 6px; }
-.crp-root .crp-client-hero, .crp-root .crp-client-content { width: min(100%, 1180px); margin: 0 auto; padding: 26px clamp(20px, 4vw, 56px) 0; }
-.crp-root .crp-client-hero { display: grid; gap: 12px; }
-.crp-root .crp-client-hero p { margin: 0; max-width: 760px; color: var(--crp-soft); }
-.crp-root .crp-client-hero .crp-client-eyebrow { color: var(--crp-accent); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
-.crp-root .crp-client-hero .crp-client-greeting { color: var(--crp-text); font-size: clamp(1.8rem, 1.5rem + 1.2vw, 2.6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.05em; }
-.crp-root .crp-client-content { padding-bottom: 56px; }
+.crp-root .crp-client-actions { display: flex; align-items: center; gap: 12px; }
+.crp-root .crp-client-header .crp-client-actions button { color: var(--crp-accent-strong); }
+.crp-root .crp-client-header button.crp-is-active { color: var(--crp-accent-strong); text-decoration: underline; text-underline-offset: 6px; }
+.crp-root .crp-client-content { flex: 1; width: min(100% - 32px, 1320px); margin: 12px auto 40px; padding: 24px 20px 40px; background: var(--crp-surface); }
+.crp-root .crp-client-footer { padding: 48px clamp(20px, 4vw, 60px) 24px; background: #0c1a16; color: #9fb3ac; }
+.crp-root .crp-client-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; max-width: 760px; padding-bottom: 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.crp-root .crp-client-footer-grid p { max-width: 34ch; margin: 0; }
+.crp-root .crp-client-footer-brand { display: block; margin-bottom: 8px; color: #ffffff; font-size: 1.2rem; font-weight: 800; }
+.crp-root .crp-client-footer-col { display: grid; gap: 8px; align-content: start; justify-items: start; }
+.crp-root .crp-client-footer-col strong { color: #ffffff; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.crp-root .crp-client-footer-col button, .crp-root .crp-client-footer-col span { min-height: 0; padding: 0; border: 0; background: none; color: #9fb3ac; font-size: 0.92rem; font-weight: 400; }
+.crp-root .crp-client-footer-col button:hover:not(:disabled) { color: #ffffff; }
+.crp-root .crp-client-footer-bottom { margin: 0; padding-top: 16px; color: #718a82; font-size: 0.82rem; }
 @media (max-width: 720px) {
   .crp-root .crp-client-nav { order: 3; width: 100%; justify-content: center; gap: 16px; padding-top: 10px; border-top: 1px solid var(--crp-line); }
+  .crp-root .crp-client-content { width: 100%; margin: 0; padding: 20px 16px 32px; }
+  .crp-root .crp-client-footer-grid { grid-template-columns: 1fr; gap: 24px; }
 }
