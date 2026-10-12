@@ -7,6 +7,10 @@ import { canManageDiscounts } from './discounts/model/discount-rule';
 import { DiscountsPageComponent } from './discounts/pages/discounts-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
 import { Audience } from './portal-audience';
+import { CLIENT_AREA } from './portal-navigation';
+
+/** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
+export { CLIENT_AREA };
 
 /** One area of the shell: an item of the operator sidebar, or a client page opened by the client header, footer or a page. */
 export interface PortalArea {
@@ -19,11 +23,6 @@ export interface PortalArea {
   /** Who sees it (PortalAudience): the operator sidebar, the default, or the client header. */
   readonly audience?: Audience;
 }
-
-/** Keys of the client areas the client header and footer open; a story registers its client area under one of them. */
-export const CLIENT_AREA = Object.freeze({
-  panel: 'client-panel', tours: 'tours', lodging: 'lodging', gastronomy: 'gastronomy', reservations: 'my-reservations',
-} as const);
 
 /** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
 export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTAL_AREA_LIST', { factory: () => PORTAL_AREAS });
