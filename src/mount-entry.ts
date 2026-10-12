@@ -1,12 +1,10 @@
 import { ApplicationRef, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from './app/catalog/data/catalog-api.service';
+import { ActorContext } from './app/catalog/data/catalog-api.service';
 import { ActorRole } from './app/catalog/model/catalog-item';
-import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from './app/demo/demo-sources';
-import { AssociatedEstablishmentsSource } from './app/establishments/data/associated-establishments-source';
-import { AssociatedEstablishmentsWriter } from './app/establishments/data/associated-establishments-writer';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps } from './app/shell-contract';
+import { sourceProviders } from './app/sources';
 
 const KNOWN_ROLES: readonly string[] = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT'];
 
@@ -25,12 +23,10 @@ export function ensureStylesheet(): void {
   document.head.append(link);
 }
 
-/** ADR-006 F4 contract. DEMO: sources are in memory; debt: replace them with sources over props.apiClient. */
+/** ADR-006 F4 contract. Sources come from ./app/sources (apiClient by default, in memory in the demo build). */
 export function mount(element: HTMLElement, props: MountProps): () => void {
   ensureStylesheet();
   element.classList.add('crp-root');
-  const catalog = new DemoCatalogStore();
-  const establishments = new DemoEstablishmentsStore();
   const actor = new (class extends ActorContext { override readonly role = roleOf(props.session.roles); })();
   let app: ApplicationRef | undefined;
   let cleaned = false;
@@ -43,10 +39,7 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
     providers: [
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
-      { provide: CatalogItemsSource, useValue: catalog },
-      { provide: CatalogItemsWriter, useValue: new DemoCatalogWriter(catalog) },
-      { provide: AssociatedEstablishmentsSource, useValue: establishments },
-      { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
+      ...sourceProviders(props.apiClient),
     ],
   }).then((created) => {
     app = created;
