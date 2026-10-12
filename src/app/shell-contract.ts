@@ -26,3 +26,5 @@ export interface MountProps {
   apiClient: { request<T>(path: string, init?: unknown): Promise<T> };
   session: { readonly roles: string[]; open(answer: unknown): void; close(): void };
 }
+
+export type PortalApiClient = MountProps['apiClient'];
