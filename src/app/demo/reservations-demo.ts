@@ -6,8 +6,7 @@ import { ReservationsSource } from '../reservations/data/reservations-source';
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
 import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
 import { DemoReservationQuotes } from './reservation-quote-demo';
-import type { ModificationTrace } from '../reservation-changes/travellers-modification/data/modification-ports';
-import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
+import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
 const CONDITIONS = 'Changes up to 72 hours before departure; cancellation as the tour policy states (demo text, DP-RC4).';
@@ -24,10 +23,24 @@ const SEEDED: Reservation[] = [
     quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], discountCents: 0, finalCents: 41_800_000 }, balanceCents: 41_800_000,
     status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false },
 ];
+/** HU-COM-014: the demo customer's situations of the mockup's demo data (app.js 2621-2626), coded below the writer's sequence. */
+const ownAs = (id: string, tourName: string, departureDate: string, finalCents: number, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, tourName,
+  departureDate, departureId: undefined, seatHeld: true, balanceCents: finalCents, ...over,
+  quote: { services: [{ name: 'Guianza (demo)', cents: finalCents }], transportCents: 0, projectedCents: finalCents, discounts: [], discountCents: 0, finalCents } });
+const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus']): ReservationPayment[] =>
+  [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)' }];
+SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION') }),
+  ownAs('RES-1832', 'Tour de ejemplo', '2026-09-20T07:00:00', 30_000_000, { status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', paymentType: 'PARTIAL',
+    validatedCents: 10_000_000, balanceCents: 20_000_000, payments: proofOf('RES-1832', 10_000_000, 'APROBADO') }),
+  ownAs('RES-1831', 'Ruta Andina', '2026-09-22T06:30:00', 120_000_000, { status: 'CANCELADA', seatHeld: false, financialStatus: 'PARCIAL', paymentType: 'PARTIAL',
+    validatedCents: 120_000_000, balanceCents: 0, payments: proofOf('RES-1831', 120_000_000, 'APROBADO'),
+    cancellation: { cause: 'Cancelada por falta de pago', by: 'Administrador del tenant (demo)', at: '2026-09-15T09:00:00-05:00' } }),
+  ownAs('RES-1830', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { status: 'CONFIRMADA', financialStatus: 'PAGO_COMPLETO', validatedCents: 129_900_000,
+    balanceCents: 0, payments: proofOf('RES-1830', 129_900_000, 'APROBADO') }));
 /** HU-COM-013 (tasks T-08): one reservation per state the cancellation tells apart; codes below the writer's sequence. */
 const inState = (id: string, status: Reservation['status'], over: Partial<Reservation> = {}): Reservation =>
-  ({ ...SEEDED[1], id, status, seatHeld: status !== 'PENDIENTE_DE_PAGO' && status !== 'CANCELADA', ...over });
-SEEDED.push(inState('RES-1839', 'CONFIRMADA', { leadCustomerName: 'Camila Ortega (demo)', validatedCents: 30_000_000, balanceCents: 11_800_000, financialStatus: 'PARCIAL' }),
+  ({ ...SEEDED[1], departureId: undefined, id, status, seatHeld: status !== 'PENDIENTE_DE_PAGO' && status !== 'CANCELADA', ...over });
+SEEDED.push(inState('RES-1839', 'CONFIRMADA', { leadCustomerName: 'Camila Ortega (demo)', validatedCents: 30_000_000, balanceCents: 11_800_000, financialStatus: 'ABONO_RECIBIDO' }),
   inState('RES-1838', 'EN_EJECUCION'), inState('RES-1837', 'FINALIZADA'), inState('RES-1836', 'CANCELADA'),
   inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true }));
 

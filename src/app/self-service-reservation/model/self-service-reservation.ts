@@ -1,5 +1,3 @@
-import { formatDate } from '../../shared/format';
-
 /** What the customer chose in the public offer (HU-COM-006). DP-RS1: it travels in the URL, never in storage. */
 export interface ReservationSelection {
   readonly departureId: string;
@@ -51,11 +49,8 @@ export function reservationState(code: string): readonly [label: string, cssClas
   return RESERVATION_STATES[code] ?? ['Por definir', ''];
 }
 
-/** `2026-09-18T06:30:00` to `18 sep 2026 · 06:30`. */
-export function departureLine(isoDateTime: string): string {
-  const time = /T(\d{2}:\d{2})/.exec(isoDateTime)?.[1];
-  return time ? `${formatDate(isoDateTime)} · ${time}` : formatDate(isoDateTime);
-}
+/** `2026-09-18T06:30:00` to `18 sep 2026 · 06:30`; in shared/format.ts, since Mis pagos (HU-COM-014) writes it too. */
+export { departureLine } from '../../shared/format';
 
 /** The companions the holder brings: `No requiere acompañantes`, `1 acompañante requerido`. */
 export function companions(people: number): string {
