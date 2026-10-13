@@ -21,7 +21,18 @@ export type CreateReservationCommand = {
 /** The snapshot fixed at creation and the balance the service keeps; the screens never recalculate them (RN-RES-003, 007- H-D8). */
 export type Reservation = {
   readonly id: string; readonly leadCustomerName: string; readonly tourName: string; readonly departureDate: string; readonly conditions: string;
-  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: 'PENDIENTE_DE_PAGO'; readonly financialStatus: 'SIN_PAGO'; readonly seatHeld: false;
+  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: 'PENDIENTE_DE_PAGO'; readonly financialStatus: 'SIN_PAGO';
+  /** HU-COM-009 RN-PY5: held with the first payment. */
+  readonly seatHeld: boolean; readonly departureId?: string;
+  /** HU-COM-009 DP-PY3: type and method codes of PaymentMethodsSource; absent while none was set. */
+  readonly paymentType?: string; readonly paymentMethod?: string;
+  /** HU-COM-009: resolved by the service; registering moves neither (RN-PY1). */
+  readonly validatedCents?: number; readonly payments?: readonly ReservationPayment[];
+};
+/** HU-COM-009: a payment pending validation (RN-PY1); field names await payment_attempts (G-B). */
+export type ReservationPayment = {
+  readonly id: string; readonly method: string; readonly amountCents: number; readonly proofName: string | null;
+  readonly proofStatus: 'EN_VALIDACION' | 'SIN_COMPROBANTE'; readonly registeredBy: string;
 };
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };
 export type ReservationMessages = Partial<Record<keyof ReservationDraft, string>>;
