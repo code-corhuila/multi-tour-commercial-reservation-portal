@@ -128,21 +128,12 @@ describe('landingStylesStayInsideThePortal', () => {
   });
 });
 
-describe('customerHeaderAndFooterSpanTheViewport', () => {
+// The header and footer stay in the portal column (001- amendment HC-3): portal-column.spec.ts.
+describe('customerHeaderLinks', () => {
   const ruleOf = (css: string, selector: string) => {
     const start = css.indexOf(`\n${selector} {`);
     return start < 0 ? '' : css.slice(start, css.indexOf('}', start));
   };
-
-  it('bleeds the client header and the dark footer to both edges while their content stays centered like tours.html', () => {
-    const css = readFileSync('src/styles/portal.css', 'utf8');
-    for (const selector of ['.crp-root .crp-client-header', '.crp-root .crp-client-footer']) {
-      const rule = ruleOf(css, selector);
-      expect(rule, selector).toMatch(/box-shadow:\s*0 0 0 100vmax/);
-      expect(rule, selector).toMatch(/clip-path:\s*inset\(0 -100vmax\)/);
-      expect(rule, selector).toMatch(/padding-inline:\s*max\(clamp\(20px, 4vw, 60px\), calc\(\(100% - 1320px\) \/ 2\)\)/);
-    }
-  });
 
   it('draws the client canvas of panel-cliente.html and header links without a box, the focus ring only from the keyboard', () => {
     const css = readFileSync('src/styles/portal.css', 'utf8');
