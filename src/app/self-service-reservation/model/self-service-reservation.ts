@@ -199,14 +199,3 @@ export const RESERVE_TEXT = {
 export function overCapacity(seats: number): string {
   return `La cantidad seleccionada supera la capacidad disponible (${seats} ${seats === 1 ? 'viajero' : 'viajeros'}).`;
 }
-
-/** Self-hosted photos of the multi-tour-front container (same origin, CSP img-src 'self'). */
-const TOUR_PHOTOS = ['/assets/destino-sendero-del-condor.jpg', '/assets/destino-bahia-esmeralda.jpg', '/assets/destino-cascadas-de-iraka.jpg', '/assets/mountain-hero.jpg'];
-
-/** The photo of a tour, the same in its featured card and in the reservation summary; null when there is no tour. */
-export function tourPhoto(serviceId: string | undefined): string | null {
-  if (!serviceId) return null;
-  let hash = 0;
-  for (const char of serviceId) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return TOUR_PHOTOS[hash % TOUR_PHOTOS.length];
-}

@@ -18,11 +18,11 @@ import {
   selectionFromParams,
   selectionFromQuery,
   standingOf,
-  tourPhoto,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
+import { tourPhoto } from '../src/app/shared/tour-photo';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
@@ -311,8 +311,8 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
     const summary = p.element.querySelector('.crp-finish-aside .self-service-summary')!;
     expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
-    expect(summary.querySelector('.crp-finish-media img')?.getAttribute('src')).toBe(tourPhoto('demo-svc-1'));
-    expect(tourPhoto('demo-svc-1')).toMatch(/^\/assets\/[\w-]+\.jpg$/);
+    // demo-svc-1 is the Tatacoa desert: the sunset photo, the same as in the public offer.
+    expect(summary.querySelector('.crp-finish-media img')?.getAttribute('src')).toBe('/assets/mountain-hero.jpg');
     expect(summary.querySelector('.self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
     const rows = Array.from(summary.querySelectorAll('dt'), (dt) => (dt.textContent?.trim() ?? '') + ' ' + (dt.nextElementSibling?.textContent?.trim() ?? ''));
     expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
@@ -330,6 +330,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(new Set(['svc-1', 'svc-2', 'svc-3', 'svc-4', 'svc-5', 'svc-6'].map(tourPhoto)).size).toBeGreaterThan(1);
     expect(tourPhoto('')).toBeNull();
     expect(tourPhoto(undefined)).toBeNull();
+    expect(tourPhoto('demo-svc-3')).toBe('/assets/destino-cascadas-de-iraka.jpg'); // Canotaje en el Río Suaza
   });
 
   it('Volver a fecha y viajeros reopens Reservar tour on the same tour', async () => {

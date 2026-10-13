@@ -11,8 +11,9 @@ import { PortalNavigation } from '../src/app/portal-navigation';
 import { CustomerContext } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import { ReservationSelectionSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
-import { CustomerStanding, RESERVATION_FLOW, ReservationSelection, tourPhoto } from '../src/app/self-service-reservation/model/self-service-reservation';
+import { CustomerStanding, RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
+import { tourPhoto } from '../src/app/shared/tour-photo';
 import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION, selectionAt } from './self-service-reservation.double';
 
 const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
