@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { defer, finalize } from 'rxjs';
-import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
 import { AdditionalDiscount, AdditionalDraft, CURRENT_DISCOUNTS_TEXT, EMPTY_ADDITIONAL, additionalCommand,
   validateAdditional } from '../model/current-discounts';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
 
 /** T-03: value, type and reason; the authorizer is the session's actor, answered by the service (plan D-06). */

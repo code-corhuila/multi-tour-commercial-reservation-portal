@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { DiscountRuleFormComponent } from '../src/app/discounts/components/discount-rule-form.component';
 import { DiscountRulesWriter } from '../src/app/discounts/data/discount-rules-writer';
 import { DiscountRule } from '../src/app/discounts/model/discount-rule';
 import { actorAs } from './actor-context.double';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import { ControllableDiscountRulesWriter } from './discount-rules-writer.double';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 export async function openDiscountForm(rule?: DiscountRule) {
   const writer = new ControllableDiscountRulesWriter(), keys = new ControllableIdempotencyKeys();
   TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') },

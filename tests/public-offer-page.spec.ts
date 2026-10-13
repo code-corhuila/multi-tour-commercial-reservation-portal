@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
 import { PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '../src/app/public-offer/data/public-offer-sources';
 import { PublicTour, TourValue } from '../src/app/public-offer/model/public-offer';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
@@ -14,6 +13,7 @@ import { tourPhoto } from '../src/app/shared/tour-photo';
 import { actorAs } from './actor-context.double';
 import { ControllablePublicEstablishmentsSource, ControllablePublicOfferSource, placeNamed, tourNamed } from './public-offer-sources.double';
 import { listSourceFiles, withoutComments } from './source-files';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 interface Options {
   readonly value?: TourValueSource; readonly withoutPorts?: boolean; readonly role?: Parameters<typeof actorAs>[0];

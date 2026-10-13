@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoney, parseMoney } from '../src/app/catalog/model/money';
+import { formatMoney, parseMoney } from '../src/app/shared/money';
 
 const minorUnitsOf = (text: string): number | string => {
   const result = parseMoney(text);

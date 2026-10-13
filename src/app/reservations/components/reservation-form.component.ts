@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, output, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap, take } from 'rxjs';
-import { CatalogItemsSource, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
+import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
 import { formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { DeparturesSource } from '../data/departures-source';
@@ -12,6 +12,7 @@ import {
   Departure, LeadCustomer, RESERVATION_TEXT, Reservation, ReservationDraft, ServiceOption,
   capacityMessage, discountTotal, money, openDepartures, peopleOf, quote, validateReservation,
 } from '../model/reservation';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 
 type Options = { departures: readonly Departure[]; customers: readonly LeadCustomer[]; services: readonly ServiceOption[] };
 type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; options: Options };

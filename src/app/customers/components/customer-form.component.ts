@@ -2,12 +2,12 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, tap } from 'rxjs';
-import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/model/catalog-item';
+import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { CUSTOMERS_COPY, PERSON_LABELS } from '../customers-copy';
 import { CustomersWriter } from '../data/customers-writer';
 import { CustomerGroup, LEAD_FIELDS, LeadCommand, PERSON_FIELDS, PersonDraft, PersonField, PersonKind, personCommand, validatePerson } from '../model/customer-group';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 
 interface Control { field: PersonField; label: string; type: 'text' | 'email' | 'tel' | 'date' | 'checkbox' | 'select'; options?: readonly { value: string; label: string }[]; placeholder?: string }
 let formSequence = 0;

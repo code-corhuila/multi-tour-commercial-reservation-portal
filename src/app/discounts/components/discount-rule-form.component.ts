@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, tap } from 'rxjs';
-import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
 import { DISCOUNT_FIELDS, DISCOUNT_SECTIONS, DISCOUNT_SELECTS, DISCOUNT_TEXT,DiscountField, DiscountMessages, DiscountRule,
   DiscountRuleCommand, discountCommand, discountDraft, validateDiscount } from '../model/discount-rule';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
 type DiscountControl = { label: string; kind?: string; options?: readonly { value: string; label: string; explanation: string }[] };
 @Component({

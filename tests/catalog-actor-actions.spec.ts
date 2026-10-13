@@ -2,12 +2,13 @@ import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
 import { ControllableCatalogItemsWriter } from './catalog-items-writer.double';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 // DP-PT-06 is open: an account with several roles has no defined way to choose which it acts as.
 // Every actor below acts as ONE internal role. The screen is convenience, not authority (D-09):
