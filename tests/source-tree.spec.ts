@@ -133,6 +133,12 @@ const SPECIFIED_TREE = [
   'src/app/my-payments/pages/my-payments-page.component.ts',
   'src/app/my-payments/components/my-payments-panel.component.ts',
   'src/app/my-payments/components/reservation-economic-lines.component.ts',
+  'src/app/demo/refunds-demo.ts',
+  'src/app/refunds/refunds-copy.ts',
+  'src/app/refunds/data/refunds-ports.ts',
+  'src/app/refunds/components/refunds-panel.component.ts',
+  'src/app/refunds/pages/refund-requests-page.component.ts',
+  'src/app/refunds/pages/refund-detail-page.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
