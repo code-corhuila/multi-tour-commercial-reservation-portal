@@ -4,6 +4,8 @@ import { ApiError } from '../../shell-contract';
 import { CatalogItemsWriter, IdempotencyKeys } from '../data/catalog-api.service';
 import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
 import { MoneyRejection, formatMoney, parseMoney } from '../model/money';
+import { CATALOG_COPY } from '../catalog-copy';
+import { formatCop } from '../../shared/format';
 
 // Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
 // DP-01 (what a tour is) and G-H (who owns the operational cost).
@@ -29,15 +31,15 @@ interface Draft {
 type FieldMessages = Partial<Record<FieldName, string>>;
 
 const CHECK_FIELDS: ReadonlyArray<{ readonly name: CheckField; readonly label: string }> = [
-  { name: 'transportRequired', label: 'Transport required' },
-  { name: 'highRisk', label: 'High risk' },
+  { name: 'transportRequired', label: 'Transporte obligatorio' },
+  { name: 'highRisk', label: 'Alto riesgo' },
 ];
 
 const TEXT_FIELDS: ReadonlyArray<{ readonly name: TextField; readonly label: string }> = [
-  { name: 'commercialName', label: 'Commercial name' },
-  { name: 'baseRate', label: 'Base rate' },
-  { name: 'baseOperationalCost', label: 'Base operational cost' },
-  { name: 'configuredCapacity', label: 'Configured capacity' },
+  { name: 'commercialName', label: 'Nombre comercial' },
+  { name: 'baseRate', label: 'Tarifa base' },
+  { name: 'baseOperationalCost', label: 'Costo operativo base' },
+  { name: 'configuredCapacity', label: 'Capacidad configurada' },
 ];
 
 /** The service may name a field by its wire name (cents) or by the form name; both land on one control. */
@@ -54,24 +56,29 @@ const FIELD_OF_WIRE_NAME: Readonly<Record<string, FieldName>> = {
 };
 
 const MONEY_MESSAGES: Readonly<Record<MoneyRejection, string>> = {
-  empty: 'Required',
-  format: 'Use digits and a dot, for example 12.50',
-  'too-many-decimals': 'Use at most two decimals',
-  negative: 'Cannot be negative',
-  'out-of-range': 'Too large',
+  empty: 'Obligatorio.',
+  format: 'Usa solo dígitos y punto decimal, por ejemplo 180000 o 180000.50.',
+  'too-many-decimals': 'Usa máximo dos decimales.',
+  negative: 'No puede ser negativo.',
+  'out-of-range': 'El valor es demasiado grande.',
 };
 
 /** A tour needs its capacity for the departures; a transportation item may go without (draft contract). */
 const CAPACITY_REQUIRED_FOR: CatalogServiceType = 'TOUR';
 const WHOLE_NUMBER = /^[1-9]\d*$/;
-const REQUEST_FAILED = 'The request failed.';
+const REQUEST_FAILED = 'La solicitud falló.';
+
+/** Whole pesos as the person would type them (`180000`); two decimals only when there are cents. */
+function moneyText(minorUnits: number): string {
+  return minorUnits % 100 === 0 ? String(minorUnits / 100) : formatMoney(minorUnits);
+}
 
 function toDraft(item: CatalogItem | undefined): Draft {
   return {
     serviceType: item?.serviceType ?? CATALOG_SERVICE_TYPES[0],
     commercialName: item?.commercialName ?? '',
-    baseRate: item ? formatMoney(item.baseRateCents) : '',
-    baseOperationalCost: item ? formatMoney(item.baseOperationalCostCents) : '',
+    baseRate: item ? moneyText(item.baseRateCents) : '',
+    baseOperationalCost: item ? moneyText(item.baseOperationalCostCents) : '',
     configuredCapacity: item?.configuredCapacity != null ? String(item.configuredCapacity) : '',
     transportRequired: item?.transportRequired ?? false,
     highRisk: item?.highRisk ?? false,
@@ -83,7 +90,7 @@ function toDraft(item: CatalogItem | undefined): Draft {
 function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; messages: FieldMessages } {
   const messages: FieldMessages = {};
   if (draft.commercialName.trim() === '') {
-    messages.commercialName = 'Required';
+    messages.commercialName = 'Obligatorio.';
   }
   const rate = parseMoney(draft.baseRate);
   if (rate.kind === 'invalid') {
@@ -95,9 +102,9 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
   }
   const capacityText = draft.configuredCapacity.trim();
   if (capacityText === '' && draft.serviceType === CAPACITY_REQUIRED_FOR) {
-    messages.configuredCapacity = 'Required for a tour';
+    messages.configuredCapacity = 'Obligatoria para un tour';
   } else if (capacityText !== '' && !WHOLE_NUMBER.test(capacityText)) {
-    messages.configuredCapacity = 'Use a whole number of 1 or more';
+    messages.configuredCapacity = 'Usa un número entero de 1 o más.';
   }
   if (rate.kind === 'invalid' || cost.kind === 'invalid' || Object.keys(messages).length > 0) {
     return { command: null, messages };
@@ -118,7 +125,7 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
 /** What a Collaborator may change (AC-P1.6): only the commercial name, so only it is validated and sent. */
 function validateDescription(draft: Draft): { command: UpdateDescriptionCommand | null; messages: FieldMessages } {
   if (draft.commercialName.trim() === '') {
-    return { command: null, messages: { commercialName: 'Required' } };
+    return { command: null, messages: { commercialName: 'Obligatorio.' } };
   }
   return { command: { commercialName: draft.commercialName.trim() }, messages: {} };
 }
@@ -134,9 +141,12 @@ let nextFormId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form novalidate (submit)="submit($event)">
+      <section class="crp-form-panel">
+      <p class="crp-operator-eyebrow">01. Datos del servicio</p>
+      <div class="crp-form-grid">
       @if (scope() === 'all') {
       <div>
-        <label [for]="id('serviceType')">Service type</label>
+        <label [for]="id('serviceType')">Tipo de servicio</label>
         <select
           [id]="id('serviceType')"
           [disabled]="item() !== undefined"
@@ -145,7 +155,7 @@ let nextFormId = 0;
           (change)="onType($event)"
         >
           @for (type of serviceTypes; track type) {
-            <option [value]="type" [selected]="draft().serviceType === type">{{ type }}</option>
+            <option [value]="type" [selected]="draft().serviceType === type">{{ typeLabels[type] }}</option>
           }
         </select>
         @if (messages().serviceType; as text) {
@@ -164,12 +174,20 @@ let nextFormId = 0;
             [attr.aria-describedby]="describedBy(field.name)"
             (input)="onText(field.name, $event)"
           />
+          @if (moneyPreview()[field.name]; as pesos) {
+            <small [attr.data-money-preview]="field.name">{{ pesos }}</small>
+          }
           @if (messages()[field.name]; as text) {
             <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p>
           }
         </div>
       }
+      </div>
+      </section>
       @if (scope() === 'all') {
+      <section class="crp-form-panel">
+      <p class="crp-operator-eyebrow">02. Condiciones</p>
+      <div class="crp-form-grid">
       @for (field of checkFields; track field.name) {
         <div>
           <input
@@ -186,11 +204,13 @@ let nextFormId = 0;
           }
         </div>
       }
+      </div>
+      </section>
       }
       <div class="crp-form-actions">
-      <button class="crp-primary" type="submit" [disabled]="pending()">Save</button>
       <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
-      <button class="crp-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancel</button>
+      <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancelar</button>
+      <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar servicio</button>
       </div>
       @for (text of formMessages(); track $index) {
         <p role="alert">{{ text }}</p>
@@ -227,6 +247,16 @@ export class CatalogItemFormComponent implements OnInit {
   protected readonly serviceTypes = CATALOG_SERVICE_TYPES;
   protected readonly shownTextFields = computed(() => (this.scope() === 'all' ? TEXT_FIELDS : TEXT_FIELDS.filter((field) => field.name === 'commercialName')));
   protected readonly checkFields = CHECK_FIELDS;
+  protected readonly typeLabels = CATALOG_COPY.types;
+  /** What a valid typed amount reads as on the screens (`$1.299.000`); the amount sent is still parsed by money.ts. */
+  protected readonly moneyPreview = computed<Partial<Record<TextField, string>>>(() => {
+    const preview: Partial<Record<TextField, string>> = {};
+    for (const name of ['baseRate', 'baseOperationalCost'] as const) {
+      const parsed = parseMoney(this.draft()[name]);
+      if (parsed.kind === 'valid') { preview[name] = formatCop(parsed.minorUnits); }
+    }
+    return preview;
+  });
   protected readonly draft = linkedSignal(() => toDraft(this.item()));
   protected readonly pending = signal(false);
 

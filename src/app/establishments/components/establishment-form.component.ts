@@ -7,11 +7,12 @@ import { ApiError } from '../../shell-contract';
 import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '../data/associated-establishments-writer';
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
+import { ESTABLISHMENTS_COPY } from '../establishments-copy';
 
 type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;
-const TEXT_FIELDS = [{ name: 'commercialName', label: 'Commercial name' },
-  { name: 'commercialInformation', label: 'Description and contact' }] as const;
+const TEXT_FIELDS = [{ name: 'commercialName', label: 'Nombre del establecimiento' },
+  { name: 'commercialInformation', label: 'Información comercial' }] as const;
 let nextFormId = 0;
 
 @Component({
@@ -20,12 +21,15 @@ let nextFormId = 0;
   template: `
     @if (canRegister) {
       <form novalidate (submit)="submit($event)">
+        <section class="crp-form-panel">
+        <p class="crp-operator-eyebrow">01. Datos del establecimiento</p>
+        <div class="crp-form-grid">
         <div>
-          <label [for]="id('establishmentType')">Establishment type</label>
+          <label [for]="id('establishmentType')">Tipo de establecimiento</label>
           <select name="establishmentType" [id]="id('establishmentType')" [disabled]="pending()"
             [attr.aria-invalid]="messages().establishmentType ? 'true' : null"
             [attr.aria-describedby]="describedBy('establishmentType')" (change)="edit('establishmentType', $event)">
-            @for (type of types; track type) { <option [value]="type" [selected]="draft().establishmentType === type">{{ type }}</option> }
+            @for (type of types; track type) { <option [value]="type" [selected]="draft().establishmentType === type">{{ typeLabels[type] }}</option> }
           </select>
           @if (messages().establishmentType; as text) { <p role="alert" [id]="id('establishmentType') + '-error'">{{ text }}</p> }
         </div>
@@ -38,16 +42,22 @@ let nextFormId = 0;
             @if (messages()[field.name]; as text) { <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p> }
           </div>
         }
+        </div>
+        <p class="crp-operator-copy">No se configuran habitaciones, tarifas, disponibilidad, inventario ni políticas de cupo.</p>
+        </section>
+        <section class="crp-form-panel">
+        <p class="crp-operator-eyebrow">02. Imagen</p>
         <div>
-          <label [for]="id('image')">Image</label>
+          <label [for]="id('image')">Imagen</label>
           <input type="file" name="image" [id]="id('image')" [accept]="acceptedTypes" [disabled]="pending()"
             [attr.aria-invalid]="messages().image ? 'true' : null" [attr.aria-describedby]="describedBy('image')" (change)="chooseImage($event)">
           <p [id]="id('image') + '-help'">{{ guidance }}</p>
           @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
         </div>
+        </section>
         <div class="crp-form-actions">
-        <button class="crp-primary" type="submit" [disabled]="pending()">Save</button>
-        <button class="crp-outline" type="button" [disabled]="pending()" (click)="cancel()">Cancel</button>
+        <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">Cancelar</button>
+        <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar establecimiento</button>
       </div>
       </form>
     }
@@ -65,6 +75,7 @@ export class EstablishmentFormComponent {
   readonly cancelled = output<void>();
   readonly saving = output<boolean>();
   protected readonly types = ESTABLISHMENT_TYPES;
+  protected readonly typeLabels = ESTABLISHMENTS_COPY.types;
   protected readonly textFields = TEXT_FIELDS;
   protected readonly guidance = IMAGE_GUIDANCE;
   protected readonly acceptedTypes = IMAGE_TYPES.join(',');
@@ -76,9 +87,9 @@ export class EstablishmentFormComponent {
   protected readonly messages = computed(() => {
     const local: Messages = {}, draft = this.draft();
     if (this.attempted()) {
-      if (!this.types.includes(draft.establishmentType as EstablishmentType)) { local.establishmentType = 'Type required.'; }
-      if (!draft.commercialName.trim() || draft.commercialName.trim().length > 255) { local.commercialName = 'Required: 1 to 255 characters.'; }
-      if (!draft.commercialInformation.trim()) { local.commercialInformation = 'Description and contact required.'; }
+      if (!this.types.includes(draft.establishmentType as EstablishmentType)) { local.establishmentType = 'El tipo es obligatorio.'; }
+      if (!draft.commercialName.trim() || draft.commercialName.trim().length > 255) { local.commercialName = 'Obligatorio: de 1 a 255 caracteres.'; }
+      if (!draft.commercialInformation.trim()) { local.commercialInformation = 'La información comercial es obligatoria.'; }
     }
     if (this.attempted() || this.image()) { const message = imageMessage(this.image()); if (message) { local.image = message; } }
     return { ...this.refused(), ...local };
@@ -124,7 +135,7 @@ export class EstablishmentFormComponent {
   private finish(): void { this.pending.set(false); this.saving.emit(false); }
   private showRefusal(value: unknown): void {
     const error = value as Partial<ApiError> | null, messages: Messages = {};
-    const reason = error?.userMessage ?? 'The request failed.';
+    const reason = error?.userMessage ?? ESTABLISHMENTS_COPY.requestFailed;
     for (const detail of Array.isArray(error?.details) ? error.details : []) {
       const field: Field = ['establishmentType', 'commercialName', 'commercialInformation', 'image'].includes(detail.field) ? detail.field as Field : 'image';
       messages[field] = `${messages[field] ?? reason} ${detail.message}`;
