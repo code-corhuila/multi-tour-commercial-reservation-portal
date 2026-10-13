@@ -1,12 +1,14 @@
 import { Provider } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import {
-  EpisodeAnswer, EpisodeDeadlines, ProposedDeparture, ReschedulingDeadlines, ReschedulingEpisodeView, ReschedulingOutcome, ReschedulingSource, ReschedulingWriter,
+  EpisodeAnswer, EpisodeDeadlines, MyProposalsSource, ProposalAnswerWriter, ProposedDeparture, ReschedulingDeadlines, ReschedulingEpisodeView, ReschedulingOutcome,
+  ReschedulingSource, ReschedulingWriter,
 } from '../rescheduling/data/rescheduling-ports';
 import { PortalCapabilities } from '../shared/portal-capabilities';
+import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
 import type { Departure, Reservation } from '../reservations/model/reservation';
 import type { DemoDeparturesStore, DemoReservationsStore } from './reservations-demo';
 // DEMO (spec 018- DD-1, plan D-02): the episode lives on the reservation of the one store of HU-COM-007, so the operator and
@@ -92,14 +94,48 @@ export class DemoReschedulingWriter extends ReschedulingWriter {
     });
   }
 }
-/** After reservationDemoProviders() and reservationChangesDemoProviders() (its Clock); one key map per page. */
+
+/** The customer's own reservations (008- MyReservationsSource) that have a proposal; an episode closed with no alternative is not one to answer. */
+export class DemoMyProposals extends MyProposalsSource {
+  constructor(private readonly source: DemoReschedulingSource, private readonly own: MyReservationsSource) { super(); }
+  override mine(): Observable<readonly ReschedulingEpisodeView[]> {
+    return this.own.listMine().pipe(map((all) => all.map((r) => this.source.find(r.reservationId))
+      .filter((r): r is Reservation => !!r?.reschedulingEpisode?.proposal && r.reschedulingEpisode.answer?.decision !== 'NO_ALTERNATIVE')
+      .map((r) => this.source.view(r))));
+  }
+}
+
+/** Accept moves the departure and turns the hold into its seat in one update (RN-RP1, RN-RP2); reject cancels with 100 % (RN-RP6). */
+export class DemoProposalAnswerWriter extends ProposalAnswerWriter {
+  constructor(private readonly source: DemoReschedulingSource, private readonly clock: Clock, private readonly by: string,
+    private readonly byKey = new Map<string, ReschedulingOutcome>()) { super(); }
+
+  override answer({ code, decision, idempotencyKey }: { code: string; decision: 'ACCEPTED' | 'REJECTED'; idempotencyKey: string }): Observable<ReschedulingOutcome> {
+    return once(this.byKey, idempotencyKey, () => {
+      const r = this.source.find(code), e = r?.reschedulingEpisode, d = e?.proposal && this.source.departure(e.proposal.departureId);
+      if (!r || !e?.proposal || !d) return refused('closed');
+      if (proofInValidation(r)) return refused('proof-in-validation');
+      if (e.answer) return refused('already-answered');
+      const at = this.clock.now();
+      if (decision === 'REJECTED') return this.source.close(r, 'REJECTED', this.by, at, 'Cancelada por rechazo o vencimiento de reprogramación');
+      return this.source.save({ ...r, departureId: d.id, departureDate: d.date, seatHeld: true, reschedulingPending: false,
+        reschedulingEpisode: { ...e, answer: { decision, at, by: this.by } } });
+    });
+  }
+}
+
+/** After reservationDemoProviders(), selfServiceDemoProviders() and reservationChangesDemoProviders() (its Clock); key maps per page. */
 export function reschedulingDemoProviders(): Provider[] {
-  const byKey = new Map<string, ReschedulingOutcome>();
+  const byKey = new Map<string, ReschedulingOutcome>(), answers = new Map<string, ReschedulingOutcome>();
   return [
     { provide: ReschedulingDeadlines, useFactory: (c: Clock) => new DemoReschedulingDeadlines(c), deps: [Clock] },
     { provide: ReschedulingSource, deps: [ReservationsSource, DeparturesSource, ReschedulingDeadlines],
       useFactory: (s: DemoReservationsStore, d: DemoDeparturesStore, l: ReschedulingDeadlines) => new DemoReschedulingSource(s, d, l) },
     { provide: ReschedulingWriter, deps: [ReschedulingSource, Clock, PortalCapabilities],
       useFactory: (s: DemoReschedulingSource, c: Clock, p: PortalCapabilities) => new DemoReschedulingWriter(s, c, p.roleLabel(), byKey) },
+    { provide: MyProposalsSource, deps: [ReschedulingSource, MyReservationsSource],
+      useFactory: (s: DemoReschedulingSource, m: MyReservationsSource) => new DemoMyProposals(s, m) },
+    // G-USR: the session carries no user, so the customer's answer is recorded as "Cliente".
+    { provide: ProposalAnswerWriter, deps: [ReschedulingSource, Clock], useFactory: (s: DemoReschedulingSource, c: Clock) => new DemoProposalAnswerWriter(s, c, 'Cliente', answers) },
   ];
 }

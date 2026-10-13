@@ -32,3 +32,23 @@ export function startLine(iso: string): string {
   const time = /T(\d{2}:\d{2})/.exec(iso)?.[1];
   return time ? `${formatDate(iso)} · ${time}` : formatDate(iso);
 }
+
+/** Spanish copy of 24A (propuesta-reprogramacion.html, app.js 2701-2726), of mis-reservas.html (app.js 2680-2694) and of 17 (app.js 2877). */
+export const PROPOSAL_COPY = {
+  brand: 'Multi Tour', myReservations: 'Mis reservas', eyebrow: 'Portal cliente', title: 'Propuesta de reprogramación',
+  desc: 'La salida original fue cancelada por una causa no atribuible al cliente. Revisa la alternativa y responde dentro del plazo.',
+  reservation: 'Reserva', original: 'Salida original cancelada', proposed: 'Salida propuesta', travelers: 'Viajeros',
+  people: (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`,
+  held: 'Los cupos de la salida propuesta quedan apartados durante el plazo de respuesta.',
+  deadline: 'El plazo de respuesta es el menor entre 72 horas corridas, el tiempo restante del episodio de reprogramación y la hora de inicio de la salida propuesta; '
+    + 'el episodio tiene un límite absoluto de 96 horas.',
+  accept: 'Aceptar propuesta', reject: 'Rechazar propuesta', back: 'Volver a mis reservas',
+  /** The mockup writes "sigue Confirmada"; the view writes the reservation's real state (spec section 5). */
+  accepted: (state: string) => `Propuesta aceptada. La reserva sigue ${state} con la nueva salida.`,
+  rejected: 'Propuesta rechazada. La reserva queda Cancelada y se devuelve el 100 % de los valores pagados y validados.',
+  /** PROPUESTO: the code is not a proposal of this customer. */
+  none: 'No hay una propuesta de reprogramación para esta reserva.',
+  proposedLine: (line: string) => `Salida propuesta: ${line}`, mark: 'Pendiente de respuesta de reprogramación', respond: 'Responder propuesta',
+  notice: 'la salida fue cancelada por una causa no atribuible al cliente. Hay una propuesta de nueva salida pendiente de tu respuesta dentro del plazo aplicable.',
+  noticeLink: 'Responder propuesta de reprogramación',
+} as const;
