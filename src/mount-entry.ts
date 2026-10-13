@@ -18,6 +18,7 @@ import { ReservationChangeActionComponent } from './app/reservation-changes/comp
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
+import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -76,6 +77,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       ...PROOF_REVIEW_CONTRIBUTIONS,
       // HU-COM-012: "Modificación de viajeros", after Cancelación, on the screen of HU-COM-013 only (its area needs the cancellation ports).
       provideTravellersModification(),
+      // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
+      RESCHEDULING_ENTRY,
     ],
   }).then((created) => {
     app = created;

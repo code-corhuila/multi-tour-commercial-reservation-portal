@@ -9,6 +9,7 @@ import { ReservationQuoteSource } from '../reservations/data/reservation-quote-s
 import { DemoReservationQuotes } from './reservation-quote-demo';
 import type { ModificationTrace } from '../reservation-changes/travellers-modification/data/modification-ports';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
+import { RESCHEDULING_DEPARTURES, RESCHEDULING_SEEDS } from './rescheduling-seeds';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
 const CONDITIONS = 'Cambios hasta 72 horas antes de la salida; cancelación según la política del tour (texto de demostración, DP-RC4).';
@@ -39,6 +40,8 @@ SEEDED.push(ofAbono('RES-1834', { leadCustomerName: 'Juliana Cruz (demo)', statu
   payments: [proof('RES-1834-P1', 10_000_000, '2026-10-10T09:00:00-05:00', { proofStatus: 'APROBADO', review: { decision: 'APROBADO', verifiedAmountCents: 10_000_000,
     reason: 'Soporte legible (demo)', actorLabel: 'Administrador del tenant (demo)', decidedAt: '2026-10-10T15:00:00.000Z' } }), proof('RES-1834-P2', 5_000_000, '2026-10-12T09:00:00-05:00')] }),
   ofAbono('RES-1833', { leadCustomerName: 'Sofía Herrera (demo)', payments: [proof('RES-1833-P1', 10_000_000, '2026-10-13T09:00:00-05:00')] }));
+/** HU-COM-018 (spec section 6): the affected reservations of the seeded cancelled departure. */
+SEEDED.push(...RESCHEDULING_SEEDS);
 
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [
@@ -46,6 +49,7 @@ export class DemoDeparturesStore extends DeparturesSource {
     departure(2, 'Ruta del café en Pitalito', '2026-11-14', 'PROGRAMADA', true, 2, 1_800_000),
     departure(3, 'Canotaje en el río Suaza', '2026-11-21', 'PROGRAMADA', false, 8, 2_000_000),
     departure(4, 'Caminata al Nevado del Huila', '2026-10-30', 'CANCELADA', true, 12, 3_000_000),
+    ...RESCHEDULING_DEPARTURES,
   ];
   override list(): Observable<readonly Departure[]> { return of([...this.items]); }
 }
