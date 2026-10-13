@@ -5,16 +5,17 @@ import { SIGN_IN_REQUESTED_EVENT } from '../src/app/self-service-reservation/dat
 import { SELF_SERVICE_TEXT } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
-const propsFor = (roles: string[]): MountProps => ({
+const propsFor = (roles: string[], initialParams?: Record<string, string>): MountProps => ({
   apiClient: { request: vi.fn() } as never,
   session: { roles, open: () => undefined, close: () => undefined },
+  initialParams,
 });
 let host: HTMLElement;
 let cleanup: (() => void) | undefined;
-const mountAs = (roles: string[]) => {
+const mountAs = (roles: string[], initialParams?: Record<string, string>) => {
   host = document.createElement('div');
   document.body.append(host);
-  cleanup = entry.mountWith(host, propsFor(roles), demoSources);
+  cleanup = entry.mountWith(host, propsFor(roles, initialParams), demoSources);
 };
 afterEach(() => { cleanup?.(); host.remove(); });
 
@@ -38,9 +39,10 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-1', 'demo-res']) expect(host.textContent).not.toContain(raw);
   });
 
-  it('without a session, confirming asks the container to sign in on the same URL', async () => {
-    history.replaceState(null, '', '/reserve?departure=demo-dep-1&services=demo-svc-1&people=2');
-    mountAs([]);
+  // 008- H-D10: the container hands the selection over in initialParams and keeps it across the sign-in; the portal reads no address.
+  it('without a session, confirming asks the container to sign in and leaves the address alone', async () => {
+    history.replaceState(null, '', '/reserve');
+    mountAs([], { departure: 'demo-dep-1', services: 'demo-svc-1', people: '2' });
     const asked = vi.fn();
     host.addEventListener(SIGN_IN_REQUESTED_EVENT, asked);
     await vi.waitFor(() => expect(host.querySelector('.crp-client-content app-confirm-reservation-page select')).toBeTruthy());
@@ -49,6 +51,6 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.confirm)!.click();
     await vi.waitFor(() => expect(asked).toHaveBeenCalledTimes(1));
-    expect(location.search).toContain('departure=demo-dep-1');
+    expect(location.pathname + location.search).toBe('/reserve');
   });
 });

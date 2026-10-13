@@ -13,15 +13,15 @@ export type ServiceOption = { readonly id: string; readonly name: string; readon
 export type AppliedDiscount = { readonly name: string; readonly base: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly amountCents: number };
 export type Quote = {
   readonly services: readonly { readonly name: string; readonly cents: number }[]; readonly transportCents: number;
-  readonly projectedCents: number; readonly discounts: readonly AppliedDiscount[]; readonly finalCents: number;
+  readonly projectedCents: number; readonly discounts: readonly AppliedDiscount[]; readonly discountCents: number; readonly finalCents: number;
 };
 export type CreateReservationCommand = {
-  readonly leadCustomerId: string; readonly departureId: string; readonly serviceIds: readonly string[]; readonly people: number; readonly quote: Quote;
+  readonly leadCustomerId: string; readonly departureId: string; readonly serviceIds: readonly string[]; readonly people: number;
 };
-/** The snapshot fixed at creation; the detail renders it and never recalculates it (RN-RES-003). */
+/** The snapshot fixed at creation and the balance the service keeps; the screens never recalculate them (RN-RES-003, 007- H-D8). */
 export type Reservation = {
   readonly id: string; readonly leadCustomerName: string; readonly tourName: string; readonly departureDate: string; readonly conditions: string;
-  readonly people: number; readonly quote: Quote; readonly status: 'PENDIENTE_DE_PAGO'; readonly financialStatus: 'SIN_PAGO'; readonly seatHeld: false;
+  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: 'PENDIENTE_DE_PAGO'; readonly financialStatus: 'SIN_PAGO'; readonly seatHeld: false;
 };
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };
 export type ReservationMessages = Partial<Record<keyof ReservationDraft, string>>;
@@ -41,13 +41,13 @@ export const RESERVATION_TEXT = {
 };
 /** Spanish badges of the screens; a code is never shown. */
 export const STATUS_LABEL: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'Pendiente de pago' };
+/** The badge class of each state the service returns. */
+export const STATUS_CLASS: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'crp-is-pending' };
 export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago' };
 export const money = formatCop;
 /** "1 viajero" or "N viajeros"; "1 persona" or "N personas". */
 export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
 export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
-/** The sum of the discount lines, written as the screens write a discount: `-$15`, or `$0`. */
-export const discountTotal = (q: Quote) => -q.discounts.reduce((sum, d) => sum + d.amountCents, 0);
 
 /** RN-RES-010, RN-SAL-001: only a Programada departure that is open for reservations is offered. */
 export const openDepartures = (all: readonly Departure[]) => all.filter((d) => d.state === 'PROGRAMADA' && d.openForReservations);
@@ -59,20 +59,6 @@ export const capacityMessage = (d: Departure) => `No hay cupo suficiente en esta
 export function peopleOf(text: string): number | null {
   const typed = text.trim(), people = Number(typed);
   return /^\d+$/.test(typed) && Number.isSafeInteger(people) && people >= 1 ? people : null;
-}
-
-/**
- * Integer cents only (RN-RC4). DP-RC1 PROPUESTO: every rate is per person. The discounts come from the
- * injected calculation of HU-COM-004 (RN-RC5); this function only subtracts the lines it returns.
- */
-export function quote(services: readonly ServiceOption[], people: number, departure: Departure,
-  discountsOn: (originalCents: number) => readonly AppliedDiscount[]): Quote {
-  const lines = services.map((s) => ({ name: s.name, cents: s.rateCents * people }));
-  const transportCents = departure.transportPerPersonCents * people;
-  const projectedCents = lines.reduce((sum, line) => sum + line.cents, transportCents);
-  const discounts = discountsOn(projectedCents);
-  return { services: lines, transportCents, projectedCents, discounts,
-    finalCents: Math.max(0, discounts.reduce((value, d) => value - d.amountCents, projectedCents)) };
 }
 
 export function validateReservation(draft: ReservationDraft, departure: Departure | undefined): ReservationMessages {

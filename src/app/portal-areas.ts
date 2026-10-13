@@ -24,6 +24,7 @@ import { CatalogItemsSource } from './catalog/data/catalog-api.service';
 import { AssociatedEstablishmentsSource } from './establishments/data/associated-establishments-source';
 import { PublicEstablishmentsSource, PublicOfferSource } from './public-offer/data/public-offer-sources';
 import { DeparturesSource } from './reservations/data/departures-source';
+import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
 
@@ -78,7 +79,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
   },
   // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
-  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource) },
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {
     key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
