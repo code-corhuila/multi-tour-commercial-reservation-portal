@@ -25,6 +25,8 @@ export interface MountProps {
   identifier?: string;
   apiClient: { request<T>(path: string, init?: unknown): Promise<T> };
   session: { readonly roles: string[]; open(answer: unknown): void; close(): void };
+  /** PROPUESTO for ADR-007 (008- H-D10): parameters the container keeps across a remount, e.g. a selection in progress. */
+  initialParams?: Readonly<Record<string, string>>;
 }
 
 export type PortalApiClient = MountProps['apiClient'];

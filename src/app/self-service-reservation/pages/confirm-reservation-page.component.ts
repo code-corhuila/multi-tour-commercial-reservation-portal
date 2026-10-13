@@ -39,8 +39,9 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
             <div class="crp-finish-main">
               <article class="crp-booking-card crp-finish-holder"><h2>{{ text.holderTitle }}</h2>
                 <div class="crp-finish-grid">@for (field of holder; track field.id) {
-                  <div><label [for]="field.id">{{ field.label }}</label><input [id]="field.id" [name]="field.id" [type]="field.type" [placeholder]="field.placeholder" /></div>
+                  <div><label [for]="field.id">{{ field.label }}</label><input [id]="field.id" [name]="field.id" [type]="field.type" [placeholder]="field.placeholder" disabled aria-describedby="crp-holder-pending" /></div>
                 }</div>
+                <p id="crp-holder-pending" class="self-service-note">{{ text.holderPending }}</p>
               </article>
               <article class="crp-booking-card crp-finish-travelers"><h2>{{ text.travelersTitle }}</h2>&ngsp;<span>{{ companions(selection!.people) }}</span>
                 <p class="self-service-note">{{ text.travelersCopy }}</p></article>
