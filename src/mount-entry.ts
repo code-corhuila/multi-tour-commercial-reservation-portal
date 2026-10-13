@@ -8,6 +8,8 @@ import { sourceProviders } from './app/sources';
 import { currentDiscountsProviders } from './app/demo/current-discounts-demo';
 import { customersDemoProviders } from './app/demo/customers-demo';
 import { reservationDemoProviders } from './app/demo/reservations-demo';
+import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
+import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
 
 const KNOWN_ROLES: readonly string[] = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT'];
 
@@ -46,6 +48,9 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
       ...currentDiscountsProviders(), // DEMO until G-API: no adapter over apiClient yet (DD-1)
       ...customersDemoProviders(props.session.roles),
       ...reservationDemoProviders(),
+      // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
+      { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
+      ...selfServiceDemoProviders(),
     ],
   }).then((created) => {
     app = created;
