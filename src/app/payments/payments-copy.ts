@@ -16,7 +16,7 @@ export const PAYMENTS_TEXT = {
   registeredBy: 'Registrado por', noModality: 'Sin modalidad definida', noProof: 'Sin comprobante',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   notFound: 'No se encontró la reserva seleccionada. Vuelve a Reservas u Operación e ingresa nuevamente por Gestionar pago.',
-  proofStatus: { EN_VALIDACION: 'En validación', SIN_COMPROBANTE: 'Sin comprobante' } as Readonly<Record<string, string>>,
+  proofStatus: { EN_VALIDACION: 'En validación', SIN_COMPROBANTE: 'Sin comprobante', APROBADO: 'Aprobado', RECHAZADO: 'Rechazado' } as Readonly<Record<string, string>>,
 };
 
 /** Texts of the method block of 21 (finalizar-reserva.html) and of 24 (pago-transferencia.html), as the mockup writes them. */
