@@ -1,5 +1,5 @@
-/* Visual identity of the Multi Tour landing (tokens from landing/main.css), scoped to the portal root.
-   No global selectors and no font CDN: the shell CSP is default-src 'self'. */
+/* Visual identity of the authorized screens (tokens from landing/main.css, theme platform), scoped to the portal root.
+   No global selectors and no font CDN: the shell CSP is default-src 'self'; Manrope is used when the container provides it. */
 .crp-root {
   --crp-bg: #f5f7f7;
   --crp-surface: #ffffff;
@@ -13,6 +13,8 @@
   --crp-accent-soft: rgba(47, 107, 87, 0.1);
   --crp-cta: #e9a23b;
   --crp-cta-strong: #c07f22;
+  --crp-success: #17685f;
+  --crp-success-soft: #ddf0e7;
   --crp-error: #b34a4a;
   --crp-error-soft: #fbe9e9;
   --crp-info: #2d6480;
@@ -20,16 +22,20 @@
   --crp-warning: #a4621e;
   --crp-warning-soft: #fff1dc;
   --crp-shadow: 0 12px 28px rgba(23, 37, 43, 0.07);
+  --crp-radius-shell: 20px;
   --crp-radius-panel: 16px;
+  --crp-radius-card: 14px;
   --crp-radius-control: 10px;
   --crp-radius-pill: 999px;
   --crp-focus: 0 0 0 3px rgba(31, 77, 61, 0.35);
+  --crp-space-1: 4px; --crp-space-2: 8px; --crp-space-3: 12px; --crp-space-4: 16px;
+  --crp-space-5: 24px; --crp-space-6: 32px; --crp-space-7: 48px; --crp-space-8: 64px;
   display: block;
   min-height: 100%;
   padding: 0;
   background: var(--crp-bg);
   color: var(--crp-text);
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -53,9 +59,16 @@
 .crp-root .crp-nav button:hover { background: var(--crp-accent-soft); color: var(--crp-accent-strong); }
 .crp-root .crp-nav button[aria-current="page"] { background: var(--crp-accent-soft); border-color: var(--crp-accent); color: var(--crp-accent-strong); }
 
-/* Landing operator layout without a second shell sidebar. */
-.crp-root .crp-operator-shell { display: block; min-height: 100%; color: #1c292b; background: var(--crp-bg); }
-.crp-root .crp-operator-content { width: min(1180px, 100%); margin: 0 auto; padding: 32px clamp(20px, 4vw, 56px) 56px; }
+/* Operator shell: light 226 px sidebar (brand, role, menu) and content up to 1420 px. */
+.crp-root .crp-operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100%; color: #1c292b; background: var(--crp-bg); }
+.crp-root .crp-operator-sidebar { display: flex; flex-direction: column; padding: 22px 14px 18px; background: var(--crp-surface); border-right: 1px solid var(--crp-line); color: var(--crp-text); }
+.crp-root .crp-operator-brand { margin: 0; font-size: 0.9rem; font-weight: 800; letter-spacing: 0.12em; }
+.crp-root .crp-operator-role { margin: 10px 0 26px; color: var(--crp-soft); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.crp-root .crp-operator-nav { display: grid; gap: 2px; }
+.crp-root .crp-operator-nav button { justify-content: flex-start; min-height: 0; padding: 9px 11px; border: 0; border-left: 3px solid transparent; border-radius: 7px; background: transparent; color: var(--crp-soft); font-size: 0.85rem; font-weight: 700; text-align: left; }
+.crp-root .crp-operator-nav button:hover:not(:disabled):not(.crp-is-active) { border-color: transparent; background: var(--crp-muted); color: var(--crp-text); }
+.crp-root .crp-operator-nav button.crp-is-active { border-left-color: var(--crp-accent); background: var(--crp-accent-soft); color: var(--crp-accent-strong); font-weight: 800; }
+.crp-root .crp-operator-content { width: min(100%, 1420px); padding: 32px clamp(20px, 4vw, 56px) 56px; }
 .crp-root .crp-operator-panel { margin-top: 22px; padding: 30px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: var(--crp-radius-panel); }
 .crp-root .crp-operator-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
 .crp-root .crp-operator-panel h2 { margin: 4px 0 0; color: #172728; font-size: 1.18rem; letter-spacing: -0.045em; }
@@ -73,10 +86,10 @@
 
 /* Landing controls: green primary action, outlined secondary action. */
 .crp-root button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border: 1px solid #bcd4ca; border-radius: var(--crp-radius-control); background: #f5faf7; color: #1f4d3d; font: inherit; font-size: 0.86rem; font-weight: 700; letter-spacing: -0.005em; cursor: pointer; transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease; }
-.crp-root .crp-primary, .crp-root button[type="submit"] { border-color: #2f6b57; background: #2f6b57; color: #fff; box-shadow: none; }
-.crp-root .crp-primary:hover:not(:disabled), .crp-root button[type="submit"]:hover:not(:disabled) { background: #1f4d3d; }
-.crp-root .crp-outline { border-color: #bcd4ca; background: #f5faf7; color: #1f4d3d; }
-.crp-root button:hover:not(:disabled):not(.crp-primary):not([type="submit"]) { border-color: var(--crp-accent); }
+.crp-root .crp-primary, .crp-root .crp-operator-primary, .crp-root button[type="submit"] { border-color: #2f6b57; background: #2f6b57; color: #fff; box-shadow: none; }
+.crp-root .crp-primary:hover:not(:disabled), .crp-root .crp-operator-primary:hover:not(:disabled), .crp-root button[type="submit"]:hover:not(:disabled) { background: #1f4d3d; }
+.crp-root .crp-outline, .crp-root .crp-operator-outline { border-color: #bcd4ca; background: #f5faf7; color: #1f4d3d; }
+.crp-root button:hover:not(:disabled):not(.crp-primary):not(.crp-operator-primary):not([type="submit"]) { border-color: var(--crp-accent); }
 .crp-root button:active:not(:disabled) { transform: translateY(1px); }
 .crp-root button:disabled { border-color: #d7e2dc; background: #eef3f0; color: #93a29d; cursor: not-allowed; }
 .crp-root button:focus-visible, .crp-root input:focus-visible, .crp-root select:focus-visible, .crp-root textarea:focus-visible {
@@ -86,10 +99,10 @@
 
 /* Semantic tables and textual status pills from the landing. */
 .crp-root .crp-table-wrap { overflow-x: auto; }
-.crp-root .crp-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
-.crp-root .crp-table th { padding: 16px 12px 12px; color: #748084; font-size: 0.69rem; letter-spacing: 0.08em; text-transform: uppercase; }
-.crp-root .crp-table td { padding: 16px 12px; border-top: 1px solid #e4ebe6; color: var(--crp-soft); font-size: 0.86rem; vertical-align: middle; }
-.crp-root .crp-table strong { color: #203234; }
+.crp-root .crp-table, .crp-root .crp-operator-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
+.crp-root .crp-table th, .crp-root .crp-operator-table th { padding: 16px 12px 12px; color: #748084; font-size: 0.69rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.crp-root .crp-table td, .crp-root .crp-operator-table td { padding: 16px 12px; border-top: 1px solid #e4ebe6; color: var(--crp-soft); font-size: 0.86rem; vertical-align: middle; }
+.crp-root .crp-table strong, .crp-root .crp-operator-table strong { color: #203234; }
 .crp-root .crp-table button { min-height: 34px; width: max-content; padding: 0 11px; border: 1px solid transparent; border-radius: 8px; font-size: 0.78rem; font-weight: 800; }
 .crp-root .crp-table .crp-row-manage { background: #e7f4ef; color: #0c7168; }
 .crp-root .crp-table .crp-row-manage:hover:not(:disabled) { background: #d6ece4; }
@@ -99,17 +112,17 @@
 .crp-root .crp-row-actions { white-space: nowrap; }
 .crp-root .crp-row-actions button + button { margin-left: 16px; }
 .crp-root .crp-row-actions [role="alert"] { white-space: normal; }
-.crp-root .crp-status { display: inline-flex; width: max-content; padding: 6px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
-.crp-root .crp-status.crp-is-confirmed { background: #ddf0e7; color: #17685f; }
-.crp-root .crp-status.crp-is-pending { background: #fff1dc; color: #a4621e; }
-.crp-root .crp-status.crp-is-execution { background: #e3eef5; color: #2d6480; }
-.crp-root .crp-status.crp-is-finalized { background: #edf1ed; color: #516458; }
-.crp-root .crp-status.crp-is-cancelled { background: #f6e5e1; color: #a34a38; }
+.crp-root .crp-status, .crp-root .crp-operator-status { display: inline-flex; width: max-content; padding: 6px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
+.crp-root .crp-status.crp-is-confirmed, .crp-root .crp-operator-status.crp-is-confirmed { background: #ddf0e7; color: #17685f; }
+.crp-root .crp-status.crp-is-pending, .crp-root .crp-operator-status.crp-is-pending { background: #fff1dc; color: #a4621e; }
+.crp-root .crp-status.crp-is-execution, .crp-root .crp-operator-status.crp-is-execution { background: #e3eef5; color: #2d6480; }
+.crp-root .crp-status.crp-is-finalized, .crp-root .crp-operator-status.crp-is-finalized { background: #edf1ed; color: #516458; }
+.crp-root .crp-status.crp-is-cancelled, .crp-root .crp-operator-status.crp-is-cancelled { background: #f6e5e1; color: #a34a38; }
 
-/* Landing form composition: labels and errors stay attached to their controls. */
-.crp-root form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
-.crp-root form > div, .crp-root form > p { margin: 0; }
-.crp-root form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
+/* Landing form composition of the operator screens (client forms keep their own layout): labels and errors stay attached to their controls. */
+.crp-root .crp-operator-shell form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
+.crp-root .crp-operator-shell form > div, .crp-root .crp-operator-shell form > p { margin: 0; }
+.crp-root .crp-operator-shell form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
 .crp-root .crp-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 .crp-root label { display: block; margin: 12px 0 4px; font-size: 0.86rem; font-weight: 700; }
 .crp-root form label { margin-top: 0; }
@@ -144,12 +157,53 @@
 .crp-root [role="alert"] + [role="alert"] { margin-top: 4px; }
 .crp-root input + [role="alert"], .crp-root select + [role="alert"], .crp-root textarea + [role="alert"] { margin: 4px 0 0; padding: 0; border: 0; background: none; font-size: 0.82rem; }
 
+@media (max-width: 860px) {
+  .crp-root .crp-operator-shell { grid-template-columns: 1fr; }
+  .crp-root .crp-operator-sidebar { padding: 16px; border-right: 0; border-bottom: 1px solid var(--crp-line); }
+  .crp-root .crp-operator-role { margin: 6px 0 12px; }
+  .crp-root .crp-operator-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .crp-root .crp-operator-nav button { justify-content: center; padding: 8px 6px; border-left: 0; border-top: 3px solid transparent; font-size: 0.74rem; }
+  .crp-root .crp-operator-nav button.crp-is-active { border-top-color: var(--crp-accent); }
+}
 @media (max-width: 720px) {
   .crp-root .crp-operator-content { padding: 24px 16px 40px; }
   .crp-root .crp-operator-panel { padding: 20px; }
   .crp-root .crp-page-header { align-items: flex-start; flex-direction: column; }
   .crp-root .crp-page-header-action { width: 100%; }
   .crp-root .crp-nav { flex-wrap: wrap; }
+  .crp-root .crp-operator-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .crp-root .crp-filters > div { flex-basis: 100%; }
-  .crp-root form { grid-template-columns: 1fr; }
+  .crp-root .crp-operator-shell form { grid-template-columns: 1fr; }
+}
+
+/* Client layout of tours.html: sticky header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. */
+.crp-root .crp-client-shell { display: flex; flex-direction: column; min-height: 100%; background: var(--crp-bg); color: var(--crp-text); }
+.crp-root .crp-client-header { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px 0; padding-inline: max(clamp(20px, 4vw, 60px), calc((100% - 1320px) / 2)); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); box-shadow: 0 0 0 100vmax #ffffff; clip-path: inset(0 -100vmax); }
+.crp-root .crp-client-header button, .crp-root .crp-client-panel-header button { min-height: 36px; padding: 0 4px; border: 0; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
+.crp-root .crp-client-header button:hover:not(:disabled), .crp-root .crp-client-panel-header button:hover:not(:disabled) { color: var(--crp-accent-strong); }
+.crp-root .crp-client-header button:focus:not(:focus-visible), .crp-root .crp-client-panel-header button:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+.crp-root .crp-client-header .crp-client-brand { color: var(--crp-text); font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+.crp-root .crp-client-brand span, .crp-root .crp-client-footer-brand span { color: var(--crp-cta); }
+.crp-root .crp-client-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
+.crp-root .crp-client-actions { display: flex; align-items: center; gap: 12px; }
+.crp-root .crp-client-header .crp-client-actions button { color: var(--crp-accent-strong); }
+.crp-root .crp-client-header button.crp-is-active { color: var(--crp-accent-strong); }
+.crp-root .crp-client-content { flex: 1; width: min(100% - 32px, 1680px); margin: 12px auto; padding: 24px 20px 40px; background: var(--crp-surface); }
+/* Compact header of panel-cliente.html and mis-reservas.html, inside the canvas. */
+.crp-root .crp-client-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: -24px -20px 24px; padding: 22px 20px 16px; border-bottom: 1px solid #d7e0de; }
+.crp-root .crp-client-panel-header .crp-client-panel-brand { color: #17252b; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.04em; }
+.crp-root .crp-client-panel-header button:not(.crp-client-panel-brand) { color: #5a6b70; }
+.crp-root .crp-client-footer { padding: 48px 0 24px; padding-inline: max(clamp(20px, 4vw, 60px), calc((100% - 1320px) / 2)); background: #0c1a16; color: #9fb3ac; box-shadow: 0 0 0 100vmax #0c1a16; clip-path: inset(0 -100vmax); }
+.crp-root .crp-client-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; max-width: 760px; padding-bottom: 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.crp-root .crp-client-footer-grid p { max-width: 34ch; margin: 0; }
+.crp-root .crp-client-footer-brand { display: block; margin-bottom: 8px; color: #ffffff; font-size: 1.2rem; font-weight: 800; }
+.crp-root .crp-client-footer-col { display: grid; gap: 8px; align-content: start; justify-items: start; }
+.crp-root .crp-client-footer-col strong { color: #ffffff; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.crp-root .crp-client-footer-col button, .crp-root .crp-client-footer-col span { min-height: 0; padding: 0; border: 0; background: none; color: #9fb3ac; font-size: 0.92rem; font-weight: 400; }
+.crp-root .crp-client-footer-col button:hover:not(:disabled) { color: #ffffff; }
+.crp-root .crp-client-footer-bottom { margin: 0; padding-top: 16px; color: #718a82; font-size: 0.82rem; }
+@media (max-width: 720px) {
+  .crp-root .crp-client-nav { order: 3; width: 100%; justify-content: center; gap: 16px; padding-top: 10px; border-top: 1px solid var(--crp-line); }
+  .crp-root .crp-client-content { width: 100%; margin: 0; padding: 20px 16px 32px; }
+  .crp-root .crp-client-footer-grid { grid-template-columns: 1fr; gap: 24px; }
 }
