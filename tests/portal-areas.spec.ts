@@ -14,6 +14,7 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
+import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
 import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
@@ -68,6 +69,8 @@ describe('portalAreasRegistry', () => {
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
       { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
       { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
+      { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
+      { key: 'my-payments', label: 'Mis pagos', component: MyPaymentsPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
