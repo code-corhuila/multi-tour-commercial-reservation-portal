@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Injector, Provider, Type } from '@angular/core';
+import { Injector, Provider, Type, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -19,7 +19,7 @@ import {
 import { RESERVATION_CHANGE_SCREEN, RESERVATION_CHANGE_TYPES } from '../src/app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from '../src/app/reservation-changes/components/reservation-change-action.component';
 import { ReservationChangeBlocksComponent } from '../src/app/reservation-changes/components/reservation-change-blocks.component';
-import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
+import { RESERVATION_CHANGE_RETURN_DELAY, ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import { formatCop } from '../src/app/shared/format';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 import { ActorContext } from '../src/app/shared/actor-context';
@@ -180,11 +180,57 @@ describe('registeredCancellationLeavesTheReservationCancelada', () => {
     expect((await firstValueFrom(quotes.quote('RES-B')))?.eligibility).toBe('terminal');
   });
 
-  it('opens 10A after "Registrar novedad" with the reservation', async () => {
-    const s = await page({ code: 'RES-B' });
+  it('opens 10A after "Registrar novedad" with the reservation, once the pause ends', async () => {
+    const gate = new Subject<void>();
+    const s = await page({ code: 'RES-B', extra: [{ provide: RESERVATION_CHANGE_RETURN_DELAY, useValue: () => gate }] });
     await s.type('El cliente desiste del viaje'); await s.submit();
+    expect(s.navigation.selected()).toBeUndefined();
+    gate.next(); await s.settle();
     expect(s.navigation.selected()).toBe('reservations');
     expect(s.navigation.params()).toEqual({ reservation: 'RES-B' });
+  });
+});
+
+// app.js setupOperatorCancelModifyReservation: the feedback line shows the registered text, the form is
+// disabled, and the page returns to 10A after 1400 ms.
+describe('registeredCancellationShowsTheMockupMessageBeforeReturningTo10A', () => {
+  const pause = () => { const gate = new Subject<void>(); return { gate, extra: [{ provide: RESERVATION_CHANGE_RETURN_DELAY, useValue: () => gate }] }; };
+  const status = (host: HTMLElement) => host.querySelector('.crp-reservation-changes-feedback[role="status"]')?.textContent?.trim();
+
+  it('shows the pending refund message when payments were validated, with the form disabled', async () => {
+    const { extra } = pause();
+    const s = await page({ code: 'RES-A', extra });
+    await s.type('Viaje aplazado'); await s.submit();
+    expect(status(s.host)).toBe('Cancelación registrada. El valor a devolver queda pendiente de cálculo según la condición comercial parametrizada; podrás gestionarlo desde el detalle de la reserva.');
+    expect(s.cause().disabled).toBe(true);
+    expect(s.button('Registrar novedad')!.disabled).toBe(true);
+    expect(s.navigation.selected()).toBeUndefined();
+  });
+
+  it('shows the no payments message when nothing was paid, then opens 10A', async () => {
+    const { gate, extra } = pause();
+    const s = await page({ code: 'RES-B', extra });
+    await s.type('El cliente desiste del viaje'); await s.submit();
+    expect(status(s.host)).toBe('Cancelación registrada: no hay pagos registrados, no se genera solicitud de devolución.');
+    gate.next(); await s.settle();
+    expect(s.navigation.params()).toEqual({ reservation: 'RES-B' });
+  });
+
+  it('shows no message while nothing is registered', async () => {
+    const s = await page({ code: 'RES-B' });
+    expect(status(s.host)).toBeUndefined();
+  });
+
+  it('waits 1400 ms by default, as app.js does', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const done = vi.fn();
+      TestBed.runInInjectionContext(() => inject(RESERVATION_CHANGE_RETURN_DELAY))().subscribe(done);
+      vi.advanceTimersByTime(1399);
+      expect(done).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(done).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
   });
 });
 
@@ -388,7 +434,8 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
     const cause = host.querySelector('textarea')!;
     cause.value = 'El cliente desiste del viaje'; cause.dispatchEvent(new Event('input'));
     host.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
-    await vi.waitFor(() => expect(host.querySelector('app-reservations-page .reservation-detail')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-reservation-changes-feedback[role="status"]')?.textContent).toContain('Cancelación registrada.'));
+    await vi.waitFor(() => expect(host.querySelector('app-reservations-page .reservation-detail')).toBeTruthy(), { timeout: 4000 });
     const detail = host.querySelector('app-reservations-page')!;
     expect(detail.querySelector('h1')?.textContent).toBe('Detalle de reserva');
     expect(detail.querySelector('.crp-reservation-hero')?.textContent).toContain('#RES-1839');
