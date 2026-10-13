@@ -12,7 +12,7 @@ import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PAYMENT_MANAGEMENT_ACTIONS, PortalSlotOutlet } from '../../shared/portal-slots';
 import { PaymentLabels, modalityOf, paymentLabels } from '../components/reservation-payments-block.component';
 import { PaymentsWriter } from '../data/payments-writer';
-import { proofProblem } from '../model/payment';
+import { paymentEntryOf, proofProblem } from '../model/payment';
 import { PAYMENTS_TEXT } from '../payments-copy';
 
 type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservation: Reservation; labels: PaymentLabels };
@@ -28,7 +28,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
       @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
       @case ('empty') { <div role="status" data-state="empty"><p>{{ text.notFound }}</p><button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
       @case ('data') {
-        @let r = s.reservation; @let last = r.payments?.at(-1); @let kind = kindOf(r);
+        @let r = s.reservation; @let last = r.payments?.at(-1); @let kind = kindOf(r); @let entry = entryOf(r); @let locked = !kind || entry === 'in-validation';
         <div data-state="data">
           <section class="crp-operator-panel crp-payments-hero"><div><p class="crp-operator-eyebrow">{{ text.reservation }}</p><h2>#{{ r.id }}</h2></div>
             <span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></section>
@@ -40,17 +40,20 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
             <article class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ text.economyEyebrow }}</p><h2>{{ money(r.balanceCents) }}</h2>
               <dl class="crp-payments-list"><div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>{{ text.balance }}</dt><dd>{{ money(r.balanceCents) }}</dd></div></dl></article>
           </div>
-          <section class="crp-operator-panel crp-payments-action"><p class="crp-operator-eyebrow">{{ text.actionEyebrow }}</p><h2>{{ text.actionTitle }}</h2><p>{{ text.actionCopy }}</p>
-            @if (canRegister) {
+          <section class="crp-operator-panel crp-payments-action"><p class="crp-operator-eyebrow">{{ text.actionEyebrow }}</p><h2>{{ text.closedTitle[entry] ?? text.actionTitle }}</h2><p>{{ text.actionCopy }}</p>
+            @if (entry === 'cancelled' || entry === 'settled' || entry === 'closed') {
+              <p role="status" class="crp-payments-feedback">{{ entry === 'closed' ? text.closedState(status[r.status]) : text.closedNote[entry] }}</p>
+              <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back(r)">{{ text.back }}</button></div>
+            } @else if (canRegister) {
               <form class="crp-payments-form" novalidate (submit)="$event.preventDefault(); send(r)">
                 <label for="crp-payments-amount">{{ text.amount }}</label>
-                <input id="crp-payments-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" [value]="amount()" [disabled]="!kind"
+                <input id="crp-payments-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" [value]="amount()" [disabled]="locked"
                   [placeholder]="kind === 'partial' ? text.partialAmount : text.amount" (input)="edit({ amount: $any($event.target).value })"
                   [attr.aria-invalid]="errors().amount ? 'true' : null" aria-describedby="crp-payments-amount-error" />
                 <p id="crp-payments-amount-error" class="crp-payments-error">{{ errors().amount }}</p>
                 @if (kind === 'transfer') {
                   <label for="crp-payments-proof">{{ text.proof }}</label>
-                  <input id="crp-payments-proof" name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="edit({ proof: $any($event.target).files?.[0] ?? null })"
+                  <input id="crp-payments-proof" name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" [disabled]="locked" (change)="edit({ proof: $any($event.target).files?.[0] ?? null })"
                     [attr.aria-invalid]="errors().proof ? 'true' : null" aria-describedby="crp-payments-proof-error" />
                   <p id="crp-payments-proof-error" class="crp-payments-error">{{ errors().proof }}</p>
                 }
@@ -58,7 +61,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
                 @else if (!kind) { <p role="status" class="crp-payments-feedback">{{ text.noModalityFeedback }}</p> }
                 @else if (done()) { <p role="status" class="crp-payments-feedback">{{ kind === 'transfer' ? text.registered.transfer : text.registered.cash }}</p> }
                 <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back(r)">{{ text.back }}</button>
-                  <button type="submit" class="crp-operator-primary" [disabled]="pending() || !kind">{{ kind ? text.submit[kind] : text.submit.total }}</button></div>
+                  <button type="submit" class="crp-operator-primary" [disabled]="pending() || locked">{{ kind ? text.submit[kind] : text.submit.total }}</button></div>
               </form>
             } @else { <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back(r)">{{ text.back }}</button></div> }
             <ng-container *crpSlot="actions; inputs: { reservation: r }" />
@@ -82,7 +85,7 @@ export class PaymentManagementPageComponent {
   protected readonly text = PAYMENTS_TEXT;
   protected readonly actions = PAYMENT_MANAGEMENT_ACTIONS;
   protected readonly status = STATUS_LABEL; protected readonly badge = STATUS_CLASS; protected readonly financial = FINANCIAL_LABEL;
-  protected readonly money = formatCop; protected readonly modality = modalityOf;
+  protected readonly money = formatCop; protected readonly modality = modalityOf; protected readonly entryOf = paymentEntryOf;
   protected readonly amount = signal('');
   private proof: File | null = null; private key = this.keys.generate();
   protected readonly errors = signal<{ amount?: string; proof?: string }>({});
@@ -112,7 +115,7 @@ export class PaymentManagementPageComponent {
 
   protected send(r: Reservation): void {
     const kind = this.kindOf(r);
-    if (this.pending() || !kind) return;
+    if (this.pending() || !kind || this.entryOf(r) !== 'open') return;
     const parsed = parseMoney(this.amount()), amountCents = parsed.kind === 'valid' ? parsed.minorUnits : 0;
     const errors = {
       amount: amountCents > 0 ? undefined : this.text.amountRequired,
