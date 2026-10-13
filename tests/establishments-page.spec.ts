@@ -65,9 +65,11 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
     expect(regions()).toEqual(['data']);
     expect(element.querySelectorAll('table').length).toBe(1);
     expect(element.querySelectorAll('tbody tr').length).toBe(2);
-    for (const text of ['Hotel Alpha', 'Restaurant Beta', ESTABLISHMENTS_COPY.types.HOTEL, ESTABLISHMENTS_COPY.types.RESTAURANT, 'ACTIVE', 'INACTIVE', 'Contact the establishment directly.']) {
+    for (const text of ['Hotel Alpha', 'Restaurant Beta', ESTABLISHMENTS_COPY.types.HOTEL, ESTABLISHMENTS_COPY.types.RESTAURANT, 'Activo', 'Inactivo', 'Contact the establishment directly.']) {
       expect(element.querySelector('table')!.textContent).toContain(text);
     }
+    expect(element.querySelector('table')!.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);
+    expect(Array.from(element.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado', 'Acción']);
     expect(element.querySelector('img, form, button')).toBeNull();
   });
   });
@@ -80,7 +82,7 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
 describe('theNewestRequestReplacesThePreviousOne', () => {
   it('RN-PE3 a slow previous response never overwrites a newer filter response', async () => {
     const { source, settle, element, select } = await openPage();
-    await select('Establishment type', 'RESTAURANT');
+    await select('Tipo de establecimiento', 'RESTAURANT');
     expect(source.requests.length).toBe(2);
     source.requests[1].reply([establishmentNamed('Fast', 'RESTAURANT')]); await settle();
     source.requests[0].reply([establishmentNamed('Slow')]); await settle();
@@ -99,12 +101,12 @@ describe('theTypeSelectorOffersExactlyHotelAndRestaurant', () => {
   it('RN-PE10 offers exactly HOTEL and RESTAURANT and sends both filters to the source', async () => {
     const { element, select, source } = await openPage();
     expect(ESTABLISHMENT_TYPES).toEqual(['HOTEL', 'RESTAURANT']);
-    expect(Array.from(element.querySelectorAll<HTMLOptionElement>('select[aria-label="Establishment type"] option'), (option) => option.value))
+    expect(Array.from(element.querySelectorAll<HTMLOptionElement>('select[aria-label="Tipo de establecimiento"] option'), (option) => option.value))
       .toEqual(['HOTEL', 'RESTAURANT']);
-    await select('Establishment type', 'HOTEL');
-    await select('Association status', 'INACTIVE');
+    await select('Tipo de establecimiento', 'HOTEL');
+    await select('Estado de la asociación', 'INACTIVE');
     expect(source.requests.at(-1)!.filters).toEqual({ establishmentType: 'HOTEL', associationStatus: 'INACTIVE' });
-    await select('Association status', '');
+    await select('Estado de la asociación', '');
     element.querySelector<HTMLButtonElement>('button')!.click();
     expect(source.requests.at(-1)!.filters).toEqual({});
   });
@@ -149,5 +151,17 @@ describe('establishmentAccessUsesTheContainerActor', () => {
     await harness.navigateByUrl('/establishments', EstablishmentsPageComponent);
     expect(source.requests.length).toBe(1);
     expect(PORTAL_ROUTES.filter((route) => route.component === EstablishmentsPageComponent).length).toBe(1);
+  });
+});
+
+describe('theFiltersSpeakSpanish', () => {
+  it('labels the filters and their options in Spanish and never shows a status code', async () => {
+    const { element, select } = await openPage();
+    const options = (label: string) => Array.from(element.querySelectorAll<HTMLOptionElement>(`select[aria-label="${label}"] option`), (option) => option.textContent?.trim());
+    expect(Array.from(element.querySelectorAll('.crp-filters label'), (label) => label.textContent)).toEqual(['Tipo de establecimiento', 'Estado de la asociación']);
+    expect(options('Tipo de establecimiento')).toEqual(['Alojamiento', 'Restaurante']);
+    expect(options('Estado de la asociación')).toEqual(['Todos los estados', 'Activo', 'Inactivo']);
+    await select('Estado de la asociación', 'ACTIVE');
+    expect(element.querySelector('.crp-filters button')?.textContent?.trim()).toBe('Limpiar filtros');
   });
 });

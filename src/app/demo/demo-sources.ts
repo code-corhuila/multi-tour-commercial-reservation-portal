@@ -17,8 +17,8 @@ const place = (n: number, establishmentType: AssociatedEstablishment['establishm
 export class DemoCatalogStore extends CatalogItemsSource {
   private items: CatalogItem[] = [
     item(1, 'TOUR', 'Desierto de la Tatacoa al atardecer', 'ACTIVE', 18_000_000),
-    item(2, 'TOUR', 'Ruta del cafe en Pitalito', 'ACTIVE', 14_500_000),
-    item(3, 'TOUR', 'Canotaje en el Rio Suaza', 'ACTIVE', 22_000_000),
+    item(2, 'TOUR', 'Ruta del café en Pitalito', 'ACTIVE', 14_500_000),
+    item(3, 'TOUR', 'Canotaje en el Río Suaza', 'ACTIVE', 22_000_000),
     item(4, 'TRANSPORTATION', 'Traslado aeropuerto Neiva', 'ACTIVE', 9_000_000),
     item(5, 'TOUR', 'Caminata al Nevado del Huila', 'INACTIVE', 35_000_000),
   ];
@@ -46,12 +46,12 @@ export class DemoCatalogWriter extends CatalogItemsWriter {
 
 export class DemoEstablishmentsStore extends AssociatedEstablishmentsSource {
   items: AssociatedEstablishment[] = [
-    place(1, 'HOTEL', 'Hotel Casa Neiva', 'ACTIVE', 'Habitaciones con vista al rio Magdalena.'),
-    place(2, 'HOTEL', 'Posada del Cafe', 'ACTIVE', 'Alojamiento rural entre cafetales.'),
-    place(3, 'HOTEL', 'Hostal La Tatacoa', 'INACTIVE', 'Cerrado por remodelacion.'),
-    place(4, 'RESTAURANT', 'Sabores del Huila', 'ACTIVE', 'Cocina tipica: asado huilense y tamal.'),
-    place(5, 'RESTAURANT', 'Fogon del Desierto', 'ACTIVE', 'Cabrito al horno de barro.'),
-    place(6, 'RESTAURANT', 'Cafe Altura', 'INACTIVE', 'Desayunos de montana.'),
+    place(1, 'HOTEL', 'Hotel Casa Neiva', 'ACTIVE', 'Habitaciones con vista al río Magdalena.'),
+    place(2, 'HOTEL', 'Posada del Café', 'ACTIVE', 'Alojamiento rural entre cafetales.'),
+    place(3, 'HOTEL', 'Hostal La Tatacoa', 'INACTIVE', 'Cerrado por remodelación.'),
+    place(4, 'RESTAURANT', 'Sabores del Huila', 'ACTIVE', 'Cocina típica: asado huilense y tamal.'),
+    place(5, 'RESTAURANT', 'Fogón del Desierto', 'ACTIVE', 'Cabrito al horno de barro.'),
+    place(6, 'RESTAURANT', 'Café Altura', 'INACTIVE', 'Desayunos de montaña.'),
   ];
   override list(f: EstablishmentFilters): Observable<readonly AssociatedEstablishment[]> {
     return of(this.items.filter((e) => (!f.establishmentType || e.establishmentType === f.establishmentType) && (!f.associationStatus || e.associationStatus === f.associationStatus)));

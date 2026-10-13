@@ -61,7 +61,9 @@ describe('mountEntryContract', () => {
       // The site header, or the compact one of the panel cliente where a visitor without a session lands.
       await vi.waitFor(() => expect(host.querySelector('.crp-client-header, .crp-client-panel-header')).toBeTruthy());
       expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
-      expect(text()).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
+      // The panel copy names "Desactivar" as prose, so the actions are looked for among the buttons.
+      const buttons = Array.from(host.querySelectorAll('button'), (button) => button.textContent?.trim() ?? '').join('|');
+      expect(buttons).not.toMatch(new RegExp(`${CATALOG_COPY.newItem}|${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}|${CATALOG_COPY.edit}`));
       cleanup!();
       host.remove();
     }

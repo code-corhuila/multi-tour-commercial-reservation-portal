@@ -21,7 +21,7 @@ describe('discount form validates before sending', () => {
   });
   it.each([['startsOn', ''], ['endsOn', ''], ['startsOn', '2027-01-01'], ['endsOn', '2025-01-01']])('refuses invalid validity at %s on blur', async (name, value) => {
     const f = await openDiscountForm(); await f.fill(); await f.text(name, value); await f.blur(name);
-    expect(f.errorFor(name)).toMatch(/required|date|validity/i);
+    expect(f.errorFor(name)).toMatch(/obligatori|fecha|vigencia/i);
     expect(f.field(name).getAttribute('aria-invalid')).toBe('true');
     expect(f.field(name).parentElement?.querySelector('[role="alert"]')).not.toBeNull();
     expect(f.writer.calls).toHaveLength(0); await f.submit(); expect(f.writer.calls).toHaveLength(0);
@@ -29,10 +29,26 @@ describe('discount form validates before sending', () => {
   it('offers exactly two bases with explanations, two value types and one value control', async () => {
     const f = await openDiscountForm();
     expect(Array.from((f.field('calculationBase') as HTMLSelectElement).options, o => o.value)).toEqual(['ORIGINAL_VALUE', 'PREVIOUS_SUBTOTAL']);
-    expect(f.element.textContent).toContain('Original value'); expect(f.element.textContent).toContain('Subtotal after the previous discount');
+    expect(f.element.textContent).toContain('Valor original'); expect(f.element.textContent).toContain('Subtotal resultante del descuento anterior');
     expect(Array.from((f.field('type') as HTMLSelectElement).options, o => o.value)).toEqual(['PERCENTAGE', 'FIXED_AMOUNT']);
     expect(f.element.querySelectorAll('[name="value"]')).toHaveLength(1);
     for (const c of Array.from(f.element.querySelectorAll<HTMLInputElement>('input, select'))) expect(f.element.querySelector(`label[for="${c.id}"]`)).not.toBeNull();
+  });
+  it('draws the two numbered panels of screen 12 with Spanish labels and actions', async () => {
+    const f = await openDiscountForm(); const panels = Array.from(f.element.querySelectorAll('form > section.crp-operator-panel'));
+    expect(panels.map(s => s.querySelector('.crp-operator-eyebrow')?.textContent)).toEqual(['01. Descuento', '02. Vigencia y prioridad']);
+    expect(panels[0].querySelector('h2')?.textContent).toBe('Configura la promoción');
+    const label = (name: string) => f.element.querySelector(`label[for="${f.field(name).id}"]`)?.textContent;
+    expect(['name', 'type', 'value', 'calculationBase'].every(n => panels[0].contains(f.field(n)))).toBe(true);
+    expect(['startsOn', 'endsOn', 'priority'].every(n => panels[1].contains(f.field(n)))).toBe(true);
+    expect(['name', 'type', 'value', 'calculationBase', 'startsOn', 'endsOn', 'priority'].map(label))
+      .toEqual(['Nombre del descuento', 'Tipo de valor', 'Porcentaje de descuento', 'Base de cálculo', 'Vigencia desde', 'Vigencia hasta', 'Prioridad']);
+    await f.text('type', 'FIXED_AMOUNT'); expect(label('value')).toBe('Monto del descuento');
+    expect(Array.from((f.field('type') as HTMLSelectElement).options, o => o.textContent)).toEqual(['Porcentaje', 'Monto fijo']);
+    expect(f.element.textContent).toContain('Completa los parámetros para publicar el descuento.');
+    expect(Array.from(f.element.querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Cancelar', 'Crear descuento']);
+    expect(f.element.textContent).not.toMatch(/Name|Starts on|Ends on|Priority|Value|Calculation base|Save|Cancel\b/);
+    await f.submit(); expect(f.errorFor('name')).toBe('El nombre es obligatorio.');
   });
   it.each([['PERCENTAGE', '12.5', 'percentageBasisPoints', 1250], ['FIXED_AMOUNT', '0.07', 'amountCents', 7]] as const)('sends only the %s integer value and emits the stored rule', async (type, value, key, units) => {
     const f = await openDiscountForm(); await f.fill(); await f.text('type', type); await f.text('value', value); await f.submit();
@@ -61,6 +77,8 @@ describe('discount form validates before sending', () => {
   });
   it('updates the selected rule using a key and its id', async () => {
     const f = await openDiscountForm(discountNamed('Existing')); expect(f.field('name').value).toBe('Existing');
+    expect(f.element.querySelector('h2')?.textContent).toBe('Actualiza la promoción');
+    expect(f.element.querySelector('[type="submit"]')?.textContent?.trim()).toBe('Guardar cambios');
     expect(f.field('value').value).toBe('12.50'); await f.text('value', '15'); await f.submit();
     expect(f.writer.calls[0]).toMatchObject({ kind: 'update', id: 'Existing', key: f.keys.generated[0], command: { percentageBasisPoints: 1500 } });
   });
