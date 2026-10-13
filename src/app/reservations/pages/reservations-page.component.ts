@@ -7,6 +7,7 @@ import { ReservationViewComponent } from '../components/reservation-view.compone
 import { ReservationsSource } from '../data/reservations-source';
 import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, travelers } from '../model/reservation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { PortalSlotOutlet, RESERVATION_ROW_ACTIONS } from '../../shared/portal-slots';
 
 type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly Reservation[] };
 type View = { kind: 'list' | 'create' } | { kind: 'created' | 'detail'; reservation: Reservation };
@@ -17,7 +18,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
 };
 
 @Component({
-  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationFormComponent, ReservationViewComponent],
+  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
   styles: [`.crp-reservation-code { display: block; color: #203234; font-weight: 800; } small { display: block; margin-top: 4px; color: #748084; }`],
   template: `
     @let v = view();
@@ -46,7 +47,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
                   <tr><td><span class="crp-reservation-code">#{{ r.id }}</span><small>{{ date(r.departureDate) }} · {{ travelers(r.people) }}</small></td>
                     <td>{{ r.leadCustomerName }}</td><td>{{ r.tourName }}</td>
                     <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td>{{ money(r.balanceCents) }}</td>
-                    <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button></td></tr>
+                    <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" /></td></tr>
                 }</tbody>
               </table></div>
             }
@@ -66,6 +67,8 @@ export class ReservationsPageComponent {
   protected readonly status = STATUS_LABEL;
   protected readonly badge = STATUS_CLASS;
   protected readonly headers = HEADERS;
+  /** HU-COM-001 portal foundation of 2026-10-13: the actions other stories add to the Acción cell of 10. */
+  protected readonly rowActions = RESERVATION_ROW_ACTIONS;
   protected readonly view = signal<View>({ kind: 'list' });
   private readonly requests = new Subject<void>();
   private readonly local = signal<PageState | null>(null);

@@ -1,3 +1,4 @@
+import { Provider } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { CatalogItemsSource, CatalogItemsWriter } from '../catalog/data/catalog-api.service';
 import { CatalogItem, CreateCatalogItemCommand, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../catalog/model/catalog-item';
@@ -74,3 +75,7 @@ export class DemoEstablishmentsWriter extends AssociatedEstablishmentsWriter {
   override inactivate(id: string): Observable<AssociatedEstablishment> { return this.set(id, 'INACTIVE'); }
   override reactivate(id: string): Observable<AssociatedEstablishment> { return this.set(id, 'ACTIVE'); }
 }
+
+/** HU-COM-001 portal foundation of 2026-10-13: the module loads once per page, so every mount (a role switch) reads what the earlier mounts wrote. */
+let pageStores: Provider[] | undefined;
+export function oncePerPage(build: () => Provider[]): Provider[] { return (pageStores ??= build()); }

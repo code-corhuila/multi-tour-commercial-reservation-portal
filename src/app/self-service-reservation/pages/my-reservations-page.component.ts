@@ -5,12 +5,14 @@ import { formatCop } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { CustomerReservation, SELF_SERVICE_TEXT, departureLine, reservationState, travelers } from '../model/self-service-reservation';
+import { PortalSlotOutlet, RESERVATION_CARD_EXTRAS } from '../../shared/portal-slots';
 
 type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; items: readonly CustomerReservation[] };
 
 /** AC3 / RN-RS7 as mis-reservas.html, without payment lines: the customer's panel shows and never changes (plan D-06). */
 @Component({
   selector: 'app-my-reservations-page',
+  imports: [PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="self-service-panel" aria-labelledby="self-service-panel-title">
@@ -34,6 +36,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
                   <div class="self-service-card-copy">
                     <strong>{{ r.reservationId }} · {{ r.tourName }}</strong>
                     <p>{{ text.departure }}: {{ departure(r.departureAt) }} · {{ travelers(r.people) }}</p>
+                    <ng-container *crpSlot="cardExtras; inputs: { reservationId: r.reservationId }" />
                   </div>
                   <div class="self-service-card-status">
                     <span class="crp-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span>
@@ -53,6 +56,8 @@ export class MyReservationsPageComponent {
   protected readonly cop = formatCop;
   protected readonly departure = departureLine;
   protected readonly travelers = travelers;
+  /** HU-COM-001 portal foundation of 2026-10-13: the lines other stories add to each card, under the departure line. */
+  protected readonly cardExtras = RESERVATION_CARD_EXTRAS;
   protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
