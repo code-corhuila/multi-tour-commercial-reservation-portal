@@ -1,4 +1,4 @@
-import { InjectionToken, Injector, Type } from '@angular/core';
+import { AbstractType, InjectionToken, Injector, Type } from '@angular/core';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
 import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
@@ -20,6 +20,13 @@ import { ReserveTourPageComponent } from './self-service-reservation/pages/reser
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
 import { PortalCapabilities } from './shared/portal-capabilities';
+import { CatalogItemsSource } from './catalog/data/catalog-api.service';
+import { AssociatedEstablishmentsSource } from './establishments/data/associated-establishments-source';
+import { PublicEstablishmentsSource, PublicOfferSource } from './public-offer/data/public-offer-sources';
+import { DeparturesSource } from './reservations/data/departures-source';
+import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
+import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
+import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -39,51 +46,59 @@ export interface PortalArea {
   readonly clientChrome?: 'site' | 'panel' | 'none';
 }
 
+/** 001- HC-1: an area is offered only when the build supplies its ports (an adapter, or a store of the demo build). */
+const has = (injector: Injector, ...ports: readonly AbstractType<unknown>[]) => ports.every((port) => injector.get(port, null) !== null);
+const isCustomerOrVisitor = (injector: Injector) => injector.get(CustomerContext).standing !== 'OTHER';
+
 /** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
 export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTAL_AREA_LIST', { factory: () => PORTAL_AREAS });
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
-  { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent },
-  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
+  { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent,
+    isAvailable: (injector) => has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
-    isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && injector.get(DiscountRulesSource, null) !== null,
+    isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && has(injector, DiscountRulesSource),
   },
   // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
   { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
-    isAvailable: (injector) => injector.get(CurrentDiscountsSource, null) !== null },
+    isAvailable: (injector) => has(injector, CurrentDiscountsSource) },
   // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
-  { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer' },
-  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingOfferPageComponent, audience: 'customer' },
-  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer' },
+  { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicOfferSource) },
+  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
+  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
   {
     key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
-    isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && injector.get(CustomersSource, null) !== null,
+    isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
   },
   // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
-  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {
     key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
   },
   {
     key: CLIENT_AREA.reservations, label: 'Mis reservas', component: MyReservationsPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
   },
   // HU-COM-008 reservar-tour.html: opened by "Reservar tour" of the offer with { tour }.
   {
     key: RESERVATION_FLOW.reserve, label: 'Reservar tour', component: ReserveTourPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, CatalogItemsSource, DeparturesSource, SelectionQuoteSource),
   },
   // HU-COM-008 finalizar-reserva.html, opened by "Continuar reserva" with { departure, services, people }.
   // DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
   {
     key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, PaymentMethodsSource, SelectionQuoteSource, ReservationRequester),
   },
 ]);
 

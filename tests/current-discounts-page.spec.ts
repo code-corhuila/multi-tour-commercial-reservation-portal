@@ -4,6 +4,7 @@ import { DemoCurrentDiscountsStore } from '../src/app/demo/current-discounts-dem
 import * as entry from '../src/mount-entry';
 import { apiError } from './catalog-items-writer.double';
 import { openCurrentDiscounts, ruleNamed, serviceNamed } from './current-discounts.double';
+import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
 // HU-COM-004 spec section 3, AC-CD.5 to AC-CD.9 (tasks T-03 and T-04).
 const withData = async (role?: Parameters<typeof openCurrentDiscounts>[0]) => {
@@ -225,7 +226,7 @@ describe('currentDiscountsAreWiredInTheMountEntry', () => {
   it('opens the area from the navigation with the in-memory demo data', async () => {
     host = document.createElement('div'); document.body.append(host);
     const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 1 } }));
-    cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } });
+    cleanup = entry.mountWith(host, { apiClient: { request } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } }, demoSources);
     await vi.waitFor(() => expect(host.querySelector('nav')).toBeTruthy());
     Array.from(host.querySelectorAll('nav button')).find((b) => b.textContent?.trim() === 'Descuentos vigentes')!.dispatchEvent(new Event('click'));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-line]').length).toBeGreaterThan(0));

@@ -1,9 +1,12 @@
 import { Provider } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, map, of, throwError } from 'rxjs';
+import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { LeadCustomersSource, ReservationDiscounts } from '../reservations/data/reservation-integrations';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
+import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
+import { DemoReservationQuotes } from './reservation-quote-demo';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
@@ -15,10 +18,10 @@ const CUSTOMERS = [{ id: 'demo-cus-1', fullName: 'Camila Ortega (demo)' }, { id:
 /** Two reservations already registered, so the list shows screen 10 with data. */
 const SEEDED: Reservation[] = [
   { id: 'RES-1842', leadCustomerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa al atardecer', departureDate: '2026-11-07', conditions: CONDITIONS, people: 2,
-    quote: { services: [{ name: 'Guianza (demo)', cents: 80_000_000 }], transportCents: 5_000_000, projectedCents: 85_000_000, discounts: [], finalCents: 85_000_000 },
+    quote: { services: [{ name: 'Guianza (demo)', cents: 80_000_000 }], transportCents: 5_000_000, projectedCents: 85_000_000, discounts: [], discountCents: 0, finalCents: 85_000_000 }, balanceCents: 85_000_000,
     status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false },
   { id: 'RES-1841', leadCustomerName: 'Mateo Ríos (demo)', tourName: 'Ruta del café en Pitalito', departureDate: '2026-11-14', conditions: CONDITIONS, people: 1,
-    quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], finalCents: 41_800_000 },
+    quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], discountCents: 0, finalCents: 41_800_000 }, balanceCents: 41_800_000,
     status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false },
 ];
 
@@ -46,25 +49,30 @@ export class DemoReservationsStore extends ReservationsSource {
   override list(): Observable<readonly Reservation[]> { return of([...this.items]); }
 }
 
-/** Checks the departure and its capacity without holding a seat; one reservation per Idempotency-Key. */
+/** Checks the departure and its capacity without holding a seat, quotes as the service would; one reservation per Idempotency-Key. */
 export class DemoReservationsWriter extends ReservationsWriter {
   private readonly byKey = new Map<string, Reservation>();
   private sequence = 1842;
-  constructor(private readonly store: DemoReservationsStore, private readonly departures: DemoDeparturesStore) { super(); }
+  constructor(private readonly store: DemoReservationsStore, private readonly departures: DemoDeparturesStore,
+    private readonly quotes: ReservationQuoteSource) { super(); }
   override create(c: CreateReservationCommand, key: string): Observable<Reservation> {
     const known = this.byKey.get(key);
     if (known) return of(known);
     const d = openDepartures(this.departures.items).find((x) => x.id === c.departureId);
     if (!d) return throwError(() => ({ status: 409, code: 'departure-not-open', userMessage: 'La salida no está abierta para reservas.' }));
     if (!hasCapacity(d, c.people)) return throwError(() => ({ status: 409, code: 'insufficient-capacity', userMessage: capacityMessage(d) }));
-    const created: Reservation = {
-      id: `RES-${++this.sequence}`, leadCustomerName: CUSTOMERS.find((x) => x.id === c.leadCustomerId)?.fullName ?? c.leadCustomerId,
-      tourName: d.tourName, departureDate: d.date, conditions: d.conditions, people: c.people, quote: c.quote,
-      status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false,
-    };
-    this.byKey.set(key, created);
-    this.store.items = [created, ...this.store.items];
-    return of(created);
+    return this.quotes.quote(c).pipe(map((quote) => {
+      const again = this.byKey.get(key);
+      if (again) return again;
+      const created: Reservation = {
+        id: `RES-${++this.sequence}`, leadCustomerName: CUSTOMERS.find((x) => x.id === c.leadCustomerId)?.fullName ?? c.leadCustomerId,
+        tourName: d.tourName, departureDate: d.date, conditions: d.conditions, people: c.people, quote, balanceCents: quote.finalCents,
+        status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false,
+      };
+      this.byKey.set(key, created);
+      this.store.items = [created, ...this.store.items];
+      return created;
+    }));
   }
 }
 
@@ -76,6 +84,7 @@ export function reservationDemoProviders(): Provider[] {
     { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
     { provide: ReservationDiscounts, useValue: new DemoReservationDiscounts() },
     { provide: ReservationsSource, useValue: store },
-    { provide: ReservationsWriter, useValue: new DemoReservationsWriter(store, departures) },
+    { provide: ReservationQuoteSource, useFactory: (c: CatalogItemsSource, r: ReservationDiscounts) => new DemoReservationQuotes(departures, c, r), deps: [CatalogItemsSource, ReservationDiscounts] },
+    { provide: ReservationsWriter, useFactory: (q: ReservationQuoteSource) => new DemoReservationsWriter(store, departures, q), deps: [ReservationQuoteSource] },
   ];
 }
