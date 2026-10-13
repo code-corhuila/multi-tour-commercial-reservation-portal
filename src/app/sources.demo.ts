@@ -9,6 +9,11 @@ import { AssociatedEstablishmentsWriter } from './establishments/data/associated
 import { PortalApiClient } from './shell-contract';
 import { DemoPublicEstablishmentsSource, DemoPublicOfferSource, seedTransportTour } from './demo/public-offer-demo';
 import { PublicEstablishmentsSource, PublicOfferSource } from './public-offer/data/public-offer-sources';
+import { currentDiscountsProviders } from './demo/current-discounts-demo';
+import { customersDemoProviders } from './demo/customers-demo';
+import { reservationDemoProviders } from './demo/reservations-demo';
+import { selfServiceDemoProviders } from './demo/self-service-reservation-demo';
+import { reservationChangesDemoProviders } from './demo/reservation-changes-demo';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
 export function sourceProviders(_client: PortalApiClient): Provider[] {
@@ -28,5 +33,10 @@ function demoStores(): Provider[] {
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
     { provide: PublicOfferSource, useValue: new DemoPublicOfferSource(catalog) },
     { provide: PublicEstablishmentsSource, useValue: new DemoPublicEstablishmentsSource(establishments) },
+    ...currentDiscountsProviders(),
+    ...customersDemoProviders(),
+    ...reservationDemoProviders(),
+    ...selfServiceDemoProviders(),
+    ...reservationChangesDemoProviders(),
   ];
 }
