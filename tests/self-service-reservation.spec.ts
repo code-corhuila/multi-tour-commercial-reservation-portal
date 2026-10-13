@@ -373,8 +373,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
-    expect(rule('.crp-root .crp-finish-content')).toMatch(/width:\s*min\(100%, 1100px\);\s*margin:\s*0 auto;\s*padding:\s*24px 0 144px;/);
-    expect(css).toMatch(/@media \(max-width: 760px\) \{[^@]*\.crp-root \.crp-finish-content \{ padding-bottom: 210px; \}/);
+    // The column and its bar without the 144px/210px room for a fixed bar (001- amendment HC-3): portal-column.spec.ts.
     expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 1\.6fr\) minmax\(260px, 1fr\)/);
   });
   it('Mis reservas uses the client classes in every state, never the operator ones', async () => {
