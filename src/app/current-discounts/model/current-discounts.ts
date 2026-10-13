@@ -1,6 +1,6 @@
-import { parseMoney } from '../../catalog/model/money';
-import { DiscountRule, DiscountValue } from '../../discounts/model/discount-rule';
-import { parsePercentage } from '../../discounts/model/percentage';
+import { DiscountRule, DiscountValue } from '../../discounts/data/discount-rules-source';
+import { parseMoney } from '../../shared/money';
+import { parsePercentage } from '../../shared/percentage';
 
 /** Only the fields of HU-COM-003's DiscountRule the calculation reads (tasks T-02); no second rule model. */
 export type ApplicableRule = DiscountValue & Pick<DiscountRule, 'name' | 'startsOn' | 'endsOn' | 'priority' | 'calculationBase' | 'status'>;

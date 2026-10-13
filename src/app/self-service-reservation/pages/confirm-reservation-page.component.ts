@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap } from 'rxjs';
-import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
@@ -9,6 +8,7 @@ import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injec
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
 import { tourPhoto } from '../../shared/tour-photo';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
 

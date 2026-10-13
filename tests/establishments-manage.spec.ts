@@ -3,7 +3,6 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { PORTAL_ROUTES } from '../src/app/catalog/catalog.routes';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
@@ -14,6 +13,8 @@ import { ControllableEstablishmentsWriter } from './associated-establishments-wr
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
 import { formControls } from './establishment-form.helpers';
 import { ActorRole } from '../src/app/shared/portal-capabilities';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 async function openPage(role: ActorRole | null = 'TENANT_ADMINISTRATOR') {
   const source = new ControllableEstablishmentsSource(), writer = new ControllableEstablishmentsWriter();

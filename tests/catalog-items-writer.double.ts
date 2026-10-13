@@ -1,7 +1,8 @@
 import { Observable, Subject } from 'rxjs';
-import { CatalogItemsWriter, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogItem, CreateCatalogItemCommand, UpdateCatalogItemCommand } from '../src/app/catalog/model/catalog-item';
 import { ApiError } from '../src/app/shell-contract';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 interface WriteCallBase {
   readonly reply: (item: CatalogItem) => void;

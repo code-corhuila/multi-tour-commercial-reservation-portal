@@ -6,16 +6,15 @@ import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
 import { ESTABLISHMENTS_COPY } from '../establishments-copy';
 import { AssociatedEstablishmentsWriter } from '../data/associated-establishments-writer';
-import { PageState } from '../../catalog/pages/catalog-page.component';
 import { AssociatedEstablishmentsSource } from '../data/associated-establishments-source';
 import {
   ASSOCIATION_STATUSES, ESTABLISHMENT_TYPES, AssociatedEstablishment,
   AssociationStatus, EstablishmentFilters, EstablishmentType,
 } from '../model/associated-establishment';
+import { PageState } from '../../shared/page-state';
 
-/** Reuse the catalog discriminant and state shapes, substituting only the data record. */
-export type EstablishmentsPageState = Exclude<PageState, { kind: 'data' }>
-  | (Omit<Extract<PageState, { kind: 'data' }>, 'items'> & { readonly items: readonly AssociatedEstablishment[] });
+/** The shared four states, carrying establishment records. */
+export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
 
 @Component({
   selector: 'app-establishments-page',

@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { DiscountRulesWriter } from '../src/app/discounts/data/discount-rules-writer';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
@@ -8,6 +7,8 @@ import { actorAs } from './actor-context.double';
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
 import { ControllableDiscountRulesSource, discountNamed } from './discount-rules-source.double';
 import { ControllableDiscountRulesWriter } from './discount-rules-writer.double';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 async function open() {
   const source = new ControllableDiscountRulesSource(), writer = new ControllableDiscountRulesWriter(), keys = new ControllableIdempotencyKeys();
   TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') },

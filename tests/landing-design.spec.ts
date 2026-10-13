@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
@@ -10,6 +10,7 @@ import { ESTABLISHMENTS_COPY } from '../src/app/establishments/establishments-co
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { actorAs } from './actor-context.double';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 async function openPortal(role: 'TENANT_ADMINISTRATOR' | 'READ_ONLY' = 'TENANT_ADMINISTRATOR') {
   const catalog = new DemoCatalogStore();
