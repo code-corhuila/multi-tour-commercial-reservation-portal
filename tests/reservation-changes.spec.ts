@@ -127,6 +127,19 @@ describe('tipoListsTheChangeTypesOfTheExtensionToken', () => {
     const s = await page({ extra: [{ provide: RESERVATION_CHANGE_TYPES, multi: true, useValue: other }] });
     expect(Array.from(s.host.querySelectorAll('select option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de viajeros']);
   });
+
+  // HU-COM-012 AC-MD.9 (DP-MD5): a type that cannot be registered yet keeps "Registrar novedad" disabled and sends nothing.
+  it('keeps Registrar novedad disabled for a type that is not submittable, and sends nothing', async () => {
+    let sent = 0;
+    const other = { key: 'travelers', label: 'Modificación de viajeros', submittable: false, submit: () => { sent += 1; return of({ kind: 'registered' as const }); } };
+    const s = await page({ extra: [{ provide: RESERVATION_CHANGE_TYPES, multi: true, useValue: other }] });
+    const select = s.host.querySelector('select')!;
+    select.value = 'travelers'; select.dispatchEvent(new Event('change')); await s.settle();
+    await s.type('El cliente cambia de acompañante');
+    expect(s.button('Registrar novedad')?.disabled).toBe(true);
+    await s.submit();
+    expect(sent).toBe(0);
+  });
 });
 
 describe('cancelActionOnlyForPendingOrConfirmed', () => {
