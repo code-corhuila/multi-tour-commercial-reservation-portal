@@ -65,8 +65,8 @@ import { PortalCapabilities } from './shared/portal-capabilities';
           <p class="crp-operator-brand">MULTITOUR</p>
           <p class="crp-operator-role">{{ roleLabel }}</p>
           <nav class="crp-operator-nav" aria-label="Administración comercial">
-            @for (area of areas; track area.key) {
-              <button type="button" [class.crp-is-active]="area === current()" [attr.aria-current]="area === current() ? 'page' : null"
+            @for (area of menu; track area.key) {
+              <button type="button" [class.crp-is-active]="area.key === active()" [attr.aria-current]="area.key === active() ? 'page' : null"
                 (click)="open(area.key)">{{ area.label }}</button>
             }
           </nav>
@@ -84,9 +84,13 @@ export class PortalShellComponent {
   protected readonly audience = inject(PortalAudience).audience;
   protected readonly areas = inject(PORTAL_AREA_LIST)
     .filter((area) => (area.audience ?? 'operator') === this.audience && (area.isAvailable?.(this.injector) ?? true));
-  /** The operator lands on the first area; the customer on the panel cliente when the build has it. */
-  protected readonly landing = (this.audience === 'customer' && this.areas.find((area) => area.key === CLIENT_AREA.panel)) || this.areas[0];
+  /** The sidebar items: every area but the sub-screens (menu: false), which open from another area. */
+  protected readonly menu = this.areas.filter((area) => area.menu !== false);
+  /** The operator lands on the first sidebar item; the customer on the panel cliente when the build has it. */
+  protected readonly landing = (this.audience === 'customer' && this.areas.find((area) => area.key === CLIENT_AREA.panel)) || this.menu[0];
   protected readonly current = computed(() => this.areas.find((area) => area.key === this.navigation.selected()) ?? this.landing);
+  /** The sidebar item marked active: the parent of an open sub-screen, or the open area itself. */
+  protected readonly active = computed(() => this.current()?.parent ?? this.current()?.key);
   protected readonly roleLabel = inject(PortalCapabilities).roleLabel();
   private readonly drawn = (links: readonly ClientLink[]) => links.filter((link) => this.areas.some((area) => area.key === link.key));
   protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);
