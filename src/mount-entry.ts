@@ -18,6 +18,9 @@ export function roleOf(roles: readonly string[]): ActorRole {
   return (roles.find((role) => KNOWN_ROLES.includes(role)) as ActorRole | undefined) ?? 'READ_ONLY';
 }
 
+/** Portals mounted now; the stylesheet leaves with the last one (001- amendment HC-5, plan H-D4). */
+let mounted = 0;
+
 /** One <link> to the portal CSS, next to this module, however many times the portal is mounted. */
 export function ensureStylesheet(): void {
   if (document.querySelector('link[data-crp-stylesheet]')) return;
@@ -31,6 +34,7 @@ export function ensureStylesheet(): void {
 /** ADR-006 F4 contract. Sources come from ./app/sources (apiClient by default, in memory in the demo build). */
 export function mount(element: HTMLElement, props: MountProps): () => void {
   ensureStylesheet();
+  mounted += 1;
   element.classList.add('crp-root');
   const actor = new (class extends ActorContext { override readonly role = roleOf(props.session.roles); })();
   let app: ApplicationRef | undefined;
@@ -39,6 +43,8 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
     app?.destroy();  // no-op when never created
     element.replaceChildren();
     element.classList.remove('crp-root');
+    mounted -= 1;
+    if (mounted === 0) document.querySelector('link[data-crp-stylesheet]')?.remove();
   };
   createApplication({
     providers: [
