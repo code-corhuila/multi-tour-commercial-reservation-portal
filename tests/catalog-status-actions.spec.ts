@@ -32,12 +32,12 @@ async function openList(items: readonly CatalogItem[] = [itemNamed('Alpha'), ina
   await settle();
   const rows = () => Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('tbody tr'));
   const rowOf = (name: string) => rows().find((row) => row.textContent?.includes(name)) as HTMLElement;
-  const buttonOf = (name: string) => rowOf(name).querySelector('button') as HTMLButtonElement;
+  const buttonOf = (name: string) => rowOf(name).querySelector('button.crp-row-toggle') as HTMLButtonElement;
   return { fixture, source, writer, settle, rows, rowOf, buttonOf, items };
 }
 
 describe('inactivatedItemStaysInTheListAsInactive', () => {
-  it('shows the item as INACTIVE, still listed, and leaves the other rows alone', async () => {
+  it('shows the item as Inactivo, still listed, and leaves the other rows alone', async () => {
     const { writer, settle, rows, rowOf, buttonOf, source, items } = await openList();
     buttonOf('Alpha').click();
     await settle();
@@ -48,15 +48,15 @@ describe('inactivatedItemStaysInTheListAsInactive', () => {
     await settle();
 
     expect(rows()).toHaveLength(2);
-    expect(rowOf('Alpha').textContent).toContain('INACTIVE');
+    expect(rowOf('Alpha').textContent).toContain('Inactivo');
     expect(buttonOf('Alpha').textContent?.trim()).toBe(CATALOG_COPY.reactivate);
-    expect(rowOf('Beta').textContent).toContain('INACTIVE');
+    expect(rowOf('Beta').textContent).toContain('Inactivo');
     expect(source.requests).toHaveLength(1);
   });
 });
 
 describe('reactivatedItemShowsAsActive', () => {
-  it('shows the item as ACTIVE again with the inactivate action', async () => {
+  it('shows the item as Activo again with the inactivate action', async () => {
     const { writer, settle, rows, rowOf, buttonOf, items } = await openList();
     buttonOf('Beta').click();
     await settle();
@@ -66,8 +66,8 @@ describe('reactivatedItemShowsAsActive', () => {
     await settle();
 
     expect(rows()).toHaveLength(2);
-    expect(rowOf('Beta').textContent).toContain('ACTIVE');
-    expect(rowOf('Beta').textContent).not.toContain('INACTIVE');
+    expect(rowOf('Beta').textContent).toContain('Activo');
+    expect(rowOf('Beta').textContent).not.toContain('Inactivo');
     expect(buttonOf('Beta').textContent?.trim()).toBe(CATALOG_COPY.inactivate);
   });
 });
@@ -75,8 +75,8 @@ describe('reactivatedItemShowsAsActive', () => {
 describe('oneStatusActionPerItem', () => {
   it('offers only Inactivate on an active item and only Reactivate on an inactive one', async () => {
     const { rowOf } = await openList();
-    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
-    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.reactivate, CATALOG_COPY.edit]);
+    expect(Array.from(rowOf('Alpha').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.edit, CATALOG_COPY.inactivate]);
+    expect(Array.from(rowOf('Beta').querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([CATALOG_COPY.edit, CATALOG_COPY.reactivate]);
   });
 
   it('sends one request for a double click, disables the button while it pends and enables it after', async () => {
@@ -112,8 +112,8 @@ describe('aRefusedStatusChangeShowsItsReasonBesideTheItem', () => {
 
     const alert = rowOf('Alpha').querySelector('[role="alert"]');
     expect(alert?.textContent).toContain('That transition is not allowed.');
-    expect(rowOf('Alpha').textContent).toContain('ACTIVE');
-    expect(rowOf('Alpha').textContent).not.toContain('INACTIVE');
+    expect(rowOf('Alpha').textContent).toContain('Activo');
+    expect(rowOf('Alpha').textContent).not.toContain('Inactivo');
     expect(rowOf('Beta').querySelector('[role="alert"]')).toBeNull();
     expect(buttonOf('Alpha').disabled).toBe(false);
     expect(rows()).toHaveLength(2);
@@ -127,7 +127,7 @@ describe('aRefusedStatusChangeShowsItsReasonBesideTheItem', () => {
     writer.statusCalls[0].fail(new Error('socket closed'));
     await settle();
     const alert = rowOf('Alpha').querySelector('[role="alert"]');
-    expect(alert?.textContent?.trim()).toBe('The request failed.');
+    expect(alert?.textContent?.trim()).toBe('La solicitud falló.');
     expect(rowOf('Alpha').textContent).not.toContain('socket closed');
   });
 
