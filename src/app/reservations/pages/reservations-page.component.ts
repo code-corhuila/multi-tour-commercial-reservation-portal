@@ -7,7 +7,7 @@ import { ReservationViewComponent } from '../components/reservation-view.compone
 import { ReservationsSource } from '../data/reservations-source';
 import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, travelers } from '../model/reservation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { PortalSlotOutlet, RESERVATION_ROW_ACTIONS } from '../../shared/portal-slots';
+import { PortalSlotOutlet, RESERVATION_DETAIL_ACTIONS, RESERVATION_ROW_ACTIONS } from '../../shared/portal-slots';
 
 type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly Reservation[] };
 type View = { kind: 'list' | 'create' } | { kind: 'created' | 'detail'; reservation: Reservation };
@@ -26,7 +26,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
       <div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ headers[v.kind][0] }}</p><h1 class="crp-page-header-title crp-h1">{{ headers[v.kind][1] }}</h1></div>
       @if (v.kind === 'list') { @if (canCreate) { <button type="button" class="crp-operator-primary crp-page-header-action" (click)="view.set({ kind: 'create' })">{{ text.create }}</button> } }
       @else if (v.kind === 'create') { <button type="button" class="crp-operator-outline crp-page-header-action" (click)="view.set({ kind: 'list' })">{{ text.cancel }}</button> }
-      @else { <button type="button" class="crp-operator-outline crp-page-header-action" (click)="view.set({ kind: 'list' })">{{ text.back }}</button> }
+      @else { @if (v.kind === 'detail') { <ng-container *crpSlot="detailActions; inputs: { reservation: v.reservation }" /> }<button type="button" class="crp-operator-outline crp-page-header-action" (click)="view.set({ kind: 'list' })">{{ text.back }}</button> }
     </header>
     @switch (v.kind) {
       @case ('create') { @if (canCreate) { <app-reservation-form (created)="onCreated($event)" (cancelled)="view.set({ kind: 'list' })" /> } }
@@ -69,6 +69,7 @@ export class ReservationsPageComponent {
   protected readonly headers = HEADERS;
   /** HU-COM-001 portal foundation of 2026-10-13: the actions other stories add to the Acción cell of 10. */
   protected readonly rowActions = RESERVATION_ROW_ACTIONS;
+  protected readonly detailActions = RESERVATION_DETAIL_ACTIONS;
   protected readonly view = signal<View>({ kind: 'list' });
   private readonly requests = new Subject<void>();
   private readonly local = signal<PageState | null>(null);

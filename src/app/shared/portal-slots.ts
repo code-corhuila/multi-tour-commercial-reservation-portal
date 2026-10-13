@@ -33,6 +33,10 @@ export const CLIENT_QUICK_ACTIONS: PortalSlotToken = new InjectionToken('CLIENT_
 export const CLIENT_NOTICES: PortalSlotToken = new InjectionToken('CLIENT_NOTICES');
 /** Mis reservas: lines of each reservation card under the departure line. Input: reservationId. */
 export const RESERVATION_CARD_EXTRAS: PortalSlotToken = new InjectionToken('RESERVATION_CARD_EXTRAS');
+/** 10A: header actions before "Volver a reservas", such as "Cancelar o modificar reserva". Input: reservation. */
+export const RESERVATION_DETAIL_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_DETAIL_ACTIONS');
+/** Mis reservas: actions closing each reservation card, such as "Responder propuesta". Input: reservationId. */
+export const RESERVATION_CARD_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_CARD_ACTIONS');
 
 /** The available contributions of a slot, by order. */
 export function slotEntries(slot: PortalSlotToken, injector: Injector): readonly Type<unknown>[] {
