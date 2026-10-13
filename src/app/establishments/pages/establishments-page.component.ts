@@ -28,17 +28,18 @@ export type EstablishmentsPageState = Exclude<PageState, { kind: 'data' }>
     } @else {
       <header class="crp-page-header">
       <div class="crp-page-header-main">
-        <p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ copy.eyebrow }}</p>
+        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
         <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
-        <p class="crp-page-header-desc">{{ copy.description }}</p>
       </div>
-      @if (canWrite) {
-        <button class="crp-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm()">{{ copy.newEstablishment }}</button>
-      }
       </header>
       <p class="crp-access-note">{{ copy.accessNote }}</p>
       <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
-      <div class="crp-operator-panel-head"><h2>{{ copy.panelTitle }}</h2></div>
+      <div class="crp-operator-panel-head">
+        <div><p class="crp-operator-eyebrow">{{ copy.panelEyebrow }}</p><h2>{{ copy.panelTitle }}</h2></div>
+        @if (canWrite) {
+          <button class="crp-operator-primary" type="button" [disabled]="saving()" (click)="openForm()">{{ copy.newEstablishment }}</button>
+        }
+      </div>
       @if (formOpen()) {
         <div class="crp-form-section"><h2>{{ copy.newEstablishment }}</h2>
         @for (key of [formKey()]; track key) {
@@ -48,22 +49,22 @@ export type EstablishmentsPageState = Exclude<PageState, { kind: 'data' }>
       }
       <div class="crp-filters">
       <div>
-      <label for="establishment-type">Establishment type</label>
-      <select id="establishment-type" aria-label="Establishment type" [disabled]="saving()"
+      <label for="establishment-type">{{ copy.filters.type }}</label>
+      <select id="establishment-type" [attr.aria-label]="copy.filters.type" [disabled]="saving()"
         [value]="filters().establishmentType ?? ''" (change)="chooseType($event)">
         @for (type of types; track type) { <option [value]="type">{{ copy.types[type] }}</option> }
       </select>
       </div>
       <div>
-      <label for="association-status">Association status</label>
-      <select id="association-status" aria-label="Association status" [disabled]="saving()"
+      <label for="association-status">{{ copy.filters.status }}</label>
+      <select id="association-status" [attr.aria-label]="copy.filters.status" [disabled]="saving()"
         [value]="filters().associationStatus ?? ''" (change)="chooseStatus($event)">
-        <option value="">All statuses</option>
-        @for (status of statuses; track status) { <option [value]="status">{{ status }}</option> }
+        <option value="">{{ copy.filters.allStatuses }}</option>
+        @for (status of statuses; track status) { <option [value]="status">{{ copy.statuses[status] }}</option> }
       </select>
       </div>
       @if (filters().establishmentType || filters().associationStatus) {
-        <button class="crp-outline" type="button" [disabled]="saving()" (click)="clearFilters()">Clear filters</button>
+        <button class="crp-operator-outline" type="button" [disabled]="saving()" (click)="clearFilters()">{{ copy.filters.clear }}</button>
       }
       </div>
       @let current = state();
@@ -72,21 +73,20 @@ export type EstablishmentsPageState = Exclude<PageState, { kind: 'data' }>
         @case ('error') {
           <div role="alert" data-state="error">
             <p>{{ copy.requestFailed }}</p>
-            <button class="crp-outline" type="button" [disabled]="saving()" (click)="current.retry()">{{ copy.retry }}</button>
+            <button class="crp-operator-outline" type="button" [disabled]="saving()" (click)="current.retry()">{{ copy.retry }}</button>
           </div>
         }
         @case ('empty') { <p role="status" data-state="empty">{{ copy.empty }}</p> }
         @case ('data') {
           <div class="crp-table-wrap">
-          <table class="crp-table" data-state="data" [attr.aria-label]="copy.panelTitle">
-            <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.type }}</th><th scope="col">{{ copy.columns.info }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+          <table class="crp-operator-table" data-state="data" [attr.aria-label]="copy.panelTitle">
+            <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.info }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
             <tbody>
             @for (item of current.items; track item.associationId) {
               <tr>
-                <td><strong>{{ item.commercialName }}</strong></td>
-                <td>{{ copy.types[item.establishmentType] }}</td>
+                <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.establishmentType] }}</small></td>
                 <td>{{ item.commercialInformation }}</td>
-                <td><span class="crp-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ item.associationStatus }}</span></td>
+                <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ copy.statuses[item.associationStatus] }}</span></td>
                 <td class="crp-row-actions">
                 @if (canWrite) {
                   <button class="crp-row-toggle" type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="changeStatus(item)">
@@ -141,7 +141,7 @@ export class EstablishmentsPageComponent {
         if (current.kind === 'data') { this.local.set({ kind: 'data', items: current.items.map((row) => row.associationId === stored.associationId ? stored : row) }); }
       }),
       catchError((error: Partial<ApiError> | null) => {
-        this.rowErrors.update((errors) => ({ ...errors, [item.associationId]: error?.userMessage ?? 'The request failed.' })); return EMPTY;
+        this.rowErrors.update((errors) => ({ ...errors, [item.associationId]: error?.userMessage ?? this.copy.requestFailed })); return EMPTY;
       }),
       finalize(() => this.pendingIds.update(({ [item.associationId]: _settled, ...rest }) => rest)),
     ),
