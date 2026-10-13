@@ -229,6 +229,17 @@
   .crp-root .crp-client-content { width: 100%; margin: 0; padding: 20px 16px 32px; }
   .crp-root .crp-client-footer-grid { grid-template-columns: 1fr; gap: 24px; }
 }
+
+/* HU-COM-004: admin-aplicar-descuento.html and the values block of admin-crear-reserva.html. */
+.crp-root .current-discounts-services { list-style: none; padding: 0; display: grid; gap: 16px; }
+.crp-root .current-discounts-services h3 { margin: 0 0 8px; font-size: 1rem; }
+.crp-root .current-discounts-summary { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 18px; }
+.crp-root .current-discounts-summary div { display: grid; gap: 5px; }
+.crp-root .current-discounts-summary span { color: #718084; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
+.crp-root .current-discounts-lines { margin: 8px 0; padding-left: 20px; }
+.crp-root .current-discounts-lines li { margin: 4px 0; }
+.crp-root .current-discounts-wide { grid-column: 1 / -1; }
+.crp-root .current-discounts-note { color: var(--crp-soft); font-size: 0.86rem; }
 /* HU-COM-008 panel-cliente.html: greeting, search, reservations summary, quick actions, discounts and featured tours. */
 .crp-root .crp-panel-hero { display: grid; gap: 12px; }
 .crp-root .crp-panel-hero > p { max-width: 640px; margin: 0; color: var(--crp-soft); }

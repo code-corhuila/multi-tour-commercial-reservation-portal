@@ -5,6 +5,7 @@ import { ActorRole } from './app/catalog/model/catalog-item';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
+import { currentDiscountsProviders } from './app/demo/current-discounts-demo';
 import { reservationDemoProviders } from './app/demo/reservations-demo';
 import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
@@ -43,6 +44,7 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
       ...sourceProviders(props.apiClient),
+      ...currentDiscountsProviders(), // DEMO until G-API: no adapter over apiClient yet (DD-1)
       ...reservationDemoProviders(),
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
       { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
