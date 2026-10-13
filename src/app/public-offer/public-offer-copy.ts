@@ -1,3 +1,4 @@
+import { SITE_PHOTOS } from '../shared/tour-photo';
 /** Interface texts of the public offer, in one place; the wording follows tours.html, detalle-tour.html, alojamiento.html, gastronomia.html and restaurantes.html. */
 export const PUBLIC_OFFER_COPY = {
   back: 'Volver al panel cliente',
@@ -52,9 +53,8 @@ export const PUBLIC_OFFER_COPY = {
   },
 } as const;
 
-/** Self-hosted photos of the multi-tour-front container (same origin, CSP img-src 'self'); a card takes one by its position. */
-const PHOTOS = ['/assets/destino-sendero-del-condor.jpg', '/assets/destino-bahia-esmeralda.jpg', '/assets/destino-cascadas-de-iraka.jpg', '/assets/mountain-hero.jpg'];
-export function photoAt(position: number): string { return PHOTOS[position % PHOTOS.length]; }
+/** An establishment card takes a self-hosted photo by its position; a tour takes the one of its id (tourPhoto). */
+export function photoAt(position: number): string { return SITE_PHOTOS[position % SITE_PHOTOS.length]; }
 
 /** The search of a client page: a name contains the words typed, ignoring case and accents. */
 export function matchesSearch(name: string, query: string): boolean {
