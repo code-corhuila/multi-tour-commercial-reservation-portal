@@ -33,6 +33,8 @@ export const REFUNDS_COPY = {
   decisionCopy: 'Dentro de 24 horas corridas desde el reconocimiento del dinero, decide entre devolver el 100 % o registrar el 100 % como saldo a favor. Si no hay decisión al vencer el contador, se aplica la devolución del 100 %.',
   executionTitle: 'Ejecución', executionCopy: 'La devolución debe ejecutarse en máximo 5 días hábiles y quedar registrada como movimiento individual de caja.',
   notificationsTrace: 'RF-019', notificationsTitle: 'Centro de notificaciones', alertsTitle: 'Alertas del tenant', alertIcon: 'DV', alertTitle: 'Devolución pendiente de decisión',
+  /** PROPUESTO (spec section 5): the mockup draws no empty state for the alerts. */
+  noAlerts: 'No hay alertas pendientes.',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar', notFound: 'No se encontró la solicitud seleccionada.',
 } as const;
 
