@@ -40,6 +40,9 @@ import { RESCHEDULING_AREA, ReschedulingSource, ReschedulingWriter } from './res
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 import { MyPaymentsSource } from './my-payments/data/my-payments-source';
 import { MyPaymentsPageComponent } from './my-payments/pages/my-payments-page.component';
+import { REFUND_SCREENS, refundsAvailable } from './refunds/data/refunds-ports';
+import { RefundDetailPageComponent } from './refunds/pages/refund-detail-page.component';
+import { RefundRequestsPageComponent } from './refunds/pages/refund-requests-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -136,6 +139,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-014 mis-pagos.html, opened by Mis pagos of 17; read only, under the compact header of the panel (Volver al panel).
   { key: CLIENT_AREA.payments, label: 'Mis pagos', component: MyPaymentsPageComponent, audience: 'customer', clientChrome: 'panel', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
+  // HU-COM-016 admin-solicitudes-devolucion.html and admin-detalle-devolucion.html with { refund }, sub-screens of 13; Pagos stays active.
+  { key: REFUND_SCREENS.requests, label: 'Solicitudes de devolución', component: RefundRequestsPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
+  { key: REFUND_SCREENS.detail, label: 'Detalle de devolución', component: RefundDetailPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
