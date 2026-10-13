@@ -25,6 +25,7 @@ import { listSourceFiles, withoutComments } from './source-files';
 // HU-COM-014 (spec 014-, tasks T-01 to T-05): Mis pagos, the economic lines of Mis reservas and the panel contributions.
 // Demo store: RES-1842 belongs to the demo final customer (Laura Gómez), Pendiente de pago, Pago total · Transferencia, $850.000;
 // RES-1841 (Mateo Ríos), RES-1839 (Camila Ortega) and RES-1835 (Andrés Pinto) belong to other customers.
+// The demo customer also owns RES-1840, RES-1832, RES-1831 and RES-1830, the four situations of the mockup's demo data (app.js 2621-2626).
 const SUMMARY: CustomerPaymentSummary = {
   reservationId: 'RES-1842', tourName: 'Desierto de la Tatacoa al atardecer', departureAt: '2026-11-07', reservationStatus: 'PENDING_PAYMENT',
   paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER', proofStatus: 'EN_VALIDACION', financialStatus: 'SIN_PAGO', validatedCents: 0, balanceCents: 85_000_000,
@@ -104,6 +105,11 @@ describe('myPaymentsShowsTypeMethodProofSituationValidatedAndBalance', () => {
     const view = await pageWith([{ ...SUMMARY, reservationStatus: 'CANCELLED', paymentType: undefined, paymentMethod: undefined, proofStatus: 'SIN_COMPROBANTE', financialStatus: null }]);
     expect(view.text()).toContain('Tipo: Por definir Medio: Por definir Comprobante: Sin comprobante Situación financiera: No aplica por reserva cancelada');
   });
+
+  it('writes the departure as mis-pagos.html and Mis reservas do: date and time', async () => {
+    const view = await pageWith([{ ...SUMMARY, departureAt: '2026-09-18T06:30:00' }]);
+    expect(view.text()).toContain('RES-1842 Desierto de la Tatacoa al atardecer 18 sep 2026 · 06:30 Tipo: Pago total');
+  });
 });
 
 describe('myPaymentsTextsAreSpanishWithAccentsAndNoRawCodes', () => {
@@ -130,7 +136,7 @@ describe('anotherCustomersReservationCodeGivesTheEmptyState', () => {
 
   it('the demo source reads only the reservations of the session customer, and nothing for another standing', async () => {
     const mine = await firstValueFrom(demo().inject(MyPaymentsSource).listMine());
-    expect(mine.map((r) => r.reservationId)).toEqual(['RES-1842']);
+    expect(mine.map((r) => r.reservationId)).toEqual(['RES-1842', 'RES-1840', 'RES-1832', 'RES-1831', 'RES-1830']);
     TestBed.resetTestingModule();
     const visitor = await firstValueFrom(demo(['UNKNOWN']).inject(MyPaymentsSource).listMine());
     expect(visitor).toEqual([]);
@@ -154,11 +160,12 @@ describe('aPaymentRegisteredOn24AppearsInMyPayments', () => {
     expect(bed.inject(MyPaymentsSource)).toBeInstanceOf(DemoMyPayments);
     const before = (await firstValueFrom(bed.inject(MyPaymentsSource).listMine()))[0];
     expect(before).toEqual({ ...SUMMARY, proofStatus: 'SIN_COMPROBANTE' });
-    expect(await firstValueFrom(bed.inject(MyPaymentsSource).notices())).toEqual([]);
+    expect(await firstValueFrom(bed.inject(MyPaymentsSource).notices())).toEqual([{ reservationId: 'RES-1840', proofStatus: 'EN_VALIDACION' }]);
     await firstValueFrom(bed.inject(PaymentsWriter).register({ reservationId: 'RES-1842', amountCents: 85_000_000, proof: pdf() }, 'k-1'));
     const after = (await firstValueFrom(bed.inject(MyPaymentsSource).listMine()))[0];
     expect(after).toEqual(SUMMARY);
-    expect(await firstValueFrom(bed.inject(MyPaymentsSource).notices())).toEqual([{ reservationId: 'RES-1842', proofStatus: 'EN_VALIDACION' }]);
+    expect(await firstValueFrom(bed.inject(MyPaymentsSource).notices()))
+      .toEqual([{ reservationId: 'RES-1842', proofStatus: 'EN_VALIDACION' }, { reservationId: 'RES-1840', proofStatus: 'EN_VALIDACION' }]);
   });
 
   it('reads the cancellation cause the store holds, and no financial situation for a cancelled reservation without validated values', async () => {
@@ -200,6 +207,10 @@ describe('myReservationsCardAddsTheEconomicLines', () => {
       expect(flat(host.querySelector('.self-service-card-copy')?.textContent)).toContain(
         'Tipo de pago: Pago total · Medio de pago: Transferencia Estado del comprobante: Sin comprobante · Situación financiera: Sin pago Saldo: $850.000');
       expect(host.textContent).not.toMatch(/RES-1841|RES-1839/);
+      const cancelled = Array.from(host.querySelectorAll('.self-service-card-copy')).find((c) => c.textContent?.startsWith('RES-1831'))!;
+      expect(flat(cancelled.querySelector('p')?.textContent)).toBe('Salida: 22 sep 2026 · 06:30 · 2 viajeros');
+      expect(Array.from(cancelled.querySelectorAll('small'), (line) => flat(line.textContent))).toEqual(['Tipo de pago: Abono · Medio de pago: Transferencia',
+        'Estado del comprobante: Aprobado · Situación financiera: Parcial', 'Saldo: $0', 'Cancelada por falta de pago']);
     } finally { cleanup(); }
   });
 });
@@ -258,6 +269,11 @@ describe('demoContinuePaymentTargetIsThePendingReservationWithTheNearestDepartur
     });
     expect(await firstValueFrom(bed.inject(MyPaymentsSource).continuePaymentTarget()))
       .toEqual({ reservationId: 'RES-1861', paymentType: 'PARTIAL', amountCents: 20_000_000 });
+  });
+
+  it('skips an own pending reservation whose proof is already En validación, though it departs first (RES-1840)', async () => {
+    expect(await firstValueFrom(demo().inject(MyPaymentsSource).continuePaymentTarget()))
+      .toEqual({ reservationId: 'RES-1842', paymentType: 'TOTAL', amountCents: 85_000_000 });
   });
 });
 
@@ -324,12 +340,37 @@ describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;
       Object.defineProperty(proof, 'files', { value: [pdf()], configurable: true }); proof.dispatchEvent(new Event('change'));
       press(host, 'Enviar comprobante para validación');
-      await vi.waitFor(() => expect(flat(host.querySelector('.crp-panel-notices .crp-operator-panel')?.textContent))
-        .toBe('Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas.'));
+      await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-panel-notices .crp-operator-panel p'), (p) => flat(p.textContent))).toEqual([
+        'Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas.',
+        'Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas.']));
       press(host, 'MP Mis pagos Consulta pagos, abonos, saldos y soportes de tus reservas.');
       await vi.waitFor(() => expect(flat(host.querySelector('li.crp-my-payments-card')?.textContent)).toContain('Comprobante: En validación'));
       expect(flat(host.querySelector('li.crp-my-payments-card')?.textContent)).toContain('Valores validados: $0 Saldo pendiente: $850.000');
     } finally { cleanup(); }
+  });
+});
+
+describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
+  it('Mis pagos of the demo build shows Sin comprobante, En validación, Abono recibido, Pago completo and a cancelled reservation', async () => {
+    const { host, cleanup } = mountDemo();
+    try {
+      await vi.waitFor(() => expect(flat(host.querySelector('.crp-panel-notices .crp-operator-panel')?.textContent))
+        .toBe('Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas.'));
+      press(host, 'MP Mis pagos Consulta pagos, abonos, saldos y soportes de tus reservas.');
+      await vi.waitFor(() => expect(host.querySelectorAll('li.crp-my-payments-card')).toHaveLength(5));
+      expect(Array.from(host.querySelectorAll('li.crp-my-payments-card'), (c) => flat(c.textContent))).toEqual([
+        'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Tipo: Pago total Medio: Transferencia Comprobante: Sin comprobante Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $850.000',
+        'RES-1840 Ruta Andina 18 sep 2026 · 06:30 Tipo: Pago total Medio: Transferencia Comprobante: En validación Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $1.299.000',
+        'RES-1832 Tour de ejemplo 20 sep 2026 · 07:00 Tipo: Abono Medio: Transferencia Comprobante: Aprobado Situación financiera: Abono recibido Valores validados: $100.000 Saldo pendiente: $200.000',
+        'RES-1831 Ruta Andina 22 sep 2026 · 06:30 Tipo: Abono Medio: Transferencia Comprobante: Aprobado Situación financiera: Parcial Valores validados: $1.200.000 Saldo pendiente: $0',
+        'RES-1830 Ruta Andina 18 sep 2026 · 06:30 Tipo: Pago total Medio: Transferencia Comprobante: Aprobado Situación financiera: Pago completo Valores validados: $1.299.000 Saldo pendiente: $0',
+      ]);
+    } finally { cleanup(); }
+  });
+
+  it('the seeded Abono with a balance of another customer (RES-1839, Confirmada) reads Abono recibido, as the mockup rule (app.js 6879)', async () => {
+    const all = await firstValueFrom(demo().inject(ReservationsSource).list());
+    expect(all.find((r) => r.id === 'RES-1839')).toMatchObject({ status: 'CONFIRMADA', paymentType: 'PARTIAL', financialStatus: 'ABONO_RECIBIDO' });
   });
 });
 
