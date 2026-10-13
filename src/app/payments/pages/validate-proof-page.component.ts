@@ -7,7 +7,7 @@ import { PaymentMethodsSource } from '../../self-service-reservation/data/reserv
 import { focusFirstError } from '../../shared/focus';
 import { formatCop } from '../../shared/format';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
-import { formatMoney, parseMoney } from '../../shared/money';
+import { parseCop } from '../../shared/money';
 import { PageState } from '../../shared/page-state';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PaymentLabels, modalityOf, paymentLabels } from '../components/reservation-payments-block.component';
@@ -83,7 +83,7 @@ export class ValidateProofPageComponent {
     return s.kind === 'data' && saved && payment ? { kind: 'data', items: [{ ...s.items[0], reservation: saved, payment }] } : s;
   });
 
-  protected amountOf(p: ReservationPayment): string { return this.amount() ?? formatMoney(p.amountCents).replace(/\.00$/, ''); }
+  protected amountOf(p: ReservationPayment): string { return this.amount() ?? formatCop(p.amountCents); }
   protected value(event: Event): string { return (event.target as HTMLInputElement).value; }
 
   protected feedback(p: ReservationPayment): string {
@@ -93,7 +93,7 @@ export class ValidateProofPageComponent {
   }
   protected decide(r: Reservation, p: ReservationPayment, decision: Decision): void {
     if (this.pending() || this.done() || !this.canDecide) return;
-    const reason = this.reason().trim(), parsed = parseMoney(this.amountOf(p)), cents = parsed.kind === 'valid' ? parsed.minorUnits : 0;
+    const reason = this.reason().trim(), parsed = parseCop(this.amountOf(p)), cents = parsed.kind === 'valid' ? parsed.minorUnits : 0;
     const errors = { reason: reason ? undefined : this.t.reasonRequired, amount: decision === 'RECHAZADO' || cents > 0 ? undefined : this.common.amountRequired };
     this.errors.set(errors);
     if (errors.reason || errors.amount) { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
