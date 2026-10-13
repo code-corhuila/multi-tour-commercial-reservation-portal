@@ -520,6 +520,7 @@
 .crp-root .crp-proof-review-hero h2 { margin: var(--crp-space-1) 0 0; color: var(--crp-text); } .crp-root .crp-proof-review-hero > p { margin: 0; color: var(--crp-soft); line-height: 1.6; }
 .crp-root .crp-proof-review-wide { grid-column: 1 / -1; }
 @media (max-width: 720px) { .crp-root .crp-proof-review-hero { grid-template-columns: minmax(0, 1fr); } }
+.crp-root .crp-payment-followup-wide { grid-column: 1 / -1; display: grid; }
 
 /* HU-COM-014: mis-pagos.html (travel-dashboard-reservation-grid and -card), the card lines of Mis reservas and the notices of 17. */
 .crp-root .crp-my-payments h2 { margin: 0 0 14px; color: var(--crp-text); font-size: 1.35rem; }

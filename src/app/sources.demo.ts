@@ -17,6 +17,7 @@ import { paymentsDemoProviders } from './demo/payments-demo';
 import { reservationChangesDemoProviders } from './demo/reservation-changes-demo';
 import { refundsDemoProviders } from './demo/refunds-demo';
 import { proofReviewDemoProviders } from './demo/proof-review-demo';
+import { paymentFollowupDemoProviders } from './demo/payment-followup-demo';
 import { reservationModificationDemoProviders } from './demo/reservation-modification-demo';
 import { myPaymentsDemoProviders } from './demo/my-payments-demo';
 import { reschedulingDemoProviders } from './demo/rescheduling-demo';
@@ -47,6 +48,7 @@ function demoStores(): Provider[] {
     ...paymentsDemoProviders(),
     ...reservationChangesDemoProviders(),
     ...proofReviewDemoProviders(),
+    ...paymentFollowupDemoProviders(),
     ...reservationModificationDemoProviders(),
     ...myPaymentsDemoProviders(),
     ...refundsDemoProviders(),
