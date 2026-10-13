@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { ChangeDetectionStrategy, Component, Injector, Provider, Type, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, firstValueFrom } from 'rxjs';
@@ -102,13 +103,21 @@ describe('everyRefundScreenShowsOneOfTheFourStates', () => {
     expect(s.host.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No se encontró la solicitud seleccionada.');
   });
 
-  it('the alerts show loading, then error with a retry that asks again', async () => {
+  it('the alerts show loading, error with a retry that asks again, and the empty text when no default applies', async () => {
     const source = new ControllableSource();
     const s = await screen(RefundAlertsComponent, { source });
     expect(s.host.querySelector('[data-state="loading"]')).toBeTruthy();
     source.requests[0].error(new Error('down')); await s.settle();
     s.button('Reintentar')!.click(); await s.settle();
     expect(source.requests).toHaveLength(2);
+    source.requests[1].next((await firstValueFrom(demo().source.list())).filter((r) => !r.defaulted)); await s.settle();
+    expect(s.host.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay alertas pendientes.');
+  });
+
+  it('the treatment tag and the execution selects keep the compact size of the mockup', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8').replace(/\s+/g, ' ');
+    expect(css).toMatch(/\.crp-refunds-hero > \.crp-operator-status \{[^}]*align-self: start;[^}]*justify-self: end;/);
+    expect(css).toMatch(/\.crp-refunds-form select \{[^}]*font-size: 0\.86rem;/);
   });
 });
 
