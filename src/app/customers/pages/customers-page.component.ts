@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/model/catalog-item';
+import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { CustomerFormComponent } from '../components/customer-form.component';
 import { formatDate } from '../../shared/format';
 import { CUSTOMERS_COPY, PERSON_LABELS, SENSITIVE_LABELS, companionCount } from '../customers-copy';

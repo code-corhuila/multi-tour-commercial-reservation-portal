@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { parsePercentage } from '../src/app/discounts/model/percentage';
 import { openDiscountForm } from './discount-form.helpers';
 import { discountNamed } from './discount-rules-source.double';
 import { apiError } from './catalog-items-writer.double';
+import { parsePercentage } from '../src/app/shared/percentage';
 
 describe('percentage text becomes exact basis points', () => {
   it.each([['12.5', 1250], ['0.07', 7], ['0.29', 29], ['1.15', 115], ['100', 10000], ['0.01', 1]])('%s becomes %i', (text, units) => {

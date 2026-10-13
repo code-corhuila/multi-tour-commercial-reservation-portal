@@ -1,6 +1,6 @@
-import { formatMoney, parseMoney } from '../../catalog/model/money';
 import { formatCop } from '../../shared/format';
-import { parsePercentage } from './percentage';
+import { formatMoney, parseMoney } from '../../shared/money';
+import { parsePercentage } from '../../shared/percentage';
 /** PROPUESTO (DP-03): field names await the published API contract. */
 export type DiscountValue = { type: 'PERCENTAGE'; percentageBasisPoints: number; amountCents?: never }
   | { type: 'FIXED_AMOUNT'; amountCents: number; percentageBasisPoints?: never };

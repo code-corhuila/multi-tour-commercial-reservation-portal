@@ -5,7 +5,6 @@ import { listSourceFiles } from './source-files';
 // Adding or removing a file of src/ is a decision, so it must change this list in the same commit.
 const SPECIFIED_TREE = [
   'src/app/discounts/model/discount-rule.ts',
-  'src/app/discounts/model/percentage.ts',
   'src/app/discounts/data/discount-rules-writer.ts',
   'src/app/discounts/components/discount-rule-form.component.ts',
   'src/app/discounts/data/discount-rules-source.ts',
@@ -18,7 +17,12 @@ const SPECIFIED_TREE = [
   'src/app/portal-areas.ts',
   'src/app/portal-audience.ts',
   'src/app/portal-navigation.ts',
+  'src/app/shared/actor-context.ts',
   'src/app/shared/format.ts',
+  'src/app/shared/idempotency-keys.ts',
+  'src/app/shared/money.ts',
+  'src/app/shared/page-state.ts',
+  'src/app/shared/percentage.ts',
   'src/app/shared/portal-capabilities.ts',
   'src/app/shared/tour-photo.ts',
   'src/app/http/api-paths.ts',
@@ -30,7 +34,6 @@ const SPECIFIED_TREE = [
   'src/app/catalog/components/catalog-item-form.component.ts',
   'src/app/catalog/data/catalog-api.service.ts',
   'src/app/catalog/model/catalog-item.ts',
-  'src/app/catalog/model/money.ts',
   'src/app/catalog/pages/catalog-page.component.ts',
   'src/app/establishments/data/associated-establishments-source.ts',
   'src/app/establishments/data/associated-establishments-writer.ts',

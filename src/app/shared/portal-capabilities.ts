@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { ActorContext } from '../catalog/data/catalog-api.service';
+import { ActorContext } from './actor-context';
 
 /**
  * The only place of the portal where a role name appears (amendment 2026-10-13, HC-2, plan H-D2).

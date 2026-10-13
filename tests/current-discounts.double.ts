@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject } from 'rxjs';
-import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { AdditionalDiscountWriter } from '../src/app/current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../src/app/current-discounts/data/current-discounts-source';
 import { AdditionalDiscount, AdditionalDiscountCommand, ApplicableRule, PricedService } from '../src/app/current-discounts/model/current-discounts';
@@ -8,6 +7,8 @@ import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/page
 import { actorAs } from './actor-context.double';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import { ActorRole } from '../src/app/shared/portal-capabilities';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 /** A rule shaped as HU-COM-003's DiscountRule; in force all 2026 unless a test says otherwise. */
 export function ruleNamed(name: string, priority: number, overrides: Partial<ApplicableRule> = {}): ApplicableRule {

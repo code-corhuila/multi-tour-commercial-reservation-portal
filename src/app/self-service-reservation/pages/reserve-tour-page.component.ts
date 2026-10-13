@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/model/catalog-item';
+import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { DeparturesSource } from '../../reservations/data/departures-source';
-import { Departure, hasCapacity, openDepartures } from '../../reservations/model/reservation';
+import { Departure, hasCapacity, openDepartures } from '../../reservations/data/departures-source';
 import { formatCop, formatDate } from '../../shared/format';
 import { SelectionQuoteSource } from '../data/reservation-confirmation-ports';
 import { RESERVATION_FLOW, RESERVE_TEXT, SELF_SERVICE_TEXT, ReservationSelection, monthLabel, overCapacity, sameTour, travelers } from '../model/self-service-reservation';

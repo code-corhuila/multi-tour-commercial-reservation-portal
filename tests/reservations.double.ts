@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of } from 'rxjs';
-import { ActorContext, CatalogItemsSource, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { DeparturesSource } from '../src/app/reservations/data/departures-source';
 import { LeadCustomersSource, ReservationDiscounts } from '../src/app/reservations/data/reservation-integrations';
@@ -11,6 +11,8 @@ import { AppliedDiscount, CreateReservationCommand, Departure, Reservation } fro
 import { actorAs } from './actor-context.double';
 import { itemNamed } from './catalog-items-source.double';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 /** An invented departure: Programada, open, 10 seats, 5.00 of transport per person, unless a test says otherwise. */
 export const departureOf = (n: number, over: Partial<Departure> = {}): Departure => ({

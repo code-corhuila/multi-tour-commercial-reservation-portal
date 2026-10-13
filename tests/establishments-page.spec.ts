@@ -3,7 +3,6 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
 import { PORTAL_ROUTES } from '../src/app/catalog/catalog.routes';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { ESTABLISHMENT_TYPES, AssociatedEstablishment } from '../src/app/establishments/model/associated-establishment';
@@ -11,6 +10,7 @@ import { EstablishmentsPageComponent, EstablishmentsPageState } from '../src/app
 import { actorAs } from './actor-context.double';
 import { ControllableEstablishmentsSource, establishmentNamed } from './associated-establishments-source.double';
 import { ActorRole } from '../src/app/shared/portal-capabilities';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 async function openPage(role?: ActorRole, enabled = false) {
   const source = new ControllableEstablishmentsSource();
