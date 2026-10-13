@@ -535,3 +535,13 @@
 .crp-root .crp-my-payments-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--crp-soft); font-size: 0.88rem; }
 .crp-root crp-my-payments-card-lines { display: grid; gap: 6px; color: var(--crp-soft); }
 .crp-root crp-my-payments-notices p { margin: 0 0 8px; }
+/* HU-COM-016 refund screens (admin-solicitudes-devolucion.html hero, admin-detalle-devolucion.html list and forms). */
+.crp-root .crp-refunds-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: var(--crp-space-5); margin-bottom: 22px; padding: var(--crp-space-5) 28px;
+  border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-accent-soft); }
+.crp-root .crp-refunds-hero h2 { margin: var(--crp-space-1) 0 0; color: var(--crp-text); } .crp-root .crp-refunds-hero > p { margin: 0; color: var(--crp-soft); line-height: 1.6; }
+.crp-root .crp-refunds-list { display: grid; gap: 11px; margin: 16px 0 0; }
+.crp-root .crp-refunds-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--crp-line); }
+.crp-root .crp-refunds-list div:last-child { padding-bottom: 0; border-bottom: 0; } .crp-root .crp-refunds-list dt { color: var(--crp-soft); font-size: 0.77rem; } .crp-root .crp-refunds-list dd { margin: 0; color: var(--crp-text); font-size: 0.82rem; font-weight: 700; text-align: right; }
+.crp-root .crp-refunds-form { display: grid; gap: var(--crp-space-3); } .crp-root .crp-refunds-wide { grid-column: 1 / -1; } .crp-root .crp-refunds-feedback { margin: 0; color: var(--crp-soft); font-size: 0.8rem; line-height: 1.45; } .crp-root .crp-refunds-feedback.crp-is-valid { color: var(--crp-success); font-weight: 700; }
+.crp-root .crp-refunds-feedback[role="alert"], .crp-root .crp-refunds-error { color: var(--crp-error); }
+@media (max-width: 720px) { .crp-root .crp-refunds-hero { grid-template-columns: minmax(0, 1fr); } }
