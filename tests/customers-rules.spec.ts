@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { firstValueFrom } from 'rxjs';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { duplicateDocument, missingHighRiskData, validatePerson } from '../src/app/customers/model/customer-group';
-import { DemoCustomersStore, DemoCustomersWriter, demoSensitiveDataAccess } from '../src/app/demo/customers-demo';
+import { DemoCustomersStore, DemoCustomersWriter } from '../src/app/demo/customers-demo';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
 import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
+import { sensitiveDataAccessFor } from '../src/app/customers/data/customers-source';
 import { groupWith, personNamed } from './customers.double';
 
 const complete = { informedConsent: 'true', bloodType: 'O+', emergencyContact: 'Contacto Ficticio 301', physicalRestrictions: 'Ninguna' };
@@ -83,7 +84,8 @@ describe('customers demo store', () => {
     const withCompanion = await firstValueFrom(writer.addCompanion(first.groupId, { fullName: 'Otra Inventada', document: 'DEMO-10', contact: 'o@example.test', birthDate: '2001-01-01' }, 'k-2'));
     expect(withCompanion.companions).toHaveLength(1);
     expect(await firstValueFrom(store.current())).toEqual(withCompanion);
-    expect(demoSensitiveDataAccess(['TENANT_ADMINISTRATOR']).granted).toBe(false);
+    expect(sensitiveDataAccessFor(['TENANT_ADMINISTRATOR']).granted).toBe(false);
+    expect(sensitiveDataAccessFor(['TENANT_ADMINISTRATOR', 'CONSULT_SENSITIVE_DATA']).granted).toBe(true);
   });
 });
 
