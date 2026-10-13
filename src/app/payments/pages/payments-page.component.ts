@@ -23,7 +23,7 @@ type State = PageState<PendingProofs & { labels: PaymentLabels }>;
     <section class="crp-proof-review-hero"><div><p class="crp-operator-eyebrow">{{ t.heroEyebrow }}</p><h2>{{ t.heroTitle }}</h2></div><p>{{ t.heroCopy }}</p></section>
     @let s = state();
     <section class="crp-operator-panel"><div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ t.listEyebrow }}</p><h2>{{ t.listTitle }}</h2></div>
-        @if (s.kind === 'data') { <span class="crp-operator-status crp-is-pending">{{ t.pending(s.items[0].rows.length) }}</span> }</div>
+        @if (s.kind === 'data' || s.kind === 'empty') { <span class="crp-operator-status crp-is-pending">{{ t.pending(s.kind === 'data' ? s.items[0].rows.length : 0) }}</span> }</div>
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ common.loading }}</p> }
         @case ('error') { <div role="alert" data-state="error">{{ common.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></div> }
