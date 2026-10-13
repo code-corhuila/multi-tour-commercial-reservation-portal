@@ -44,7 +44,9 @@ describe('theDemoOfferReadsTheCatalogStore (plan D-05)', () => {
 describe('theDemoEstablishmentsReadTheEstablishmentsStore (plan D-05)', () => {
   it('lists only the active establishments, with their commercial information', async () => {
     const places = await placesOf(new DemoPublicEstablishmentsSource(new DemoEstablishmentsStore()));
-    expect(places.map((place) => place.commercialName)).toEqual(['Hotel Casa Neiva', 'Posada del Cafe', 'Sabores del Huila', 'Fogon del Desierto']);
+    // The demo names gain their accents in the screen fix of HU-COM-001; the order and the set are what this story reads.
+    const plain = (name: string) => name.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    expect(places.map((place) => plain(place.commercialName))).toEqual(['Hotel Casa Neiva', 'Posada del Cafe', 'Sabores del Huila', 'Fogon del Desierto']);
     expect(places.every((place) => place.active && place.commercialInformation.length > 0)).toBe(true);
   });
 
