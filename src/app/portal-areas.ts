@@ -1,14 +1,10 @@
 import { InjectionToken, Injector, Type } from '@angular/core';
-import { ActorContext } from './catalog/data/catalog-api.service';
-import { ActorRole } from './catalog/model/catalog-item';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
 import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
 import { CustomersSource } from './customers/data/customers-source';
-import { customersCapabilitiesOf } from './customers/model/customer-group';
 import { CustomersPageComponent } from './customers/pages/customers-page.component';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
-import { canManageDiscounts } from './discounts/model/discount-rule';
 import { DiscountsPageComponent } from './discounts/pages/discounts-page.component';
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from './public-offer/pages/establishments-offer-page.component';
@@ -23,6 +19,7 @@ import { MyReservationsPageComponent } from './self-service-reservation/pages/my
 import { ReserveTourPageComponent } from './self-service-reservation/pages/reserve-tour-page.component';
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
+import { PortalCapabilities } from './shared/portal-capabilities';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -52,7 +49,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
-    isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
+    isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && injector.get(DiscountRulesSource, null) !== null,
   },
   // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
   { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
@@ -64,7 +61,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   {
     key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
-    isAvailable: (injector) => customersCapabilitiesOf(injector.get(ActorContext).role).canRead && injector.get(CustomersSource, null) !== null,
+    isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && injector.get(CustomersSource, null) !== null,
   },
   // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
   { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
@@ -98,14 +95,4 @@ export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer' | 'panel
   account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }],
   panel: [{ key: CLIENT_AREA.tours, label: 'Ver catálogo' }, { key: CLIENT_AREA.panel, label: 'Volver al panel' }],
   footer: [{ key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
-});
-
-/** The role line under the brand. */
-export const ROLE_LABELS: Readonly<Record<ActorRole, string>> = Object.freeze({
-  TENANT_ADMINISTRATOR: 'Administrador del tenant',
-  OPERATIONAL_COLLABORATOR: 'Colaborador operativo',
-  MANAGER: 'Gerente',
-  ANALYST: 'Analista',
-  ACCOUNTANT: 'Contador',
-  READ_ONLY: 'Solo lectura',
 });

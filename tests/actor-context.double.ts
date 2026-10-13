@@ -1,5 +1,5 @@
 import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
-import { ActorRole } from '../src/app/catalog/model/catalog-item';
+import { ActorRole } from '../src/app/shared/portal-capabilities';
 
 /**
  * A test actor. It acts as one internal role (DP-PT-06 is open: how an account with several roles

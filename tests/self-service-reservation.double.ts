@@ -9,12 +9,12 @@ import {
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
   CustomerReservation,
-  CustomerStanding,
   PaymentMethod,
   ReservationSelection,
   SelectionQuote,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ApiError } from '../src/app/shell-contract';
+import { CustomerStanding } from '../src/app/shared/portal-capabilities';
 
 type Pending<T> = { reply: (value: T) => void; fail: (error?: unknown) => void; isOpen: () => boolean };
 

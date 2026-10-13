@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
-import { ActorContext } from '../../catalog/data/catalog-api.service';
 import { formatDate } from '../../shared/format';
 import { ReservationFormComponent } from '../components/reservation-form.component';
 import { ReservationViewComponent } from '../components/reservation-view.component';
 import { ReservationsSource } from '../data/reservations-source';
-import { RESERVATION_TEXT, Reservation, STATUS_LABEL, canCreateReservations, money, travelers } from '../model/reservation';
+import { RESERVATION_TEXT, Reservation, STATUS_LABEL, money, travelers } from '../model/reservation';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 
 type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly Reservation[] };
 type View = { kind: 'list' | 'create' } | { kind: 'created' | 'detail'; reservation: Reservation };
@@ -57,7 +57,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
   `,
 })
 export class ReservationsPageComponent {
-  protected readonly canCreate = canCreateReservations(inject(ActorContext));
+  protected readonly canCreate = inject(PortalCapabilities).canCreateReservations();
   private readonly source = inject(ReservationsSource);
   protected readonly text = RESERVATION_TEXT;
   protected readonly money = money;

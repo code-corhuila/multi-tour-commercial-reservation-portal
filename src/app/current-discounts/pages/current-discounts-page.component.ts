@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
-import { ActorContext } from '../../catalog/data/catalog-api.service';
 import { formatDate } from '../../shared/format';
 import { AdditionalDiscountFormComponent } from '../components/additional-discount-form.component';
 import { CurrentDiscountsValueComponent } from '../components/current-discounts-value.component';
 import { CurrentDiscountsSource } from '../data/current-discounts-source';
-import { AdditionalDiscount, CURRENT_DISCOUNTS_TEXT, PricedService, applyDiscounts, canAuthorizeAdditionalDiscount } from '../model/current-discounts';
+import { AdditionalDiscount, CURRENT_DISCOUNTS_TEXT, PricedService, applyDiscounts } from '../model/current-discounts';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; items: readonly PricedService[] };
 
 /**
@@ -62,7 +62,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
   `,
 })
 export class CurrentDiscountsPageComponent {
-  protected readonly mayAuthorize = canAuthorizeAdditionalDiscount(inject(ActorContext));
+  protected readonly mayAuthorize = inject(PortalCapabilities).canAuthorizeAdditionalDiscount();
   private readonly source = inject(CurrentDiscountsSource);
   protected readonly text = CURRENT_DISCOUNTS_TEXT;
   protected readonly formatDate = formatDate;
