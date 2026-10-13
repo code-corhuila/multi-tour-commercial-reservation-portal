@@ -14,7 +14,10 @@ import {
   PortalSlot, PortalSlotOutlet, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS, RESERVATION_DETAIL_ACTIONS, RESERVATION_DETAIL_BLOCKS, RESERVATION_ROW_ACTIONS, TRANSFER_PAYMENT_LINES, contribute,
 } from '../src/app/shared/portal-slots';
 import { actorAs } from './actor-context.double';
-import { reservationOf } from './reservations.double';
+import { reservationOf, reservationProviders, screenOf } from './reservations.double';
+import { of } from 'rxjs';
+import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
+import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
 
 afterEach(() => TestBed.resetTestingModule());
 
@@ -208,5 +211,29 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     const card = host.querySelector('.self-service-card')!;
     expect(card.lastElementChild?.tagName.toLowerCase()).toBe('crp-test-block');
     expect(card.lastElementChild?.textContent?.trim()).toBe(`Bloque ${card.querySelector('strong')?.textContent?.split(' · ')[0]}`);
+  });
+});
+
+// A sub-screen opened from 10A (13 of 009, the change screen of 013) goes back with PortalNavigation.open('reservations', { reservation }).
+describe('reservationsReopenTheDetailAReturnNames', () => {
+  const listed = () => new (class extends ReservationsSource { override list() { return of([reservationOf('RES-6'), reservationOf('RES-7')]); } })();
+
+  it('opens 10A of the reservation named by the navigation parameters, once listed', async () => {
+    const navigation = new PortalNavigation();
+    navigation.register(['reservations']);
+    navigation.open('reservations', { reservation: 'RES-7' });
+    const { element, settle } = await screenOf(ReservationsPageComponent, [...reservationProviders({ reservations: listed() }), { provide: PortalNavigation, useValue: navigation }]);
+    await settle();
+    expect(element.querySelector('.crp-page-header-title')?.textContent?.trim()).toBe('Detalle de reserva');
+    expect(element.querySelector('.crp-reservation-hero')?.textContent).toContain('#RES-7');
+  });
+
+  it('shows the list when no reservation is named or the named one is not listed', async () => {
+    const navigation = new PortalNavigation();
+    navigation.register(['reservations']);
+    navigation.open('reservations', { reservation: 'RES-404' });
+    const { element, settle } = await screenOf(ReservationsPageComponent, [...reservationProviders({ reservations: listed() }), { provide: PortalNavigation, useValue: navigation }]);
+    await settle();
+    expect(element.querySelector('.crp-page-header-title')?.textContent?.trim()).toBe('Reservas');
   });
 });
