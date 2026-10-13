@@ -35,7 +35,7 @@ export function startLine(iso: string): string {
 
 /** Spanish copy of 24A (propuesta-reprogramacion.html, app.js 2701-2726), of mis-reservas.html (app.js 2680-2694) and of 17 (app.js 2877). */
 export const PROPOSAL_COPY = {
-  brand: 'Multitour', myReservations: 'Mis reservas', eyebrow: 'Portal cliente', title: 'Propuesta de reprogramación',
+  brand: 'Multi Tour', myReservations: 'Mis reservas', eyebrow: 'Portal cliente', title: 'Propuesta de reprogramación',
   desc: 'La salida original fue cancelada por una causa no atribuible al cliente. Revisa la alternativa y responde dentro del plazo.',
   reservation: 'Reserva', original: 'Salida original cancelada', proposed: 'Salida propuesta', travelers: 'Viajeros',
   people: (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`,
