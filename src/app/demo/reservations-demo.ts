@@ -12,6 +12,8 @@ import { applyDiscounts } from './discount-calculation';
 import { DemoDiscountRulesStore } from './discounts-demo';
 import { DemoReservationQuotes } from './reservation-quote-demo';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
+import { RESCHEDULING_DEPARTURES, RESCHEDULING_SEEDS } from './rescheduling-seeds';
+import type { CreditBalance } from '../credit-balance/data/credit-balance-ports';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
 const CONDITIONS = 'Changes up to 72 hours before departure; cancellation as the tour policy states (demo text, DP-RC4).';
@@ -48,6 +50,20 @@ const inState = (id: string, status: Reservation['status'], over: Partial<Reserv
 SEEDED.push(inState('RES-1839', 'CONFIRMADA', { leadCustomerName: 'Camila Ortega (demo)', validatedCents: 30_000_000, balanceCents: 11_800_000, financialStatus: 'ABONO_RECIBIDO' }),
   inState('RES-1838', 'EN_EJECUCION'), inState('RES-1837', 'FINALIZADA'), inState('RES-1836', 'CANCELADA'),
   inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true }));
+/** HU-COM-010 (Pagos pendientes, AC-PV.2, AC-PV.4, AC-PV.5): two $300.000 Abono · Transferencia reservations with a proof En validación. */
+const proof = (id: string, amountCents: number, presentedAt: string, over: Partial<ReservationPayment> = {}): ReservationPayment =>
+  ({ id, method: 'BANK_TRANSFER', amountCents, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)', presentedAt, ...over });
+const ofAbono = (id: string, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, departureId: undefined, paymentType: 'PARTIAL', seatHeld: true, balanceCents: 30_000_000, quote: { services: [{ name: 'Guianza (demo)', cents: 30_000_000 }], transportCents: 0, projectedCents: 30_000_000, discounts: [], discountCents: 0, finalCents: 30_000_000 }, ...over });
+SEEDED.push(ofAbono('RES-1834', { leadCustomerName: 'Juliana Cruz (demo)', status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', validatedCents: 10_000_000, balanceCents: 20_000_000,
+  payments: [proof('RES-1834-P1', 10_000_000, '2026-10-10T09:00:00-05:00', { proofStatus: 'APROBADO', review: { decision: 'APROBADO', verifiedAmountCents: 10_000_000,
+    reason: 'Soporte legible (demo)', actorLabel: 'Administrador del tenant (demo)', decidedAt: '2026-10-10T15:00:00.000Z' } }), proof('RES-1834-P2', 5_000_000, '2026-10-12T09:00:00-05:00')] }),
+  ofAbono('RES-1833', { leadCustomerName: 'Sofía Herrera (demo)', payments: [proof('RES-1833-P1', 10_000_000, '2026-10-13T09:00:00-05:00')] }));
+/** HU-COM-018 (spec section 6): the affected reservations of the seeded cancelled departure. */
+SEEDED.push(...RESCHEDULING_SEEDS);
+/** HU-COM-017 AC-CB.3 (tasks T-07): Confirmada with $300.000 pending and a $500.000 proof En validación; approving it leaves a $200.000 excess. */
+SEEDED.push(inState('RES-1822', 'CONFIRMADA', { leadCustomerName: 'Paula Rojas (demo)', paymentType: 'PARTIAL', paymentMethod: 'BANK_TRANSFER', validatedCents: 10_000_000, balanceCents: 30_000_000,
+  financialStatus: 'PARCIAL', quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 0, projectedCents: 40_000_000, discounts: [], discountCents: 0, finalCents: 40_000_000 },
+  payments: [{ id: 'RES-1822-P1', method: 'BANK_TRANSFER', amountCents: 50_000_000, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)' }] }));
 
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [
@@ -79,6 +95,8 @@ export class DemoReservationDiscounts extends ReservationDiscounts {
 export class DemoReservationsStore extends ReservationsSource {
   /** HU-COM-012 plan D-02: the modification traces of every reservation, in the same store. */
   readonly modifications: ModificationTrace[] = [];
+  /** HU-COM-017 plan D-02: the credit balance lines of these reservations. */
+  creditBalances: readonly CreditBalance[] = [];
   constructor(public items: Reservation[] = []) { super(); }
   override list(): Observable<readonly Reservation[]> { return of([...this.items]); }
 }

@@ -55,19 +55,23 @@ interface Row {
   readonly followUp: boolean;
   /** HU-COM-016: RBAC row Authorize a refund (the Administrator); executing an authorized one also falls to the Collaborator (AC2, DP-RF5). */
   readonly refund: 'authorize' | 'execute' | 'never';
+  /** HU-COM-018 D-07: propose a new departure or cancel with 100 % refund (story actor line; DP-RP1, DP-RP2 open). */
+  readonly proposeRescheduling: boolean;
+  /** HU-COM-017 DP-CB3: decide the 24-hour treatment as a credit balance; no RBAC row yet, the Administrator only. */
+  readonly registerCreditBalance: boolean;
   /** RF-018 excludes the Collaborator even when the catalog permits descriptive edits. */
   readonly readEstablishments: boolean;
 }
 
 const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false, changeReservation: false, decideProof: 'never', followUp: false,
-  refund: 'never', proposeRescheduling: false } as const;
+  refund: 'never', proposeRescheduling: false, registerCreditBalance: false } as const;
 const READER: Row = { ...NONE, label: 'Solo lectura', operator: true, catalog: 'read', customers: 'read', readEstablishments: true };
 
 /** Today's nine matrices, moved row by row; no decision changed in the move. */
 const TABLE: Readonly<Record<ActorRole, Row>> = Object.freeze({
   TENANT_ADMINISTRATOR: { label: 'Administrador del tenant', operator: true, catalog: 'all', customers: 'register', sensitiveData: true,
     manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'always', followUp: true, refund: 'authorize',
-    readEstablishments: true, proposeRescheduling: true },
+    readEstablishments: true, proposeRescheduling: true, registerCreditBalance: true },
   OPERATIONAL_COLLABORATOR: { ...NONE, label: 'Colaborador operativo', operator: true, catalog: 'description-if-enabled', customers: 'register',
     sensitiveData: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'if-granted', followUp: true, refund: 'execute',
     readEstablishments: false, proposeRescheduling: true },
@@ -126,6 +130,7 @@ export class PortalCapabilities {
   canDecideProof(): boolean { return this.row.decideProof === 'always' || (this.row.decideProof === 'if-granted' && this.collaboratorMayValidateProofs); }
   canFollowUp(): boolean { return this.row.followUp; }
   canProposeRescheduling(): boolean { return this.row.proposeRescheduling; }
+  canRegisterCreditBalance(): boolean { return this.row.registerCreditBalance; }
   canReadEstablishments(): boolean { return this.row.readEstablishments && this.catalog().canRead; }
   canRegisterEstablishments(): boolean { return this.catalog().canRegister; }
   /** The operator layout; otherwise the customer layout (a final customer or a visitor). */

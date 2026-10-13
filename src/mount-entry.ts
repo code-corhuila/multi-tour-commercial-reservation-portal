@@ -15,7 +15,8 @@ import { CHECKOUT_BLOCKS, OPERATOR_NOTIFICATIONS, PAYMENTS_PAGE_PANELS, RESERVAT
 import { REFUND_DETAIL_LINK } from './app/refunds/components/refund-link.component';
 import { REFUND_ALERTS } from './app/refunds/components/refund-alerts.component';
 import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
-import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
+import { REFUND_TREATMENT_ACTIONS, RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
+import { CREDIT_BALANCE_TREATMENT_ACTION } from './app/credit-balance/components/credit-balance-action.component';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
@@ -98,6 +99,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       RESCHEDULING_ENTRY,
       // HU-COM-018: Salida propuesta, the mark and Responder propuesta of Mis reservas, and the notice of 17; only with the proposals port.
       ...RESCHEDULING_CONTRIBUTIONS,
+      // HU-COM-017: "Registrar saldo a favor del 100 %" on the treatment page of HU-COM-016, only with the credit balance ports.
+      contribute(REFUND_TREATMENT_ACTIONS, CREDIT_BALANCE_TREATMENT_ACTION),
     ],
   }).then((created) => {
     app = created;
