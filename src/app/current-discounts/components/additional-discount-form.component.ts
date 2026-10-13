@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { defer, finalize } from 'rxjs';
-import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
+import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
 import { AdditionalDiscount, AdditionalDraft, CURRENT_DISCOUNTS_TEXT, EMPTY_ADDITIONAL, additionalCommand,
-  canAuthorizeAdditionalDiscount, validateAdditional } from '../model/current-discounts';
+  validateAdditional } from '../model/current-discounts';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 let formSequence = 0;
 
 /** T-03: value, type and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
@@ -42,7 +43,7 @@ let formSequence = 0;
 export class AdditionalDiscountFormComponent {
   readonly serviceId = input.required<string>();
   readonly saved = output<AdditionalDiscount>();
-  protected readonly allowed = canAuthorizeAdditionalDiscount(inject(ActorContext));
+  protected readonly allowed = inject(PortalCapabilities).canAuthorizeAdditionalDiscount();
   private readonly writer = inject(AdditionalDiscountWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
   private key = this.keys.generate(); private fingerprint: string | null = null;

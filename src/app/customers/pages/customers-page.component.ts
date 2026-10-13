@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { ActorContext, CatalogItemsSource } from '../../catalog/data/catalog-api.service';
+import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
 import { CatalogItem } from '../../catalog/model/catalog-item';
 import { CustomerFormComponent } from '../components/customer-form.component';
 import { formatDate } from '../../shared/format';
 import { CUSTOMERS_COPY, PERSON_LABELS, SENSITIVE_LABELS, companionCount } from '../customers-copy';
 import { CustomersSource, SensitiveDataAccess } from '../data/customers-source';
-import { CustomerGroup, HighRiskField, LEAD_FIELDS, PERSON_FIELDS, Person, canViewSensitiveData, customersCapabilitiesOf } from '../model/customer-group';
+import { CustomerGroup, HighRiskField, LEAD_FIELDS, PERSON_FIELDS, Person } from '../model/customer-group';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 
 type Ready = { kind: 'ready'; group: CustomerGroup | null; activities: readonly CatalogItem[] };
 export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready;
@@ -69,9 +70,9 @@ export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready
   `,
 })
 export class CustomersPageComponent {
-  private readonly role = inject(ActorContext).role;
-  protected readonly caps = customersCapabilitiesOf(this.role);
-  protected readonly seeSensitive = canViewSensitiveData(this.role, inject(SensitiveDataAccess).granted);
+  private readonly capabilities = inject(PortalCapabilities);
+  protected readonly caps = this.capabilities.customers();
+  protected readonly seeSensitive = this.capabilities.canViewSensitiveData(inject(SensitiveDataAccess).granted);
   private readonly source = inject(CustomersSource); private readonly catalog = inject(CatalogItemsSource);
   protected readonly text = CUSTOMERS_COPY; protected readonly labels = PERSON_LABELS; protected readonly sensitive = SENSITIVE_LABELS;
   protected readonly leadColumns = LEAD_FIELDS; protected readonly companionColumns = PERSON_FIELDS; protected readonly count = companionCount;

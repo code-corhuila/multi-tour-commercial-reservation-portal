@@ -11,13 +11,11 @@ import {
   SelectionQuoteSource,
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
-  CustomerStanding,
   RESERVATION_FLOW,
   ReservationSelection,
   SELF_SERVICE_TEXT as T,
   selectionFromParams,
   selectionFromQuery,
-  standingOf,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
@@ -37,6 +35,7 @@ import {
   SELECTION,
   selectionAt,
 } from './self-service-reservation.double';
+import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
@@ -104,10 +103,10 @@ describe('theSelectionTravelsInTheUrl (DP-RS1)', () => {
 
 describe('theCustomerStandingComesFromTheSessionRoles (DP-RS2)', () => {
   it('is a final customer, no session, or any other role', () => {
-    expect(standingOf(['FINAL_CUSTOMER'])).toBe('FINAL_CUSTOMER');
-    expect(standingOf([])).toBe('NO_SESSION');
-    expect(standingOf(['TENANT_ADMINISTRATOR'])).toBe('OTHER');
-    expect(standingOf(['SOMETHING_ELSE'])).toBe('OTHER');
+    expect(customerStandingOf(['FINAL_CUSTOMER'])).toBe('FINAL_CUSTOMER');
+    expect(customerStandingOf([])).toBe('NO_SESSION');
+    expect(customerStandingOf(['TENANT_ADMINISTRATOR'])).toBe('OTHER');
+    expect(customerStandingOf(['SOMETHING_ELSE'])).toBe('OTHER');
   });
   it('asks the container to sign in through the function it is given, and fails closed by default', () => {
     let asked = 0;
@@ -373,8 +372,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
-    expect(rule('.crp-root .crp-finish-content')).toMatch(/width:\s*min\(100%, 1100px\);\s*margin:\s*0 auto;\s*padding:\s*24px 0 144px;/);
-    expect(css).toMatch(/@media \(max-width: 760px\) \{[^@]*\.crp-root \.crp-finish-content \{ padding-bottom: 210px; \}/);
+    // The column and its bar without the 144px/210px room for a fixed bar (001- amendment HC-3): portal-column.spec.ts.
     expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 1\.6fr\) minmax\(260px, 1fr\)/);
   });
   it('Mis reservas uses the client classes in every state, never the operator ones', async () => {

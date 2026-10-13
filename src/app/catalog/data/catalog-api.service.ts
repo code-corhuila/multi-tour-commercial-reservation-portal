@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  ActorRole,
   CatalogItem,
   CreateCatalogItemCommand,
   UpdateCatalogItemCommand,
   UpdateDescriptionCommand,
 } from '../model/catalog-item';
+import { ActorRole, FAIL_CLOSED_ROLE } from '../../shared/portal-capabilities';
 
 /**
  * What the pages need from the catalog service. Abstract on purpose: the implementation over the
@@ -53,7 +53,7 @@ export abstract class ActorContext {
 
 /** The default actor: reads and changes nothing. collaboratorMayEditDescription stays false. */
 class ReadOnlyActor extends ActorContext {
-  override readonly role = 'READ_ONLY' as const;
+  override readonly role = FAIL_CLOSED_ROLE;
 }
 
 /**

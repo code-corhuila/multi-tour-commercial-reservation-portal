@@ -3,11 +3,11 @@ import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
-import { ActorRole, capabilitiesOf } from '../src/app/catalog/model/catalog-item';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
 import { ControllableCatalogItemsWriter } from './catalog-items-writer.double';
+import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
 
 // DP-PT-06 is open: an account with several roles has no defined way to choose which it acts as.
 // Every actor below acts as ONE internal role. The screen is convenience, not authority (D-09):
@@ -145,18 +145,18 @@ describe('capabilitiesOfTheRoleMatrix', () => {
   const none = { canRegister: false, canEditCommercialFields: false, canEditDescription: false, canChangeStatus: false, canRead: false, isDenied: false };
 
   it('gives the Administrator everything', () => {
-    expect(capabilitiesOf('TENANT_ADMINISTRATOR', false)).toEqual(all);
+    expect(PortalCapabilities.for('TENANT_ADMINISTRATOR', false).catalog()).toEqual(all);
   });
 
   it('gives the Collaborator descriptive edits only when the tenant enables them, and never rates, status or creation', () => {
-    expect(capabilitiesOf('OPERATIONAL_COLLABORATOR', true)).toEqual({ ...none, canRead: true, canEditDescription: true });
-    expect(capabilitiesOf('OPERATIONAL_COLLABORATOR', false)).toEqual({ ...none, canRead: true });
+    expect(PortalCapabilities.for('OPERATIONAL_COLLABORATOR', true).catalog()).toEqual({ ...none, canRead: true, canEditDescription: true });
+    expect(PortalCapabilities.for('OPERATIONAL_COLLABORATOR', false).catalog()).toEqual({ ...none, canRead: true });
   });
 
   it('ignores the tenant flag for every other role', () => {
-    expect(capabilitiesOf('MANAGER', true)).toEqual({ ...none, canRead: true });
-    expect(capabilitiesOf('ANALYST', true)).toEqual({ ...none, canRead: true });
-    expect(capabilitiesOf('ACCOUNTANT', true)).toEqual({ ...none, isDenied: true });
+    expect(PortalCapabilities.for('MANAGER', true).catalog()).toEqual({ ...none, canRead: true });
+    expect(PortalCapabilities.for('ANALYST', true).catalog()).toEqual({ ...none, canRead: true });
+    expect(PortalCapabilities.for('ACCOUNTANT', true).catalog()).toEqual({ ...none, isDenied: true });
   });
 });
 

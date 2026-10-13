@@ -2,10 +2,11 @@ import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core
 import { provideRouter } from '@angular/router';
 import { PORTAL_ROUTES } from './catalog/catalog.routes';
 import { ActorContext } from './catalog/data/catalog-api.service';
+import { DEVELOPMENT_ROLE } from './shared/portal-capabilities';
 
 /** Local development only: the catalog fails closed (READ_ONLY) unless an actor is provided. */
 class DevelopmentAdministrator extends ActorContext {
-  override readonly role = 'TENANT_ADMINISTRATOR' as const;
+  override readonly role = DEVELOPMENT_ROLE;
 }
 
 /**

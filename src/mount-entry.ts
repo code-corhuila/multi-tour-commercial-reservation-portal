@@ -1,7 +1,6 @@
 import { ApplicationRef, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { ActorContext } from './app/catalog/data/catalog-api.service';
-import { ActorRole } from './app/catalog/model/catalog-item';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
@@ -10,13 +9,10 @@ import { customersDemoProviders } from './app/demo/customers-demo';
 import { reservationDemoProviders } from './app/demo/reservations-demo';
 import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
+import { roleOf } from './app/shared/portal-capabilities';
 
-const KNOWN_ROLES: readonly string[] = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT'];
-
-/** DP-PT-06: one role is assumed, the first known one; anything else fails closed to READ_ONLY. */
-export function roleOf(roles: readonly string[]): ActorRole {
-  return (roles.find((role) => KNOWN_ROLES.includes(role)) as ActorRole | undefined) ?? 'READ_ONLY';
-}
+/** Portals mounted now; the stylesheet leaves with the last one (001- amendment HC-5, plan H-D4). */
+let mounted = 0;
 
 /** One <link> to the portal CSS, next to this module, however many times the portal is mounted. */
 export function ensureStylesheet(): void {
@@ -31,6 +27,7 @@ export function ensureStylesheet(): void {
 /** ADR-006 F4 contract. Sources come from ./app/sources (apiClient by default, in memory in the demo build). */
 export function mount(element: HTMLElement, props: MountProps): () => void {
   ensureStylesheet();
+  mounted += 1;
   element.classList.add('crp-root');
   const actor = new (class extends ActorContext { override readonly role = roleOf(props.session.roles); })();
   let app: ApplicationRef | undefined;
@@ -39,6 +36,8 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
     app?.destroy();  // no-op when never created
     element.replaceChildren();
     element.classList.remove('crp-root');
+    mounted -= 1;
+    if (mounted === 0) document.querySelector('link[data-crp-stylesheet]')?.remove();
   };
   createApplication({
     providers: [
