@@ -45,7 +45,7 @@ export class DemoPaymentMethods extends PaymentMethodsSource {
   ];
   override listEnabled(): Observable<readonly PaymentMethod[]> { return of(this.methods); }
   override listTypes(): Observable<readonly PaymentMethod[]> { return of([{ code: 'TOTAL', label: 'Pago total' }, { code: 'PARTIAL', label: 'Abono' }]); }
-  /** The invented account of pago-transferencia.html. */
+  /** Taken literally from pago-transferencia.html (24) as a placeholder; a configurable real account stays NO DEFINIDO (DP-PY4). */
   override bankAccount() { return of({ bank: 'Banco de ejemplo', accountType: 'Ahorros', accountNumber: '000-000-000', holder: 'Travesía Natural' }); }
 }
 
