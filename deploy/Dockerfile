@@ -5,7 +5,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 # The module the container mounts (ADR-006 F4), not the standalone build (amendment 2026-10-13, HC-6).
-RUN npm run build:module
+# Demo by default: until the API of every story is connected the delivered portal shows the in-memory
+# demo data instead of empty screens (declared debt). The real module: --build-arg PORTAL_BUILD=module.
+ARG PORTAL_BUILD=module:demo
+RUN npm run build:${PORTAL_BUILD}
 
 FROM nginx:1.27-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
