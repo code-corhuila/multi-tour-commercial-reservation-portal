@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
 import type { MountProps } from '../src/app/shell-contract';
+import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
 // The container client, faked: catalog reads go through it; reservations use their demo stores (gap G-B).
 const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 1 } }));
@@ -9,7 +10,7 @@ let cleanup: (() => void) | undefined;
 const mountAs = (roles: string[]) => {
   host = document.createElement('div');
   document.body.append(host);
-  cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles, open: () => undefined, close: () => undefined } } as MountProps);
+  cleanup = entry.mountWith(host, { apiClient: { request } as never, session: { roles, open: () => undefined, close: () => undefined } } as MountProps, demoSources);
 };
 const goToReservations = async () => {
   await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());

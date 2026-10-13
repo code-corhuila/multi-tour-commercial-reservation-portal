@@ -6,6 +6,7 @@ import { PublicEstablishmentsSource, PublicOfferSource } from '../src/app/public
 import { sourceProviders } from '../src/app/sources.demo';
 import * as entry from '../src/mount-entry';
 import { PUBLIC_OFFER_COPY } from '../src/app/public-offer/public-offer-copy';
+import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
 const toursOf = (source: DemoPublicOfferSource) => firstValueFrom(source.listAvailable('2026-11-20'));
 const placesOf = (source: DemoPublicEstablishmentsSource) => firstValueFrom(source.listActive());
@@ -74,7 +75,7 @@ describe('theShellOffersTheOfferToTheCustomer (PR #361)', () => {
     host = document.createElement('div');
     document.body.append(host);
     const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 0 } }));
-    cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles: ['SOMETHING_ELSE'], open: () => undefined, close: () => undefined } });
+    cleanup = entry.mountWith(host, { apiClient: { request } as never, session: { roles: ['SOMETHING_ELSE'], open: () => undefined, close: () => undefined } }, demoSources);
     await vi.waitFor(() => expect(Array.from(host.querySelectorAll('nav button')).some((b) => b.textContent?.trim() === 'Explorar')).toBe(true));
     Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Explorar')!.click();
     await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(PUBLIC_OFFER_COPY.title));

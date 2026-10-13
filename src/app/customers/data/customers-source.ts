@@ -15,3 +15,11 @@ export abstract class CustomersSource {
 export abstract class SensitiveDataAccess {
   abstract readonly granted: boolean;
 }
+
+/** PROPUESTO (spec DP-PC1): how the container would report "Consultar datos sensibles" is not decided. */
+export const SENSITIVE_DATA_PERMISSION = 'CONSULT_SENSITIVE_DATA';
+
+/** The grant as the session reports it; screens still ask PortalCapabilities which roles may use it. */
+export function sensitiveDataAccessFor(grants: readonly string[]): SensitiveDataAccess {
+  return { granted: grants.includes(SENSITIVE_DATA_PERMISSION) };
+}
