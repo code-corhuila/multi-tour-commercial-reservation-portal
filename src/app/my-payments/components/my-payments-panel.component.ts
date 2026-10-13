@@ -62,7 +62,7 @@ const withPort = (injector: Injector) => injector.get(MyPaymentsSource, null) !=
 /** Plan D-05: what this story adds to 17 and to Mis reservas, registered in mount-entry.ts; nothing without its port. */
 export const MY_PAYMENTS_CONTRIBUTIONS: Provider[] = [
   contribute(CLIENT_QUICK_ACTIONS, { component: ContinuePaymentActionComponent, order: 0, isAvailable: withPort }),
-  contribute(CLIENT_QUICK_ACTIONS, { component: MyPaymentsActionComponent, order: 0, isAvailable: withPort }),
+  contribute(CLIENT_QUICK_ACTIONS, { component: MyPaymentsActionComponent, order: 0.5, isAvailable: withPort }),
   contribute(CLIENT_NOTICES, { component: PaymentNoticesComponent, order: 0,
     isAvailable: (injector) => withPort(injector) && injector.get(CustomerContext).standing === 'FINAL_CUSTOMER' }),
   contribute(RESERVATION_CARD_EXTRAS, { component: ReservationEconomicLinesComponent, order: 10, isAvailable: withPort }),
