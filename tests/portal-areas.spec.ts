@@ -27,15 +27,6 @@ import { MyReservationsPageComponent } from '../src/app/self-service-reservation
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { actorAs } from './actor-context.double';
 import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
-import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
-import { ValidateProofPageComponent } from '../src/app/payments/pages/validate-proof-page.component';
-import { PaymentFollowupPageComponent } from '../src/app/payments/pages/payment-followup-page.component';
-import { RefundDetailPageComponent } from '../src/app/refunds/pages/refund-detail-page.component';
-import { RefundManagePageComponent } from '../src/app/refunds/pages/refund-manage-page.component';
-import { RefundTreatmentPageComponent } from '../src/app/refunds/pages/refund-treatment-page.component';
-import { CreditBalancePageComponent } from '../src/app/credit-balance/pages/credit-balance-page.component';
-import { NotificationsPageComponent } from '../src/app/refunds/pages/notifications-page.component';
-import { RefundRequestsPageComponent } from '../src/app/refunds/pages/refund-requests-page.component';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
 
@@ -79,6 +70,7 @@ describe('portalAreasRegistry', () => {
       { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
       { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
+      { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
