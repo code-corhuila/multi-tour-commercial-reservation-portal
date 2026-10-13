@@ -9,6 +9,8 @@ export const RESERVATION_CHANGES_COPY = {
   refundNote: 'El tratamiento económico queda pendiente según la causa. Si lo solicita el cliente, se calcula el monto reembolsable aplicando la penalidad vigente.',
   potential: 'Valor potencial a devolver', pendingPolicy: 'Pendiente de parametrización comercial', noPayments: 'No aplica: no hay pagos registrados en esta reserva.',
   cancel: 'Cancelar', submit: 'Registrar novedad', causeRequired: 'Completa el tipo y la causal de la cancelación o modificación.',
+  registeredPendingRefund: 'Cancelación registrada. El valor a devolver queda pendiente de cálculo según la condición comercial parametrizada; podrás gestionarlo desde el detalle de la reserva.',
+  registeredNoPayments: 'Cancelación registrada: no hay pagos registrados, no se genera solicitud de devolución.',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar', notFound: 'No se encontró la reserva seleccionada.',
   historyEyebrow: 'Historial', historyTitle: 'Cancelación registrada', registeredAt: 'Fecha de registro',
   decisionEyebrow: 'Cancelación o modificación registrada', decisionTitle: 'Devolución pendiente de gestionar',

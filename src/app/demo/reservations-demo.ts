@@ -28,9 +28,9 @@ const SEEDED: Reservation[] = [
 const ownAs = (id: string, tourName: string, departureDate: string, finalCents: number, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, tourName,
   departureDate, departureId: undefined, seatHeld: true, balanceCents: finalCents, ...over,
   quote: { services: [{ name: 'Guianza (demo)', cents: finalCents }], transportCents: 0, projectedCents: finalCents, discounts: [], discountCents: 0, finalCents } });
-const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus']): ReservationPayment[] =>
-  [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)' }];
-SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION') }),
+const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus'], presentedAt?: string): ReservationPayment[] =>
+  [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)', ...(presentedAt ? { presentedAt } : {}) }];
+SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION', '2026-10-13T08:30:00-05:00') }),
   ownAs('RES-1832', 'Tour de ejemplo', '2026-09-20T07:00:00', 30_000_000, { status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', paymentType: 'PARTIAL',
     validatedCents: 10_000_000, balanceCents: 20_000_000, payments: proofOf('RES-1832', 10_000_000, 'APROBADO') }),
   ownAs('RES-1831', 'Ruta Andina', '2026-09-22T06:30:00', 120_000_000, { status: 'CANCELADA', seatHeld: false, financialStatus: 'PARCIAL', paymentType: 'PARTIAL',
@@ -44,6 +44,14 @@ const inState = (id: string, status: Reservation['status'], over: Partial<Reserv
 SEEDED.push(inState('RES-1839', 'CONFIRMADA', { leadCustomerName: 'Camila Ortega (demo)', validatedCents: 30_000_000, balanceCents: 11_800_000, financialStatus: 'ABONO_RECIBIDO' }),
   inState('RES-1838', 'EN_EJECUCION'), inState('RES-1837', 'FINALIZADA'), inState('RES-1836', 'CANCELADA'),
   inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true }));
+/** HU-COM-010 (Pagos pendientes, AC-PV.2, AC-PV.4, AC-PV.5): two $300.000 Abono · Transferencia reservations with a proof En validación. */
+const proof = (id: string, amountCents: number, presentedAt: string, over: Partial<ReservationPayment> = {}): ReservationPayment =>
+  ({ id, method: 'BANK_TRANSFER', amountCents, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)', presentedAt, ...over });
+const ofAbono = (id: string, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, departureId: undefined, paymentType: 'PARTIAL', seatHeld: true, balanceCents: 30_000_000, quote: { services: [{ name: 'Guianza (demo)', cents: 30_000_000 }], transportCents: 0, projectedCents: 30_000_000, discounts: [], discountCents: 0, finalCents: 30_000_000 }, ...over });
+SEEDED.push(ofAbono('RES-1834', { leadCustomerName: 'Juliana Cruz (demo)', status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', validatedCents: 10_000_000, balanceCents: 20_000_000,
+  payments: [proof('RES-1834-P1', 10_000_000, '2026-10-10T09:00:00-05:00', { proofStatus: 'APROBADO', review: { decision: 'APROBADO', verifiedAmountCents: 10_000_000,
+    reason: 'Soporte legible (demo)', actorLabel: 'Administrador del tenant (demo)', decidedAt: '2026-10-10T15:00:00.000Z' } }), proof('RES-1834-P2', 5_000_000, '2026-10-12T09:00:00-05:00')] }),
+  ofAbono('RES-1833', { leadCustomerName: 'Sofía Herrera (demo)', payments: [proof('RES-1833-P1', 10_000_000, '2026-10-13T09:00:00-05:00')] }));
 
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [

@@ -64,6 +64,7 @@ describe('the list is screen 10', () => {
     const seeded = await firstValueFrom(source.useValue.list());
     const pending = seeded.filter((r) => r.status === 'PENDIENTE_DE_PAGO');
     expect(pending.length).toBeGreaterThanOrEqual(1);
+    // HU-COM-010: RES-1833 waits for the decision on its proof En validación (spec 010- AC-PV.2, AC-PV.3).
     // HU-COM-014 adds RES-1840, Pendiente de pago with its proof En validación (mockup demo data RES-1843).
     expect(pending.length).toBeLessThanOrEqual(3);
     // HU-COM-013 (tasks T-08): one fixture per state the cancellation tells apart, in the same store.

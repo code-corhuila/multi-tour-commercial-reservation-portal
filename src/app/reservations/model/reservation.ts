@@ -33,10 +33,13 @@ export type Reservation = {
   readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
     readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null };
 };
-/** HU-COM-009: a payment pending validation (RN-PY1); field names await payment_attempts (G-B). */
+/** HU-COM-009: a payment pending validation (RN-PY1); HU-COM-010 (D-02): when it was presented and the decision on its proof.
+ * Field names await payment_attempts (G-B). */
 export type ReservationPayment = {
   readonly id: string; readonly method: string; readonly amountCents: number; readonly proofName: string | null;
   readonly proofStatus: 'EN_VALIDACION' | 'SIN_COMPROBANTE' | 'APROBADO' | 'RECHAZADO'; readonly registeredBy: string;
+  readonly presentedAt?: string; readonly review?: { readonly decision: 'APROBADO' | 'RECHAZADO'; readonly verifiedAmountCents: number | null; readonly reason: string;
+    readonly actorLabel: string; readonly decidedAt: string };
 };
 export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCION' | 'FINALIZADA' | 'CANCELADA';
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };

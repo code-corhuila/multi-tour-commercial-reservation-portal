@@ -30,6 +30,8 @@ import { PaymentManagementPageComponent } from '../src/app/payments/pages/paymen
 import { TransferPaymentPageComponent } from '../src/app/payments/pages/transfer-payment-page.component';
 import { actorAs } from './actor-context.double';
 import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
+import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
+import { ValidateProofPageComponent } from '../src/app/payments/pages/validate-proof-page.component';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
 
@@ -99,6 +101,8 @@ describe('portalAreasRegistry', () => {
       { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
       { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
       { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
+      { key: 'payments', label: 'Pagos', component: PaymentsPageComponent },
+      { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent },
       { key: 'my-payments', label: 'Mis pagos', component: MyPaymentsPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);

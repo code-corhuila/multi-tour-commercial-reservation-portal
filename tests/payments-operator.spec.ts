@@ -393,3 +393,63 @@ describe('payment capabilities and wiring', () => {
     } finally { cleanup(); host.remove(); }
   });
 });
+
+describe('screen 13 registers money only for a payable reservation (mockup app.js 6700-6744, spec 009- section 5)', () => {
+  const CANCELLED_NOTE = 'Esta reserva está cancelada: no se pueden registrar nuevos pagos ni soportes. Se conserva la trazabilidad existente.';
+  const closedNote = (status: string) => `Esta reserva está en estado "${status}" y ya no admite modificaciones.`;
+  const inValidation = (over: Partial<Reservation> = {}) => new DemoReservationsStore([reservationOf('RES-78', { departureId: 'demo-dep-1', paymentType: 'TOTAL',
+    paymentMethod: 'BANK_TRANSFER', payments: [{ id: 'p-1', method: 'BANK_TRANSFER', amountCents: 100, proofName: 'a.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Demo' }], ...over })]);
+
+  it('a cancelled reservation (RES-1836) shows Reserva cancelada with the note of the mockup and no form', async () => {
+    const { element, button } = await managementOf('TENANT_ADMINISTRATOR', 'RES-1836');
+    expect(element.querySelector('.crp-payments-action h2')?.textContent?.trim()).toBe('Reserva cancelada');
+    expect(element.querySelector('.crp-payments-action')?.textContent).toContain(CANCELLED_NOTE);
+    expect(element.querySelector('form')).toBeNull();
+    expect(button('Volver a la reserva')).toBeDefined();
+  });
+
+  it('a reservation in execution (RES-1838) or finished (RES-1837) offers no form and says why', async () => {
+    for (const [id, status] of [['RES-1838', 'En ejecución'], ['RES-1837', 'Finalizada']]) {
+      const { element } = await managementOf('TENANT_ADMINISTRATOR', id);
+      expect(element.querySelector('.crp-payments-action')?.textContent, id).toContain(closedNote(status));
+      expect(element.querySelector('form'), id).toBeNull();
+      TestBed.resetTestingModule();
+    }
+  });
+
+  it('a reservation without balance shows Pago registrado and no form', async () => {
+    const reservations = new DemoReservationsStore([reservationOf('RES-79', { status: 'CONFIRMADA', balanceCents: 0, paymentType: 'TOTAL', paymentMethod: 'CASH_AT_OFFICE' })]);
+    const { element } = await managementOf('TENANT_ADMINISTRATOR', 'RES-79', [{ provide: ReservationsSource, useValue: reservations }]);
+    expect(element.querySelector('.crp-payments-action h2')?.textContent?.trim()).toBe('Pago registrado');
+    expect(element.textContent).toContain('No existen valores pendientes por registrar para esta reserva.');
+    expect(element.querySelector('form')).toBeNull();
+  });
+
+  it('the demo writer refuses cancelled, executed, finished and settled reservations, registering nothing', async () => {
+    TestBed.configureTestingModule({ providers: demoProviders() });
+    expect(await refusal(register('RES-1836', 100, null, 'k-1'))).toBe(CANCELLED_NOTE);
+    expect(await refusal(register('RES-1838', 100, null, 'k-2'))).toBe(closedNote('En ejecución'));
+    expect(await refusal(register('RES-1837', 100, null, 'k-3'))).toBe(closedNote('Finalizada'));
+    for (const id of ['RES-1836', 'RES-1838', 'RES-1837']) expect((await stored(id)).payments ?? [], id).toHaveLength(0);
+    const store = TestBed.inject(ReservationsSource) as DemoReservationsStore;
+    store.items = [...store.items, reservationOf('RES-79', { status: 'CONFIRMADA', balanceCents: 0, paymentType: 'TOTAL', paymentMethod: 'CASH_AT_OFFICE' })];
+    expect(await refusal(register('RES-79', 100, null, 'k-4'))).toBe('No existen valores pendientes por registrar para esta reserva.');
+  });
+
+  it('while a transfer proof is En validación the amount, the proof and the action are disabled', async () => {
+    const { element, submit } = await managementOf('TENANT_ADMINISTRATOR', 'RES-78', [{ provide: ReservationsSource, useValue: inValidation() }]);
+    expect(element.querySelector('.crp-payments-action h2')?.textContent?.trim()).toBe('Registra el pago de esta reserva');
+    expect(element.querySelector<HTMLInputElement>('[name="amount"]')?.disabled).toBe(true);
+    expect(element.querySelector<HTMLInputElement>('[name="proof"]')?.disabled).toBe(true);
+    expect(submit()?.disabled).toBe(true);
+  });
+
+  it('a transfer registered on 13 locks the form at once, as the proof is now En validación', async () => {
+    const { element, type, attach, submit, settle } = await managementOf();
+    expect(submit()?.disabled).toBe(false);
+    await type('amount', '300000'); await attach(pdf()); submit()!.click(); await settle();
+    expect(element.querySelector<HTMLInputElement>('[name="amount"]')?.disabled).toBe(true);
+    expect(element.querySelector<HTMLInputElement>('[name="proof"]')?.disabled).toBe(true);
+    expect(submit()?.disabled).toBe(true);
+  });
+});
