@@ -94,6 +94,13 @@ const SPECIFIED_TREE = [
   'src/app/self-service-reservation/pages/reserve-tour-page.component.ts',
   'src/app/shared/focus.ts',
   'src/app/shared/portal-slots.ts',
+  'src/app/demo/demo-fixtures.ts',
+  'src/app/demo/payments-demo.ts',
+  'src/app/payments/payments-copy.ts',
+  'src/app/payments/data/payments-writer.ts',
+  'src/app/payments/model/payment.ts',
+  'src/app/payments/components/reservation-payments-block.component.ts',
+  'src/app/payments/pages/payment-management-page.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
