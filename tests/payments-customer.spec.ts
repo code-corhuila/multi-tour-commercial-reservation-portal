@@ -35,11 +35,11 @@ const navigationWith = (params: Record<string, string>) => { const nav = new Por
 afterEach(() => { TestBed.resetTestingModule(); demoQuery(); });
 
 describe('the Método y plazo de pago block of 21', () => {
-  async function blockOf(reservation: CustomerReservation | null, methods: PaymentMethodsSource = new DemoPaymentMethods()) {
+  async function blockOf(reservation: CustomerReservation | null, methods: PaymentMethodsSource = new DemoPaymentMethods(), method = '') {
     const navigation = new PortalNavigation(), open = vi.spyOn(navigation, 'open').mockReturnValue(true);
     TestBed.configureTestingModule({ providers: [{ provide: PaymentMethodsSource, useValue: methods }, { provide: PortalNavigation, useValue: navigation }] });
     const fixture = TestBed.createComponent(CheckoutPaymentBlockComponent);
-    fixture.componentRef.setInput('quote', QUOTE); fixture.componentRef.setInput('reservation', reservation);
+    fixture.componentRef.setInput('quote', QUOTE); fixture.componentRef.setInput('reservation', reservation); fixture.componentRef.setInput('method', method);
     const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
     await settle();
     const element: HTMLElement = fixture.nativeElement;
@@ -74,6 +74,21 @@ describe('the Método y plazo de pago block of 21', () => {
     expect(element.textContent).toContain('El pago en efectivo no confirma la reserva hasta que el dinero sea recibido y registrado por el equipo del operador.');
     expect(button('Continuar al pago')).toBeUndefined();
     expect(element.querySelector('input[type="file"]')).toBeNull();
+  });
+
+  it('showsTheMediumNotesAsSoonAsTheMediumIsChosen, before the reservation exists (AC-PY.2, mockup app.js 1953-1956)', async () => {
+    const none = await blockOf(null);
+    expect(none.element.textContent).not.toMatch(/El pago en efectivo|La transferencia queda pendiente/);
+    TestBed.resetTestingModule();
+    const cash = await blockOf(null, new DemoPaymentMethods(), 'CASH_AT_OFFICE');
+    expect(cash.element.textContent).toContain('El pago en efectivo será registrado por el equipo del operador.');
+    expect(cash.element.textContent).toContain('El pago en efectivo no confirma la reserva hasta que el dinero sea recibido y registrado por el equipo del operador.');
+    expect(cash.element.textContent).not.toContain('La transferencia queda pendiente de revisión mediante comprobante.');
+    TestBed.resetTestingModule();
+    const transfer = await blockOf(null, new DemoPaymentMethods(), 'BANK_TRANSFER');
+    expect(transfer.element.textContent).toContain('La transferencia queda pendiente de revisión mediante comprobante.');
+    expect(transfer.element.textContent).not.toContain('El pago en efectivo');
+    expect(transfer.button('Continuar al pago')).toBeUndefined();
   });
 
   it('opens screen 24 for a created transfer reservation, with the type and the final value for a Pago total', async () => {
@@ -227,6 +242,24 @@ describe('customer payment wiring', () => {
     expect(created.paymentMethod).toBe('CASH_AT_OFFICE');
     const stored = (await firstValueFrom(TestBed.inject(ReservationsSource).list())).find((r) => r.id === created.reservationId);
     expect(stored?.paymentMethod).toBe('CASH_AT_OFFICE');
+  });
+
+  it('page 21 hands the chosen medium to the block, which shows its note before Confirmar reserva (AC-PY.2)', async () => {
+    const fresh = [{ provide: CatalogItemsSource, useValue: new DemoCatalogStore() }, ...reservationDemoProviders(), ...selfServiceDemoProviders(), ...paymentsDemoProviders()];
+    const host = document.createElement('div'); document.body.append(host);
+    const props = { apiClient: { request: vi.fn() }, session: { roles: ['FINAL_CUSTOMER'], open: () => undefined, close: () => undefined },
+      initialParams: { departure: 'demo-dep-1', services: 'demo-svc-1', people: '2' } } as unknown as MountProps;
+    const cleanup = entry.mountWith(host, props, () => fresh);
+    try {
+      await vi.waitFor(() => expect(host.querySelector('app-confirm-reservation-page [data-state="data"]')).toBeTruthy());
+      await vi.waitFor(() => expect(host.querySelector('.crp-checkout-payment input[name="paymentType"]')).toBeTruthy());
+      expect(host.querySelector('.crp-checkout-payment')?.textContent).not.toContain('El pago en efectivo no confirma la reserva');
+      const method = host.querySelector<HTMLSelectElement>('#self-service-method')!;
+      method.value = 'CASH_AT_OFFICE'; method.dispatchEvent(new Event('change'));
+      await vi.waitFor(() => expect(host.querySelector('.crp-checkout-payment')?.textContent)
+        .toContain('El pago en efectivo no confirma la reserva hasta que el dinero sea recibido y registrado por el equipo del operador.'));
+      expect(host.querySelector('.self-service-created')).toBeNull();
+    } finally { cleanup(); host.remove(); }
   });
 
   it('goes from 21 to 24 and sends the proof in the demo module, over the one store the operator reads', async () => {
