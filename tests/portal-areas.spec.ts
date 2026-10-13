@@ -19,6 +19,7 @@ import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } 
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
+import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { actorAs } from './actor-context.double';
 
 @Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
@@ -77,6 +78,7 @@ describe('portalAreasRegistry', () => {
       { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
       { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
       { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
+      { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
   });

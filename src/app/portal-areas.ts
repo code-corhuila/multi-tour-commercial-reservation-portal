@@ -13,6 +13,8 @@ import { DiscountsPageComponent } from './discounts/pages/discounts-page.compone
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from './public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page.component';
+import { ReservationsSource } from './reservations/data/reservations-source';
+import { ReservationsPageComponent } from './reservations/pages/reservations-page.component';
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
 
@@ -58,6 +60,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
     isAvailable: (injector) => customersCapabilitiesOf(injector.get(ActorContext).role).canRead && injector.get(CustomersSource, null) !== null,
   },
+  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
