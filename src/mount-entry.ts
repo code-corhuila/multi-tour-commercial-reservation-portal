@@ -8,7 +8,9 @@ import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './
 import { ReservationSelectionSource, selectionSourceFor } from './app/self-service-reservation/data/reservation-confirmation-ports';
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
-import { RESERVATION_DETAIL_ACTIONS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
+import { RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
@@ -59,6 +61,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
       { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
       { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
+      // HU-COM-009: Pagos y soportes of 10A and Gestionar pago of 10C, drawn only with the payment ports.
+      contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK),
       // HU-COM-013: the 10A action and blocks, and the Cancelación type; each only with the cancellation ports of the build.
       contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
       contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),

@@ -21,11 +21,22 @@ export type CreateReservationCommand = {
 /** The snapshot fixed at creation and the balance the service keeps; the screens never recalculate them (RN-RES-003, 007- H-D8). */
 export type Reservation = {
   readonly id: string; readonly leadCustomerName: string; readonly tourName: string; readonly departureDate: string; readonly conditions: string;
-  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL'; readonly seatHeld: boolean;
+  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL';
+  /** HU-COM-009 RN-PY5: held with the first payment. */
+  readonly seatHeld: boolean; readonly departureId?: string;
+  /** HU-COM-009 DP-PY3: type and method codes of PaymentMethodsSource; absent while none was set. */
+  readonly paymentType?: string; readonly paymentMethod?: string;
+  /** HU-COM-009: resolved by the service; registering moves neither (RN-PY1). */
+  readonly validatedCents?: number; readonly payments?: readonly ReservationPayment[];
   /** HU-COM-013 D-02 (PROPUESTO): resolved by the service; the cancellation, the decision it opened and the HU-COM-018 mark (DD-4). */
-  readonly validatedCents?: number; readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string }; readonly reschedulingPending?: boolean;
+  readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string }; readonly reschedulingPending?: boolean;
   readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
     readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null };
+};
+/** HU-COM-009: a payment pending validation (RN-PY1); field names await payment_attempts (G-B). */
+export type ReservationPayment = {
+  readonly id: string; readonly method: string; readonly amountCents: number; readonly proofName: string | null;
+  readonly proofStatus: 'EN_VALIDACION' | 'SIN_COMPROBANTE'; readonly registeredBy: string;
 };
 export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCION' | 'FINALIZADA' | 'CANCELADA';
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };

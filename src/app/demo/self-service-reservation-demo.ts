@@ -43,6 +43,7 @@ export class DemoPaymentMethods extends PaymentMethodsSource {
     { code: 'CASH_AT_OFFICE', label: 'Efectivo' },
   ];
   override listEnabled(): Observable<readonly PaymentMethod[]> { return of(this.methods); }
+  override listTypes(): Observable<readonly PaymentMethod[]> { return of([{ code: 'TOTAL', label: 'Pago total' }, { code: 'PARTIAL', label: 'Abono' }]); }
 }
 
 /** 008- H-D9: the summary of a selection over the quote source of HU-COM-007; it computes nothing of its own. */
