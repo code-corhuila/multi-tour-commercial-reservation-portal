@@ -38,6 +38,8 @@ import { PaymentsPageComponent } from './payments/pages/payments-page.component'
 import { ValidateProofPageComponent } from './payments/pages/validate-proof-page.component';
 import { RESCHEDULING_AREA, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
+import { PaymentDeadlineReader, PaymentFollowupsWriter } from './payments/data/payment-followup-ports';
+import { PaymentFollowupPageComponent } from './payments/pages/payment-followup-page.component';
 import { MyPaymentsSource } from './my-payments/data/my-payments-source';
 import { MyPaymentsPageComponent } from './my-payments/pages/my-payments-page.component';
 import { REFUND_SCREENS, refundsAvailable } from './refunds/data/refunds-ports';
@@ -136,6 +138,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-018 admin-reprogramar-reserva.html: opened from the 10A header with { reservation } (DP-RP4); every operator reads it, Reservas stays active.
   { key: RESCHEDULING_AREA, label: 'Propuesta de reprogramación', component: ReschedulingPageComponent, menu: false, parent: 'reservations',
     isAvailable: (injector) => has(injector, ReschedulingSource, ReschedulingWriter) },
+  // HU-COM-011 admin-registrar-seguimiento.html, opened by Registrar seguimiento of 13 with { reservation }; Pagos stays active.
+  { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent, menu: false, parent: 'payments',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canFollowUp() && has(injector, ReservationsSource, PaymentFollowupsWriter, PaymentDeadlineReader, PaymentMethodsSource) },
   // HU-COM-014 mis-pagos.html, opened by Mis pagos of 17; read only, under the compact header of the panel (Volver al panel).
   { key: CLIENT_AREA.payments, label: 'Mis pagos', component: MyPaymentsPageComponent, audience: 'customer', clientChrome: 'panel', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
