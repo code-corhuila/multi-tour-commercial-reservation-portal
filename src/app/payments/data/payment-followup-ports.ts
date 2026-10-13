@@ -13,6 +13,3 @@ export abstract class PendingPaymentsSource { abstract list(): Observable<readon
 export abstract class PaymentDeadlineReader { abstract deadlineOf(reservationId: string): Observable<PaymentDeadline | null>; }
 /** RN-PP4: a follow-up never moves the deadline; the reservation comes back with its history, or { status: 403 | 409, userMessage }. */
 export abstract class PaymentFollowupsWriter { abstract register(command: RegisterFollowupCommand, idempotencyKey: string): Observable<Reservation>; }
-/** RN-RES-006, E15: the single extension of the deadline, in hours up to the tenant parameter; the service answers the reservation with its deadline, or { status: 403 | 409, userMessage }. */
-export type ExtendDeadlineCommand = { readonly reservationId: string; readonly hours: number };
-export abstract class PaymentDeadlineExtender { abstract extend(command: ExtendDeadlineCommand, idempotencyKey: string): Observable<Reservation>; }
