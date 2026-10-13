@@ -21,6 +21,7 @@ import {
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
+import { tourPhoto } from '../src/app/shared/tour-photo';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
@@ -260,7 +261,38 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
     const consents = Array.from(p.element.querySelectorAll('input[type="checkbox"]'), (box) => box.closest('label')?.textContent?.trim());
     expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
-    for (const absent of ['Método y plazo de pago', 'Abono', 'Pago total', 'demo-dep-7', 'demo-svc-1', '2026-09-18']) expect(p.element.textContent).not.toContain(absent);
+    const summary = p.element.querySelector('.crp-finish-aside .self-service-summary')!;
+    expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
+    // demo-svc-1 is the Tatacoa desert: the sunset photo, the same as in the public offer.
+    expect(summary.querySelector('.crp-finish-media img')?.getAttribute('src')).toBe('/assets/mountain-hero.jpg');
+    expect(summary.querySelector('.self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
+    const rows = Array.from(summary.querySelectorAll('dt'), (dt) => (dt.textContent?.trim() ?? '') + ' ' + (dt.nextElementSibling?.textContent?.trim() ?? ''));
+    expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
+    expect(text('.crp-finish-help')).toBe('¿Necesitas ayuda? Asistencia comercial El equipo del operador puede ayudarte a continuar el proceso.');
+    const bar = Array.from(p.element.querySelectorAll('.crp-booking-bar-pricing > div, .crp-booking-bar-selection'), (d) => d.textContent?.replace(/\s+/g, ' ').trim());
+    expect(bar).toEqual(['Reserva Borrador', 'Total $2.078.400', 'Seleccionado 18 sep 2026 - 2 viajeros']);
+    expect(p.element.querySelector('.crp-booking-bar button[type="submit"]')?.textContent?.trim()).toBe('Confirmar reserva');
+    for (const absent of ['Método y plazo de pago', 'Abono', 'Pago total', 'Monto a abonar', 'Continuar al pago', 'demo-dep-7', 'demo-svc-1', '2026-09-18']) {
+      expect(p.element.textContent).not.toContain(absent);
+    }
+  });
+
+  it('the summary photo is the photo of the tour in the featured cards, and no photo leaves the neutral block', () => {
+    expect(tourPhoto('svc-1')).toBe(tourPhoto('svc-1'));
+    expect(new Set(['svc-1', 'svc-2', 'svc-3', 'svc-4', 'svc-5', 'svc-6'].map(tourPhoto)).size).toBeGreaterThan(1);
+    expect(tourPhoto('')).toBeNull();
+    expect(tourPhoto(undefined)).toBeNull();
+    expect(tourPhoto('demo-svc-3')).toBe('/assets/destino-cascadas-de-iraka.jpg'); // Canotaje en el Río Suaza
+  });
+
+  it('Volver a fecha y viajeros reopens Reservar tour on the same tour', async () => {
+    const navigation = new PortalNavigation();
+    navigation.register([RESERVATION_FLOW.reserve, RESERVATION_FLOW.finish]);
+    TestBed.configureTestingModule({ providers: [{ provide: PortalNavigation, useValue: navigation }] });
+    const p = await openConfirm();
+    buttonNamed(p.element, '← Volver a fecha y viajeros')!.click();
+    expect(navigation.selected()).toBe(RESERVATION_FLOW.reserve);
+    expect(navigation.params()).toEqual({ tour: 'demo-svc-1' });
   });
   it('the confirmation without a selection says so in Spanish', async () => {
     const p = await openConfirm({ selection: null });
