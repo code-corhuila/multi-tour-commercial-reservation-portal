@@ -49,6 +49,8 @@ import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.co
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
 import { RESCHEDULING_AREA, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
+import { MyProposalsSource, PROPOSAL_AREA, ProposalAnswerWriter, RESCHEDULING_AREA, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
+import { ReschedulingProposalPageComponent } from './rescheduling/pages/rescheduling-proposal-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
@@ -162,6 +164,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-018 admin-reprogramar-reserva.html: opened from the 10A header with { reservation } (DP-RP4); every operator reads it, Reservas stays active.
   { key: RESCHEDULING_AREA, label: 'Propuesta de reprogramación', component: ReschedulingPageComponent, menu: false, parent: 'reservations',
     isAvailable: (injector) => has(injector, ReschedulingSource, ReschedulingWriter) },
+  // HU-COM-018 propuesta-reprogramacion.html (24A): opened by Responder propuesta of Mis reservas and of 17 with { reservation }; its own top bar.
+  { key: PROPOSAL_AREA, label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyProposalsSource, ProposalAnswerWriter) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
