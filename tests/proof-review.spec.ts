@@ -119,6 +119,8 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     expect(failing.calls).toBe(2);
     const empty = await pagesWith(answering(() => of({ rows: [], overdueCount: 0 })));
     expect(empty.element.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay soportes por revisar.');
+    // The mockup always draws the badge of Pagos pendientes, also when no proof waits.
+    expect(empty.element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('0 pendientes');
     TestBed.resetTestingModule();
     expect((await screenOf(PaymentsPageComponent, providers())).element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(2);
     TestBed.resetTestingModule();
