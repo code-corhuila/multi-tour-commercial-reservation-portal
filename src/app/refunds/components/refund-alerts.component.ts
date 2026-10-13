@@ -18,6 +18,7 @@ type State = PageState<Refund>;
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
       @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('empty') { <p class="crp-operator-copy" role="status" data-state="empty">{{ t.noAlerts }}</p> }
       @case ('data') { @for (r of s.items; track r.id) {
         <div class="crp-refunds-alert" data-state="data"><span class="crp-refunds-alert-icon" aria-hidden="true">{{ t.alertIcon }}</span>&ngsp;
           <span class="crp-refunds-alert-copy"><strong>{{ t.alertTitle }}</strong>&ngsp;<span>#{{ r.id }} · {{ r.customer }} · {{ money(r.amountCents) }} · {{ r.reason }}</span></span></div>
