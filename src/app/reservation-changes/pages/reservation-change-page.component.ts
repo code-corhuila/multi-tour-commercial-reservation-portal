@@ -56,7 +56,8 @@ export const RESERVATION_CHANGE_RETURN_DELAY = new InjectionToken<() => Observab
             </div>
           </section>
           <section class="crp-operator-panel"><h2>{{ t.refundTitle }}</h2><p>{{ t.refundNote }}</p>
-            <dl class="crp-reservation-changes-list"><div><dt>{{ t.potential }}</dt><dd>{{ refundable(q.refundable) }}</dd></div></dl>
+            @if (chosen()?.showsRefundable !== false) {
+              <dl class="crp-reservation-changes-list"><div><dt>{{ t.potential }}</dt><dd>{{ refundable(q.refundable) }}</dd></div></dl> }
           </section>
           <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back()">{{ t.cancel }}</button>
             <button type="submit" class="crp-operator-primary" [disabled]="locked || chosen()?.submittable === false">{{ t.submit }}</button></div>
