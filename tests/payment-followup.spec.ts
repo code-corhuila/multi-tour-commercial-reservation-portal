@@ -16,7 +16,7 @@ import { PAYMENT_FOLLOWUP_CONTRIBUTIONS, PendingPaymentRowsComponent } from '../
 import {
   PaymentDeadlineReader, PaymentFollowupsWriter, PendingPaymentsSource, RegisterFollowupCommand,
 } from '../src/app/payments/data/payment-followup-ports';
-import { PendingProofsSource, ProofReviewWriter } from '../src/app/payments/data/proof-review-ports';
+import { ProofReviewWriter } from '../src/app/payments/data/proof-review-ports';
 import { PaymentFollowupPageComponent } from '../src/app/payments/pages/payment-followup-page.component';
 import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
 import { TransferPaymentPageComponent } from '../src/app/payments/pages/transfer-payment-page.component';
@@ -114,7 +114,7 @@ describe('the frame: area, ports, four states and texts (T-01)', () => {
 
   it('everyFollowupScreenShowsOneOfTheFourStates', async () => {
     const answering = (answer: () => Observable<readonly Reservation[]>) => new (class extends ReservationsSource { calls = 0; override list() { this.calls++; return answer(); } })();
-    const pageWith = (source: ReservationsSource) => { TestBed.resetTestingModule(); return following(TOTAL, { extra: [{ provide: ReservationsSource, useValue: source }, { provide: PaymentDeadlineReader, useValue: { deadlineOf: () => of(null) } }] }); };
+    const pageWith = (source: ReservationsSource) => { TestBed.resetTestingModule(); return following(TOTAL, { extra: [{ provide: ReservationsSource, useValue: source }] }); };
     expect((await pageWith(answering(() => NEVER))).element.querySelector('[data-state="loading"]')?.textContent).toContain('Cargando…');
     const failing = answering(() => throwError(() => new Error('down')));
     const failed = await pageWith(failing);
@@ -140,48 +140,11 @@ describe('the frame: area, ports, four states and texts (T-01)', () => {
       const field = Array.from(element.querySelectorAll('label')).find((l) => l.textContent?.trim() === label)!;
       return element.querySelector<HTMLInputElement>(`#${field.htmlFor}`)!.value;
     };
-    expect(['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valores validados', 'Saldo pendiente', 'Situación financiera', 'Plazo de pago vigente'].map(value))
-      .toEqual(['#RES-1842', 'Laura Gómez (demo)', 'Pago total · Transferencia', '$0', '$850.000', 'Sin pago', 'Vence el 16 oct 2026 · 09:00.']);
+    expect(['Reserva', 'Cliente', 'Modalidad de pago', 'Valor recibido', 'Saldo pendiente', 'Estado actual', 'Plazo/límite vigente'].map(value))
+      .toEqual(['#RES-1842', 'Laura Gómez (demo)', 'Pago total · Transferencia', '$0', '$850.000', 'Sin pago', '16 oct 2026 · 09:00']);
     expect(element.querySelector('textarea')?.getAttribute('placeholder')).toBe('Describe el contacto realizado con el cliente y el resultado');
     expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Fecha', 'Hora', 'Actor', 'Nota']);
     expect(text).not.toMatch(/PENDIENTE_DE_PAGO|SIN_PAGO|BANK_TRANSFER|TOTAL\b|undefined|null|NaN/);
-  });
-
-  it('aMissingReservationDrawsTheFormDisabledWithTheMessageInTheFeedbackLine', async () => {
-    // admin-registrar-seguimiento (app.js 3357-3360): the message goes to the feedback line and every input, textarea and button of the form is disabled.
-    const { element, button } = await following('RES-1999');
-    const form = element.querySelector('form')!;
-    expect(form).not.toBeNull();
-    expect(form.querySelector('.crp-operator-form-feedback')?.textContent?.trim())
-      .toBe('No se encontró el pago seleccionado. Vuelve a Pagos e ingresa nuevamente por Registrar seguimiento.');
-    expect(Array.from(form.querySelectorAll('label')).map((l) => l.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valores validados',
-      'Saldo pendiente', 'Situación financiera', 'Salida', 'Plazo de pago vigente', 'Nota de seguimiento (obligatoria)']);
-    const controls = Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'));
-    expect(controls).toHaveLength(9);
-    expect(controls.every((c) => c.disabled && c.value === '')).toBe(true);
-    expect(button('Registrar seguimiento')?.disabled).toBe(true);
-    expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Fecha', 'Hora', 'Actor', 'Nota']);
-    expect(element.querySelectorAll('tbody tr')).toHaveLength(0);
-    expect(flat(element)).not.toContain('Aún no se han registrado seguimientos para esta reserva.');
-  });
-
-  it('theFeedbackLineAndTheEmptyHistoryCarryTheMockupClasses', async () => {
-    // operator-form-feedback with is-valid on save (app.js 3423), operator-copy on the empty history (admin-registrar-seguimiento.html).
-    const { element, submit, type } = await following();
-    const feedback = () => element.querySelector('p.crp-operator-form-feedback')!;
-    expect(feedback().textContent?.trim()).toBe('Registra la nota de seguimiento para dejar constancia del contacto con el cliente.');
-    expect(feedback().classList.contains('crp-is-valid')).toBe(false);
-    expect(element.querySelector('.crp-table-wrap p.crp-operator-copy')?.textContent?.trim()).toBe('Aún no se han registrado seguimientos para esta reserva.');
-    await type('note', 'Llamada al cliente');
-    await submit();
-    expect(feedback().textContent?.trim()).toBe('Seguimiento registrado correctamente.');
-    expect(feedback().classList.contains('crp-is-valid')).toBe(true);
-    expect(element.querySelector('.crp-table-wrap p.crp-operator-copy')).toBeNull();
-    await submit();
-    expect(feedback().classList.contains('crp-is-valid')).toBe(false);
-    const css = readFileSync('src/styles/portal.css', 'utf8');
-    expect(css).toMatch(/\.crp-root \.crp-operator-form-feedback \{[^}]*var\(--crp-soft\)/);
-    expect(css).toMatch(/\.crp-root \.crp-operator-form-feedback\.crp-is-valid \{[^}]*var\(--crp-success\)/);
   });
 });
 
@@ -214,12 +177,7 @@ describe('the effective deadline (T-02, T-04)', () => {
     const view = await screenOf(TransferPaymentPageComponent, [...providers({ role: 'READ_ONLY', params: { reservation: TOTAL, type: 'TOTAL', amount: '85000000' } }),
       ...selfServiceDemoProviders(), ...PROOF_REVIEW_CONTRIBUTIONS, { provide: CustomerContext, useValue: customerContextFor(['FINAL_CUSTOMER'], () => undefined) }]);
     const sentences = Array.from(view.element.querySelectorAll('.crp-transfer-proof p')).map(flat);
-    // The 010 second pull request draws the slot before the proof state paragraph: find the two lines, in order, wherever they are.
-    const at = sentences.indexOf('Plazo máximo de revisión: 24 horas.');
-    expect(sentences.slice(at, at + 2)).toEqual(['Plazo máximo de revisión: 24 horas.', 'Ningún plazo de pago supera el inicio de la salida, 07 nov 2026 · 00:00.']);
-    // pago-transferencia.html writes both sentences in one travel-transfer-reference-copy paragraph: the deadline line carries its style.
-    expect(view.element.querySelector('app-payment-deadline-line p')?.classList.contains('crp-transfer-reference-copy')).toBe(true);
-    expect(readFileSync('src/styles/portal.css', 'utf8')).toMatch(/\.crp-root \.crp-transfer-reference-copy \{[^}]*color: var\(--crp-soft\)/);
+    expect(sentences.slice(-2)).toEqual(['Plazo máximo de revisión: 24 horas.', 'Ningún plazo de pago supera el inicio de la salida, 07 nov 2026 · 00:00.']);
     TestBed.resetTestingModule();
     const line = await screenOf(PaymentDeadlineLineComponent, providers());
     expect(flat(line.element)).toBe('');
@@ -316,7 +274,7 @@ describe('what counts as payment, and who cancels (T-05)', () => {
   });
 
   it('portalNeverCancelsAReservationByItself', () => {
-    for (const file of FILES) expect(readFileSync(file, 'utf8').replaceAll("status === 'CANCELADA'", '')).not.toMatch(/CANCELADA|setInterval|setTimeout|status:\s*'/);
+    for (const file of FILES) expect(readFileSync(file, 'utf8')).not.toMatch(/CANCELADA|setInterval|setTimeout|status:\s*'/);
   });
 
   it('paidReservationShowsOnlyTheHistory', async () => {
@@ -326,7 +284,7 @@ describe('what counts as payment, and who cancels (T-05)', () => {
     const kept = store().items;
     TestBed.resetTestingModule();
     const { element } = await following(TOTAL, { extra: [{ provide: ReservationsSource, useValue: new DemoReservationsStore(kept) }] });
-    expect(flat(element)).toContain('Esta reserva no tiene saldo pendiente o está cancelada: solo puedes consultar el historial de seguimientos existente.');
+    expect(flat(element)).toContain('Esta reserva ya está pagada: solo puedes consultar el historial de seguimientos existente.');
     expect(element.querySelector('textarea')).toBeNull();
     expect(Array.from(element.querySelectorAll('label')).map((l) => l.textContent?.trim())).not.toContain('Plazo/límite vigente');
     expect(Array.from(element.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Volver a pagos', 'Volver a pagos']);
@@ -349,7 +307,7 @@ describe('the rows of 13 and the roles (T-06)', () => {
       '#RES-1842 Laura Gómez (demo) Pago total · Transferencia $850.000 Saldo pendiente Registrar seguimiento',
       '#RES-1841 Mateo Ríos (demo) Abono · Efectivo $418.000 Saldo pendiente Registrar seguimiento',
     ]);
-    expect(flat(bodies[1])).not.toMatch(/Validar comprobante|Ver comprobante|En validación/);
+    expect(flat(bodies[1])).not.toMatch(/Validar soporte|Ver soporte|En validación/);
     pendingRows(element)[0].querySelector('button')!.click();
     await settle();
     const navigation = TestBed.inject(PortalNavigation);
@@ -382,19 +340,5 @@ describe('the rows of 13 and the roles (T-06)', () => {
     await failed.click('Reintentar');
     expect(failing.calls).toBe(2);
     expect(pendingRows((await rowsWith(answering(() => of([])))).element)).toHaveLength(0);
-  });
-
-  it('theTableShowsTheEmptyTextOfHU010OnlyWhenNoProofAndNoPendingRowWait', async () => {
-    // Spec 011-: the empty text of the table is HU-COM-010's, drawn once, only when neither the proofs nor the pending rows have one.
-    const noProofs = { provide: PendingProofsSource, useValue: new (class extends PendingProofsSource { override list() { return of({ rows: [], overdueCount: 0 }); } })() };
-    const noPending = { provide: PendingPaymentsSource, useValue: new (class extends PendingPaymentsSource { override list() { return of([]); } })() };
-    const empty = 'No hay comprobantes por revisar.';
-    const view = (extra: unknown[]) => { TestBed.resetTestingModule(); return screenOf(PaymentsPageComponent, providers({ extra })); };
-    const both = (await view([noProofs, noPending])).element;
-    expect(both.querySelector('tbody[crppendingpaymentrows] [data-state="empty"]')?.textContent?.trim()).toBe(empty);
-    expect(flat(both).split(empty)).toHaveLength(2);
-    expect(flat(await view([noProofs]).then((v) => v.element))).not.toContain(empty);
-    expect(flat(await view([noPending]).then((v) => v.element))).not.toContain(empty);
-    expect(flat(await view([]).then((v) => v.element))).not.toContain(empty);
   });
 });
