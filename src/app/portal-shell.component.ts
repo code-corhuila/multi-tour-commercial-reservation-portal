@@ -1,9 +1,10 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Injector, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject } from '@angular/core';
 import { ActorContext } from './catalog/data/catalog-api.service';
 import { CLIENT_AREA, CLIENT_LINKS, ClientLink, PORTAL_AREA_LIST, ROLE_LABELS } from './portal-areas';
 import { PortalAudience } from './portal-audience';
 import { PortalNavigation } from './portal-navigation';
+import { focusHeading } from './shared/focus';
 
 /**
  * Shell of the authorized screens, drawn from PORTAL_AREAS: the operator sidebar for an operator, the client
@@ -96,7 +97,13 @@ export class PortalShellComponent {
   protected readonly panelLink = computed(() =>
     this.drawn([CLIENT_LINKS.panel[this.current()?.key === CLIENT_AREA.panel ? 0 : 1]])[0]);
 
-  constructor() { this.navigation.register(this.areas.map((area) => area.key)); }
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
+
+  /** HC-4: once an opened area renders, the focus goes to its heading; the first render leaves the focus alone. */
+  constructor() {
+    this.navigation.register(this.areas.map((area) => area.key), () =>
+      afterNextRender(() => focusHeading(this.host.querySelector('main') ?? this.host), { injector: this.injector }));
+  }
 
   protected open(key: string | undefined): void { if (key) { this.navigation.open(key); } }
 }

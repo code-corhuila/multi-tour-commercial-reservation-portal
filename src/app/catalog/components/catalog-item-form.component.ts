@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemsWriter, IdempotencyKeys } from '../data/catalog-api.service';
@@ -6,6 +6,7 @@ import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogIt
 import { MoneyRejection, formatMoney, parseMoney } from '../model/money';
 import { CATALOG_COPY } from '../catalog-copy';
 import { formatCop } from '../../shared/format';
+import { focusFirstError } from '../../shared/focus';
 
 // Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
 // DP-01 (what a tour is) and G-H (who owns the operational cost).
@@ -222,6 +223,8 @@ export class CatalogItemFormComponent implements OnInit {
   private readonly writer = inject(CatalogItemsWriter);
   private readonly keys = inject(IdempotencyKeys);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly injector = inject(Injector);
   /**
    * One per registration intention, born when the form opens and not when it is submitted (D-07):
    * a key made at submit would give a double click two keys, which is the duplicate it prevents.
@@ -314,6 +317,7 @@ export class CatalogItemFormComponent implements OnInit {
     this.attempted.set(true);
     const { command } = this.check();
     if (command === null) {
+      this.focusFirstErrorOnRender();
       return;
     }
     this.pending.set(true);
@@ -362,5 +366,11 @@ export class CatalogItemFormComponent implements OnInit {
     }
     this.refusedFields.set(fields);
     this.formMessages.set([error.userMessage, ...unplaced]);
+    this.focusFirstErrorOnRender();
+  }
+
+  /** HC-4: once the refusal is drawn, the focus goes to the first field in error. */
+  private focusFirstErrorOnRender(): void {
+    afterNextRender(() => focusFirstError(this.host.nativeElement), { injector: this.injector });
   }
 }
