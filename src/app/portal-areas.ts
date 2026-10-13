@@ -1,4 +1,4 @@
-import { Injector, Type } from '@angular/core';
+import { InjectionToken, Injector, Type } from '@angular/core';
 import { ActorContext } from './catalog/data/catalog-api.service';
 import { ActorRole } from './catalog/model/catalog-item';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
@@ -8,8 +8,13 @@ import { DiscountsPageComponent } from './discounts/pages/discounts-page.compone
 import { EstablishmentsPageComponent } from './establishments/pages/establishments-page.component';
 import { ReservationsSource } from './reservations/data/reservations-source';
 import { ReservationsPageComponent } from './reservations/pages/reservations-page.component';
+import { Audience } from './portal-audience';
+import { CLIENT_AREA } from './portal-navigation';
 
-/** One sidebar item of the operator shell and the page it shows. */
+/** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
+export { CLIENT_AREA };
+
+/** One area of the shell: an item of the operator sidebar, or a client page opened by the client header, footer or a page. */
 export interface PortalArea {
   readonly key: string;
   /** Spanish label of the authorized screen's menu. */
@@ -17,7 +22,15 @@ export interface PortalArea {
   readonly component: Type<unknown>;
   /** Drawn only when this answers true; absent means always drawn. */
   readonly isAvailable?: (injector: Injector) => boolean;
+  /** Who sees it (PortalAudience): the operator sidebar, the default, or the client header. */
+  readonly audience?: Audience;
+  /** Client chrome: 'site' (tours.html header and footer, the default), 'panel' (compact header of panel-cliente.html, no footer)
+   *  or 'none' (a flow screen that draws its own top bar). */
+  readonly clientChrome?: 'site' | 'panel' | 'none';
 }
+
+/** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
+export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTAL_AREA_LIST', { factory: () => PORTAL_AREAS });
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
@@ -31,6 +44,16 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
   { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
 ]);
+
+export interface ClientLink { readonly key: string; readonly label: string }
+
+/** Links of tours.html (header center, header right without 'Perfil', footer Explorar) and of the compact header: panel, other panel areas. */
+export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer' | 'panel', readonly ClientLink[]>> = Object.freeze({
+  nav: [{ key: CLIENT_AREA.tours, label: 'Explorar' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
+  account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }],
+  panel: [{ key: CLIENT_AREA.tours, label: 'Ver catálogo' }, { key: CLIENT_AREA.panel, label: 'Volver al panel' }],
+  footer: [{ key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
+});
 
 /** The role line under the brand. */
 export const ROLE_LABELS: Readonly<Record<ActorRole, string>> = Object.freeze({
