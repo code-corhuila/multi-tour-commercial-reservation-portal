@@ -7,7 +7,8 @@ import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
-import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, tourPhoto, travelers } from '../model/self-service-reservation';
+import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
+import { tourPhoto } from '../../shared/tour-photo';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
 
