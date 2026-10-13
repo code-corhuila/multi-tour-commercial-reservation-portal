@@ -16,6 +16,7 @@ import { CancellationQuote, cancellationChangeType } from './app/reservation-cha
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
+import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -70,6 +71,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
       // HU-COM-009: Método y plazo de pago of 21.
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
+      // HU-COM-014: Continuar pago, Mis pagos and the proof notice of 17, and the economic lines of Mis reservas; each only with its port.
+      ...MY_PAYMENTS_CONTRIBUTIONS,
     ],
   }).then((created) => {
     app = created;
