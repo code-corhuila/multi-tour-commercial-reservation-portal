@@ -9,6 +9,7 @@ import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
 import { tourPhoto } from '../../shared/tour-photo';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
 
@@ -18,6 +19,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
  */
 @Component({
   selector: 'app-confirm-reservation-page',
+  imports: [PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let current = state();
@@ -63,6 +65,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                 </select>
                 <p id="self-service-method-error" class="self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
               </article>
+              <ng-container *crpSlot="checkout; inputs: { quote: current.quote, reservation: created() }" />
               @if (standing === 'OTHER') { <p role="status">{{ text.notCustomer }}</p> }
               @if (asked()) { <p role="status">{{ text.signIn }}</p> }
               @if (refusal()) { <p role="alert">{{ refusal() }}</p> }
@@ -111,6 +114,8 @@ export class ConfirmReservationPageComponent {
   protected readonly companions = companions;
   protected readonly photo = tourPhoto;
   protected readonly flow = RESERVATION_FLOW;
+  /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
+  protected readonly checkout = CHECKOUT_BLOCKS;
   protected readonly holder = [
     { id: 'crp-holder-name', label: 'Nombre completo', type: 'text', placeholder: 'Nombre completo' },
     { id: 'crp-holder-document', label: 'Documento de identidad', type: 'text', placeholder: 'Documento' },

@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { formatDate } from '../../shared/format';
 import { FINANCIAL_LABEL, RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, persons, travelers } from '../model/reservation';
 import { ReservationBreakdownComponent } from './reservation-breakdown.component';
+import { PortalSlotOutlet, RESERVATION_DETAIL_BLOCKS } from '../../shared/portal-slots';
 
 /** Screen 10C (fresh) or 10A, without the payment parts (cash and payments stories). Renders the snapshot fixed at creation. */
 @Component({
-  selector: 'app-reservation-view', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationBreakdownComponent],
+  selector: 'app-reservation-view', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationBreakdownComponent, PortalSlotOutlet],
   styles: [`.crp-reservation-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
     .crp-reservation-hero p { margin: 6px 0 0; } .crp-reservation-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
     dl { display: grid; gap: 10px; margin: 16px 0 0; } dl div { display: flex; justify-content: space-between; gap: 16px; }
@@ -30,7 +31,8 @@ import { ReservationBreakdownComponent } from './reservation-breakdown.component
               <div><dt>{{ text.applied }}</dt><dd>{{ money(-r.quote.discountCents) }}</dd></div><div><dt>{{ text.balance }}</dt><dd>{{ money(r.balanceCents) }}</dd></div></dl>
           </article>
         </div>
-        <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="detail.emit()">{{ text.view }}</button></div>
+        <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="detail.emit()">{{ text.view }}</button>
+          <ng-container *crpSlot="blocks; inputs: { reservation: r, fresh: true }" /></div>
       </div>
     } @else {
       <div class="reservation-detail">
@@ -50,6 +52,7 @@ import { ReservationBreakdownComponent } from './reservation-breakdown.component
           <div class="crp-table-wrap"><table class="crp-operator-table"><thead><tr><th>Servicio</th><th>Fecha</th><th>Cantidad</th></tr></thead>
             <tbody>@for (line of r.quote.services; track $index) { <tr><td>{{ line.name }}</td><td>{{ date(r.departureDate) }}</td><td>{{ r.people }}</td></tr> }</tbody></table></div>
         </section>
+        <ng-container *crpSlot="blocks; inputs: { reservation: r, fresh: false }" />
       </div>
     }
   `,
@@ -67,4 +70,6 @@ export class ReservationViewComponent {
   protected readonly travelers = travelers;
   protected readonly persons = persons;
   protected readonly badge = STATUS_CLASS;
+  /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 10A and 10C. */
+  protected readonly blocks = RESERVATION_DETAIL_BLOCKS;
 }

@@ -47,8 +47,9 @@ export class DemoCustomersWriter extends CustomersWriter {
 
 export function customersDemoProviders(): Provider[] {
   const store = new DemoCustomersStore();
+  let writer: DemoCustomersWriter | undefined;
   return [
     { provide: CustomersSource, useValue: store },
-    { provide: CustomersWriter, useFactory: (catalog: CatalogItemsSource) => new DemoCustomersWriter(store, catalog), deps: [CatalogItemsSource] },
+    { provide: CustomersWriter, useFactory: (catalog: CatalogItemsSource) => (writer ??= new DemoCustomersWriter(store, catalog)), deps: [CatalogItemsSource] },
   ];
 }
