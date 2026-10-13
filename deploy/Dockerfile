@@ -4,8 +4,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+# The module the container mounts (ADR-006 F4), not the standalone build (amendment 2026-10-13, HC-6).
+RUN npm run build:module
 
 FROM nginx:1.27-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist/commercial-reservation-portal/browser /usr/share/nginx/html
+# Served under the names the container's manifest loads; mount-entry asks for the CSS next to the module.
+COPY --from=build /app/dist/portal.js /usr/share/nginx/html/commercial-reservation-portal.js
+COPY --from=build /app/dist/portal.css /usr/share/nginx/html/commercial-reservation-portal.css
