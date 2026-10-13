@@ -30,6 +30,7 @@ import { actorAs } from './actor-context.double';
 import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
 import { ValidateProofPageComponent } from '../src/app/payments/pages/validate-proof-page.component';
+import { PaymentFollowupPageComponent } from '../src/app/payments/pages/payment-followup-page.component';
 import { RefundDetailPageComponent } from '../src/app/refunds/pages/refund-detail-page.component';
 import { RefundRequestsPageComponent } from '../src/app/refunds/pages/refund-requests-page.component';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
@@ -79,6 +80,8 @@ describe('portalAreasRegistry', () => {
       { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
       { key: 'payments', label: 'Pagos', component: PaymentsPageComponent },
       { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent },
+      { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent },
+      { key: 'my-payments', label: 'Mis pagos', component: MyPaymentsPageComponent },
       { key: 'refund-requests', label: 'Solicitudes de devolución', component: RefundRequestsPageComponent },
       { key: 'refund-detail', label: 'Detalle de devolución', component: RefundDetailPageComponent },
     ]);
