@@ -31,6 +31,9 @@ import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
+import { TransferPaymentPageComponent } from './payments/pages/transfer-payment-page.component';
+import { MyPaymentsSource } from './my-payments/data/my-payments-source';
+import { MyPaymentsPageComponent } from './my-payments/pages/my-payments-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -102,6 +105,12 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-013 admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Reservas stays active (spec G-NAV closed by the base).
   { key: RESERVATION_CHANGE_SCREEN, label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent, menu: false, parent: 'reservations',
     isAvailable: (injector) => injector.get(PortalCapabilities).canRegisterChange() && has(injector, ReservationsSource, CancellationQuote, CancellationWriter) },
+  // HU-COM-009 pago-transferencia.html (24): opened by Continuar al pago of 21 with { reservation, type, amount }.
+  { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource, PaymentsWriter, PaymentMethodsSource) },
+  // HU-COM-014 mis-pagos.html, opened by Mis pagos of 17; read only, under the compact header of the panel (Volver al panel).
+  { key: CLIENT_AREA.payments, label: 'Mis pagos', component: MyPaymentsPageComponent, audience: 'customer', clientChrome: 'panel', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
