@@ -1,8 +1,11 @@
+import { SIGN_IN_AS_CUSTOMER_NOTICE } from '../self-service-reservation/data/customer-context';
+
 /** Texts of mis-pagos.html, of the economic lines of mis-reservas.html and of 17 (panel-cliente.html), as the mockup writes them. */
 export const MY_PAYMENTS_TEXT = {
   eyebrow: 'Portal cliente', title: 'Mis pagos',
   desc: 'Consulta pagos, abonos, saldos y soportes de tus reservas propias. Esta consulta no permite validar ni rechazar soportes.',
   section: 'Estado económico de mis reservas', empty: 'Todavía no tienes pagos ni reservas registradas.',
+  notCustomer: SIGN_IN_AS_CUSTOMER_NOTICE,
   loading: 'Cargando…', failed: 'No pudimos cargar esta información.', retry: 'Reintentar',
   type: 'Tipo', method: 'Medio', proof: 'Comprobante', financial: 'Situación financiera', validated: 'Valores validados', balance: 'Saldo pendiente',
   lineType: 'Tipo de pago', lineMethod: 'Medio de pago', lineProof: 'Estado del comprobante', lineBalance: 'Saldo',

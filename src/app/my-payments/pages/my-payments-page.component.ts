@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
+import { CustomerContext } from '../../self-service-reservation/data/customer-context';
 import { departureLine, formatCop } from '../../shared/format';
 import { PageState } from '../../shared/page-state';
 import { CustomerPaymentSummary, MyPaymentsSource } from '../data/my-payments-source';
@@ -19,6 +20,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
         <p class="crp-page-header-desc">{{ t.desc }}</p>
       </div></header>
       <h2>{{ t.section }}</h2>
+      @if (isCustomer) {
       @let s = state();
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
@@ -35,6 +37,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
           </ul>
         }
       }
+      } @else { <p role="status">{{ t.notCustomer }}</p> }
     </section>
   `,
 })
@@ -43,6 +46,8 @@ export class MyPaymentsPageComponent {
   protected readonly label = labelOf;
   protected readonly cop = formatCop;
   protected readonly departure = departureLine;
+  /** Owner decision of 2026-10-13 (option A): a visitor reads the notice of Mis reservas, not the empty state. */
+  protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
   private readonly only = inject(PortalNavigation, { optional: true })?.params()['reservation'];
   private readonly source = inject(MyPaymentsSource);
   private readonly requests = new Subject<void>();
@@ -57,5 +62,5 @@ export class MyPaymentsPageComponent {
 
   constructor() { this.reload(); }
 
-  reload(): void { this.requests.next(); }
+  reload(): void { if (this.isCustomer) this.requests.next(); }
 }

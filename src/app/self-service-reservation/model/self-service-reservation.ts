@@ -1,3 +1,5 @@
+import { SIGN_IN_AS_CUSTOMER_NOTICE } from '../data/customer-context';
+
 /** What the customer chose in the public offer (HU-COM-006). DP-RS1: it travels in the URL, never in storage. */
 export interface ReservationSelection {
   readonly departureId: string;
@@ -125,7 +127,7 @@ export const SELF_SERVICE_TEXT = {
   departure: 'Salida',
   value: 'Valor',
   empty: 'Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.',
-  panelNotCustomer: 'Inicia sesión como cliente para ver tus reservas.',
+  panelNotCustomer: SIGN_IN_AS_CUSTOMER_NOTICE,
 } as const;
 
 /** The keys of the client areas of this story that a page opens with parameters (PortalNavigation.open). */
