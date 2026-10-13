@@ -37,11 +37,11 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
                 <label for="crp-transfer-proof">{{ text.proof }}</label>
                 <input id="crp-transfer-proof" name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="choose($any($event.target).files?.[0] ?? null)"
                   [attr.aria-invalid]="invalid() ? 'true' : null" aria-describedby="crp-transfer-proof-feedback" />
+                <ng-container *crpSlot="lines; inputs: { reservationId: r.reservationId }" />
                 <p><strong>{{ text.proofState }}</strong> {{ common.proofStatus[r.proofStatus ?? ''] ?? common.noProof }}<br />
                   <strong>{{ text.financial }}</strong> {{ financial[r.paymentStatus] }}</p>
                 <p id="crp-transfer-proof-feedback" aria-live="polite">{{ feedback() }}</p>
                 @if (refused()) { <p role="alert">{{ refused() }}</p> }
-                <ng-container *crpSlot="lines; inputs: { reservationId: r.reservationId }" />
               </article>
               <div class="crp-form-actions"><button type="submit" class="crp-primary" [disabled]="pending()">{{ text.send }}</button>
                 <button type="button" class="crp-outline" (click)="navigation?.open(panel)">{{ text.panel }}</button></div>

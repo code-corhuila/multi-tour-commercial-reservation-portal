@@ -9,7 +9,7 @@ import { formatCop } from '../../shared/format';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { parseMoney } from '../../shared/money';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { PAYMENT_MANAGEMENT_ACTIONS, PortalSlotOutlet } from '../../shared/portal-slots';
+import { PAYMENT_MANAGEMENT_ACTIONS, PAYMENT_MANAGEMENT_NOTES, PortalSlotOutlet } from '../../shared/portal-slots';
 import { PaymentLabels, modalityOf, paymentLabels } from '../components/reservation-payments-block.component';
 import { PaymentsWriter } from '../data/payments-writer';
 import { paymentEntryOf, proofProblem } from '../model/payment';
@@ -41,6 +41,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
               <dl class="crp-payments-list"><div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>{{ text.balance }}</dt><dd>{{ money(r.balanceCents) }}</dd></div></dl></article>
           </div>
           <section class="crp-operator-panel crp-payments-action"><p class="crp-operator-eyebrow">{{ text.actionEyebrow }}</p><h2>{{ text.closedTitle[entry] ?? text.actionTitle }}</h2><p>{{ text.actionCopy }}</p>
+            <ng-container *crpSlot="notes; inputs: { reservation: r }" />
             @if (entry === 'cancelled' || entry === 'settled' || entry === 'closed') {
               <p role="status" class="crp-payments-feedback">{{ entry === 'closed' ? text.closedState(status[r.status]) : text.closedNote[entry] }}</p>
               <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back(r)">{{ text.back }}</button></div>
@@ -83,7 +84,7 @@ export class PaymentManagementPageComponent {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
   protected readonly canRegister = inject(PortalCapabilities).canRegisterPayment();
   protected readonly text = PAYMENTS_TEXT;
-  protected readonly actions = PAYMENT_MANAGEMENT_ACTIONS;
+  protected readonly actions = PAYMENT_MANAGEMENT_ACTIONS; protected readonly notes = PAYMENT_MANAGEMENT_NOTES;
   protected readonly status = STATUS_LABEL; protected readonly badge = STATUS_CLASS; protected readonly financial = FINANCIAL_LABEL;
   protected readonly money = formatCop; protected readonly modality = modalityOf; protected readonly entryOf = paymentEntryOf;
   protected readonly amount = signal('');
