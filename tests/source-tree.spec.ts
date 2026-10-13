@@ -110,6 +110,13 @@ const SPECIFIED_TREE = [
   'src/app/reservation-changes/components/reservation-change-blocks.component.ts',
   'src/app/payments/components/checkout-payment-block.component.ts',
   'src/app/payments/pages/transfer-payment-page.component.ts',
+  'src/app/shared/clock.ts',
+  'src/app/demo/proof-review-demo.ts',
+  'src/app/payments/proof-review-copy.ts',
+  'src/app/payments/data/proof-review-ports.ts',
+  'src/app/payments/pages/payments-page.component.ts',
+  'src/app/payments/pages/validate-proof-page.component.ts',
+  'src/app/payments/components/proof-review-actions.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
