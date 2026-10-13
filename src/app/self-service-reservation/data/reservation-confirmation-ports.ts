@@ -22,9 +22,11 @@ export function selectionSourceFor(params: Readonly<Record<string, string>> | un
   return new (class extends ReservationSelectionSource { override current() { return selection; } })();
 }
 
-/** The methods the tenant enabled (AC-RS.4). */
+/** The methods the tenant enabled (AC-RS.4); HU-COM-009 widens it with the enabled types (plan D-03, DP-PY4). */
 export abstract class PaymentMethodsSource {
   abstract listEnabled(): Observable<readonly PaymentMethod[]>;
+  /** Pago total, Abono. */
+  abstract listTypes(): Observable<readonly PaymentMethod[]>;
 }
 
 /**
