@@ -36,3 +36,16 @@ export abstract class ReschedulingDeadlines {
 }
 /** admin-reprogramar-reserva.html: entered from the 10A header (DP-RP4, owner decision); opened with PortalNavigation.open(RESCHEDULING_AREA, { reservation }). */
 export const RESCHEDULING_AREA = 'rescheduling';
+
+/** The customer's own episodes with a proposal (RN-M-13): the service decides whose they are; the portal sends no customer. */
+export abstract class MyProposalsSource {
+  abstract mine(): Observable<readonly ReschedulingEpisodeView[]>;
+}
+
+/** GAP-008: accept or reject is the whole answer, recorded once per Idempotency-Key (RN-RP5). */
+export abstract class ProposalAnswerWriter {
+  abstract answer(command: { readonly code: string; readonly decision: 'ACCEPTED' | 'REJECTED'; readonly idempotencyKey: string }): Observable<ReschedulingOutcome>;
+}
+
+/** 24A (propuesta-reprogramacion.html), opened with PortalNavigation.open(PROPOSAL_AREA, { reservation }). */
+export const PROPOSAL_AREA = 'rescheduling-proposal';
