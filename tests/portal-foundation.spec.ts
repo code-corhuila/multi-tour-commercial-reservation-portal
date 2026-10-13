@@ -1,4 +1,4 @@
-import { Component, InjectionToken, Provider, input } from '@angular/core';
+import { Component, InjectionToken, Provider, input, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
@@ -235,5 +235,25 @@ describe('reservationsReopenTheDetailAReturnNames', () => {
     const { element, settle } = await screenOf(ReservationsPageComponent, [...reservationProviders({ reservations: listed() }), { provide: PortalNavigation, useValue: navigation }]);
     await settle();
     expect(element.querySelector('.crp-page-header-title')?.textContent?.trim()).toBe('Reservas');
+  });
+});
+
+// Mockup: the sidebar item of the area already open takes the person back to its start ("Reservas" from 10A shows the list).
+@Component({ selector: 'crp-test-stateful', template: `<h1>{{ shown() }}</h1><button type="button" (click)="shown.set('Detalle')">Ver detalle</button>` })
+class StatefulDouble { readonly shown = signal('Lista'); }
+describe('theSidebarItemOfTheOpenAreaRestartsIt', () => {
+  it('shows the start of the area again when its own sidebar item is pressed', async () => {
+    const { host, items, settle } = await operatorShell([
+      { key: 'first', label: 'Catálogos', component: ListDouble },
+      { key: 'reservations', label: 'Reservas', component: StatefulDouble },
+    ]);
+    items().find((b) => b.textContent?.trim() === 'Reservas')!.click();
+    await settle();
+    host.querySelector<HTMLButtonElement>('crp-test-stateful button')!.click();
+    await settle();
+    expect(host.querySelector('crp-test-stateful h1')?.textContent).toBe('Detalle');
+    items().find((b) => b.textContent?.trim() === 'Reservas')!.click();
+    await settle();
+    expect(host.querySelector('crp-test-stateful h1')?.textContent).toBe('Lista');
   });
 });
