@@ -35,7 +35,7 @@ type State = PageState<PendingProofs & { labels: PaymentLabels }>;
                 <tr><td><strong>#{{ r.id }}</strong></td><td>{{ r.leadCustomerName }}</td><td>{{ modality(r, d.labels) }}</td><td>{{ money(r.balanceCents) }}</td>
                   <td><span class="crp-operator-status crp-is-pending">{{ common.proofStatus[row.payment.proofStatus] }}{{ row.overdue ? ' · ' + t.overdueMark : '' }}</span></td>
                   <td><button type="button" (click)="open(row)">{{ canDecide ? t.validate : t.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" /></td></tr>
-              }</tbody><ng-container *crpSlot="tableBodies" /></table></div></div>
+              }</tbody><ng-container *crpSlot="tableBodies; inputs: { proofs: d.rows.length }" /></table></div></div>
         }
       }
     </section>
