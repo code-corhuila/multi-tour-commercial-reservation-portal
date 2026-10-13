@@ -482,3 +482,13 @@
 .crp-root .crp-finish-help { background: #f8fbfa; }
 .crp-root .crp-finish-help strong { display: block; margin-bottom: 6px; color: #17252b; }
 .crp-root .crp-finish-help span { color: #5a6b70; font-size: 0.96rem; line-height: 1.6; }
+/* HU-COM-009 screen 13 (admin-gestion-pago.html): hero, two panels, the payment form in one column. */
+.crp-root .crp-payments-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.crp-root .crp-payments-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
+.crp-root .crp-payments-list { display: grid; gap: 10px; margin: 16px 0 0; }
+.crp-root .crp-payments-list div { display: flex; justify-content: space-between; gap: 16px; } .crp-root .crp-payments-list dt { color: var(--crp-soft); }
+.crp-root .crp-payments-list dd { margin: 0; font-weight: 700; color: var(--crp-text); text-align: right; }
+.crp-root .crp-operator-shell .crp-payments-form { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.crp-root .crp-payments-error { margin: 0; color: var(--crp-error); }
+.crp-root .crp-payments-lines { margin: 16px 0 0; padding-left: 18px; }
+@media (max-width: 720px) { .crp-root .crp-payments-grid { grid-template-columns: minmax(0, 1fr); } }
