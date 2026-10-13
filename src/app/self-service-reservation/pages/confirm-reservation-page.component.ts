@@ -6,7 +6,7 @@ import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
-import { PortalNavigation } from '../../portal-navigation';
+import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, tourPhoto, travelers } from '../model/self-service-reservation';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
@@ -93,7 +93,9 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
             <div><span>{{ text.barTotal }}</span>&ngsp;<strong>{{ cop(current.quote.finalValueCents) }}</strong></div>
           </div>
           <div class="crp-booking-bar-selection"><span>{{ text.barSelected }}</span>&ngsp;<strong>{{ date(current.quote.departureAt) }} - {{ travelers(selection!.people) }}</strong></div>
-          @if (standing !== 'OTHER') { <button type="submit" class="crp-primary crp-booking-continue" [disabled]="pending()">{{ text.confirm }}</button> }
+          @if (created()) {
+            @if (mine) { <button type="button" class="crp-primary crp-booking-continue" (click)="mine.open(area.reservations)">{{ text.seeMine }}</button> }
+          } @else if (standing !== 'OTHER') { <button type="submit" class="crp-primary crp-booking-continue" [disabled]="pending()">{{ text.confirm }}</button> }
         </aside>
       }
     </form>
@@ -117,6 +119,9 @@ export class ConfirmReservationPageComponent {
   /** Volver a fecha y viajeros: only when the shell can open Reservar tour. */
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly back = this.navigation?.has(RESERVATION_FLOW.reserve) ? this.navigation : null;
+  /** Ver mis reservas after success: only when the shell can open Mis reservas. */
+  protected readonly mine = this.navigation?.has(CLIENT_AREA.reservations) ? this.navigation : null;
+  protected readonly area = CLIENT_AREA;
   protected readonly consents = [
     { key: 'conditions', label: SELF_SERVICE_TEXT.acceptConditions },
     { key: 'terms', label: SELF_SERVICE_TEXT.acceptTerms },
@@ -130,7 +135,7 @@ export class ConfirmReservationPageComponent {
   private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
   /** Plan D-05: one key per intention, made when the confirmation opens and kept across retries. */
-  private key = this.keys.generate();
+  private readonly key = this.keys.generate();
   protected readonly method = signal('');
   protected readonly accepted = signal({ conditions: false, terms: false });
   protected readonly missing = signal(false);
@@ -166,7 +171,7 @@ export class ConfirmReservationPageComponent {
 
   protected confirm(): void {
     const selection = this.selection;
-    if (!selection || this.standing === 'OTHER' || this.pending()) return;
+    if (!selection || this.standing === 'OTHER' || this.pending() || this.created()) return;
     const { conditions, terms } = this.accepted();
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
@@ -178,7 +183,8 @@ export class ConfirmReservationPageComponent {
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({
-      next: (reservation) => { this.created.set(reservation); this.key = this.keys.generate(); },
+      // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
+      next: (reservation) => this.created.set(reservation),
       error: (error: Partial<ApiError> | null) => this.refusal.set(
         error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
     });
