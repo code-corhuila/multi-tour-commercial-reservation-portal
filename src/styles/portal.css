@@ -496,6 +496,9 @@
 /* HU-COM-013: admin-cancelar-modificar-reserva.html panels stacked, Causal across the grid, and the detail lists of the screen and of 10A. */
 .crp-root .crp-reservation-changes-form > section { grid-column: 1 / -1; margin: 0; }
 .crp-root .crp-reservation-changes-wide { grid-column: 1 / -1; }
+/* HU-COM-012: the policy answer under Tipo spans the grid (plan D-06). */
+.crp-root .crp-travellers-modification { grid-column: 1 / -1; }
+.crp-root .crp-travellers-modification p { margin: 0; color: var(--crp-soft); font-size: 0.82rem; }
 .crp-root .crp-reservation-changes-list { display: grid; gap: 11px; margin: 16px 0 0; }
 .crp-root .crp-reservation-changes-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--crp-line); }
 .crp-root .crp-reservation-changes-list div:last-child { padding-bottom: 0; border-bottom: 0; }

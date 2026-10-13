@@ -17,6 +17,7 @@ import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reserva
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
+import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -73,6 +74,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
       // HU-COM-010: Validar soporte of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.
       ...PROOF_REVIEW_CONTRIBUTIONS,
+      // HU-COM-012: "Modificación de viajeros", after Cancelación, on the screen of HU-COM-013 only (its area needs the cancellation ports).
+      provideTravellersModification(),
     ],
   }).then((created) => {
     app = created;
