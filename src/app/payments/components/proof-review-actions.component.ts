@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, Directive, Injector, Provider, comp
 import { PortalNavigation } from '../../portal-navigation';
 import { Reservation } from '../../reservations/data/reservations-source';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { PAYMENT_MANAGEMENT_ACTIONS, TRANSFER_PAYMENT_LINES, contribute } from '../../shared/portal-slots';
+import { PAYMENT_MANAGEMENT_ACTIONS, RESERVATION_DETAIL_ACTIONS, RESERVATION_ROW_ACTIONS, TRANSFER_PAYMENT_LINES, contribute } from '../../shared/portal-slots';
 import { ProofReviewWriter, proofToDecide } from '../data/proof-review-ports';
 import { PAYMENTS_TEXT } from '../payments-copy';
 import { PROOF_REVIEW_TEXT } from '../proof-review-copy';
@@ -17,6 +17,14 @@ abstract class ProofLink {
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected open(): void { this.navigation?.open('payments-validate', { reservation: this.reservation().id, payment: this.proof()?.id ?? '' }); }
 }
+/** 10 (admin-reservas.html): " · Validar soporte" after "Ver detalle" on a reservation whose proof is En validación (AC-PV.3). */
+@Component({ selector: 'app-proof-row-link', changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `@if (proof()) { · <button type="button" (click)="open()">{{ canDecide ? t.validate : t.view }}</button> }` })
+export class ProofRowLinkComponent extends ProofLink {}
+/** 10A (admin-detalle-reserva.html): the action "Validar soporte" in the header while the proof is En validación. */
+@Component({ selector: 'app-proof-detail-action', changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `@if (proof()) { <button type="button" class="crp-operator-primary crp-page-header-action" (click)="open()">{{ canDecide ? t.validate : t.view }}</button> }` })
+export class ProofDetailActionComponent extends ProofLink {}
 /** 13 sub-screen (admin-gestion-pago.html): Validar and Rechazar soporte lead to the decision page (reason and amount, RN-RES-006A); the review history. */
 @Component({ selector: 'app-proof-management-actions', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (proof() && canDecide) { <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="open()">{{ t.reject }}</button>
@@ -36,6 +44,8 @@ export class ReviewLimitLineComponent { protected readonly text = PROOF_REVIEW_T
 const withProofReview = (injector: Injector) => injector.get(ProofReviewWriter, null) !== null;
 /** HU-COM-010 contributions (mount-entry.ts): drawn only when the build supplies the review port. */
 export const PROOF_REVIEW_CONTRIBUTIONS: readonly Provider[] = [
+  contribute(RESERVATION_ROW_ACTIONS, { component: ProofRowLinkComponent, order: 10, isAvailable: withProofReview }),
+  contribute(RESERVATION_DETAIL_ACTIONS, { component: ProofDetailActionComponent, order: 0.5, isAvailable: withProofReview }),
   contribute(PAYMENT_MANAGEMENT_ACTIONS, { component: ProofManagementActionsComponent, order: 0, isAvailable: withProofReview }),
   contribute(TRANSFER_PAYMENT_LINES, { component: ReviewLimitLineComponent, order: 0, isAvailable: withProofReview }),
 ];
