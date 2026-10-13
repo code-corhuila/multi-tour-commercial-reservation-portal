@@ -15,6 +15,12 @@ import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from './publi
 import { PublicOfferPageComponent } from './public-offer/pages/public-offer-page.component';
 import { ReservationsSource } from './reservations/data/reservations-source';
 import { ReservationsPageComponent } from './reservations/pages/reservations-page.component';
+import { CustomerContext } from './self-service-reservation/data/customer-context';
+import { ClientPanelPageComponent } from './self-service-reservation/pages/client-panel-page.component';
+import { RESERVATION_FLOW } from './self-service-reservation/model/self-service-reservation';
+import { ConfirmReservationPageComponent } from './self-service-reservation/pages/confirm-reservation-page.component';
+import { MyReservationsPageComponent } from './self-service-reservation/pages/my-reservations-page.component';
+import { ReserveTourPageComponent } from './self-service-reservation/pages/reserve-tour-page.component';
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
 
@@ -62,6 +68,26 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   },
   // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
   { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
+  // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
+  {
+    key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
+    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+  },
+  {
+    key: CLIENT_AREA.reservations, label: 'Mis reservas', component: MyReservationsPageComponent, audience: 'customer', clientChrome: 'panel',
+    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+  },
+  // HU-COM-008 reservar-tour.html: opened by "Reservar tour" of the offer with { tour }.
+  {
+    key: RESERVATION_FLOW.reserve, label: 'Reservar tour', component: ReserveTourPageComponent, audience: 'customer', clientChrome: 'none',
+    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+  },
+  // HU-COM-008 finalizar-reserva.html, opened by "Continuar reserva" with { departure, services, people }.
+  // DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
+  {
+    key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
+    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+  },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }

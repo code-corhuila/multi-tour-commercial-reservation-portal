@@ -20,6 +20,10 @@ import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
+import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
+import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
+import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
+import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { actorAs } from './actor-context.double';
 
 @Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
@@ -79,8 +83,14 @@ describe('portalAreasRegistry', () => {
       { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
       { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
       { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent },
+      { key: 'client-panel', label: 'Mis reservas', component: ClientPanelPageComponent },
+      { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
+      { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
+      { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
+    // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
+    expect(PORTAL_AREAS.find((area) => area.key === 'my-reservations')?.audience).toBe('customer');
   });
 
   it('names every role in Spanish', () => {
