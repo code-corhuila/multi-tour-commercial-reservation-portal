@@ -67,17 +67,6 @@ export function travelers(people: number): string {
   return `${people} ${people === 1 ? 'viajero' : 'viajeros'}`;
 }
 
-/** DP-RS2: who is looking, as far as this area cares. Anything not a final customer is OTHER (fails closed). */
-export type CustomerStanding = 'FINAL_CUSTOMER' | 'NO_SESSION' | 'OTHER';
-
-/** PROVISIONAL, demo only: the real role string is NO DEFINIDO until HU-SEC-002 (DP-RS2). */
-export const FINAL_CUSTOMER_ROLE = 'FINAL_CUSTOMER';
-
-export function standingOf(roles: readonly string[]): CustomerStanding {
-  if (roles.includes(FINAL_CUSTOMER_ROLE)) return 'FINAL_CUSTOMER';
-  return roles.length === 0 ? 'NO_SESSION' : 'OTHER';
-}
-
 /** Reads `?departure=..&services=a,b&people=n`; an incomplete or malformed selection is null, never guessed. */
 export function selectionFromQuery(query: string): ReservationSelection | null {
   const params = new URLSearchParams(query);

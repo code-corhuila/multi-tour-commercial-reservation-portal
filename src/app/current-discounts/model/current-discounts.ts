@@ -29,9 +29,6 @@ export const CURRENT_DISCOUNTS_TEXT = {
   bases: { ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior' },
 } as const;
 
-/** RBAC matrix, "Authorize an additional discount": only the Tenant Administrator. */
-export function canAuthorizeAdditionalDiscount(actor: { role: string }): boolean { return actor.role === 'TENANT_ADMINISTRATOR'; }
-
 /** D-04 (DP-CD2 open): integer half-up per line, never more than the subtotal it is applied to. */
 function amountOf(value: DiscountValue, baseCents: number, subtotalCents: number): number {
   const amount = value.type === 'PERCENTAGE' ? Math.floor((baseCents * value.percentageBasisPoints + 5_000) / 10_000) : value.amountCents;

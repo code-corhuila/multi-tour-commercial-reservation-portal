@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
-import { ActorRole } from '../src/app/catalog/model/catalog-item';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
@@ -15,7 +14,7 @@ import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/a
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
-import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
+import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea } from '../src/app/portal-areas';
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
@@ -25,6 +24,7 @@ import { ConfirmReservationPageComponent } from '../src/app/self-service-reserva
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { actorAs } from './actor-context.double';
+import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
 
 @Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
 class CustomerPageDouble {}
@@ -94,8 +94,8 @@ describe('portalAreasRegistry', () => {
   });
 
   it('names every role in Spanish', () => {
-    expect(ROLE_LABELS.TENANT_ADMINISTRATOR).toBe('Administrador del tenant');
-    expect(Object.values(ROLE_LABELS).every((label) => /^[A-ZÁÉÍÓÚ][a-záéíóúñ ]+$/.test(label))).toBe(true);
+    expect(PortalCapabilities.for('TENANT_ADMINISTRATOR').roleLabel()).toBe('Administrador del tenant');
+    expect((['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT', 'READ_ONLY'] as const).map((role) => PortalCapabilities.for(role).roleLabel()).every((label) => /^[A-ZÁÉÍÓÚ][a-záéíóúñ ]+$/.test(label))).toBe(true);
   });
 });
 
