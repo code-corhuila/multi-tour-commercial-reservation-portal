@@ -1,0 +1,74 @@
+import { SITE_PHOTOS } from '../shared/tour-photo';
+/** Interface texts of the public offer, in one place; the wording follows tours.html, detalle-tour.html, alojamiento.html, gastronomia.html and restaurantes.html. */
+export const PUBLIC_OFFER_COPY = {
+  back: 'Volver al panel cliente',
+  eyebrow: 'Catálogo de experiencias',
+  title: 'Tours',
+  description: 'Explora los tours disponibles y consulta sus detalles.',
+  searchTours: 'Buscar tours por nombre o destino',
+  searchToursHint: 'Buscar tours por nombre o destino...',
+  search: 'Buscar',
+  date: 'Fecha',
+  toursList: 'Listado de tours disponibles',
+  from: 'Desde',
+  before: 'Antes:',
+  discountTag: 'Con descuento',
+  transportIncluded: 'Transporte incluido',
+  detail: 'Ver detalle',
+  backToTours: 'Volver a tours',
+  detailEyebrow: 'Detalle del tour',
+  validityTitle: 'Vigencia, capacidad y restricciones',
+  validity: 'Vigencia',
+  availableOnDay: 'Disponible el',
+  transport: 'Transporte',
+  conditionsTitle: 'Condiciones de reserva',
+  conditions: [
+    'La modificación o cancelación depende de las condiciones vigentes del tour.',
+    'La disponibilidad y los valores se validan antes de registrar la reserva.',
+  ],
+  summary: 'Resumen comercial',
+  validFrom: 'Vigente del',
+  validTo: 'al',
+  reserve: 'Reservar tour',
+  agreementEyebrow: 'Información del convenio',
+  agreementTitle: 'Coordina directamente con el establecimiento',
+  contact: 'Contacto:',
+  seeContact: 'Ver contacto',
+  filters: [['all', 'Todos'], ['restaurants', 'Restaurantes'], ['dishes', 'Platos del día']],
+  noDishes: 'No hay opciones de alimentación disponibles en este momento.',
+  venueTitle: 'Contacto',
+  venueCoordinate: 'Coordina directamente con el establecimiento.',
+  venueNoBooking: { HOTEL: 'La plataforma no crea reservas de habitación ni gestiona tarifas, disponibilidad o inventario.', RESTAURANT: 'La plataforma no crea reservas de mesa ni gestiona tarifas, disponibilidad o inventario.' },
+  venueNoInfo: 'Sin información adicional registrada.',
+  loadingTours: 'Cargando tours…',
+  loadingEstablishments: 'Cargando establecimientos…',
+  empty: 'Sin resultados para esta consulta.',
+  requestFailed: 'No se pudo cargar la información.',
+  retry: 'Reintentar',
+  types: { HOTEL: 'Establecimiento asociado', RESTAURANT: 'Restaurante asociado' },
+  pages: {
+    HOTEL: {
+      eyebrow: 'Establecimientos asociados', title: 'Alojamiento', search: '', searchHint: '', back: 'Volver a alojamiento',
+      description: 'Consulta datos de contacto de establecimientos asociados al operador.',
+      agreement: 'Multitour no genera reservas de habitación, no administra tarifas, disponibilidad ni inventario. La coordinación se realiza directamente con cada establecimiento.',
+    },
+    RESTAURANT: {
+      eyebrow: 'Sabores locales', title: 'Gastronomía', search: 'Buscar restaurantes o platos', searchHint: 'Buscar restaurantes o platos...',
+      back: 'Volver a gastronomía', description: 'Restaurantes y platos del día cerca de tus destinos.', agreement: '',
+    },
+    RESTAURANTS: {
+      eyebrow: 'Establecimientos asociados', title: 'Restaurantes', search: '', searchHint: '', back: 'Volver a restaurantes',
+      description: 'Datos de contacto para coordinar directamente tu visita.',
+      agreement: 'Multitour no genera reservas de mesa, no administra tarifas, disponibilidad ni inventario de alimentación.',
+    },
+  },
+} as const;
+
+/** An establishment card takes a self-hosted photo by its position; a tour takes the one of its id (tourPhoto). */
+export function photoAt(position: number): string { return SITE_PHOTOS[position % SITE_PHOTOS.length]; }
+
+/** The search of a client page: a name contains the words typed, ignoring case and accents. */
+export function matchesSearch(name: string, query: string): boolean {
+  const plain = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+  return plain(name).includes(plain(query));
+}
