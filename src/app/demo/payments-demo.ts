@@ -49,7 +49,7 @@ export class DemoPaymentsWriter extends PaymentsWriter {
     const payments = r.payments ?? [];
     const next: Reservation = { ...r, seatHeld: true, paymentType: r.paymentType ?? c.paymentType, payments: [...payments, {
       id: `${r.id}-P${payments.length + 1}`, method: r.paymentMethod, amountCents: c.amountCents, proofName: transfer ? c.proof!.name : null,
-      proofStatus: transfer ? 'EN_VALIDACION' : 'SIN_COMPROBANTE', registeredBy: this.user.label() }] };
+      proofStatus: transfer ? 'EN_VALIDACION' : 'SIN_COMPROBANTE', registeredBy: this.user.label(), presentedAt: new Date(demoNow()).toISOString() }] };
     this.store.items = this.store.items.map((x) => (x.id === r.id ? next : x));
     this.answered.set(key, next);
     return of(next);
