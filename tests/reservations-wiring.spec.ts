@@ -28,9 +28,9 @@ describe('the reservations area is wired into the shell', () => {
   });
 
   it('leaves an unknown role in the client layout, with no operator Reservas area and no create action', async () => {
-    // The operator shell (#21) sends an unknown role to the client layout (fail closed), so there is no operator nav.
+    // The operator shell sends an unknown role to the client layout (fail closed), so there is no operator nav.
     mountAs(['SOMETHING_ELSE']);
-    await vi.waitFor(() => expect(host.querySelector('.crp-client-shell')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-header')).toBeTruthy());
     expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
     expect(Array.from(host.querySelectorAll('button'), (b) => b.textContent?.trim()).includes('Reservas')).toBe(false);
     expect(host.textContent).not.toContain('Crear reserva');
