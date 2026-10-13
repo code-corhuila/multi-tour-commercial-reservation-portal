@@ -181,23 +181,10 @@ describe('reservarTourShowsOneOfTheFourStates', () => {
   });
 });
 
-describe('reservarTourKeepsTheColumnOfTheMockup (travel-booking-content, fixed bar, Ver condiciones +)', () => {
+// The column and the bar inside it (001- amendment HC-3, 008- H-D11): portal-column.spec.ts.
+describe('reservarTourKeepsTheConditionsOfTheMockup (Ver condiciones +)', () => {
   const css = readFileSync('src/styles/portal.css', 'utf8');
   const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
-
-  it('lays the cards in a column of min(100%, 1100px) and keeps the bottom bar fixed over that same column', () => {
-    expect(rule('.crp-root .crp-booking-content')).toMatch(/width:\s*min\(100%, 1100px\)/);
-    const bar = rule('.crp-root .crp-booking-bar');
-    expect(bar).toMatch(/position:\s*fixed;/);
-    expect(bar).toMatch(/left:\s*50%;/);
-    expect(bar).toMatch(/transform:\s*translateX\(-50%\);/);
-    expect(bar).toMatch(/width:\s*min\(calc\(100% - 48px\), 1100px\);/);
-  });
-
-  it('leaves room under the last card for the bottom bar, as travel-booking-page (104px, 170px when it stacks)', () => {
-    expect(rule('.crp-root .crp-booking-content')).toMatch(/padding:\s*24px 0 144px;/);
-    expect(css).toMatch(/@media \(max-width: 760px\) \{[^@]*\.crp-root \.crp-booking-content \{ padding-bottom: 210px; \}/);
-  });
 
   it('draws Ver condiciones with + and - instead of the disclosure triangle', async () => {
     const p = await openReserve();
