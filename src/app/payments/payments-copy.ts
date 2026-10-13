@@ -12,6 +12,12 @@ export const PAYMENTS_TEXT = {
   registered: { transfer: 'Soporte registrado. El pago queda en validación y la reserva permanece pendiente de pago.',
     cash: 'Pago registrado. Queda pendiente de validación y la reserva permanece pendiente de pago.' },
   noModalityFeedback: 'No hay una modalidad de pago habilitada para esta reserva. Defínela antes de registrar dinero.',
+  /** Mockup app.js 6713-6718: the heading and note of a cancelled or settled reservation. */
+  closedTitle: { cancelled: 'Reserva cancelada', settled: 'Pago registrado' } as Readonly<Record<string, string>>,
+  closedNote: { cancelled: 'Esta reserva está cancelada: no se pueden registrar nuevos pagos ni soportes. Se conserva la trazabilidad existente.',
+    settled: 'No existen valores pendientes por registrar para esta reserva.' } as Readonly<Record<string, string>>,
+  /** Spec 009- section 5: 13 has no text for En ejecución and Finalizada; the mockup's own sentence for them (app.js 6079). */
+  closedState: (status: string) => `Esta reserva está en estado "${status}" y ya no admite modificaciones.`,
   amountRequired: 'Registra un monto mayor a $0.', proofRequired: 'Adjunta el soporte de transferencia para enviarlo a validación.',
   registeredBy: 'Registrado por', noModality: 'Sin modalidad definida', noProof: 'Sin comprobante',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
