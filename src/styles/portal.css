@@ -581,6 +581,17 @@
 .crp-root .crp-proof-review-hero h2 { margin: var(--crp-space-1) 0 0; color: var(--crp-text); } .crp-root .crp-proof-review-hero > p { margin: 0; color: var(--crp-soft); line-height: 1.6; }
 .crp-root .crp-proof-review-wide { grid-column: 1 / -1; }
 @media (max-width: 720px) { .crp-root .crp-proof-review-hero { grid-template-columns: minmax(0, 1fr); } }
+.crp-root .crp-payment-followup-wide { grid-column: 1 / -1; display: grid; }
+
+/* HU-COM-014: mis-pagos.html (travel-dashboard-reservation-grid and -card), the card lines of Mis reservas and the notices of 17. */
+.crp-root .crp-my-payments h2 { margin: 0 0 14px; color: var(--crp-text); font-size: 1.35rem; }
+.crp-root .crp-my-payments-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 0; padding: 0; list-style: none; }
+.crp-root .crp-my-payments-card { display: grid; gap: 6px; padding: 22px; background: var(--crp-surface); border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); box-shadow: var(--crp-shadow); overflow-wrap: anywhere; }
+.crp-root .crp-my-payments-card p, .crp-root .crp-my-payments-card h3 { margin: 0; }
+.crp-root .crp-my-payments-card p { color: var(--crp-soft); }
+.crp-root .crp-my-payments-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--crp-soft); font-size: 0.88rem; }
+.crp-root crp-my-payments-card-lines { display: grid; gap: 6px; color: var(--crp-soft); }
+.crp-root crp-my-payments-notices p { margin: 0 0 8px; }
 /* HU-COM-016 refund screens (admin-solicitudes-devolucion.html hero, admin-detalle-devolucion.html list and forms). */
 .crp-root .crp-refunds-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: var(--crp-space-5); margin-bottom: 22px; padding: var(--crp-space-5) 28px;
   border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-accent-soft); }

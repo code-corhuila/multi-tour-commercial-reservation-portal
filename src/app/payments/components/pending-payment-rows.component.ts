@@ -1,6 +1,4 @@
-import { ChangeDetectionStrategy, Component, Injector, Provider, inject, input } from '@angular/core';
-import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { ChangeDetectionStrategy, Component, Injector, Provider, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -13,20 +11,19 @@ import { CHECKOUT_BLOCKS, PAYMENTS_TABLE_BODIES, TRANSFER_PAYMENT_LINES, contrib
 import { PaymentDeadlineReader, PendingPaymentsSource } from '../data/payment-followup-ports';
 import { PAYMENT_FOLLOWUP_TEXT } from '../payment-followup-copy';
 import { PAYMENTS_TEXT } from '../payments-copy';
-import { PROOF_REVIEW_TEXT } from '../proof-review-copy';
 import { PaymentDeadlineLineComponent } from './payment-deadline-line.component';
 import { PaymentLabels, modalityOf, paymentLabels } from './reservation-payments-block.component';
 
 type State = PageState<{ rows: readonly Reservation[]; labels: PaymentLabels }>;
 
 /** 13 (admin-pagos.html): the "Saldo pendiente" rows after the proofs of HU-COM-010; the action is a button, never the row (plan D-07). */
-@Component({ imports: [ReadErrorComponent],
+@Component({
   selector: 'tbody[crpPendingPaymentRows]', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <tr><td colspan="6" role="status" data-state="loading">{{ common.loading }}</td></tr> }
-      @case ('error') { <tr><td colspan="6" role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="common.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></td></tr> }
+      @case ('error') { <tr><td colspan="6" role="alert" data-state="error">{{ common.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></td></tr> }
       @case ('data') { @let d = s.items[0];
         @for (r of d.rows; track r.id) {
           <tr><td><strong>#{{ r.id }}</strong></td><td>{{ r.leadCustomerName }}</td><td>{{ modality(r, d.labels) }}</td><td>{{ money(r.balanceCents) }}</td>
@@ -34,13 +31,10 @@ type State = PageState<{ rows: readonly Reservation[]; labels: PaymentLabels }>;
             <td>@if (canFollowUp) { <button type="button" (click)="open(r)">{{ t.title }}</button> }</td></tr>
         }
       }
-      @case ('empty') { @if (!proofs()) { <tr><td colspan="6" role="status" data-state="empty">{{ emptyTable }}</td></tr> } }
     }
   `,
 })
 export class PendingPaymentRowsComponent {
-  /** The proof rows the host drew: with none and no pending row, the table shows HU-COM-010's empty text (spec 011-). */
-  readonly proofs = input(0); protected readonly emptyTable = PROOF_REVIEW_TEXT.empty;
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly source = inject(PendingPaymentsSource); private readonly methods = inject(PaymentMethodsSource);
   protected readonly canFollowUp = inject(PortalCapabilities).canFollowUp();
@@ -48,7 +42,7 @@ export class PendingPaymentRowsComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => forkJoin({ rows: this.source.list(), labels: paymentLabels(this.methods) })).pipe(
     map(({ rows, labels }): State => (rows.length ? { kind: 'data', items: [{ rows, labels }] } : { kind: 'empty' })),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   protected open(r: Reservation): void { this.navigation?.open('payments-followup', { reservation: r.id }); }
 }
 

@@ -17,6 +17,9 @@ import { CancellationQuote, cancellationChangeType } from './app/reservation-cha
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
+import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
+import { PAYMENT_FOLLOWUP_CONTRIBUTIONS } from './app/payments/components/pending-payment-rows.component';
+import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
@@ -70,6 +73,12 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
       // HU-COM-010: Validar soporte of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.
       ...PROOF_REVIEW_CONTRIBUTIONS,
+      // HU-COM-011: the Saldo pendiente rows of 13 and the departure start sentence of 21 and 24; only with its ports.
+      ...PAYMENT_FOLLOWUP_CONTRIBUTIONS,
+      // HU-COM-012: "Modificación de viajeros", after Cancelación, on the screen of HU-COM-013 only (its area needs the cancellation ports).
+      provideTravellersModification(),
+      // HU-COM-014: Continuar pago, Mis pagos and the proof notice of 17, and the economic lines of Mis reservas; each only with its port.
+      ...MY_PAYMENTS_CONTRIBUTIONS,
       // HU-COM-016: "Devoluciones monetarias" of 13, only for who authorizes or executes and with the refund ports.
       contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
     ],
