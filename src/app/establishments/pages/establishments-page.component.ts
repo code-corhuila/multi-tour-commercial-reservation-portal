@@ -1,14 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
-import { ActorContext } from '../../catalog/data/catalog-api.service';
-import { capabilitiesOf } from '../../catalog/model/catalog-item';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
 import { ESTABLISHMENTS_COPY } from '../establishments-copy';
 import { AssociatedEstablishmentsWriter } from '../data/associated-establishments-writer';
 import { PageState } from '../../catalog/pages/catalog-page.component';
-import { AssociatedEstablishmentsSource, canReadEstablishments } from '../data/associated-establishments-source';
+import { AssociatedEstablishmentsSource } from '../data/associated-establishments-source';
 import {
   ASSOCIATION_STATUSES, ESTABLISHMENT_TYPES, AssociatedEstablishment,
   AssociationStatus, EstablishmentFilters, EstablishmentType,
@@ -111,15 +110,15 @@ export class EstablishmentsPageComponent {
   private readonly source = inject(AssociatedEstablishmentsSource);
   // Without the container's writer this slice stays readable; no local adapter is substituted.
   private readonly writer = inject(AssociatedEstablishmentsWriter, { optional: true });
-  private readonly actor = inject(ActorContext);
-  protected readonly canWrite = !!this.writer && capabilitiesOf(this.actor.role, this.actor.collaboratorMayEditDescription).canRegister;
+  private readonly capabilities = inject(PortalCapabilities);
+  protected readonly canWrite = !!this.writer && this.capabilities.canRegisterEstablishments();
   protected readonly formOpen = signal(false);
   protected readonly formKey = signal(0);
   protected readonly saving = signal(false);
   protected readonly pendingIds = signal<Readonly<Record<string, boolean>>>({});
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
   private readonly local = signal<EstablishmentsPageState | null>(null);
-  protected readonly canRead = canReadEstablishments(inject(ActorContext));
+  protected readonly canRead = this.capabilities.canReadEstablishments();
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly statuses = ASSOCIATION_STATUSES;
   protected readonly filters = signal<EstablishmentFilters>({});

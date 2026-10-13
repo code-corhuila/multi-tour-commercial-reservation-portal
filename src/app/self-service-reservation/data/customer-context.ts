@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CustomerStanding, standingOf } from '../model/self-service-reservation';
+import { CustomerStanding, customerStandingOf } from '../../shared/portal-capabilities';
 
 /** PROPUESTO, pending HU-FRT-001: the event the portal raises on its host so the container opens its sign-in. */
 export const SIGN_IN_REQUESTED_EVENT = 'crp-sign-in-requested';
@@ -18,7 +18,7 @@ export abstract class CustomerContext {
 
 export function customerContextFor(roles: readonly string[], askSignIn: () => void): CustomerContext {
   return new (class extends CustomerContext {
-    override readonly standing = standingOf(roles);
+    override readonly standing = customerStandingOf(roles);
     override requestSignIn(): void { askSignIn(); }
   })();
 }

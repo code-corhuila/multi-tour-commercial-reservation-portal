@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, exhaustMap, tap } from 'rxjs';
-import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
-import { capabilitiesOf } from '../../catalog/model/catalog-item';
+import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '../data/associated-establishments-writer';
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
@@ -66,8 +66,7 @@ let nextFormId = 0;
 export class EstablishmentFormComponent {
   private readonly writer = inject(AssociatedEstablishmentsWriter);
   private readonly keys = inject(IdempotencyKeys);
-  private readonly actor = inject(ActorContext);
-  protected readonly canRegister = capabilitiesOf(this.actor.role, this.actor.collaboratorMayEditDescription).canRegister;
+  protected readonly canRegister = inject(PortalCapabilities).canRegisterEstablishments();
   private idempotencyKey = this.keys.generate();
   private readonly prefix = `establishment-form-${nextFormId++}`;
   private submittedForm: HTMLFormElement | null = null;

@@ -19,6 +19,7 @@ const SPECIFIED_TREE = [
   'src/app/portal-audience.ts',
   'src/app/portal-navigation.ts',
   'src/app/shared/format.ts',
+  'src/app/shared/portal-capabilities.ts',
   'src/app/shared/tour-photo.ts',
   'src/app/http/api-paths.ts',
   'src/app/http/catalog-api-sources.ts',
