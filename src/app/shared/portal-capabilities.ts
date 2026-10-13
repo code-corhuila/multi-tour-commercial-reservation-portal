@@ -53,6 +53,10 @@ interface Row {
   readonly changeReservation: boolean;
   /** HU-COM-010: RBAC row Validate or reject a transfer proof; the Collaborator only with Validar comprobantes (HU-SEC-006, G-PERM). */
   readonly decideProof: 'always' | 'if-granted' | 'never';
+  /** HU-COM-011 AC3: the Collaborator and the Administrator follow up a pending payment; the other roles, DP-PP4 (read only in the demo). */
+  readonly followUp: boolean;
+  /** HU-COM-016: RBAC row Authorize a refund (the Administrator); executing an authorized one also falls to the Collaborator (AC2, DP-RF5). */
+  readonly refund: 'authorize' | 'execute' | 'never';
   /** HU-COM-018 D-07: propose a new departure or cancel with 100 % refund (story actor line; DP-RP1, DP-RP2 open). */
   readonly proposeRescheduling: boolean;
   /** HU-COM-016: RBAC row Authorize a refund (the Administrator); executing an authorized one also falls to the Collaborator (AC2, DP-RF5). */
@@ -61,17 +65,18 @@ interface Row {
   readonly readEstablishments: boolean;
 }
 
-const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false, changeReservation: false, decideProof: 'never', refund: 'never',
-  proposeRescheduling: false } as const;
+const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false, changeReservation: false, decideProof: 'never', followUp: false,
+  refund: 'never', proposeRescheduling: false } as const;
 const READER: Row = { ...NONE, label: 'Solo lectura', operator: true, catalog: 'read', customers: 'read', readEstablishments: true };
 
 /** Today's nine matrices, moved row by row; no decision changed in the move. */
 const TABLE: Readonly<Record<ActorRole, Row>> = Object.freeze({
   TENANT_ADMINISTRATOR: { label: 'Administrador del tenant', operator: true, catalog: 'all', customers: 'register', sensitiveData: true,
-    manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'always', refund: 'authorize', readEstablishments: true,
-    proposeRescheduling: true },
+    manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'always', followUp: true, refund: 'authorize',
+    readEstablishments: true, proposeRescheduling: true },
   OPERATIONAL_COLLABORATOR: { ...NONE, label: 'Colaborador operativo', operator: true, catalog: 'description-if-enabled', customers: 'register',
-    sensitiveData: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'if-granted', refund: 'execute', readEstablishments: false, proposeRescheduling: true },
+    sensitiveData: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'if-granted', followUp: true, refund: 'execute',
+    readEstablishments: false, proposeRescheduling: true },
   MANAGER: { ...READER, label: 'Gerente' },
   ANALYST: { ...READER, label: 'Analista' },
   ACCOUNTANT: { ...NONE, label: 'Contador', operator: true, catalog: 'denied', customers: 'denied', readEstablishments: false },
@@ -126,6 +131,7 @@ export class PortalCapabilities {
   canAuthorizeRefund(): boolean { return this.row.refund === 'authorize'; }
   canExecuteRefund(): boolean { return this.row.refund !== 'never'; }
   canDecideProof(): boolean { return this.row.decideProof === 'always' || (this.row.decideProof === 'if-granted' && this.collaboratorMayValidateProofs); }
+  canFollowUp(): boolean { return this.row.followUp; }
   canProposeRescheduling(): boolean { return this.row.proposeRescheduling; }
   canReadEstablishments(): boolean { return this.row.readEstablishments && this.catalog().canRead; }
   canRegisterEstablishments(): boolean { return this.catalog().canRegister; }

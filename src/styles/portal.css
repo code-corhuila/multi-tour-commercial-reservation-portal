@@ -526,6 +526,7 @@
 .crp-root .crp-rescheduling-hero h2 { margin: 4px 0 0; color: var(--crp-text); font-size: clamp(1.25rem, 1.1rem + 0.45vw, 1.58rem); line-height: 1.25; letter-spacing: -0.045em; }
 .crp-root .crp-rescheduling-hero .crp-status { justify-self: end; }
 @media (max-width: 620px) { .crp-root .crp-rescheduling-hero { grid-template-columns: 1fr; } .crp-root .crp-rescheduling-hero .crp-status { justify-self: start; } }
+.crp-root .crp-payment-followup-wide { grid-column: 1 / -1; display: grid; }
 
 /* HU-COM-014: mis-pagos.html (travel-dashboard-reservation-grid and -card), the card lines of Mis reservas and the notices of 17. */
 .crp-root .crp-my-payments h2 { margin: 0 0 14px; color: var(--crp-text); font-size: 1.35rem; }
