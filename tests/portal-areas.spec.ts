@@ -25,6 +25,7 @@ import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pa
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
+import { PaymentManagementPageComponent } from '../src/app/payments/pages/payment-management-page.component';
 import { actorAs } from './actor-context.double';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
@@ -92,6 +93,7 @@ describe('portalAreasRegistry', () => {
       { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
       { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
+      { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
