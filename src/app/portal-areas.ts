@@ -27,6 +27,8 @@ import { DeparturesSource } from './reservations/data/departures-source';
 import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
+import { PaymentsWriter } from './payments/data/payments-writer';
+import { PaymentManagementPageComponent } from './payments/pages/payment-management-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -104,6 +106,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, PaymentMethodsSource, SelectionQuoteSource, ReservationRequester),
   },
+  // HU-COM-009 admin-gestion-pago.html (13): opened by Gestionar pago of 10A and 10C with { reservation }; Reservas stays active.
+  { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent, menu: false, parent: 'reservations',
+    isAvailable: (injector) => has(injector, ReservationsSource, PaymentsWriter, PaymentMethodsSource) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
