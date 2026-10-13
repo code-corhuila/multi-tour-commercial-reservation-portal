@@ -22,11 +22,18 @@ export function selectionSourceFor(params: Readonly<Record<string, string>> | un
   return new (class extends ReservationSelectionSource { override current() { return selection; } })();
 }
 
-/** The methods the tenant enabled (AC-RS.4); HU-COM-009 widens it with the enabled types (plan D-03, DP-PY4). */
+/** What HU-COM-009 reads through this port instead of the model of 008-. */
+export type { CustomerReservation, SelectionQuote } from '../model/self-service-reservation';
+export { reservationState } from '../model/self-service-reservation';
+/** HU-COM-009 "Datos bancarios" of 24 (DP-PY4: who configures them is NO DEFINIDO). */
+export type BankAccount = { readonly bank: string; readonly accountType: string; readonly accountNumber: string; readonly holder: string };
+
+/** The methods the tenant enabled (AC-RS.4); HU-COM-009 widens it with the enabled types and the bank data (plan D-03, DP-PY4). */
 export abstract class PaymentMethodsSource {
   abstract listEnabled(): Observable<readonly PaymentMethod[]>;
   /** Pago total, Abono. */
   abstract listTypes(): Observable<readonly PaymentMethod[]>;
+  abstract bankAccount(): Observable<BankAccount>;
 }
 
 /**
