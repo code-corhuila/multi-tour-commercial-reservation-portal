@@ -27,6 +27,8 @@ export const PAYMENT_MANAGEMENT_ACTIONS: PortalSlotToken = new InjectionToken('P
 export const PAYMENTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('PAYMENTS_PAGE_PANELS');
 /** 13 (admin-pagos): actions of each payments row; the outlet comes with that page. */
 export const PAYMENTS_ROW_ACTIONS: PortalSlotToken = new InjectionToken('PAYMENTS_ROW_ACTIONS');
+/** 13 (admin-pagos): row groups of "Pagos pendientes" after the page's own, each a tbody of its story; the outlet comes with that page. */
+export const PAYMENTS_TABLE_BODIES: PortalSlotToken = new InjectionToken('PAYMENTS_TABLE_BODIES');
 /** 17 (panel-cliente): items of "Acciones rápidas" after its own; a contribution's selector names an li. */
 export const CLIENT_QUICK_ACTIONS: PortalSlotToken = new InjectionToken('CLIENT_QUICK_ACTIONS');
 /** 17 (panel-cliente): the "Notificaciones" section, drawn only when a notice is available. */
