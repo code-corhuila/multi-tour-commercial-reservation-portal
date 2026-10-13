@@ -1,6 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
@@ -13,7 +11,7 @@ import { PROPOSAL_COPY, REFUSAL_TEXT, RESCHEDULING_COPY, startLine } from '../re
 type State = PageState<ReschedulingEpisodeView>;
 
 /** 24A (propuesta-reprogramacion.html), opened with { reservation }: only the customer's own proposal (RN-M-13); one answer (RN-RP5). */
-@Component({ imports: [ReadErrorComponent],
+@Component({
   selector: 'app-rescheduling-proposal-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-client-panel-header">
@@ -26,7 +24,7 @@ type State = PageState<ReschedulingEpisodeView>;
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ c.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="c.failed" />&ngsp;<button type="button" class="crp-outline" (click)="s.retry()">{{ c.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error">{{ c.failed }} <button type="button" class="crp-outline" (click)="s.retry()">{{ c.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ t.none }}</p> }
       @case ('data') {
         @let e = s.items[0];
@@ -68,7 +66,7 @@ export class ReschedulingProposalPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.mine().pipe(
     map((all): State => { const e = all.find((x) => x.reservationId === this.code); return e ? { kind: 'data', items: [e] } : { kind: 'empty' }; }),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
+    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
 
   /** The mockup's message, with the reservation's real state (spec section 5). */
