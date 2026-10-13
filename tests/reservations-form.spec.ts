@@ -94,7 +94,7 @@ describe('submitIsDisabledWhileASubmissionIsPending and aRetriedCreationReusesIt
     expect(writer.calls).toHaveLength(1);
     expect(button('Registrar reserva')!.disabled).toBe(true);
     expect(writer.calls[0].command).toMatchObject({ leadCustomerId: 'cus-1', departureId: 'dep-1', serviceIds: ['svc-Kayak'], people: 3 });
-    expect(writer.calls[0].command.quote.projectedCents).toBe(7497);
+    expect('quote' in writer.calls[0].command).toBe(false);
   });
 
   it('reuses the key after a failure, and a new form uses a new key', async () => {

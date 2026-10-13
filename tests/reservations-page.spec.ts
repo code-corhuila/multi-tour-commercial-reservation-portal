@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ControllableReservations, StubDepartures, StubDiscounts, reservationOf, reservationProviders, screenOf } from './reservations.double';
+import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
+import { DEFAULT_SERVICES, StubCatalog } from './reservations.double';
 
 const NEW = 'Crear reserva';
 
@@ -40,7 +42,8 @@ async function overDemo() {
   discounts.lines = [{ name: 'Early bird', base: 'ORIGINAL_VALUE', amountCents: 1000 }];
   const open = departures.items.find((d) => d.state === 'PROGRAMADA' && d.openForReservations)!;
   const view = await screenOf(ReservationsPageComponent, reservationProviders({ reservations: store, discounts,
-    writer: new DemoReservationsWriter(store, departures), departures: new StubDepartures(() => of(departures.items)) }));
+    writer: new DemoReservationsWriter(store, departures, new DemoReservationQuotes(departures, new StubCatalog(DEFAULT_SERVICES), discounts)),
+    departures: new StubDepartures(() => of(departures.items)) }));
   const create = async () => {
     await view.click(NEW);
     await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);

@@ -85,6 +85,7 @@ export const SELF_SERVICE_TEXT = {
   backToReserve: 'Volver a fecha y viajeros',
   pill: 'Selecciona el medio de pago habilitado para esta reserva.',
   holderTitle: 'Cliente titular',
+  holderPending: 'Pendiente de definición: estos datos aún no se registran (DP-RS5).',
   travelersTitle: 'Viajeros',
   travelersCopy: 'La cantidad total de viajeros determina los acompañantes que deben registrarse. Los documentos no pueden repetirse dentro de la misma reserva.',
   conditionLines: ['La modificación o cancelación depende de las condiciones vigentes del tour.', 'La disponibilidad y los valores se validan antes de registrar la reserva.'],

@@ -1,21 +1,25 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
-import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuote, selectionFromParams, selectionFromQuery } from '../model/self-service-reservation';
+import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuote, selectionFromParams } from '../model/self-service-reservation';
 
-/** DP-RS1: the selection is read from the URL the container mounted the portal on. */
-@Injectable({ providedIn: 'root', useFactory: () => new UrlSelection() })
+/**
+ * DP-RS1, 008- H-D10: the selection the container handed over when it mounted the portal (MountProps.initialParams,
+ * PROPUESTO for ADR-007). The portal never reads the address: without parameters there is no selection.
+ */
+@Injectable({ providedIn: 'root', useFactory: () => selectionSourceFor(undefined) })
 export abstract class ReservationSelectionSource {
   abstract current(): ReservationSelection | null;
 }
 
-/** DP-RS1: the selection Reservar tour opened the area with, else the one of the URL the portal was mounted on. */
+/** DP-RS1: the selection Reservar tour opened the area with, else the one the portal was mounted with. */
 export function injectSelection(): ReservationSelection | null {
   return selectionFromParams(inject(PortalNavigation, { optional: true })?.params() ?? {}) ?? inject(ReservationSelectionSource).current();
 }
 
-class UrlSelection extends ReservationSelectionSource {
-  override current(): ReservationSelection | null { return selectionFromQuery(globalThis.location?.search ?? ''); }
+export function selectionSourceFor(params: Readonly<Record<string, string>> | undefined): ReservationSelectionSource {
+  const selection = params ? selectionFromParams(params) : null;
+  return new (class extends ReservationSelectionSource { override current() { return selection; } })();
 }
 
 /** The methods the tenant enabled (AC-RS.4). */

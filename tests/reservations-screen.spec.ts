@@ -5,6 +5,8 @@ import { ReservationFormComponent } from '../src/app/reservations/components/res
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ControllableReservations, StubDepartures, StubDiscounts, reservationOf, reservationProviders, screenOf } from './reservations.double';
+import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
+import { DEFAULT_SERVICES, StubCatalog } from './reservations.double';
 
 // Authorized screens 10, 10A, 10B and 10C (12-ux-ui/authorized-screens.md, row HU-COM-007).
 const RAW = ['PENDIENTE_DE_PAGO', 'SIN_PAGO', 'ORIGINAL_VALUE', 'PREVIOUS_SUBTOTAL', 'PROGRAMADA', '2026-11-07'];
@@ -18,7 +20,8 @@ async function overDemo(people = '2') {
   discounts.lines = [{ name: 'Temporada baja', base: 'ORIGINAL_VALUE', amountCents: 1000 }];
   const open = departures.items.find((d) => d.state === 'PROGRAMADA' && d.openForReservations)!;
   const view = await screenOf(ReservationsPageComponent, reservationProviders({ reservations: store, discounts,
-    writer: new DemoReservationsWriter(store, departures), departures: new StubDepartures(() => of(departures.items)) }));
+    writer: new DemoReservationsWriter(store, departures, new DemoReservationQuotes(departures, new StubCatalog(DEFAULT_SERVICES), discounts)),
+    departures: new StubDepartures(() => of(departures.items)) }));
   const create = async () => {
     await view.click('Crear reserva');
     await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);

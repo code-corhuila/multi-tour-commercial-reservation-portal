@@ -5,6 +5,7 @@ import { MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
 import { SensitiveDataAccess, sensitiveDataAccessFor } from './app/customers/data/customers-source';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
+import { ReservationSelectionSource, selectionSourceFor } from './app/self-service-reservation/data/reservation-confirmation-ports';
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
 
@@ -50,6 +51,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: SensitiveDataAccess, useValue: sensitiveDataAccessFor(props.session.roles) },
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
       { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
+      { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
     ],
   }).then((created) => {
     app = created;
