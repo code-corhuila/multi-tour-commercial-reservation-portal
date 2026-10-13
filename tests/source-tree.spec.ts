@@ -117,6 +117,12 @@ const SPECIFIED_TREE = [
   'src/app/payments/pages/payments-page.component.ts',
   'src/app/payments/pages/validate-proof-page.component.ts',
   'src/app/payments/components/proof-review-actions.component.ts',
+  'src/app/demo/refunds-demo.ts',
+  'src/app/refunds/refunds-copy.ts',
+  'src/app/refunds/data/refunds-ports.ts',
+  'src/app/refunds/components/refunds-panel.component.ts',
+  'src/app/refunds/pages/refund-requests-page.component.ts',
+  'src/app/refunds/pages/refund-detail-page.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
