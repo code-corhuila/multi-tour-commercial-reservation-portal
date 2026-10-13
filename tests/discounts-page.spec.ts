@@ -6,10 +6,13 @@ import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
 import { PORTAL_ROUTES, CATALOG_ROUTES } from '../src/app/catalog/catalog.routes';
 import { ActorRole } from '../src/app/catalog/model/catalog-item';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
+import { DiscountRulesWriter } from '../src/app/discounts/data/discount-rules-writer';
 import { DISCOUNT_ROUTES } from '../src/app/discounts/discounts.routes';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableDiscountRulesSource, discountNamed } from './discount-rules-source.double';
+import { ControllableDiscountRulesWriter } from './discount-rules-writer.double';
+const RAW_CODES = /\b(ACTIVE|INACTIVE|IN_FORCE|UPCOMING|EXPIRED|PERCENTAGE|FIXED_AMOUNT|ORIGINAL_VALUE|PREVIOUS_SUBTOTAL)\b/;
 
 export async function openDiscounts(role: ActorRole = 'TENANT_ADMINISTRATOR', providers: any[] = []) {
   const source = new ControllableDiscountRulesSource();
@@ -25,13 +28,45 @@ describe('discount list states and newest request', () => {
   it('shows loading, error with retry, empty, and priority ordered data including inactive rules', async () => {
     const p = await openDiscounts(); expect(p.state()).toBe('loading');
     p.source.requests[0].fail(); await p.settle(); expect(p.state()).toBe('error');
-    Array.from(p.element.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Retry')!.click(); await p.settle();
+    Array.from(p.element.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Reintentar')!.click(); await p.settle();
     expect(p.state()).toBe('loading'); p.source.requests[1].reply([]); await p.settle(); expect(p.state()).toBe('empty');
     p.fixture.componentInstance.reload(); p.source.requests[2].reply([discountNamed('Second', 2), { ...discountNamed('First'), status: 'INACTIVE' }]);
     await p.settle(); expect(p.state()).toBe('data');
     const rows = Array.from(p.element.querySelectorAll('li'), r => r.textContent);
     expect(rows[0]).toContain('First'); expect(rows[1]).toContain('Second');
-    for (const text of ['2026-01-01', '2026-12-31', '12.50', 'INACTIVE']) expect(rows[0]).toContain(text);
+    for (const text of ['01 ene 2026 - 31 dic 2026', 'Prioridad 1', '12,5% de descuento', 'Inactivo']) expect(rows[0]).toContain(text);
+    expect(rows[0]).not.toMatch(/2026-01-01|12\.50/); expect(p.element.textContent).not.toMatch(RAW_CODES);
+  });
+  it('draws screen 12: header, hero, numbered panel, promotions and Spanish badges', async () => {
+    const p = await openDiscounts('TENANT_ADMINISTRATOR', [{ provide: DiscountRulesWriter, useValue: new ControllableDiscountRulesWriter() }]);
+    const rule = (name: string, startsOn: string, endsOn: string, priority: number) => ({ ...discountNamed(name, priority), startsOn, endsOn });
+    p.source.requests[0].reply([rule('En curso', '2000-01-01', '2999-12-31', 1), rule('Futuro', '2999-01-01', '2999-12-31', 2),
+      rule('Pasado', '2000-01-01', '2000-12-31', 3), { ...rule('Apagado', '2000-01-01', '2999-12-31', 4), status: 'INACTIVE' },
+      { ...rule('Monto', '2000-01-01', '2999-12-31', 5), type: 'FIXED_AMOUNT', amountCents: 5_000_000, percentageBasisPoints: undefined }]);
+    await p.settle(); const e = p.element;
+    expect(e.querySelector('.crp-page-header-eyebrow')?.textContent).toBe('Reglas comerciales');
+    expect(e.querySelector('h1')?.textContent).toBe('Descuentos');
+    expect(e.querySelector('.crp-page-header .crp-primary')?.textContent?.trim()).toBe('Crear descuento');
+    expect(e.querySelector('.crp-discount-hero')?.textContent).toContain('Descuentos visibles y trazables.');
+    expect(e.querySelector('.crp-operator-panel .crp-operator-panel-head .crp-operator-status')?.textContent).toBe('2 activas');
+    const items = Array.from(e.querySelectorAll('li.crp-discount-promo'));
+    expect(items.map(i => i.querySelector('.crp-operator-status')?.textContent)).toEqual(['Vigente', 'Próximo', 'Vencido', 'Inactivo', 'Vigente']);
+    expect(items[0].querySelector('.crp-operator-status')?.classList).toContain('crp-is-confirmed');
+    expect(items[3].querySelector('.crp-operator-status')?.classList).toContain('crp-is-pending');
+    expect(items[0].querySelector('strong')?.textContent).toBe('12,5% de descuento');
+    expect(items[4].querySelector('strong')?.textContent).toBe('$50.000 de descuento');
+    expect(items[0].textContent).toContain('Base de cálculo: Valor original');
+    expect(Array.from(items[0].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros', 'Inactivar']);
+    expect(Array.from(items[3].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros']);
+    expect(e.textContent).not.toMatch(RAW_CODES); expect(e.textContent).not.toMatch(/Discount|Retry|Loading|No results/);
+  });
+  it('writes the loading, empty, error and denied states in Spanish', async () => {
+    const p = await openDiscounts(); expect(p.element.textContent).toContain('Cargando descuentos');
+    p.source.requests[0].fail(); await p.settle(); expect(p.element.textContent).toContain('No se pudieron cargar los descuentos.');
+    p.fixture.componentInstance.reload(); p.source.requests[1].reply([]); await p.settle();
+    expect(p.element.textContent).toContain('Aún no hay descuentos configurados.');
+    TestBed.resetTestingModule(); const denied = await openDiscounts('OPERATIONAL_COLLABORATOR');
+    expect(denied.element.textContent).toContain('No tienes acceso a los descuentos.');
   });
   it('unsubscribes the previous request and ignores its slower response', async () => {
     const p = await openDiscounts(); p.fixture.componentInstance.reload();
@@ -66,7 +101,7 @@ describe('discount route fails closed', () => {
     TestBed.configureTestingModule({ providers: [provideRouter(PORTAL_ROUTES), { provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') },
       { provide: DiscountRulesSource, useValue: source }] });
     const h = await RouterTestingHarness.create(); await h.navigateByUrl('/discounts', DiscountsPageComponent);
-    expect(h.routeNativeElement?.textContent).toContain('Discount rules'); expect(source.requests).toHaveLength(1);
+    expect(h.routeNativeElement?.textContent).toContain('Descuentos'); expect(source.requests).toHaveLength(1);
     expect(CATALOG_ROUTES.some(r => r.path === 'discounts')).toBe(false);
   });
   it('an absent container actor also denies the address', async () => {

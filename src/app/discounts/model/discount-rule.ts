@@ -1,4 +1,5 @@
 import { formatMoney, parseMoney } from '../../catalog/model/money';
+import { formatCop } from '../../shared/format';
 import { parsePercentage } from './percentage';
 /** PROPUESTO (DP-03): field names await the published API contract. */
 export type DiscountValue = { type: 'PERCENTAGE'; percentageBasisPoints: number; amountCents?: never }
@@ -8,33 +9,50 @@ export type DiscountRule = DiscountValue & {
   readonly priority: number; readonly calculationBase: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly status: 'ACTIVE' | 'INACTIVE';
 };
 export type DiscountRuleCommand = Omit<DiscountRule, 'id' | 'status' | keyof DiscountValue> & DiscountValue;
+/** Texts of the authorized screen 12 (admin-descuentos, admin-nuevo-descuento, admin-editar-descuento). */
 export const DISCOUNT_TEXT = {
-  title: 'Discount rules', loading: 'Loading', empty: 'No results', failed: 'The request failed.', retry: 'Retry',
-  denied: 'You do not have access to discount rules.', entry: 'Discount rules', create: 'New discount rule', edit: 'Edit',
-  inactivate: 'Inactivate', confirm: 'Confirm inactivation', cancel: 'Cancel', save: 'Save',
-  confirmation: 'Existing reservations keep their discount. Inactivate this rule?',
+  eyebrow: 'Reglas comerciales', title: 'Descuentos', newTitle: 'Nuevo descuento', editTitle: 'Editar descuento', back: 'Volver a descuentos',
+  heroEyebrow: 'Configuración', heroTitle: 'Descuentos visibles y trazables.',
+  heroCopy: 'Define vigencia, prioridad, base de cálculo y valor antes de habilitarlos.',
+  panelEyebrow: 'Por prioridad', panelTitle: 'Promociones configuradas',
+  loading: 'Cargando descuentos…', saving: 'Guardando…', empty: 'Aún no hay descuentos configurados.',
+  failed: 'No se pudieron cargar los descuentos.', retry: 'Reintentar', denied: 'No tienes acceso a los descuentos.',
+  create: 'Crear descuento', edit: 'Editar parámetros', inactivate: 'Inactivar', confirm: 'Confirmar inactivación', cancel: 'Cancelar',
+  save: 'Guardar cambios', newLead: 'Configura la promoción', editLead: 'Actualiza la promoción', orderLead: 'Vigencia y orden',
+  newFeedback: 'Completa los parámetros para publicar el descuento.',
+  editFeedback: 'Actualiza los parámetros y guarda para aplicar los cambios a este mismo descuento.',
+  confirmation: 'Las reservas existentes conservan el descuento que ya tienen. ¿Inactivar este descuento?',
 };
 export function canManageDiscounts(actor: { role: string }): boolean { return actor.role === 'TENANT_ADMINISTRATOR'; }
+/** `20% de descuento`, `12,5% de descuento`, `$50.000 de descuento`. */
 export function discountValueText(rule: DiscountValue): string {
-  return rule.type === 'PERCENTAGE' ? `${formatMoney(rule.percentageBasisPoints)} %` : formatMoney(rule.amountCents);
+  if (rule.type !== 'PERCENTAGE') return `${formatCop(rule.amountCents)} de descuento`;
+  const points = rule.percentageBasisPoints, decimals = String(points % 100).padStart(2, '0').replace(/0$/, '');
+  return `${Math.trunc(points / 100)}${points % 100 ? ',' + decimals : ''}% de descuento`;
 }
-/** DP-PD2 remains open: textual states only, without inventing design tokens. */
-export function discountValidity(rule: DiscountRule, today: string): string {
-  return rule.status === 'INACTIVE' ? 'INACTIVE' : today < rule.startsOn ? 'UPCOMING' : today > rule.endsOn ? 'EXPIRED' : 'IN_FORCE';
+/** DP-PD2 (PROPUESTO): the badge pills of screen 11, in Spanish. */
+export function discountValidity(rule: DiscountRule, today: string): { label: string; tone: string } {
+  return rule.status === 'INACTIVE' ? { label: 'Inactivo', tone: 'pending' } : today < rule.startsOn ? { label: 'Próximo', tone: 'execution' }
+    : today > rule.endsOn ? { label: 'Vencido', tone: 'finalized' } : { label: 'Vigente', tone: 'confirmed' };
 }
 export const DISCOUNT_FIELDS = [
-  { name: 'name', label: 'Name', kind: 'text' }, { name: 'startsOn', label: 'Starts on', kind: 'date' },
-  { name: 'endsOn', label: 'Ends on', kind: 'date' }, { name: 'priority', label: 'Priority', kind: 'text' },
-  { name: 'value', label: 'Value', kind: 'text' },
+  { name: 'name', label: 'Nombre del descuento', kind: 'text' }, { name: 'startsOn', label: 'Vigencia desde', kind: 'date' },
+  { name: 'endsOn', label: 'Vigencia hasta', kind: 'date' }, { name: 'priority', label: 'Prioridad', kind: 'text' },
+  { name: 'value', label: 'Porcentaje de descuento', kind: 'text' },
 ] as const;
 export const DISCOUNT_SELECTS = [
-  { name: 'calculationBase', label: 'Calculation base', options: [
-    { value: 'ORIGINAL_VALUE', label: 'Original value', explanation: 'Calculated on the original reservation value.' },
-    { value: 'PREVIOUS_SUBTOTAL', label: 'Subtotal after the previous discount', explanation: 'Calculated on the subtotal left by the preceding discount.' },
+  { name: 'calculationBase', label: 'Base de cálculo', options: [
+    { value: 'ORIGINAL_VALUE', label: 'Valor original', explanation: 'se calcula sobre el valor original de la reserva.' },
+    { value: 'PREVIOUS_SUBTOTAL', label: 'Subtotal resultante del descuento anterior', explanation: 'se calcula sobre el subtotal que deja el descuento previo.' },
   ] },
-  { name: 'type', label: 'Value type', options: [
-    { value: 'PERCENTAGE', label: 'Percentage', explanation: '' }, { value: 'FIXED_AMOUNT', label: 'Fixed amount', explanation: '' },
+  { name: 'type', label: 'Tipo de valor', options: [
+    { value: 'PERCENTAGE', label: 'Porcentaje', explanation: '' }, { value: 'FIXED_AMOUNT', label: 'Monto fijo', explanation: '' },
   ] },
+] as const;
+/** The two numbered panels of the form, in the order of the screen. */
+export const DISCOUNT_SECTIONS = [
+  { eyebrow: '01. Descuento', fields: ['name', 'type', 'value', 'calculationBase'] },
+  { eyebrow: '02. Vigencia y prioridad', fields: ['startsOn', 'endsOn', 'priority'] },
 ] as const;
 export type DiscountDraft = Record<(typeof DISCOUNT_FIELDS)[number]['name'] | (typeof DISCOUNT_SELECTS)[number]['name'], string>;
 export type DiscountField = keyof DiscountDraft;
@@ -46,17 +64,17 @@ export function discountDraft(rule: DiscountRule | null): DiscountDraft {
 }
 export function validateDiscount(d: DiscountDraft): DiscountMessages {
   const errors: DiscountMessages = {};
-  if (!d.name.trim()) errors.name = 'Name required.';
+  if (!d.name.trim()) errors.name = 'El nombre es obligatorio.';
   for (const field of ['startsOn', 'endsOn'] as const) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d[field]) || !Number.isFinite(Date.parse(d[field]))
-      || new Date(d[field]).toISOString().slice(0, 10) !== d[field]) errors[field] = 'A complete date is required.';
+      || new Date(d[field]).toISOString().slice(0, 10) !== d[field]) errors[field] = 'Ingresa una fecha completa.';
   }
-  if (!errors.startsOn && !errors.endsOn && d.startsOn > d.endsOn) errors.startsOn = errors.endsOn = 'Validity start must not follow its end.';
-  if (!/^\d+$/.test(d.priority) || !Number.isSafeInteger(Number(d.priority)) || Number(d.priority) < 1) errors.priority = 'Positive integer priority required.';
-  if (!DISCOUNT_SELECTS[0].options.some(o => o.value === d.calculationBase)) errors.calculationBase = 'Calculation base required.';
-  if (!DISCOUNT_SELECTS[1].options.some(o => o.value === d.type)) errors.type = 'Value type required.';
+  if (!errors.startsOn && !errors.endsOn && d.startsOn > d.endsOn) errors.startsOn = errors.endsOn = 'El inicio de la vigencia no puede ser posterior a su fin.';
+  if (!/^\d+$/.test(d.priority) || !Number.isSafeInteger(Number(d.priority)) || Number(d.priority) < 1) errors.priority = 'La prioridad debe ser un entero positivo.';
+  if (!DISCOUNT_SELECTS[0].options.some(o => o.value === d.calculationBase)) errors.calculationBase = 'Elige la base de cálculo.';
+  if (!DISCOUNT_SELECTS[1].options.some(o => o.value === d.type)) errors.type = 'Elige el tipo de valor.';
   const value = d.type === 'PERCENTAGE' ? parsePercentage(d.value) : parseMoney(d.value);
-  if (value.kind === 'invalid' || value.minorUnits < 1) errors.value = 'A positive value with at most two decimals is required; percentages cannot exceed 100.';
+  if (value.kind === 'invalid' || value.minorUnits < 1) errors.value = 'Ingresa un valor positivo con máximo dos decimales; un porcentaje no supera 100.';
   return errors;
 }
 export function discountCommand(d: DiscountDraft): DiscountRuleCommand {
