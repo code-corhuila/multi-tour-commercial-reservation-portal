@@ -133,7 +133,7 @@ describe('customerAnswersTheirOwnProposalOn24A', () => {
     const s = await proposal();
     s.button('Volver a mis reservas')!.click();
     expect(s.navigation.selected()).toBe(CLIENT_AREA.reservations);
-    s.button('Multitour')!.click();
+    s.button('Multi Tour')!.click();
     expect(s.navigation.selected()).toBe(CLIENT_AREA.panel);
   });
 });
