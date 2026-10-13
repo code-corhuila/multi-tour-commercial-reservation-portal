@@ -101,6 +101,13 @@ const SPECIFIED_TREE = [
   'src/app/payments/model/payment.ts',
   'src/app/payments/components/reservation-payments-block.component.ts',
   'src/app/payments/pages/payment-management-page.component.ts',
+  'src/app/demo/reservation-changes-demo.ts',
+  'src/app/reservation-changes/reservation-changes-copy.ts',
+  'src/app/reservation-changes/data/reservation-change-types.ts',
+  'src/app/reservation-changes/data/cancellation-ports.ts',
+  'src/app/reservation-changes/pages/reservation-change-page.component.ts',
+  'src/app/reservation-changes/components/reservation-change-action.component.ts',
+  'src/app/reservation-changes/components/reservation-change-blocks.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {

@@ -27,6 +27,7 @@ import { MyReservationsPageComponent } from '../src/app/self-service-reservation
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { PaymentManagementPageComponent } from '../src/app/payments/pages/payment-management-page.component';
 import { actorAs } from './actor-context.double';
+import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
 
@@ -94,6 +95,7 @@ describe('portalAreasRegistry', () => {
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
       { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
       { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
+      { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
