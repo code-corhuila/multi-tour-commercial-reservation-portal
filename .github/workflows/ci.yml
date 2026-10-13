@@ -20,6 +20,8 @@ jobs:
       - run: npm ci
       - run: npm test
       # What the container mounts (ADR-006 F4): dist/portal.js and dist/portal.css. Amendment 2026-10-13, HC-6.
+      # The demo module is what the delivered image serves until the API is connected; it must build too.
+      - run: npm run build:module:demo
       - run: npm run build:module
       - name: Record the size of the mounted module
         run: |
