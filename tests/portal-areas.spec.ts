@@ -7,6 +7,7 @@ import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.comp
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
+import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
@@ -70,6 +71,7 @@ describe('portalAreasRegistry', () => {
       { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
+      { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
       { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
       { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
       { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },

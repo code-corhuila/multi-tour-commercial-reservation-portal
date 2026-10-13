@@ -207,6 +207,17 @@
   .crp-root .crp-client-content { width: 100%; margin: 0; padding: 20px 16px 32px; }
   .crp-root .crp-client-footer-grid { grid-template-columns: 1fr; gap: 24px; }
 }
+
+/* HU-COM-004: admin-aplicar-descuento.html and the values block of admin-crear-reserva.html. */
+.crp-root .current-discounts-services { list-style: none; padding: 0; display: grid; gap: 16px; }
+.crp-root .current-discounts-services h3 { margin: 0 0 8px; font-size: 1rem; }
+.crp-root .current-discounts-summary { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 18px; }
+.crp-root .current-discounts-summary div { display: grid; gap: 5px; }
+.crp-root .current-discounts-summary span { color: #718084; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
+.crp-root .current-discounts-lines { margin: 8px 0; padding-left: 20px; }
+.crp-root .current-discounts-lines li { margin: 4px 0; }
+.crp-root .current-discounts-wide { grid-column: 1 / -1; }
+.crp-root .current-discounts-note { color: var(--crp-soft); font-size: 0.86rem; }
 /* Public offer (HU-COM-006) as tours.html, detalle-tour.html, alojamiento.html and gastronomia.html; one column on a 360 px screen. */
 .crp-root .crp-offer-back { gap: 12px; min-height: 42px; margin-bottom: 18px; padding: 0; border: 0; background: none; color: #1f4f57; font-size: 0.96rem; }
 .crp-root .crp-offer-back > span:first-child { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 1px solid #d7e4e1; border-radius: 999px; background: #f4faf8; color: #2f6b57; }
