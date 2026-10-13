@@ -66,6 +66,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
     isAvailable: (injector) => customersCapabilitiesOf(injector.get(ActorContext).role).canRead && injector.get(CustomersSource, null) !== null,
   },
+  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {
     key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
@@ -86,8 +88,6 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
     isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
-  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
-  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => injector.get(ReservationsSource, null) !== null },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
