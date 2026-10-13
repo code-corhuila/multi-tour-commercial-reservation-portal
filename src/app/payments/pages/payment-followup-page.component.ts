@@ -25,33 +25,33 @@ type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadli
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ common.loading }}</p> }
       @case ('error') { <div role="alert" data-state="error">{{ common.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></div> }
-      @case ('empty') { <p role="status" data-state="empty">{{ t.notFound }}</p> }
-      @case ('data') { @let d = s.items[0]; @let r = d.reservation; @let settled = r.balanceCents === 0;
-        <form novalidate data-state="data" [attr.aria-busy]="pending()" (submit)="$event.preventDefault(); save(r)">
+      @default { @let d = s.kind === 'data' ? s.items[0] : null; @let r = d?.reservation; @let missing = !r; @let settled = r?.balanceCents === 0;
+        <!-- A missing reservation draws the form disabled, the message in the feedback line (app.js 3357-3360). -->
+        <form novalidate [attr.data-state]="missing ? null : 'data'" [attr.aria-busy]="pending()" (submit)="$event.preventDefault(); r && save(r)">
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.contextEyebrow }}</p><h2>{{ t.contextTitle }}</h2>
             <div class="crp-form-grid">
-              @for (value of context(d); track $index) { <div><label [for]="'crp-payment-followup-' + $index">{{ t.fields[$index] }}</label><input [id]="'crp-payment-followup-' + $index" readonly [value]="value"></div> }
+              @for (value of d ? context(d) : blank; track $index) { <div><label [for]="'crp-payment-followup-' + $index">{{ t.fields[$index] }}</label><input [id]="'crp-payment-followup-' + $index" readonly [disabled]="missing" [value]="value"></div> }
               @if (!settled) { <div class="crp-payment-followup-wide"><label for="crp-payment-followup-deadline">{{ t.deadline }}</label>
-                <input id="crp-payment-followup-deadline" readonly [value]="d.deadline ? when(d.deadline.dueAt) : ''"></div> }
+                <input id="crp-payment-followup-deadline" readonly [disabled]="missing" [value]="d?.deadline ? when(d!.deadline!.dueAt) : ''"></div> }
             </div>
           </section>
           @if (!settled) {
             <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.followupEyebrow }}</p><h2>{{ t.followupTitle }}</h2>
               <div class="crp-payment-followup-wide"><label for="crp-payment-followup-note">{{ t.note }}</label>
-                <textarea id="crp-payment-followup-note" name="note" required [placeholder]="t.notePlaceholder" [value]="note()" (input)="note.set(value($event))"
+                <textarea id="crp-payment-followup-note" name="note" required [disabled]="missing" [placeholder]="t.notePlaceholder" [value]="note()" (input)="note.set(value($event))"
                   [attr.aria-invalid]="error() ? 'true' : null" aria-describedby="crp-payment-followup-note-error"></textarea>
                 <p id="crp-payment-followup-note-error" class="crp-payments-error">{{ error() }}</p></div>
             </section>
           }
-          <p role="status">{{ settled ? t.settled : feedback() }}</p>
+          <p class="crp-operator-form-feedback" [class.crp-is-valid]="feedback() === t.saved" role="status" [attr.data-state]="missing ? 'empty' : null">{{ missing ? t.notFound : settled ? t.settled : feedback() }}</p>
           <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back()">{{ t.back }}</button>
-            @if (!settled) { <button type="submit" class="crp-operator-primary" [disabled]="pending()">{{ t.title }}</button> }</div>
+            @if (!settled) { <button type="submit" class="crp-operator-primary" [disabled]="pending() || missing">{{ t.title }}</button> }</div>
         </form>
         <section class="crp-operator-panel"><div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ t.historyEyebrow }}</p><h2>{{ t.historyTitle }}</h2></div></div>
-          @let history = r.followups ?? [];
+          @let history = r?.followups ?? [];
           <div class="crp-table-wrap"><table class="crp-operator-table"><thead><tr>@for (column of t.historyColumns; track column) { <th>{{ column }}</th> }</tr></thead>
             <tbody>@for (f of history; track $index) { <tr><td>{{ date(f.contactedAt) }}</td><td>{{ f.contactedAt.slice(11, 16) }}</td><td>{{ f.actorLabel }}</td><td>{{ f.note }}</td></tr> }</tbody></table>
-            @if (!history.length) { <p>{{ t.noHistory }}</p> }</div>
+            @if (!missing && !history.length) { <p class="crp-operator-copy">{{ t.noHistory }}</p> }</div>
         </section>
       }
     }
@@ -63,6 +63,7 @@ export class PaymentFollowupPageComponent {
   private readonly writer = inject(PaymentFollowupsWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
   protected readonly t = PAYMENT_FOLLOWUP_TEXT; protected readonly common = PAYMENTS_TEXT; protected readonly when = dateTime; protected readonly date = formatDate;
+  protected readonly blank = PAYMENT_FOLLOWUP_TEXT.fields.map(() => '');
   protected readonly note = signal(''); protected readonly error = signal(''); protected readonly feedback = signal(this.t.hint); protected readonly pending = signal(false);
   /** One key per intention: a retry of the same note reuses it; another note, or the next one after a success, takes a new key. */
   private key = ''; private keyFor: string | null = null; private readonly requests = new Subject<void>();
@@ -88,6 +89,7 @@ export class PaymentFollowupPageComponent {
     if (this.pending()) return;
     const note = this.note().trim();
     this.error.set(note ? '' : this.t.noteRequired);
+    if (!note) this.feedback.set(this.t.hint);
     if (!note) { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
     if (this.keyFor !== note) { this.key = this.keys.generate(); this.keyFor = note; }
     this.pending.set(true);

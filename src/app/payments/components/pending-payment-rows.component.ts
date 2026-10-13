@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Injector, Provider, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, Provider, inject, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -11,6 +11,7 @@ import { CHECKOUT_BLOCKS, PAYMENTS_TABLE_BODIES, TRANSFER_PAYMENT_LINES, contrib
 import { PaymentDeadlineReader, PendingPaymentsSource } from '../data/payment-followup-ports';
 import { PAYMENT_FOLLOWUP_TEXT } from '../payment-followup-copy';
 import { PAYMENTS_TEXT } from '../payments-copy';
+import { PROOF_REVIEW_TEXT } from '../proof-review-copy';
 import { PaymentDeadlineLineComponent } from './payment-deadline-line.component';
 import { PaymentLabels, modalityOf, paymentLabels } from './reservation-payments-block.component';
 
@@ -31,10 +32,13 @@ type State = PageState<{ rows: readonly Reservation[]; labels: PaymentLabels }>;
             <td>@if (canFollowUp) { <button type="button" (click)="open(r)">{{ t.title }}</button> }</td></tr>
         }
       }
+      @case ('empty') { @if (!proofs()) { <tr><td colspan="6" role="status" data-state="empty">{{ emptyTable }}</td></tr> } }
     }
   `,
 })
 export class PendingPaymentRowsComponent {
+  /** The proof rows the host drew: with none and no pending row, the table shows HU-COM-010's empty text (spec 011-). */
+  readonly proofs = input(0); protected readonly emptyTable = PROOF_REVIEW_TEXT.empty;
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly source = inject(PendingPaymentsSource); private readonly methods = inject(PaymentMethodsSource);
   protected readonly canFollowUp = inject(PortalCapabilities).canFollowUp();
