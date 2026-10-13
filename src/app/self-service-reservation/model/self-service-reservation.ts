@@ -128,6 +128,7 @@ export const SELF_SERVICE_TEXT = {
   noCapacity: 'No hay cupos suficientes en esta salida. No se creó ninguna reserva.',
   refused: 'No se creó la reserva. Inténtalo de nuevo.',
   created: 'Reserva creada',
+  seeMine: 'Ver mis reservas',
   notCustomer: 'Solo un cliente con sesión iniciada puede confirmar una reserva aquí.',
   panelEyebrow: 'Portal cliente',
   panelTitle: 'Mis reservas',
