@@ -10,7 +10,9 @@ import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
 import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
-import { CHECKOUT_BLOCKS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { CHECKOUT_BLOCKS, OPERATOR_NOTIFICATIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { REFUND_DETAIL_LINK } from './app/refunds/components/refund-link.component';
+import { REFUND_ALERTS } from './app/refunds/components/refund-alerts.component';
 import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
@@ -83,6 +85,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       ...MY_PAYMENTS_CONTRIBUTIONS,
       // HU-COM-016: "Devoluciones monetarias" of 13, only for who authorizes or executes and with the refund ports.
       contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
+      // HU-COM-016: "Gestionar devolución" of 10A after the HU-COM-013 blocks, and the alert of admin-notificaciones.html.
+      contribute(RESERVATION_DETAIL_BLOCKS, REFUND_DETAIL_LINK), contribute(OPERATOR_NOTIFICATIONS, REFUND_ALERTS),
       // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
       RESCHEDULING_ENTRY,
     ],
