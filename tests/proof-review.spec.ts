@@ -147,7 +147,7 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-code')?.value).toBe(`#${EXAMPLE}`);
     expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-method')?.value).toBe('Abono · Transferencia');
     expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-status')?.value).toBe('En validación');
-    expect(page.element.querySelector<HTMLInputElement>('[name="verifiedAmount"]')?.value).toBe('100000');
+    expect(page.element.querySelector<HTMLInputElement>('[name="verifiedAmount"]')?.value).toBe('$100.000');
     expect(form).toContain('Motivo (obligatorio)');
     expect(form).toContain('Registra el motivo y decide si apruebas o rechazas el soporte.');
     expect(form).not.toMatch(/EN_VALIDACION|BANK_TRANSFER|PARTIAL/);
@@ -206,6 +206,21 @@ describe('the decision form (T-02)', () => {
     const first = await decide({}, 'same');
     expect(await decide({}, 'same')).toEqual(first);
     expect((await stored(EXAMPLE)).validatedCents).toBe(10_000_000);
+  });
+
+  it('theEditableValorRecibidoIsWrittenInPesosLikeTheMockupAndReadBack ($100.000)', async () => {
+    const writer = new HeldWriter();
+    const { element, click, type } = await screenOf(ValidateProofPageComponent, providers({
+      params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: writer }] }));
+    expect(element.querySelector<HTMLInputElement>('[name="verifiedAmount"]')?.value).toBe('$100.000');
+    await type('reason', 'Soporte legible'); await click('Aprobar soporte');
+    expect(writer.calls[0][0].verifiedAmountCents).toBe(10_000_000);
+    TestBed.resetTestingModule();
+    const edited = new HeldWriter();
+    const again = await screenOf(ValidateProofPageComponent, providers({
+      params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: edited }] }));
+    await again.type('verifiedAmount', '$150.000'); await again.type('reason', 'Monto del extracto'); await again.click('Aprobar soporte');
+    expect(edited.calls[0][0].verifiedAmountCents).toBe(15_000_000);
   });
 
   it('verifiedAmountIsReadInCents (0.07 is 7 cents)', async () => {
