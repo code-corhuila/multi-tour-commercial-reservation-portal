@@ -97,8 +97,8 @@ export class ReserveTourPageComponent {
   protected readonly travelers = travelers;
   protected readonly Math = Math;
   private readonly navigation = inject(PortalNavigation, { optional: true });
-  /** DP-RS1: the tour "Reservar tour" opened this area with, else the one of the URL. */
-  private readonly tourId = this.navigation?.params()['tour'] ?? new URLSearchParams(globalThis.location?.search ?? '').get('tour') ?? '';
+  /** DP-RS1, 008- H-D10: the tour "Reservar tour" opened this area with; the portal reads no address. */
+  private readonly tourId = this.navigation?.params()['tour'] ?? '';
   private readonly catalog = inject(CatalogItemsSource);
   private readonly departures = inject(DeparturesSource);
   private readonly requests = new Subject<void>();

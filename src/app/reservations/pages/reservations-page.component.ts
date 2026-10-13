@@ -5,7 +5,7 @@ import { formatDate } from '../../shared/format';
 import { ReservationFormComponent } from '../components/reservation-form.component';
 import { ReservationViewComponent } from '../components/reservation-view.component';
 import { ReservationsSource } from '../data/reservations-source';
-import { RESERVATION_TEXT, Reservation, STATUS_LABEL, money, travelers } from '../model/reservation';
+import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, travelers } from '../model/reservation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 
 type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly Reservation[] };
@@ -45,7 +45,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
                 <tbody>@for (r of current.items; track r.id) {
                   <tr><td><span class="crp-reservation-code">#{{ r.id }}</span><small>{{ date(r.departureDate) }} · {{ travelers(r.people) }}</small></td>
                     <td>{{ r.leadCustomerName }}</td><td>{{ r.tourName }}</td>
-                    <td><span class="crp-operator-status crp-is-pending">{{ status[r.status] }}</span></td><td>{{ money(r.quote.finalCents) }}</td>
+                    <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td>{{ money(r.balanceCents) }}</td>
                     <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button></td></tr>
                 }</tbody>
               </table></div>
@@ -64,6 +64,7 @@ export class ReservationsPageComponent {
   protected readonly date = formatDate;
   protected readonly travelers = travelers;
   protected readonly status = STATUS_LABEL;
+  protected readonly badge = STATUS_CLASS;
   protected readonly headers = HEADERS;
   protected readonly view = signal<View>({ kind: 'list' });
   private readonly requests = new Subject<void>();
