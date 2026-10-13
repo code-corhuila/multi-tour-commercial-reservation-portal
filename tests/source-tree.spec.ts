@@ -53,6 +53,13 @@ const SPECIFIED_TREE = [
   'src/app/current-discounts/components/additional-discount-form.component.ts',
   'src/app/current-discounts/pages/current-discounts-page.component.ts',
   'src/app/demo/current-discounts-demo.ts',
+  'src/app/customers/customers-copy.ts',
+  'src/app/customers/model/customer-group.ts',
+  'src/app/customers/data/customers-source.ts',
+  'src/app/customers/data/customers-writer.ts',
+  'src/app/customers/components/customer-form.component.ts',
+  'src/app/customers/pages/customers-page.component.ts',
+  'src/app/demo/customers-demo.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
