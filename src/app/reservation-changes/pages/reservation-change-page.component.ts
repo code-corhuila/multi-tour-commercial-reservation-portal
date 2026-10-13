@@ -50,7 +50,7 @@ type State = PageState<CancellationQuoteResult>;
             <dl class="crp-reservation-changes-list"><div><dt>{{ t.potential }}</dt><dd>{{ refundable(q.refundable) }}</dd></div></dl>
           </section>
           <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back()">{{ t.cancel }}</button>
-            <button type="submit" class="crp-operator-primary" [disabled]="locked">{{ t.submit }}</button></div>
+            <button type="submit" class="crp-operator-primary" [disabled]="locked || chosen()?.submittable === false">{{ t.submit }}</button></div>
         </form>
       }
     }
@@ -89,7 +89,7 @@ export class ReservationChangePageComponent {
   protected submit(event: Event, q: CancellationQuoteResult): void {
     event.preventDefault();
     const type = this.chosen(), cause = this.cause().trim();
-    if (this.pending() || this.refusal(q) || !type) return;
+    if (this.pending() || this.refusal(q) || !type || type.submittable === false) return;
     this.error.set(!cause);
     if (!cause) { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
     this.pending.set(true);
