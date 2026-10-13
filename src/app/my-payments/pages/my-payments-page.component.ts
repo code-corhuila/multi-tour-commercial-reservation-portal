@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
-import { formatCop, formatDate } from '../../shared/format';
+import { departureLine, formatCop } from '../../shared/format';
 import { PageState } from '../../shared/page-state';
 import { CustomerPaymentSummary, MyPaymentsSource } from '../data/my-payments-source';
 import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
@@ -27,7 +27,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
         @case ('data') {
           <ul data-state="data" class="crp-my-payments-list">
             @for (r of s.items; track r.reservationId) {
-              <li class="crp-my-payments-card"><p>{{ r.reservationId }}</p>&ngsp;<h3>{{ r.tourName }}</h3>&ngsp;<p>{{ date(r.departureAt) }}</p>&ngsp;
+              <li class="crp-my-payments-card"><p>{{ r.reservationId }}</p>&ngsp;<h3>{{ r.tourName }}</h3>&ngsp;<p>{{ departure(r.departureAt) }}</p>&ngsp;
                 <div class="crp-my-payments-meta"><span>{{ t.type }}: {{ label('type', r.paymentType) }}</span>&ngsp;<span>{{ t.method }}: {{ label('method', r.paymentMethod) }}</span>&ngsp;
                   <span>{{ t.proof }}: {{ label('proof', r.proofStatus) }}</span>&ngsp;<span>{{ t.financial }}: {{ label('financial', r.financialStatus) }}</span>&ngsp;
                   <span>{{ t.validated }}: {{ cop(r.validatedCents) }}</span>&ngsp;<span>{{ t.balance }}: {{ cop(r.balanceCents) }}</span></div></li>
@@ -42,7 +42,7 @@ export class MyPaymentsPageComponent {
   protected readonly t = MY_PAYMENTS_TEXT;
   protected readonly label = labelOf;
   protected readonly cop = formatCop;
-  protected readonly date = formatDate;
+  protected readonly departure = departureLine;
   private readonly only = inject(PortalNavigation, { optional: true })?.params()['reservation'];
   private readonly source = inject(MyPaymentsSource);
   private readonly requests = new Subject<void>();
