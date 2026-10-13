@@ -15,9 +15,10 @@ export class PortalNavigation {
   /** Parameters of the last opening (e.g. { departure, services, people }); every opening replaces them. */
   readonly params = signal<Readonly<Record<string, string>>>({});
   private keys: readonly string[] = [];
+  private opened: () => void = () => undefined;
 
-  /** The shell declares the areas it can show. */
-  register(keys: readonly string[]): void { this.keys = keys; }
+  /** The shell declares the areas it can show and what follows an opening (the focus, HC-4). */
+  register(keys: readonly string[], opened: () => void = () => undefined): void { this.keys = keys; this.opened = opened; }
 
   has(key: string): boolean { return this.keys.includes(key); }
 
@@ -26,6 +27,7 @@ export class PortalNavigation {
     if (!this.has(key)) { return false; }
     this.params.set(params);
     this.selected.set(key);
+    this.opened();
     return true;
   }
 }
