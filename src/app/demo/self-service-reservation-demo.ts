@@ -6,6 +6,7 @@ import { ReservationsSource, STATUS_CODE } from '../reservations/data/reservatio
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
 import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
 import { Reservation } from '../reservations/model/reservation';
+import type { DemoReservationsStore } from './reservations-demo';
 import { CustomerContext } from '../self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from '../self-service-reservation/data/reservation-confirmation-ports';
@@ -20,7 +21,7 @@ const DEMO_FINAL_CUSTOMER = 'demo-cus-3';
 const asCustomer = (r: Reservation, selection: Partial<ReservationSelection>): CustomerReservation => ({
   reservationId: r.id, tourName: r.tourName, departureAt: r.departureDate, departureId: selection.departureId ?? '',
   serviceIds: selection.serviceIds ?? [], people: r.people, projectedValueCents: r.quote.projectedCents, finalValueCents: r.quote.finalCents,
-  reservationStatus: STATUS_CODE[r.status], paymentStatus: r.financialStatus,
+  reservationStatus: STATUS_CODE[r.status], paymentStatus: r.financialStatus, paymentMethod: r.paymentMethod, proofStatus: r.payments?.at(-1)?.proofStatus,
 });
 
 /** The reservations whose lead customer is the demo final customer, read from the shared store; nothing for any other standing. */
@@ -44,6 +45,8 @@ export class DemoPaymentMethods extends PaymentMethodsSource {
   ];
   override listEnabled(): Observable<readonly PaymentMethod[]> { return of(this.methods); }
   override listTypes(): Observable<readonly PaymentMethod[]> { return of([{ code: 'TOTAL', label: 'Pago total' }, { code: 'PARTIAL', label: 'Abono' }]); }
+  /** The invented account of pago-transferencia.html. */
+  override bankAccount() { return of({ bank: 'Banco de ejemplo', accountType: 'Ahorros', accountNumber: '000-000-000', holder: 'Travesía Natural' }); }
 }
 
 /** 008- H-D9: the summary of a selection over the quote source of HU-COM-007; it computes nothing of its own. */
@@ -63,11 +66,16 @@ export class DemoSelectionQuotes extends SelectionQuoteSource {
  * reservation per Idempotency-Key (AC-RS.6) and refuses a departure without capacity (AC-RS.3).
  */
 export class DemoReservationRequester extends ReservationRequester {
-  constructor(private readonly writer: ReservationsWriter, private readonly mine: DemoMyReservations) { super(); }
-  override request(selection: ReservationSelection, _paymentMethod: string, idempotencyKey: string): Observable<CustomerReservation> {
+  constructor(private readonly writer: ReservationsWriter, private readonly mine: DemoMyReservations, private readonly store: DemoReservationsStore) { super(); }
+  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string): Observable<CustomerReservation> {
     const { departureId, serviceIds, people } = selection;
     return this.writer.create({ leadCustomerId: DEMO_FINAL_CUSTOMER, departureId, serviceIds, people }, idempotencyKey).pipe(
-      map((created) => { this.mine.selections.set(created.id, selection); return asCustomer(created, selection); }),
+      map((created) => {
+        // HU-COM-009 DP-PY3: the method chosen on 21 stays with the reservation (mockup finalizar-reserva.html).
+        const kept = { ...created, paymentMethod };
+        this.store.items = this.store.items.map((r) => (r.id === created.id ? kept : r));
+        this.mine.selections.set(created.id, selection); return asCustomer(kept, selection);
+      }),
     );
   }
 }
@@ -80,6 +88,7 @@ export function selfServiceDemoProviders(): Provider[] {
     { provide: MyReservationsSource, useExisting: DemoMyReservations },
     { provide: PaymentMethodsSource, useValue: new DemoPaymentMethods() },
     { provide: SelectionQuoteSource, useFactory: (d: DeparturesSource, q: ReservationQuoteSource) => new DemoSelectionQuotes(d, q), deps: [DeparturesSource, ReservationQuoteSource] },
-    { provide: ReservationRequester, useFactory: (w: ReservationsWriter, m: DemoMyReservations) => new DemoReservationRequester(w, m), deps: [ReservationsWriter, DemoMyReservations] },
+    { provide: ReservationRequester, useFactory: (w: ReservationsWriter, m: DemoMyReservations, s: ReservationsSource) => new DemoReservationRequester(w, m, s as DemoReservationsStore),
+      deps: [ReservationsWriter, DemoMyReservations, ReservationsSource] },
   ];
 }

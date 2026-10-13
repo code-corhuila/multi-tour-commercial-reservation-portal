@@ -27,6 +27,8 @@ export interface CustomerReservation {
   readonly finalValueCents: number;
   readonly reservationStatus: string;
   readonly paymentStatus: string;
+  /** HU-COM-009: the method chosen on 21 and the state of the last proof, as codes; absent while none. */
+  readonly paymentMethod?: string; readonly proofStatus?: string;
 }
 
 /** The summary of a selection before it is confirmed, in cents, from the calculation of HU-COM-007 (RN-RS4). */
