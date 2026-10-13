@@ -452,3 +452,22 @@
 .crp-root .crp-reservation-changes-list div:last-child { padding-bottom: 0; border-bottom: 0; }
 .crp-root .crp-reservation-changes-list dt { color: var(--crp-soft); font-size: 0.77rem; }
 .crp-root .crp-reservation-changes-list dd { margin: 0; color: var(--crp-text); font-size: 0.82rem; font-weight: 700; text-align: right; }
+/* HU-COM-009 screen 21 (Método y plazo de pago) and screen 24 (pago-transferencia.html). */
+.crp-root .crp-checkout-payment fieldset { display: grid; gap: 10px; margin: 0 0 12px; padding: 0; border: 0; }
+.crp-root .crp-checkout-option { display: flex; gap: 12px; padding: 14px 16px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); }
+.crp-root .crp-checkout-option span span { display: block; color: var(--crp-soft); }
+.crp-root .crp-transfer-content { display: grid; gap: 18px; max-width: 760px; margin: 24px auto 0; }
+.crp-root .crp-transfer-alert { border-color: var(--crp-warning); background: var(--crp-warning-soft); }
+.crp-root .crp-transfer-bank { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0 0; }
+.crp-root .crp-transfer-bank dt { color: var(--crp-soft); } .crp-root .crp-transfer-bank dd { margin: 0; font-weight: 700; }
+.crp-root .crp-transfer-proof input[type="file"] { display: block; margin: 8px 0 12px; }
+
+/* HU-COM-014: mis-pagos.html (travel-dashboard-reservation-grid and -card), the card lines of Mis reservas and the notices of 17. */
+.crp-root .crp-my-payments h2 { margin: 0 0 14px; color: var(--crp-text); font-size: 1.35rem; }
+.crp-root .crp-my-payments-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 0; padding: 0; list-style: none; }
+.crp-root .crp-my-payments-card { display: grid; gap: 6px; padding: 22px; background: var(--crp-surface); border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); box-shadow: var(--crp-shadow); overflow-wrap: anywhere; }
+.crp-root .crp-my-payments-card p, .crp-root .crp-my-payments-card h3 { margin: 0; }
+.crp-root .crp-my-payments-card p { color: var(--crp-soft); }
+.crp-root .crp-my-payments-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--crp-soft); font-size: 0.88rem; }
+.crp-root crp-my-payments-card-lines { display: grid; gap: 6px; color: var(--crp-soft); }
+.crp-root crp-my-payments-notices p { margin: 0 0 8px; }
