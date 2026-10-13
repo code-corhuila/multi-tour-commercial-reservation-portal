@@ -1,7 +1,7 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, InjectionToken, Injector, afterNextRender, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { Observable, Subject, catchError, map, of, startWith, switchMap, take } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
 import { STATUS_LABEL } from '../../reservations/data/reservations-source';
 import { focusFirstError } from '../../shared/focus';
@@ -13,6 +13,15 @@ import { RESERVATION_CHANGE_TYPES } from '../data/reservation-change-types';
 import { RESERVATION_CHANGES_COPY, refusalOf } from '../reservation-changes-copy';
 
 type State = PageState<CancellationQuoteResult>;
+
+/** The pause between the registered message and 10A (app.js window.setTimeout, 1400 ms); a token so tests decide when it ends. */
+export const RESERVATION_CHANGE_RETURN_DELAY = new InjectionToken<() => Observable<unknown>>('RESERVATION_CHANGE_RETURN_DELAY', {
+  providedIn: 'root',
+  factory: () => () => new Observable<void>((s) => {
+    const id = setTimeout(() => { s.next(); s.complete(); }, 1400);
+    return () => clearTimeout(id);
+  }),
+});
 
 /** admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Tipo lists RESERVATION_CHANGE_TYPES (plan D-08). */
 @Component({
@@ -52,6 +61,7 @@ type State = PageState<CancellationQuoteResult>;
           </section>
           <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back()">{{ t.cancel }}</button>
             <button type="submit" class="crp-operator-primary" [disabled]="locked || chosen()?.submittable === false">{{ t.submit }}</button></div>
+          @if (registered(); as done) { <p role="status" class="crp-reservation-changes-feedback">{{ done }}</p> }
         </form>
       }
     }
@@ -66,6 +76,9 @@ export class ReservationChangePageComponent {
   protected readonly error = signal(false);
   protected readonly failure = signal<string | null>(null);
   protected readonly pending = signal(false);
+  protected readonly registered = signal<string | null>(null);
+  private readonly delay = inject(RESERVATION_CHANGE_RETURN_DELAY);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly code = this.navigation?.params()['reservation'] ?? '';
   /** One key per opening of the screen, reused on every retry (plan D-06). */
@@ -97,10 +110,16 @@ export class ReservationChangePageComponent {
     this.failure.set(null);
     type.submit({ reservationCode: q.reservation.id, cause, idempotencyKey: this.key }).subscribe({
       next: (outcome) => {
-        if (outcome.kind === 'registered') { this.back(); return; }
+        if (outcome.kind === 'registered') { this.showRegistered(q); return; }
         this.failure.set(outcome.reason); this.pending.set(false);
       },
       error: () => { this.failure.set(this.t.failed); this.pending.set(false); },
     });
+  }
+
+  /** app.js: the registered text stays in the feedback line, the form stays disabled, then 10A opens. */
+  private showRegistered(q: CancellationQuoteResult): void {
+    this.registered.set(q.refundable.kind === 'no-payments' ? this.t.registeredNoPayments : this.t.registeredPendingRefund);
+    this.delay().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.back());
   }
 }

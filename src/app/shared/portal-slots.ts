@@ -17,7 +17,7 @@ export const contribute = (slot: PortalSlotToken, entry: PortalSlot): Provider =
 export const RESERVATION_DETAIL_BLOCKS: PortalSlotToken = new InjectionToken('RESERVATION_DETAIL_BLOCKS');
 /** 10 (admin-reservas): actions of the "Acción" cell after "Ver detalle"; each draws its own " · ". Input: reservation. */
 export const RESERVATION_ROW_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_ROW_ACTIONS');
-/** 21 (finalizar-reserva): blocks of the main column after the payment method card. Inputs: quote, reservation (once created). */
+/** 21 (finalizar-reserva): blocks of the main column after the payment method card. Inputs: quote, method (the chosen code), reservation (once created). */
 export const CHECKOUT_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_BLOCKS');
 /** 24 (pago-transferencia): lines of the transfer payment page; the outlet comes with that page. */
 export const TRANSFER_PAYMENT_LINES: PortalSlotToken = new InjectionToken('TRANSFER_PAYMENT_LINES');

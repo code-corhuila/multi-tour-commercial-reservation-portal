@@ -33,6 +33,9 @@ import { CancellationQuote, CancellationWriter } from './reservation-changes/dat
 import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
 import { TransferPaymentPageComponent } from './payments/pages/transfer-payment-page.component';
+import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
+import { PaymentsPageComponent } from './payments/pages/payments-page.component';
+import { ValidateProofPageComponent } from './payments/pages/validate-proof-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -119,6 +122,10 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-009 pago-transferencia.html (24): opened by Continuar al pago of 21 with { reservation, type, amount }.
   { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource, PaymentsWriter, PaymentMethodsSource) },
+  // HU-COM-010 admin-pagos.html (13), item Pagos of the mockup's sidebar, and admin-validar-soporte.html opened with { reservation, payment }.
+  { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
+  { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent, menu: false, parent: 'payments',
+    isAvailable: (injector) => has(injector, ReservationsSource, ProofReviewWriter, PaymentMethodsSource) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }

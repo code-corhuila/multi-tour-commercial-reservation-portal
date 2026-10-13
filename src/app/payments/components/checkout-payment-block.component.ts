@@ -10,7 +10,7 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
 
 /**
  * 21 (finalizar-reserva.html) "Método y plazo de pago", after the Medio de pago of 008-: the enabled types and the Monto a abonar;
- * once the reservation exists, Continuar al pago (transfer) opens 24, or the cash notes (DP-PY6: the office registers cash).
+ * the notes of the medium chosen on 21 (AC-PY.2, DP-PY6: the office registers cash); once the reservation exists, Continuar al pago opens 24.
  */
 @Component({
   selector: 'app-checkout-payment-block', changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,12 +33,11 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
           <p id="crp-checkout-deposit-error" class="self-service-field-error">{{ invalid() ? text.depositInvalid : '' }}</p>
           <p class="self-service-note">{{ text.depositHint }}</p>
         }
-        @if (reservation(); as r) {
-          @if (r.paymentMethod === 'BANK_TRANSFER') {
-            <p class="self-service-note">{{ text.transferHint }}</p>
-            <button type="button" class="crp-primary" (click)="pay(r, chosen(options))">{{ text.continue }}</button>
-          } @else if (r.paymentMethod) { <p class="self-service-note">{{ text.cashOption }}</p><p class="self-service-note">{{ text.cashHint }}</p> }
-        }
+        @let r = reservation(); @let medium = r?.paymentMethod ?? method();
+        @if (medium === 'BANK_TRANSFER') {
+          <p class="self-service-note">{{ text.transferHint }}</p>
+          @if (r) { <button type="button" class="crp-primary" (click)="pay(r, chosen(options))">{{ text.continue }}</button> }
+        } @else if (medium) { <p class="self-service-note">{{ text.cashOption }}</p><p class="self-service-note">{{ text.cashHint }}</p> }
       }
     </article>
   `,
@@ -46,6 +45,8 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
 export class CheckoutPaymentBlockComponent {
   readonly quote = input.required<SelectionQuote>();
   readonly reservation = input<CustomerReservation | null>(null);
+  /** The medium chosen on 21 before the reservation exists. */
+  readonly method = input('');
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly methods = inject(PaymentMethodsSource);
   private readonly requests = new Subject<void>();
