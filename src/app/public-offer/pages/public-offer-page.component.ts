@@ -5,7 +5,8 @@ import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop, formatDate, formatDateRange } from '../../shared/format';
 import { PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
 import { PublicTour, TourValue } from '../model/public-offer';
-import { PUBLIC_OFFER_COPY, matchesSearch, photoAt } from '../public-offer-copy';
+import { PUBLIC_OFFER_COPY, matchesSearch } from '../public-offer-copy';
+import { tourPhoto } from '../../shared/tour-photo';
 
 /** The four states of one part of the page (Annex H). */
 export type PartState<T> =
@@ -146,7 +147,7 @@ export class PublicOfferPageComponent {
   protected readonly toursState = partOf(this.dates, (date) => (this.offer?.listAvailable(date) ?? unavailable()).pipe(
     // RN-PO2: whatever the port answers, what is not available for the date is not listed.
     map((tours) => tours.filter((tour) => tour.available)
-      .map((tour, position): PricedTour => ({ tour, value: this.valueOf(tour, date), photo: photoAt(position) }))),
+      .map((tour): PricedTour => ({ tour, value: this.valueOf(tour, date), photo: tourPhoto(tour.serviceId) ?? '' }))),
   ), () => this.dates.next(this.date()));
 
   constructor() { this.dates.next(this.date()); }
