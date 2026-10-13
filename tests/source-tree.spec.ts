@@ -60,6 +60,13 @@ const SPECIFIED_TREE = [
   'src/app/public-offer/pages/establishments-offer-page.component.ts',
   'src/app/public-offer/pages/public-offer-page.component.ts',
   'src/app/public-offer/public-offer-copy.ts',
+  'src/app/customers/customers-copy.ts',
+  'src/app/customers/model/customer-group.ts',
+  'src/app/customers/data/customers-source.ts',
+  'src/app/customers/data/customers-writer.ts',
+  'src/app/customers/components/customer-form.component.ts',
+  'src/app/customers/pages/customers-page.component.ts',
+  'src/app/demo/customers-demo.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {

@@ -8,6 +8,7 @@ import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstab
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
+import { CustomersPageComponent } from '../src/app/customers/pages/customers-page.component';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
@@ -75,6 +76,7 @@ describe('portalAreasRegistry', () => {
       { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
       { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
       { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
+      { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
   });
@@ -292,5 +294,22 @@ describe('portalAudience', () => {
   it('keeps the foundation areas for operators', () => {
     const foundation = PORTAL_AREAS.filter((area) => ['catalog', 'establishments', 'discounts'].includes(area.key));
     expect(foundation.every((area) => (area.audience ?? 'operator') === 'operator')).toBe(true);
+  });
+});
+
+describe('demoDataSpeaksSpanishWithAccents', () => {
+  it('writes the visible demo names and texts with their Spanish accents', () => {
+    const catalog = new DemoCatalogStore();
+    const tours = ['demo-svc-2', 'demo-svc-3'].map((id) => catalog.find(id).commercialName);
+    expect(tours).toEqual(['Ruta del café en Pitalito', 'Canotaje en el Río Suaza']);
+    const places = new DemoEstablishmentsStore().items.map((e) => `${e.commercialName} | ${e.commercialInformation}`);
+    expect(places).toEqual([
+      'Hotel Casa Neiva | Habitaciones con vista al río Magdalena.',
+      'Posada del Café | Alojamiento rural entre cafetales.',
+      'Hostal La Tatacoa | Cerrado por remodelación.',
+      'Sabores del Huila | Cocina típica: asado huilense y tamal.',
+      'Fogón del Desierto | Cabrito al horno de barro.',
+      'Café Altura | Desayunos de montaña.',
+    ]);
   });
 });
