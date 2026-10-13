@@ -514,6 +514,7 @@
 .crp-root .crp-transfer-bank { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0 0; }
 .crp-root .crp-transfer-bank dt { color: var(--crp-soft); } .crp-root .crp-transfer-bank dd { margin: 0; font-weight: 700; }
 .crp-root .crp-transfer-proof input[type="file"] { display: block; margin: 8px 0 12px; }
+.crp-root .crp-transfer-reference-copy { margin: 8px 0 0; color: var(--crp-soft); line-height: 1.6; }
 /* HU-COM-010 screen 13 (admin-pagos.html hero, admin-validar-soporte.html form). */
 .crp-root .crp-proof-review-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: var(--crp-space-5); margin-bottom: 22px; padding: var(--crp-space-5) 28px;
   border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-accent-soft); }

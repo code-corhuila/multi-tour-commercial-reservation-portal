@@ -23,6 +23,8 @@ export const CHECKOUT_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_BLO
 export const TRANSFER_PAYMENT_LINES: PortalSlotToken = new InjectionToken('TRANSFER_PAYMENT_LINES');
 /** 13 sub-screen (admin-gestion-pago): actions of the payment management page; the outlet comes with that page. */
 export const PAYMENT_MANAGEMENT_ACTIONS: PortalSlotToken = new InjectionToken('PAYMENT_MANAGEMENT_ACTIONS');
+/** 13 sub-screen (admin-gestion-pago): notes under the Acción de pago copy, before the form; the outlet comes with that page. Input: reservation. */
+export const PAYMENT_MANAGEMENT_NOTES: PortalSlotToken = new InjectionToken('PAYMENT_MANAGEMENT_NOTES');
 /** 13 (admin-pagos): page panels, such as "Devoluciones monetarias"; the outlet comes with that page. */
 export const PAYMENTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('PAYMENTS_PAGE_PANELS');
 /** 13 (admin-pagos): actions of each payments row; the outlet comes with that page. */
