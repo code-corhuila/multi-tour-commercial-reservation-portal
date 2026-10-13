@@ -3,10 +3,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CATALOG_COPY } from '../catalog-copy';
 import { formatCop } from '../../shared/format';
-import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
+import { CatalogItem } from '../model/catalog-item';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 
 /**
  * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
@@ -119,7 +120,6 @@ export class CatalogPageComponent {
   private readonly source = inject(CatalogItemsSource);
   private readonly writer = inject(CatalogItemsWriter);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly actor = inject(ActorContext);
   private readonly requests = new Subject<void>();
 
   /**
@@ -127,7 +127,7 @@ export class CatalogPageComponent {
    * the service refuses what the actor may not do. DP-PT-06 is open, so it acts as the one internal
    * role the container reports.
    */
-  protected readonly caps = capabilitiesOf(this.actor.role, this.actor.collaboratorMayEditDescription);
+  protected readonly caps = inject(PortalCapabilities).catalog();
   protected readonly canEdit = this.caps.canEditCommercialFields || this.caps.canEditDescription;
 
   readonly state = signal<PageState>({ kind: 'loading' });

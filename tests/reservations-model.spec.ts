@@ -2,7 +2,8 @@ import { firstValueFrom } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { parseMoney } from '../src/app/catalog/model/money';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
-import { canCreateReservations, hasCapacity, openDepartures, quote, validateReservation } from '../src/app/reservations/model/reservation';
+import { hasCapacity, openDepartures, quote, validateReservation } from '../src/app/reservations/model/reservation';
+import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { departureOf } from './reservations.double';
 
 const cents = (text: string) => { const parsed = parseMoney(text); if (parsed.kind !== 'valid') throw new Error(text); return parsed.minorUnits; };
@@ -56,8 +57,8 @@ describe('missing mandatory data and capacity, as rules', () => {
 
 describe('readOnlyRolesAndUnknownRolesGetNoCreateAction (rule)', () => {
   it('lets only the administrator and the collaborator create', () => {
-    expect(['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'].map((role) => canCreateReservations({ role }))).toEqual([true, true]);
-    expect(['MANAGER', 'ACCOUNTANT', 'ANALYST', 'READ_ONLY', 'SOMETHING_ELSE', ''].some((role) => canCreateReservations({ role }))).toBe(false);
+    expect(['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'].map((role) => PortalCapabilities.for(role).canCreateReservations())).toEqual([true, true]);
+    expect(['MANAGER', 'ACCOUNTANT', 'ANALYST', 'READ_ONLY', 'SOMETHING_ELSE', ''].some((role) => PortalCapabilities.for(role).canCreateReservations())).toBe(false);
   });
 });
 
