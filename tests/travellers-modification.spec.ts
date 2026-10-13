@@ -324,6 +324,19 @@ describe('travellersOptionDrawsNoFieldAndSpanishCopy', () => {
     expect(s.button('Registrar novedad')!.disabled).toBe(true);
   });
 
+  it('keeps Devolución as the mockup draws it: title and note, no cancellation refund row (admin-cancelar-modificar-reserva.html)', async () => {
+    const s = await render(ReservationChangePageComponent, pageProviders());
+    const refund = () => Array.from(s.host.querySelectorAll('section')).find((p) => p.querySelector('h2')?.textContent?.trim() === 'Devolución')!;
+    expect(refund().textContent).toContain('Valor potencial a devolver');
+    const select = s.host.querySelector('select')!;
+    select.value = TRAVELLERS_MODIFICATION_KEY; select.dispatchEvent(new Event('change')); await s.settle();
+    expect(refund().textContent).toContain('El tratamiento económico queda pendiente según la causa.');
+    expect(refund().textContent).not.toContain('Valor potencial a devolver');
+    expect(refund().querySelector('dl')).toBeNull();
+    select.value = 'cancellation'; select.dispatchEvent(new Event('change')); await s.settle();
+    expect(refund().textContent).toContain('Valor potencial a devolver');
+  });
+
   it('keeps the copy in Spanish without raw codes, and the code free of the mockup script fields', () => {
     const code = listSourceFiles().filter((f) => f.startsWith('src/app/reservation-changes/travellers-modification/'))
       .map((f) => withoutComments(readFileSync(f, 'utf8'))).join('\n');
