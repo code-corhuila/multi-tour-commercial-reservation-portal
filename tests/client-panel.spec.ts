@@ -12,6 +12,7 @@ import { MyReservationsSource } from '../src/app/self-service-reservation/data/m
 import { ReservationSelectionSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerStanding, RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
+import { tourPhoto } from '../src/app/shared/tour-photo';
 import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION, selectionAt } from './self-service-reservation.double';
 
 const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
