@@ -9,6 +9,7 @@ import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { ReservationViewComponent } from '../src/app/reservations/components/reservation-view.component';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { MyPaymentsSource } from '../src/app/my-payments/data/my-payments-source';
+import { MyProposalsSource } from '../src/app/rescheduling/data/rescheduling-ports';
 import { ActorContext } from '../src/app/shared/actor-context';
 import {
   CHECKOUT_BLOCKS, CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENT_MANAGEMENT_ACTIONS, PAYMENT_MANAGEMENT_NOTES,
@@ -165,8 +166,8 @@ describe('theOutletsOfTheScreensInDevelop', () => {
   });
 
   it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES under Notificaciones of 17, which is absent without notices', async () => {
-    // HU-COM-014 registers CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with its port: without that port 17 is as the base left it.
-    mountAs([{ provide: MyPaymentsSource, useValue: null }], ['FINAL_CUSTOMER']);
+    // HU-COM-014 and HU-COM-018 register CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with their ports: without those ports 17 is as the base left it.
+    mountAs([{ provide: MyPaymentsSource, useValue: null }, { provide: MyProposalsSource, useValue: null }], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     expect(host.textContent).not.toContain('Notificaciones');
     cleanup?.(); host.remove();
