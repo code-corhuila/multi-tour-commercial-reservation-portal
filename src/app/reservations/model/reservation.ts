@@ -30,8 +30,15 @@ export type Reservation = {
   readonly validatedCents?: number; readonly payments?: readonly ReservationPayment[];
   /** HU-COM-013 D-02 (PROPUESTO): resolved by the service; the cancellation, the decision it opened and the HU-COM-018 mark (DD-4). */
   readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string }; readonly reschedulingPending?: boolean;
-  readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
-    readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null };
+  readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION' | 'RESCHEDULING_NOT_ACCEPTED'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
+    readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null; readonly origin?: 'HU-COM-018' };
+  /** HU-COM-018 D-02 (PROPUESTO): the rescheduling episode, on the same reservation; fields follow rescheduling_records (G-B). */
+  readonly reschedulingEpisode?: ReschedulingEpisode;
+};
+export type ReschedulingEpisode = {
+  readonly originDepartureId: string; readonly originAt: string;
+  readonly proposal?: { readonly departureId: string; readonly sentAt: string; readonly heldSeats: number };
+  readonly answer?: { readonly decision: 'ACCEPTED' | 'REJECTED' | 'NO_ALTERNATIVE'; readonly at: string; readonly by: string };
 };
 /** HU-COM-009: a payment pending validation (RN-PY1); HU-COM-010 (D-02): when it was presented and the decision on its proof.
  * Field names await payment_attempts (G-B). */
