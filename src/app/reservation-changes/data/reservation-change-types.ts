@@ -14,6 +14,8 @@ export interface ReservationChangeType {
   readonly key: string;
   readonly label: string;
   readonly form?: Type<unknown>;
+  /** False keeps "Registrar novedad" disabled for this type (HU-COM-012 AC-MD.9); absent means it can be sent. */
+  readonly submittable?: boolean;
   submit(input: ReservationChangeInput): Observable<ReservationChangeOutcome>;
 }
 
