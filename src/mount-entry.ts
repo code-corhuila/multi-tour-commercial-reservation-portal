@@ -1,4 +1,4 @@
-import { ApplicationRef, Provider, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationRef, Injector, Provider, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps, PortalApiClient } from './app/shell-contract';
@@ -8,6 +8,13 @@ import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './
 import { ReservationSelectionSource, selectionSourceFor } from './app/self-service-reservation/data/reservation-confirmation-ports';
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
+import { RESERVATION_DETAIL_ACTIONS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
+import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
+import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
+import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
+
+const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
 /** Portals mounted now; the stylesheet leaves with the last one (001- amendment HC-5, plan H-D4). */
 let mounted = 0;
@@ -52,6 +59,10 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
       { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
       { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
+      // HU-COM-013: the 10A action and blocks, and the Cancelación type; each only with the cancellation ports of the build.
+      contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
+      contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),
+      { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
     ],
   }).then((created) => {
     app = created;

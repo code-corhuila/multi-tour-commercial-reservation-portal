@@ -27,6 +27,9 @@ import { DeparturesSource } from './reservations/data/departures-source';
 import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
+import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
+import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
+import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -104,6 +107,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, PaymentMethodsSource, SelectionQuoteSource, ReservationRequester),
   },
+  // HU-COM-013 admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Reservas stays active (spec G-NAV closed by the base).
+  { key: RESERVATION_CHANGE_SCREEN, label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent, menu: false, parent: 'reservations',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canRegisterChange() && has(injector, ReservationsSource, CancellationQuote, CancellationWriter) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
