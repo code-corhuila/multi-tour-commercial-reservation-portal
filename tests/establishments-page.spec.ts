@@ -4,13 +4,13 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
-import { ActorRole } from '../src/app/catalog/model/catalog-item';
 import { PORTAL_ROUTES } from '../src/app/catalog/catalog.routes';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { ESTABLISHMENT_TYPES, AssociatedEstablishment } from '../src/app/establishments/model/associated-establishment';
 import { EstablishmentsPageComponent, EstablishmentsPageState } from '../src/app/establishments/pages/establishments-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableEstablishmentsSource, establishmentNamed } from './associated-establishments-source.double';
+import { ActorRole } from '../src/app/shared/portal-capabilities';
 
 async function openPage(role?: ActorRole, enabled = false) {
   const source = new ControllableEstablishmentsSource();

@@ -23,7 +23,6 @@ export const DISCOUNT_TEXT = {
   editFeedback: 'Actualiza los parámetros y guarda para aplicar los cambios a este mismo descuento.',
   confirmation: 'Las reservas existentes conservan el descuento que ya tienen. ¿Inactivar este descuento?',
 };
-export function canManageDiscounts(actor: { role: string }): boolean { return actor.role === 'TENANT_ADMINISTRATOR'; }
 /** `20% de descuento`, `12,5% de descuento`, `$50.000 de descuento`. */
 export function discountValueText(rule: DiscountValue): string {
   if (rule.type !== 'PERCENTAGE') return `${formatCop(rule.amountCents)} de descuento`;

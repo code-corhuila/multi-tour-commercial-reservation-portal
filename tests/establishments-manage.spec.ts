@@ -4,7 +4,6 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, it } from 'vitest';
 import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
-import { ActorRole } from '../src/app/catalog/model/catalog-item';
 import { PORTAL_ROUTES } from '../src/app/catalog/catalog.routes';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
@@ -14,6 +13,7 @@ import { ControllableEstablishmentsSource, establishmentNamed } from './associat
 import { ControllableEstablishmentsWriter } from './associated-establishments-writer.double';
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
 import { formControls } from './establishment-form.helpers';
+import { ActorRole } from '../src/app/shared/portal-capabilities';
 
 async function openPage(role: ActorRole | null = 'TENANT_ADMINISTRATOR') {
   const source = new ControllableEstablishmentsSource(), writer = new ControllableEstablishmentsWriter();

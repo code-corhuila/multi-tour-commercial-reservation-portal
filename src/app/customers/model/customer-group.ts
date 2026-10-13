@@ -1,4 +1,3 @@
-import { ActorRole } from '../../catalog/model/catalog-item';
 
 /** The extra data of a high-risk activity (RN-CLI-002, RN-CLI-003). Sensitive: shown only with the permission. */
 export interface HighRiskData { readonly informedConsent: boolean; readonly bloodType: string; readonly emergencyContact: string; readonly physicalRestrictions: string }
@@ -61,18 +60,4 @@ export function personCommand(draft: PersonDraft, kind: PersonKind, highRisk: bo
     fullName: text('fullName'), document: text('document'), ...(kind === 'lead' ? { email: text('email') } : {}), contact: text('contact'), birthDate: text('birthDate'),
     ...(highRisk ? { highRisk: { informedConsent: true, bloodType: text('bloodType'), emergencyContact: text('emergencyContact'), physicalRestrictions: text('physicalRestrictions') } } : {}),
   };
-}
-
-export interface CustomersCapabilities { readonly canRead: boolean; readonly canRegister: boolean; readonly isDenied: boolean; }
-
-/** Plan D-07: Administrator and Collaborator register; Manager, Analyst and READ_ONLY read; anything else denied. */
-export function customersCapabilitiesOf(role: ActorRole): CustomersCapabilities {
-  const canRegister = role === 'TENANT_ADMINISTRATOR' || role === 'OPERATIONAL_COLLABORATOR';
-  const canRead = canRegister || role === 'MANAGER' || role === 'ANALYST' || role === 'READ_ONLY';
-  return { canRead, canRegister, isDenied: !canRead };
-}
-
-/** Plan D-06: the permission, never the profile; Manager, Analyst and Accountant are masked even with a grant. */
-export function canViewSensitiveData(role: ActorRole, granted: boolean): boolean {
-  return granted && (role === 'TENANT_ADMINISTRATOR' || role === 'OPERATIONAL_COLLABORATOR');
 }

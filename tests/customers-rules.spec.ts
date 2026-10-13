@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { firstValueFrom } from 'rxjs';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
-import { canViewSensitiveData, customersCapabilitiesOf, duplicateDocument, missingHighRiskData, validatePerson } from '../src/app/customers/model/customer-group';
+import { duplicateDocument, missingHighRiskData, validatePerson } from '../src/app/customers/model/customer-group';
 import { DemoCustomersStore, DemoCustomersWriter, demoSensitiveDataAccess } from '../src/app/demo/customers-demo';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
+import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { groupWith, personNamed } from './customers.double';
 
 const complete = { informedConsent: 'true', bloodType: 'O+', emergencyContact: 'Contacto Ficticio 301', physicalRestrictions: 'Ninguna' };
@@ -57,16 +58,16 @@ describe('highRiskActivityRefusesACompanionWithoutTheExtraData', () => {
 
 describe('sensitive data and roles are decided in one place', () => {
   it('shows sensitive data only to an administrator or a collaborator holding the permission', () => {
-    expect(canViewSensitiveData('TENANT_ADMINISTRATOR', true)).toBe(true);
-    expect(canViewSensitiveData('OPERATIONAL_COLLABORATOR', true)).toBe(true);
-    for (const role of ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'] as const) expect(canViewSensitiveData(role, false)).toBe(false);
-    for (const role of ['MANAGER', 'ANALYST', 'ACCOUNTANT', 'READ_ONLY'] as const) expect(canViewSensitiveData(role, true)).toBe(false);
+    expect(PortalCapabilities.for('TENANT_ADMINISTRATOR').canViewSensitiveData(true)).toBe(true);
+    expect(PortalCapabilities.for('OPERATIONAL_COLLABORATOR').canViewSensitiveData(true)).toBe(true);
+    for (const role of ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'] as const) expect(PortalCapabilities.for(role).canViewSensitiveData(false)).toBe(false);
+    for (const role of ['MANAGER', 'ANALYST', 'ACCOUNTANT', 'READ_ONLY'] as const) expect(PortalCapabilities.for(role).canViewSensitiveData(true)).toBe(false);
   });
   it('lets the administrator and the collaborator register, others read, the accountant nothing', () => {
-    expect(customersCapabilitiesOf('OPERATIONAL_COLLABORATOR')).toEqual({ canRead: true, canRegister: true, isDenied: false });
-    expect(customersCapabilitiesOf('MANAGER')).toEqual({ canRead: true, canRegister: false, isDenied: false });
-    expect(customersCapabilitiesOf('READ_ONLY')).toEqual({ canRead: true, canRegister: false, isDenied: false });
-    expect(customersCapabilitiesOf('ACCOUNTANT')).toEqual({ canRead: false, canRegister: false, isDenied: true });
+    expect(PortalCapabilities.for('OPERATIONAL_COLLABORATOR').customers()).toEqual({ canRead: true, canRegister: true, isDenied: false });
+    expect(PortalCapabilities.for('MANAGER').customers()).toEqual({ canRead: true, canRegister: false, isDenied: false });
+    expect(PortalCapabilities.for('READ_ONLY').customers()).toEqual({ canRead: true, canRegister: false, isDenied: false });
+    expect(PortalCapabilities.for('ACCOUNTANT').customers()).toEqual({ canRead: false, canRegister: false, isDenied: true });
   });
 });
 

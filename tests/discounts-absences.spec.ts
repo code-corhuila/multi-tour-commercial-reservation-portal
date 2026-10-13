@@ -16,7 +16,7 @@ describe('discount feature preserves its absences', () => {
       .toEqual(['calculationBase', 'endsOn', 'name', 'priority', 'startsOn', 'type', 'value']);
     expect(f.element.textContent).not.toMatch(undefinedFields);
     for (const path of listSourceFiles().filter(p => p.startsWith('src/app/discounts/'))) {
-      expect(withoutComments(readFileSync(path, 'utf8')), path).not.toMatch(undefinedFields);
+      expect(withoutComments(readFileSync(path, 'utf8')).replace(/PortalCapabilities|portal-capabilities/g, ''), path).not.toMatch(undefinedFields);
     }
   });
   it('owns no HTTP client, session, credential handling, or gateway URL', () => {

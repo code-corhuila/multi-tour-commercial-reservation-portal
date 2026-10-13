@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, tap } from 'rxjs';
-import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
+import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
 import { DISCOUNT_FIELDS, DISCOUNT_SECTIONS, DISCOUNT_SELECTS, DISCOUNT_TEXT,DiscountField, DiscountMessages, DiscountRule,
-  DiscountRuleCommand, canManageDiscounts, discountCommand, discountDraft, validateDiscount } from '../model/discount-rule';
+  DiscountRuleCommand, discountCommand, discountDraft, validateDiscount } from '../model/discount-rule';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 let formSequence = 0;
 type DiscountControl = { label: string; kind?: string; options?: readonly { value: string; label: string; explanation: string }[] };
 @Component({
@@ -48,7 +49,7 @@ type DiscountControl = { label: string; kind?: string; options?: readonly { valu
 export class DiscountRuleFormComponent {
   readonly rule = input<DiscountRule | null>(null);
   readonly saved = output<DiscountRule>(); readonly cancelled = output<void>(); readonly saving = output<boolean>();
-  protected readonly allowed = canManageDiscounts(inject(ActorContext));
+  protected readonly allowed = inject(PortalCapabilities).canManageDiscounts();
   private readonly writer = inject(DiscountRulesWriter); private readonly keys = inject(IdempotencyKeys);
   private key = this.keys.generate(); private fingerprint: string | null = null;
   private readonly prefix = `discount-form-${formSequence++}`;

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { ActorContext, CatalogItemsSource, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
-import { ActorRole, CatalogItem } from '../src/app/catalog/model/catalog-item';
+import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { CustomersSource, SensitiveDataAccess } from '../src/app/customers/data/customers-source';
 import { CustomersWriter } from '../src/app/customers/data/customers-writer';
 import { CustomerGroup } from '../src/app/customers/model/customer-group';
@@ -10,6 +10,7 @@ import { actorAs } from './actor-context.double';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
 import { ControllableCustomersSource, ControllableCustomersWriter, groupWith, personNamed, sensitiveAccess } from './customers.double';
+import { ActorRole } from '../src/app/shared/portal-capabilities';
 
 const ordinary: CatalogItem = { ...itemNamed('Caminata de prueba'), serviceId: 'svc-ordinary' };
 const risky: CatalogItem = { ...itemNamed('Canotaje de prueba'), serviceId: 'svc-risky', highRisk: true };

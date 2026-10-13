@@ -11,13 +11,11 @@ import {
   SelectionQuoteSource,
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
-  CustomerStanding,
   RESERVATION_FLOW,
   ReservationSelection,
   SELF_SERVICE_TEXT as T,
   selectionFromParams,
   selectionFromQuery,
-  standingOf,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
@@ -37,6 +35,7 @@ import {
   SELECTION,
   selectionAt,
 } from './self-service-reservation.double';
+import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
@@ -104,10 +103,10 @@ describe('theSelectionTravelsInTheUrl (DP-RS1)', () => {
 
 describe('theCustomerStandingComesFromTheSessionRoles (DP-RS2)', () => {
   it('is a final customer, no session, or any other role', () => {
-    expect(standingOf(['FINAL_CUSTOMER'])).toBe('FINAL_CUSTOMER');
-    expect(standingOf([])).toBe('NO_SESSION');
-    expect(standingOf(['TENANT_ADMINISTRATOR'])).toBe('OTHER');
-    expect(standingOf(['SOMETHING_ELSE'])).toBe('OTHER');
+    expect(customerStandingOf(['FINAL_CUSTOMER'])).toBe('FINAL_CUSTOMER');
+    expect(customerStandingOf([])).toBe('NO_SESSION');
+    expect(customerStandingOf(['TENANT_ADMINISTRATOR'])).toBe('OTHER');
+    expect(customerStandingOf(['SOMETHING_ELSE'])).toBe('OTHER');
   });
   it('asks the container to sign in through the function it is given, and fails closed by default', () => {
     let asked = 0;

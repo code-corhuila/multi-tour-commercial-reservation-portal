@@ -1,10 +1,10 @@
 import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject } from '@angular/core';
-import { ActorContext } from './catalog/data/catalog-api.service';
-import { CLIENT_AREA, CLIENT_LINKS, ClientLink, PORTAL_AREA_LIST, ROLE_LABELS } from './portal-areas';
+import { CLIENT_AREA, CLIENT_LINKS, ClientLink, PORTAL_AREA_LIST } from './portal-areas';
 import { PortalAudience } from './portal-audience';
 import { PortalNavigation } from './portal-navigation';
 import { focusHeading } from './shared/focus';
+import { PortalCapabilities } from './shared/portal-capabilities';
 
 /**
  * Shell of the authorized screens, drawn from PORTAL_AREAS: the operator sidebar for an operator, the client
@@ -87,7 +87,7 @@ export class PortalShellComponent {
   /** The operator lands on the first area; the customer on the panel cliente when the build has it. */
   protected readonly landing = (this.audience === 'customer' && this.areas.find((area) => area.key === CLIENT_AREA.panel)) || this.areas[0];
   protected readonly current = computed(() => this.areas.find((area) => area.key === this.navigation.selected()) ?? this.landing);
-  protected readonly roleLabel = ROLE_LABELS[inject(ActorContext).role] ?? ROLE_LABELS.READ_ONLY;
+  protected readonly roleLabel = inject(PortalCapabilities).roleLabel();
   private readonly drawn = (links: readonly ClientLink[]) => links.filter((link) => this.areas.some((area) => area.key === link.key));
   protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);
   protected readonly headerAccount = this.drawn(CLIENT_LINKS.account);
