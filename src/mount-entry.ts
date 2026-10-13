@@ -1,12 +1,9 @@
-import { ApplicationRef, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationRef, Provider, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
-import { MountProps } from './app/shell-contract';
+import { MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
-import { currentDiscountsProviders } from './app/demo/current-discounts-demo';
-import { customersDemoProviders } from './app/demo/customers-demo';
-import { reservationDemoProviders } from './app/demo/reservations-demo';
-import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
+import { SensitiveDataAccess, sensitiveDataAccessFor } from './app/customers/data/customers-source';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
@@ -26,6 +23,11 @@ export function ensureStylesheet(): void {
 
 /** ADR-006 F4 contract. Sources come from ./app/sources (apiClient by default, in memory in the demo build). */
 export function mount(element: HTMLElement, props: MountProps): () => void {
+  return mountWith(element, props, sourceProviders);
+}
+
+/** The same mount over other sources: the in-memory stores of sources.demo.ts in tests (001- HC-1). */
+export function mountWith(element: HTMLElement, props: MountProps, sources: (client: PortalApiClient) => Provider[]): () => void {
   ensureStylesheet();
   mounted += 1;
   element.classList.add('crp-root');
@@ -43,13 +45,11 @@ export function mount(element: HTMLElement, props: MountProps): () => void {
     providers: [
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
-      ...sourceProviders(props.apiClient),
-      ...currentDiscountsProviders(), // DEMO until G-API: no adapter over apiClient yet (DD-1)
-      ...customersDemoProviders(props.session.roles),
-      ...reservationDemoProviders(),
+      // Adapters over the container client; the demo build swaps in every in-memory store (001- HC-1).
+      ...sources(props.apiClient),
+      { provide: SensitiveDataAccess, useValue: sensitiveDataAccessFor(props.session.roles) },
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
       { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
-      ...selfServiceDemoProviders(),
     ],
   }).then((created) => {
     app = created;

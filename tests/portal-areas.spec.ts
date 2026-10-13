@@ -5,6 +5,8 @@ import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
+import { DemoPublicEstablishmentsSource, DemoPublicOfferSource } from '../src/app/demo/public-offer-demo';
+import { PublicEstablishmentsSource, PublicOfferSource } from '../src/app/public-offer/data/public-offer-sources';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
 import { CustomersPageComponent } from '../src/app/customers/pages/customers-page.component';
@@ -59,6 +61,8 @@ async function openShell(role: ActorRole, withDiscounts = true, extra: PortalAre
     { provide: CatalogItemsWriter, useValue: new DemoCatalogWriter(catalog) },
     { provide: AssociatedEstablishmentsSource, useValue: establishments },
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
+    { provide: PublicOfferSource, useValue: new DemoPublicOfferSource(catalog) },
+    { provide: PublicEstablishmentsSource, useValue: new DemoPublicEstablishmentsSource(establishments) },
     ...(withDiscounts ? [{ provide: DiscountRulesSource, useValue: new DemoDiscountRulesStore() }] : []),
     ...(extra.length ? [{ provide: PORTAL_AREA_LIST, useValue: [...PORTAL_AREAS.filter((area) => !area.audience), ...extra] }] : []),
   ] });
