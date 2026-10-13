@@ -62,9 +62,11 @@ describe('the list is screen 10', () => {
   it('starts the demo with seeded reservations pending payment', async () => {
     const source = reservationDemoProviders().find((p) => (p as { provide: unknown }).provide === ReservationsSource) as { useValue: ReservationsSource };
     const seeded = await firstValueFrom(source.useValue.list());
-    expect(seeded.length).toBeGreaterThanOrEqual(1);
-    expect(seeded.length).toBeLessThanOrEqual(2);
-    for (const r of seeded) expect(r.status).toBe('PENDIENTE_DE_PAGO');
+    const pending = seeded.filter((r) => r.status === 'PENDIENTE_DE_PAGO');
+    expect(pending.length).toBeGreaterThanOrEqual(1);
+    expect(pending.length).toBeLessThanOrEqual(2);
+    // HU-COM-013 (tasks T-08): one fixture per state the cancellation tells apart, in the same store.
+    expect(new Set(seeded.map((r) => r.status))).toEqual(new Set(['PENDIENTE_DE_PAGO', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA', 'CANCELADA']));
   });
 });
 
