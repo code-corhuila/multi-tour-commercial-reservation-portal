@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
 import { PortalCapabilities, customerStandingOf, roleOf } from '../src/app/shared/portal-capabilities';
 import { actorAs } from './actor-context.double';
 import { listSourceFiles, withoutComments } from './source-files';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 // Amendment 2026-10-13, HC-2 and plan H-D2: one table answers what an actor may do; screens ask it.
 

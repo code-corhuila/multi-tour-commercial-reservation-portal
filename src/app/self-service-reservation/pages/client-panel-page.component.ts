@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, afterNextRender, inject } from '@an
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/model/catalog-item';
+import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { DiscountRulesSource } from '../../discounts/data/discount-rules-source';
-import { DiscountRule } from '../../discounts/model/discount-rule';
+import { DiscountRule } from '../../discounts/data/discount-rules-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';

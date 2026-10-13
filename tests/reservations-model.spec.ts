@@ -1,10 +1,10 @@
 import { firstValueFrom } from 'rxjs';
 import { describe, expect, it } from 'vitest';
-import { parseMoney } from '../src/app/catalog/model/money';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
 import { hasCapacity, openDepartures, quote, validateReservation } from '../src/app/reservations/model/reservation';
 import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { departureOf } from './reservations.double';
+import { parseMoney } from '../src/app/shared/money';
 
 const cents = (text: string) => { const parsed = parseMoney(text); if (parsed.kind !== 'valid') throw new Error(text); return parsed.minorUnits; };
 const none = () => [];

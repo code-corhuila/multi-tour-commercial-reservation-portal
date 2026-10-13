@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { EstablishmentFormComponent } from '../src/app/establishments/components/establishment-form.component';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { AssociatedEstablishment } from '../src/app/establishments/model/associated-establishment';
@@ -10,6 +9,8 @@ import { ControllableEstablishmentsWriter } from './associated-establishments-wr
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
 
 import { formControls, imageFile } from './establishment-form.helpers';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 async function openForm() {
   const writer = new ControllableEstablishmentsWriter(), keys = new ControllableIdempotencyKeys();
   TestBed.configureTestingModule({ providers: [

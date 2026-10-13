@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import {
@@ -36,6 +35,7 @@ import {
   selectionAt,
 } from './self-service-reservation.double';
 import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);

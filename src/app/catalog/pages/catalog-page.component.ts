@@ -7,17 +7,8 @@ import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.serv
 import { CATALOG_COPY } from '../catalog-copy';
 import { formatCop } from '../../shared/format';
 import { CatalogItem } from '../model/catalog-item';
+import { PageState } from '../../shared/page-state';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-
-/**
- * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
- * combinations for four legal states, and the illegal ones are the blank screens Annex H forbids.
- */
-export type PageState =
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'error'; readonly retry: () => void }
-  | { readonly kind: 'empty' }
-  | { readonly kind: 'data'; readonly items: readonly CatalogItem[] };
 
 /** The one form the page may show: registering (no item) or changing the given item. */
 interface FormTarget {
@@ -130,7 +121,7 @@ export class CatalogPageComponent {
   protected readonly caps = inject(PortalCapabilities).catalog();
   protected readonly canEdit = this.caps.canEditCommercialFields || this.caps.canEditDescription;
 
-  readonly state = signal<PageState>({ kind: 'loading' });
+  readonly state = signal<PageState<CatalogItem>>({ kind: 'loading' });
   /** Per row, apart from the four states of the page: one item pending never blanks the others. */
   private readonly pendingIds = signal<Readonly<Record<string, true>>>({});
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
@@ -147,9 +138,9 @@ export class CatalogPageComponent {
         // arrives to overwrite a newer one (RN-P3, D-06).
         switchMap(() =>
           this.source.list().pipe(
-            map((items): PageState => (items.length === 0 ? { kind: 'empty' } : { kind: 'data', items })),
-            catchError(() => of<PageState>({ kind: 'error', retry: () => this.reload() })),
-            startWith<PageState>({ kind: 'loading' }),
+            map((items): PageState<CatalogItem> => (items.length === 0 ? { kind: 'empty' } : { kind: 'data', items })),
+            catchError(() => of<PageState<CatalogItem>>({ kind: 'error', retry: () => this.reload() })),
+            startWith<PageState<CatalogItem>>({ kind: 'loading' }),
           ),
         ),
         takeUntilDestroyed(),
