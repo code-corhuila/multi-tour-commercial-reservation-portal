@@ -550,6 +550,7 @@
 .crp-root .crp-refunds-feedback[role="alert"], .crp-root .crp-refunds-error { color: var(--crp-error); }
 @media (max-width: 720px) { .crp-root .crp-refunds-hero { grid-template-columns: minmax(0, 1fr); } }
 /* HU-COM-016 treatment actions, 10A link and the alerts of admin-notificaciones.html (mockup mt-divider-list). */
+.crp-root .crp-refunds-hero > .crp-operator-status { align-self: start; justify-self: end; } .crp-root .crp-refunds-form select { font-size: 0.86rem; }
 .crp-root .crp-refunds-actions { justify-content: flex-start; } .crp-root .crp-refunds-link { margin-top: var(--crp-space-4); justify-content: flex-start; }
 .crp-root .crp-refunds-alert { display: flex; align-items: flex-start; gap: var(--crp-space-4); padding: var(--crp-space-4) 0; border-top: 1px solid var(--crp-line); }
 .crp-root .crp-refunds-alert:first-child { border-top: 0; padding-top: 0; } .crp-root .crp-refunds-alert-copy { display: grid; gap: var(--crp-space-1); }
