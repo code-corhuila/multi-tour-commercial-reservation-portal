@@ -49,8 +49,6 @@ export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`
 /** The sum of the discount lines, written as the screens write a discount: `-$15`, or `$0`. */
 export const discountTotal = (q: Quote) => -q.discounts.reduce((sum, d) => sum + d.amountCents, 0);
 
-/** RBAC: only the administrator and the collaborator create; any other role, known or not, reads. */
-export const canCreateReservations = (actor: { role: string }) => actor.role === 'TENANT_ADMINISTRATOR' || actor.role === 'OPERATIONAL_COLLABORATOR';
 /** RN-RES-010, RN-SAL-001: only a Programada departure that is open for reservations is offered. */
 export const openDepartures = (all: readonly Departure[]) => all.filter((d) => d.state === 'PROGRAMADA' && d.openForReservations);
 /** RN-RES-007: a read-only comparison; it holds no seat. */

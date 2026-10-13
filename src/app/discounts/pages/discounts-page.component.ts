@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, map, of, startWith, switchMap } from 'rxjs';
-import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
+import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { DiscountRuleFormComponent } from '../components/discount-rule-form.component';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
 import { DiscountRulesSource } from '../data/discount-rules-source';
 import { formatDateRange } from '../../shared/format';
-import { DISCOUNT_SELECTS, DISCOUNT_TEXT, DiscountRule, canManageDiscounts, discountValidity, discountValueText } from '../model/discount-rule';
+import { DISCOUNT_SELECTS, DISCOUNT_TEXT, DiscountRule, discountValidity, discountValueText } from '../model/discount-rule';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error' } | { kind: 'data'; items: readonly DiscountRule[] };
 @Component({
   selector: 'app-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [DiscountRuleFormComponent],
@@ -58,7 +59,7 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
   `,
 })
 export class DiscountsPageComponent {
-  protected readonly allowed = canManageDiscounts(inject(ActorContext));
+  protected readonly allowed = inject(PortalCapabilities).canManageDiscounts();
   private readonly source = inject(DiscountRulesSource);
   protected readonly writer = inject(DiscountRulesWriter, { optional: true });
   private readonly keys = inject(IdempotencyKeys); private readonly lifetime = inject(DestroyRef);

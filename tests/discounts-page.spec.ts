@@ -4,7 +4,6 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, it } from 'vitest';
 import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
 import { PORTAL_ROUTES, CATALOG_ROUTES } from '../src/app/catalog/catalog.routes';
-import { ActorRole } from '../src/app/catalog/model/catalog-item';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { DiscountRulesWriter } from '../src/app/discounts/data/discount-rules-writer';
 import { DISCOUNT_ROUTES } from '../src/app/discounts/discounts.routes';
@@ -12,6 +11,7 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { actorAs } from './actor-context.double';
 import { ControllableDiscountRulesSource, discountNamed } from './discount-rules-source.double';
 import { ControllableDiscountRulesWriter } from './discount-rules-writer.double';
+import { ActorRole } from '../src/app/shared/portal-capabilities';
 const RAW_CODES = /\b(ACTIVE|INACTIVE|IN_FORCE|UPCOMING|EXPIRED|PERCENTAGE|FIXED_AMOUNT|ORIGINAL_VALUE|PREVIOUS_SUBTOTAL)\b/;
 
 export async function openDiscounts(role: ActorRole = 'TENANT_ADMINISTRATOR', providers: any[] = []) {
