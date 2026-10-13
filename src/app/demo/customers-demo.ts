@@ -1,13 +1,11 @@
 import { Provider } from '@angular/core';
 import { Observable, map, of, take, tap } from 'rxjs';
 import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
-import { CustomersSource, SensitiveDataAccess } from '../customers/data/customers-source';
+import { CustomersSource } from '../customers/data/customers-source';
 import { CustomersWriter } from '../customers/data/customers-writer';
 import { CustomerGroup, LeadCommand, Person, PersonCommand } from '../customers/model/customer-group';
 
 // DEMO (spec DD-1): invented people only (RN-PC9). Debt: replace with sources over props.apiClient when G-B is closed.
-/** PROPUESTO (spec DP-PC1): how the container would report "Consultar datos sensibles" is not decided. */
-export const SENSITIVE_DATA_PERMISSION = 'CONSULT_SENSITIVE_DATA';
 const extra = (bloodType: string, physicalRestrictions: string) =>
   ({ informedConsent: true, bloodType, emergencyContact: 'Contacto Demo 000-0000', physicalRestrictions });
 
@@ -47,15 +45,10 @@ export class DemoCustomersWriter extends CustomersWriter {
   }
 }
 
-export function demoSensitiveDataAccess(roles: readonly string[]): SensitiveDataAccess {
-  return new (class extends SensitiveDataAccess { override readonly granted = roles.includes(SENSITIVE_DATA_PERMISSION); })();
-}
-
-export function customersDemoProviders(roles: readonly string[]): Provider[] {
+export function customersDemoProviders(): Provider[] {
   const store = new DemoCustomersStore();
   return [
     { provide: CustomersSource, useValue: store },
     { provide: CustomersWriter, useFactory: (catalog: CatalogItemsSource) => new DemoCustomersWriter(store, catalog), deps: [CatalogItemsSource] },
-    { provide: SensitiveDataAccess, useValue: demoSensitiveDataAccess(roles) },
   ];
 }
