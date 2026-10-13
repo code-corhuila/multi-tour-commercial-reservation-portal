@@ -492,3 +492,12 @@
 .crp-root .crp-payments-error { margin: 0; color: var(--crp-error); }
 .crp-root .crp-payments-lines { margin: 16px 0 0; padding-left: 18px; }
 @media (max-width: 720px) { .crp-root .crp-payments-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* HU-COM-013: admin-cancelar-modificar-reserva.html panels stacked, Causal across the grid, and the detail lists of the screen and of 10A. */
+.crp-root .crp-reservation-changes-form > section { grid-column: 1 / -1; margin: 0; }
+.crp-root .crp-reservation-changes-wide { grid-column: 1 / -1; }
+.crp-root .crp-reservation-changes-list { display: grid; gap: 11px; margin: 16px 0 0; }
+.crp-root .crp-reservation-changes-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--crp-line); }
+.crp-root .crp-reservation-changes-list div:last-child { padding-bottom: 0; border-bottom: 0; }
+.crp-root .crp-reservation-changes-list dt { color: var(--crp-soft); font-size: 0.77rem; }
+.crp-root .crp-reservation-changes-list dd { margin: 0; color: var(--crp-text); font-size: 0.82rem; font-weight: 700; text-align: right; }

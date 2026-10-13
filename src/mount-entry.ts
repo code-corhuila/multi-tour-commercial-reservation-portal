@@ -1,4 +1,4 @@
-import { ApplicationRef, Provider, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationRef, Injector, Provider, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps, PortalApiClient } from './app/shell-contract';
@@ -10,6 +10,13 @@ import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
 import { RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
+import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
+import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
+import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
+import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
+
+const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
 /** Portals mounted now; the stylesheet leaves with the last one (001- amendment HC-5, plan H-D4). */
 let mounted = 0;
@@ -56,6 +63,10 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
       // HU-COM-009: Pagos y soportes of 10A and Gestionar pago of 10C, drawn only with the payment ports.
       contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK),
+      // HU-COM-013: the 10A action and blocks, and the Cancelación type; each only with the cancellation ports of the build.
+      contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
+      contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),
+      { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
     ],
   }).then((created) => {
     app = created;
