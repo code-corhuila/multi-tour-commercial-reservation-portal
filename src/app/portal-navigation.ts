@@ -12,6 +12,8 @@ export const CLIENT_AREA = Object.freeze({
 @Injectable()
 export class PortalNavigation {
   readonly selected = signal<string | undefined>(undefined);
+  /** Every opening, also of the area already open: the shell draws the area anew, so its own item takes it back to its start. */
+  readonly visit = signal(0);
   /** Parameters of the last opening (e.g. { departure, services, people }); every opening replaces them. */
   readonly params = signal<Readonly<Record<string, string>>>({});
   private keys: readonly string[] = [];
@@ -27,6 +29,7 @@ export class PortalNavigation {
     if (!this.has(key)) { return false; }
     this.params.set(params);
     this.selected.set(key);
+    this.visit.update((n) => n + 1);
     this.opened();
     return true;
   }
