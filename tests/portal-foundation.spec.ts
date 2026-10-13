@@ -11,7 +11,7 @@ import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { ActorContext } from '../src/app/shared/actor-context';
 import {
   CHECKOUT_BLOCKS, CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENT_MANAGEMENT_ACTIONS,
-  PortalSlot, PortalSlotOutlet, RESERVATION_CARD_EXTRAS, RESERVATION_DETAIL_BLOCKS, RESERVATION_ROW_ACTIONS, TRANSFER_PAYMENT_LINES, contribute,
+  PortalSlot, PortalSlotOutlet, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS, RESERVATION_DETAIL_ACTIONS, RESERVATION_DETAIL_BLOCKS, RESERVATION_ROW_ACTIONS, TRANSFER_PAYMENT_LINES, contribute,
 } from '../src/app/shared/portal-slots';
 import { actorAs } from './actor-context.double';
 import { reservationOf } from './reservations.double';
@@ -87,10 +87,12 @@ async function hostWith(providers: Provider[]) {
 describe('portalSlots', () => {
   it('declares the canonical tokens of the cut 3 stories, empty until a story contributes', () => {
     const tokens = [RESERVATION_DETAIL_BLOCKS, RESERVATION_ROW_ACTIONS, CHECKOUT_BLOCKS, TRANSFER_PAYMENT_LINES, PAYMENT_MANAGEMENT_ACTIONS,
-      PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, CLIENT_QUICK_ACTIONS, CLIENT_NOTICES, RESERVATION_CARD_EXTRAS];
+      PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, CLIENT_QUICK_ACTIONS, CLIENT_NOTICES, RESERVATION_CARD_EXTRAS, RESERVATION_DETAIL_ACTIONS,
+      RESERVATION_CARD_ACTIONS];
     expect(tokens.map((token) => token.toString())).toEqual([
       'RESERVATION_DETAIL_BLOCKS', 'RESERVATION_ROW_ACTIONS', 'CHECKOUT_BLOCKS', 'TRANSFER_PAYMENT_LINES', 'PAYMENT_MANAGEMENT_ACTIONS',
-      'PAYMENTS_PAGE_PANELS', 'PAYMENTS_ROW_ACTIONS', 'CLIENT_QUICK_ACTIONS', 'CLIENT_NOTICES', 'RESERVATION_CARD_EXTRAS',
+      'PAYMENTS_PAGE_PANELS', 'PAYMENTS_ROW_ACTIONS', 'CLIENT_QUICK_ACTIONS', 'CLIENT_NOTICES', 'RESERVATION_CARD_EXTRAS', 'RESERVATION_DETAIL_ACTIONS',
+      'RESERVATION_CARD_ACTIONS',
     ].map((name) => `InjectionToken ${name}`));
   });
 
@@ -181,5 +183,30 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     const card = host.querySelector('.self-service-card')!;
     expect(card.querySelector('.self-service-card-copy > p + crp-test-block')?.textContent?.trim())
       .toBe(`Bloque ${card.querySelector('strong')?.textContent?.split(' · ')[0]}`);
+  });
+
+  // 10A header: "Cancelar o modificar reserva" (013) sits before "Volver a reservas" (admin-detalle-reserva.html:34).
+  it('draws RESERVATION_DETAIL_ACTIONS in the header of 10A, before Volver a reservas', async () => {
+    mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 1 })], ['TENANT_ADMINISTRATOR']);
+    await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
+    click('nav button', 'Reservas');
+    await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
+    const id = host.querySelector('.crp-reservation-code')?.textContent?.slice(1);
+    click('app-reservations-page [data-state="data"] tbody tr td:last-child button', 'Ver detalle');
+    await vi.waitFor(() => expect(host.querySelector('app-reservations-page .crp-page-header crp-test-block')).toBeTruthy());
+    const block = host.querySelector('app-reservations-page .crp-page-header crp-test-block')!;
+    expect(block.textContent?.trim()).toBe(`Bloque ${id}`);
+    expect(block.nextElementSibling?.textContent?.trim()).toBe('Volver a reservas');
+  });
+
+  // Mis reservas: "Responder propuesta" (018) closes the card (app.js:2694).
+  it('draws RESERVATION_CARD_ACTIONS at the end of each card of Mis reservas', async () => {
+    mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 1 })], ['FINAL_CUSTOMER']);
+    await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
+    click('.crp-panel-card button', 'Ver mis reservas');
+    await vi.waitFor(() => expect(host.querySelector('.self-service-panel [data-state="data"] li')).toBeTruthy());
+    const card = host.querySelector('.self-service-card')!;
+    expect(card.lastElementChild?.tagName.toLowerCase()).toBe('crp-test-block');
+    expect(card.lastElementChild?.textContent?.trim()).toBe(`Bloque ${card.querySelector('strong')?.textContent?.split(' · ')[0]}`);
   });
 });
