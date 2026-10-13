@@ -29,6 +29,7 @@ import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pa
 import { PaymentManagementPageComponent } from '../src/app/payments/pages/payment-management-page.component';
 import { TransferPaymentPageComponent } from '../src/app/payments/pages/transfer-payment-page.component';
 import { ReschedulingPageComponent } from '../src/app/rescheduling/pages/rescheduling-page.component';
+import { ReschedulingProposalPageComponent } from '../src/app/rescheduling/pages/rescheduling-proposal-page.component';
 import { actorAs } from './actor-context.double';
 import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
@@ -119,6 +120,7 @@ describe('portalAreasRegistry', () => {
       { key: 'refund-treatment', label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent },
       { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent },
       { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
+      { key: 'rescheduling-proposal', label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
