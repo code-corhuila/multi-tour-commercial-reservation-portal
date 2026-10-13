@@ -20,32 +20,36 @@ async function open() {
 }
 describe('discount management intentions', () => {
   it('asks confirmation, preserves reservations, cancels without writing, and retries inactivation with the same key', async () => {
-    const p = await open(); await p.click('Inactivate');
-    expect(p.element.querySelector('[role="dialog"]')?.textContent).toContain('Existing reservations keep their discount');
-    expect(p.writer.calls).toHaveLength(0); await p.click('Cancel'); expect(p.element.querySelector('[role="dialog"]')).toBeNull();
-    await p.click('Inactivate'); await p.click('Confirm inactivation'); await p.click('Confirm inactivation');
+    const p = await open(); await p.click('Inactivar');
+    expect(p.element.querySelector('[role="dialog"]')?.textContent).toContain('Las reservas existentes conservan el descuento que ya tienen');
+    expect(p.writer.calls).toHaveLength(0); await p.click('Cancelar'); expect(p.element.querySelector('[role="dialog"]')).toBeNull();
+    await p.click('Inactivar'); await p.click('Confirmar inactivación'); await p.click('Confirmar inactivación');
     expect(p.writer.calls).toHaveLength(1); expect(p.writer.calls[0]).toMatchObject({ kind: 'inactivate', id: 'Promotion' });
     expect(p.element.querySelector<HTMLButtonElement>('[role="dialog"] button')!.disabled).toBe(true);
     p.writer.calls[0].fail(apiError()); await p.settle(); expect(p.element.querySelector('[role="dialog"] [role="alert"]')).not.toBeNull();
-    await p.click('Confirm inactivation'); expect(p.writer.calls[1].key).toBe(p.writer.calls[0].key);
+    await p.click('Confirmar inactivación'); expect(p.writer.calls[1].key).toBe(p.writer.calls[0].key);
     p.writer.calls[1].reply({ ...discountNamed(), status: 'INACTIVE' }); await p.settle();
-    expect(p.element.querySelector('li')?.textContent).toContain('INACTIVE');
+    expect(p.element.querySelector('li')?.textContent).toContain('Inactivo');
     expect(p.element.querySelector('[role="dialog"]')).toBeNull();
-    expect(Array.from(p.element.querySelectorAll('button')).some(b => b.textContent?.trim() === 'Inactivate')).toBe(false);
+    expect(Array.from(p.element.querySelectorAll('button')).some(b => b.textContent?.trim() === 'Inactivar')).toBe(false);
   });
   it('opens create and edit forms, cancels them and renews the intention on reopening', async () => {
-    const p = await open(); await p.click('New discount rule');
+    const p = await open(); await p.click('Crear descuento');
     const first = p.keys.generated.at(-1); expect(p.element.querySelector('form')).not.toBeNull();
-    await p.click('Cancel'); await p.click('New discount rule'); expect(p.keys.generated.at(-1)).not.toBe(first);
-    await p.click('Cancel'); await p.click('Edit'); expect(p.element.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('Promotion');
+    await p.click('Cancelar'); await p.click('Crear descuento'); expect(p.keys.generated.at(-1)).not.toBe(first);
+    expect(p.element.querySelector('h1')?.textContent).toBe('Nuevo descuento'); expect(p.element.querySelector('ul')).toBeNull();
+    await p.click('Volver a descuentos'); expect(p.element.querySelector('form')).toBeNull(); expect(p.element.querySelector('h1')?.textContent).toBe('Descuentos');
+    await p.click('Editar parámetros'); expect(p.element.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('Promotion');
+    expect(p.element.querySelector('h1')?.textContent).toBe('Editar descuento');
+    expect(p.element.querySelector('form [type="submit"]')?.textContent?.trim()).toBe('Guardar cambios');
   });
   it('inserts a created rule into the list and replaces an edited rule without duplicates', async () => {
-    const p = await open(); await p.click('Edit');
+    const p = await open(); await p.click('Editar parámetros');
     const name = p.element.querySelector<HTMLInputElement>('[name="name"]')!; name.value = 'Updated'; name.dispatchEvent(new Event('input'));
     p.element.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true })); await p.settle();
     p.writer.calls[0].reply({ ...discountNamed(), name: 'Updated' }); await p.settle();
     expect(p.element.querySelectorAll('li')).toHaveLength(1); expect(p.element.querySelector('li')?.textContent).toContain('Updated');
-    await p.click('New discount rule');
+    await p.click('Crear descuento');
     for (const [field, value] of Object.entries({ name: 'Created', startsOn: '2026-01-01', endsOn: '2026-12-31', priority: '2', value: '0.07' })) {
       const input = p.element.querySelector<HTMLInputElement>(`[name="${field}"]`)!; input.value = value; input.dispatchEvent(new Event('input'));
     }
