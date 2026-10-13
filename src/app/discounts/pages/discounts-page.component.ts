@@ -1,0 +1,91 @@
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { Subject, catchError, defer, finalize, map, of, startWith, switchMap } from 'rxjs';
+import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
+import { ApiError } from '../../shell-contract';
+import { DiscountRuleFormComponent } from '../components/discount-rule-form.component';
+import { DiscountRulesWriter } from '../data/discount-rules-writer';
+import { DiscountRulesSource } from '../data/discount-rules-source';
+import { DISCOUNT_TEXT, DiscountRule, canManageDiscounts, discountValidity, discountValueText } from '../model/discount-rule';
+export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error' } | { kind: 'data'; items: readonly DiscountRule[] };
+@Component({
+  selector: 'app-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [DiscountRuleFormComponent],
+  template: `
+    @if (allowed) {
+      <a href="discounts">{{ text.entry }}</a><h1>{{ text.title }}</h1>
+      @if (writer) { <button [disabled]="busy()" (click)="openForm(null)">{{ text.create }}</button> }
+      @if (formOpen()) { @for (key of [formKey()]; track key) {
+        <app-discount-rule-form [rule]="editing()" (saved)="onSaved($event)" (cancelled)="formOpen.set(false)" (saving)="saving.set($event)" />
+      } }
+      @if (selected(); as rule) {
+        <div role="dialog" aria-modal="true" [attr.aria-label]="text.confirm">
+          <p>{{ text.confirmation }}</p>
+          <button [disabled]="pending()" (click)="confirm()">{{ text.confirm }}</button>
+          <button [disabled]="pending()" (click)="selected.set(null)">{{ text.cancel }}</button>
+          @if (actionError()) { <p role="alert">{{ actionError() }}</p> }
+        </div>
+      }
+      @let current = state();
+      @switch (current.kind) {
+        @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
+        @case ('error') { <div role="alert" data-state="error">{{ text.failed }}<button [disabled]="busy()" (click)="reload()">{{ text.retry }}</button></div> }
+        @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
+        @case ('data') {
+          <ul data-state="data">@for (rule of current.items; track rule.id) {
+            <li>{{ rule.name }} · {{ rule.startsOn }} – {{ rule.endsOn }} · {{ rule.priority }} · {{ valueText(rule) }} · {{ validity(rule, today) }}
+              @if (writer) {
+                <button [disabled]="busy()" (click)="openForm(rule)">{{ text.edit }}</button>
+                @if (rule.status === activeStatus) { <button [disabled]="busy()" (click)="ask(rule)">{{ text.inactivate }}</button> }
+              }
+            </li>
+          }</ul>
+        }
+      }
+    } @else { <p role="alert">{{ text.denied }}</p> }
+  `,
+})
+export class DiscountsPageComponent {
+  protected readonly allowed = canManageDiscounts(inject(ActorContext));
+  private readonly source = inject(DiscountRulesSource);
+  protected readonly writer = inject(DiscountRulesWriter, { optional: true });
+  private readonly keys = inject(IdempotencyKeys); private readonly lifetime = inject(DestroyRef);
+  protected readonly formOpen = signal(false); protected readonly formKey = signal(0); protected readonly editing = signal<DiscountRule | null>(null);
+  protected readonly selected = signal<DiscountRule | null>(null); protected readonly pending = signal(false); protected readonly saving = signal(false);
+  protected readonly busy = computed(() => this.saving() || this.pending() || this.formOpen() || !!this.selected());
+  protected readonly actionError = signal(''); private actionKey = '';
+  protected readonly activeStatus: DiscountRule['status'] = 'ACTIVE';
+  protected readonly text = DISCOUNT_TEXT;
+  protected readonly valueText = discountValueText;
+  protected readonly validity = discountValidity;
+  protected readonly today = new Date().toLocaleDateString('en-CA');
+  private readonly requests = new Subject<void>();
+  private readonly local = signal<DiscountsPageState | null>(null);
+  private readonly listed = toSignal(this.requests.pipe(switchMap(() => this.source.list().pipe(
+    map((items): DiscountsPageState => items.length ? { kind: 'data', items: [...items].sort((a, b) => a.priority - b.priority) } : { kind: 'empty' }),
+    catchError(() => of<DiscountsPageState>({ kind: 'error' })), startWith<DiscountsPageState>({ kind: 'loading' }),
+  ))), { initialValue: { kind: 'loading' } as DiscountsPageState });
+  readonly state = computed(() => this.local() ?? this.listed());
+  constructor() { this.reload(); }
+  reload(): void { if (this.allowed && !this.busy()) { this.local.set(null); this.requests.next(); } }
+  protected openForm(rule: DiscountRule | null): void {
+    if (!this.allowed || !this.writer || this.busy()) return;
+    this.editing.set(rule); this.formKey.update(k => k + 1); this.formOpen.set(true);
+  }
+  protected onSaved(stored: DiscountRule): void {
+    const current = this.state(), items = current.kind === 'data' ? current.items : [];
+    this.local.set({ kind: 'data', items: [...items.filter(r => r.id !== stored.id), stored].sort((a, b) => a.priority - b.priority) });
+    this.formOpen.set(false);
+  }
+  protected ask(rule: DiscountRule): void {
+    if (!this.allowed || !this.writer || this.busy() || rule.status !== this.activeStatus) return;
+    this.actionKey = this.keys.generate(); this.actionError.set(''); this.selected.set(rule);
+  }
+  protected confirm(): void {
+    const rule = this.selected(); if (!this.allowed || !this.writer || !rule || this.pending()) return;
+    this.pending.set(true); this.actionError.set('');
+    defer(() => this.writer!.inactivate(rule.id, this.actionKey)).pipe(takeUntilDestroyed(this.lifetime),
+      finalize(() => this.pending.set(false)),
+    ).subscribe({ next: stored => { this.onSaved(stored); this.selected.set(null); },
+      error: (error: Partial<ApiError> | null) => this.actionError.set(error?.userMessage ?? this.text.failed) });
+  }
+}
