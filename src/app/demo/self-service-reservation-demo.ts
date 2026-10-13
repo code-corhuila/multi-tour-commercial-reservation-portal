@@ -2,26 +2,27 @@ import { Provider } from '@angular/core';
 import { Observable, forkJoin, map, of, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { DeparturesSource } from '../reservations/data/departures-source';
-import { quote } from '../reservations/model/reservation';
+import { LeadCustomersSource } from '../reservations/data/reservation-integrations';
+import { ReservationsSource, STATUS_CODE } from '../reservations/data/reservations-source';
+import { ReservationsWriter } from '../reservations/data/reservations-writer';
+import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
+import { Reservation } from '../reservations/model/reservation';
+import { CustomerContext } from '../self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from '../self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuote } from '../self-service-reservation/model/self-service-reservation';
 import { ApiError } from '../shell-contract';
 
-// DEMO (spec DD-1): in-memory data, invented. Debt: the contract has no reservation path yet (G-B), and the
-// values and the capacity check belong to HU-COM-007 (G-DEP); this store only imitates their answers.
-const FULL_DEPARTURE = 'demo-dep-full';
-const DEMO_PRICE_PER_PERSON_CENTS = 64_950_000;
-const DEMO_TOURS: Readonly<Record<string, readonly [string, string]>> = {
-  'demo-dep-1': ['Ruta Andina', '2026-09-18T06:30:00'],
-  'demo-dep-2': ['Tour Montañas', '2026-09-15T07:00:00'],
-};
-const tourOf = (departureId: string) => DEMO_TOURS[departureId] ?? ['Tour Desierto de la Tatacoa', '2026-09-22T05:30:00'];
+// DEMO (spec DD-1): the customer side of the one demo store of HU-COM-007 (reservations-demo.ts), so the
+// operator and the customer read the same reservation under the same code. Debt: the contract has no
+// reservation path yet (G-B); the service will decide whose reservations they are (RN-RS8).
+/** PROVISIONAL, demo only: the lead customer the signed-in final customer stands for (no customer id in the session yet). */
+const DEMO_FINAL_CUSTOMER = 'demo-cus-3';
 
-const reservation = (id: string, departureId: string, serviceIds: readonly string[], people: number): CustomerReservation => ({
-  reservationId: id, tourName: tourOf(departureId)[0], departureAt: tourOf(departureId)[1], departureId, serviceIds, people,
-  projectedValueCents: DEMO_PRICE_PER_PERSON_CENTS * people, finalValueCents: DEMO_PRICE_PER_PERSON_CENTS * people,
-  reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'SIN_PAGO',
+const asCustomer = (r: Reservation, selection: Partial<ReservationSelection>): CustomerReservation => ({
+  reservationId: r.id, tourName: r.tourName, departureAt: r.departureDate, departureId: selection.departureId ?? '',
+  serviceIds: selection.serviceIds ?? [], people: r.people, projectedValueCents: r.quote.projectedCents, finalValueCents: r.quote.finalCents,
+  reservationStatus: STATUS_CODE[r.status], paymentStatus: r.financialStatus,
 });
 
 export class DemoMyReservationsStore extends MyReservationsSource {

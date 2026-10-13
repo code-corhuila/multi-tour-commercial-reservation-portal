@@ -10,7 +10,23 @@ import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, capa
 const CONDITIONS = 'Changes up to 72 hours before departure; cancellation as the tour policy states (demo text, DP-RC4).';
 const departure = (n: number, tourName: string, date: string, state: Departure['state'], open: boolean, effectiveCapacity: number, transport: number): Departure =>
   ({ id: `demo-dep-${n}`, tourName, date, state, openForReservations: open, effectiveCapacity, transportPerPersonCents: transport, conditions: CONDITIONS });
-const CUSTOMERS = [{ id: 'demo-cus-1', fullName: 'Camila Ortega (demo)' }, { id: 'demo-cus-2', fullName: 'Andres Pinto (demo)' }];
+const CUSTOMERS = [{ id: 'demo-cus-1', fullName: 'Camila Ortega (demo)' }, { id: 'demo-cus-2', fullName: 'Andrés Pinto (demo)' },
+  { id: 'demo-cus-3', fullName: 'Laura Gómez (demo)' }];
+/** Two reservations already registered, so the list shows screen 10 with data. */
+const SEEDED: Reservation[] = [
+  { id: 'RES-1842', leadCustomerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa al atardecer', departureDate: '2026-11-07', conditions: CONDITIONS, people: 2,
+    quote: { services: [{ name: 'Guianza (demo)', cents: 80_000_000 }], transportCents: 5_000_000, projectedCents: 85_000_000, discounts: [], discountCents: 0, finalCents: 85_000_000 }, balanceCents: 85_000_000,
+    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false },
+  { id: 'RES-1841', leadCustomerName: 'Mateo Ríos (demo)', tourName: 'Ruta del café en Pitalito', departureDate: '2026-11-14', conditions: CONDITIONS, people: 1,
+    quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], discountCents: 0, finalCents: 41_800_000 }, balanceCents: 41_800_000,
+    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false },
+];
+/** HU-COM-013 (tasks T-08): one reservation per state the cancellation tells apart; codes below the writer's sequence. */
+const inState = (id: string, status: Reservation['status'], over: Partial<Reservation> = {}): Reservation =>
+  ({ ...SEEDED[1], id, status, seatHeld: status !== 'PENDIENTE_DE_PAGO' && status !== 'CANCELADA', ...over });
+SEEDED.push(inState('RES-1839', 'CONFIRMADA', { leadCustomerName: 'Camila Ortega (demo)', validatedCents: 30_000_000, balanceCents: 11_800_000, financialStatus: 'PARCIAL' }),
+  inState('RES-1838', 'EN_EJECUCION'), inState('RES-1837', 'FINALIZADA'), inState('RES-1836', 'CANCELADA'),
+  inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true }));
 
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [

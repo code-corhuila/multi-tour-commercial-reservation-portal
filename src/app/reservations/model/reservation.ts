@@ -20,9 +20,14 @@ export type CreateReservationCommand = {
 };
 /** The snapshot fixed at creation; the detail renders it and never recalculates it (RN-RES-003). */
 export type Reservation = {
-  readonly id: string; readonly leadCustomerName: string; readonly departureLabel: string; readonly conditions: string;
-  readonly people: number; readonly quote: Quote; readonly status: 'PENDIENTE_DE_PAGO'; readonly financialStatus: 'SIN_PAGO'; readonly seatHeld: false;
+  readonly id: string; readonly leadCustomerName: string; readonly tourName: string; readonly departureDate: string; readonly conditions: string;
+  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL'; readonly seatHeld: boolean;
+  /** HU-COM-013 D-02 (PROPUESTO): resolved by the service; the cancellation, the decision it opened and the HU-COM-018 mark (DD-4). */
+  readonly validatedCents?: number; readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string }; readonly reschedulingPending?: boolean;
+  readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
+    readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null };
 };
+export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCION' | 'FINALIZADA' | 'CANCELADA';
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };
 export type ReservationMessages = Partial<Record<keyof ReservationDraft, string>>;
 
@@ -34,7 +39,20 @@ export const RESERVATION_TEXT = {
   transport: 'Transport per person', projected: 'Projected value', final: 'Final value',
   ORIGINAL_VALUE: 'on the original value', PREVIOUS_SUBTOTAL: 'on the previous subtotal',
 };
-export const money = formatMoney;
+/** Spanish badges of the screens; a code is never shown. */
+export const STATUS_LABEL: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'Pendiente de pago', CONFIRMADA: 'Confirmada',
+  EN_EJECUCION: 'En ejecución', FINALIZADA: 'Finalizada', CANCELADA: 'Cancelada' };
+/** The badge class of each state the service returns. */
+export const STATUS_CLASS: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'crp-is-pending', CONFIRMADA: 'crp-is-confirmed',
+  EN_EJECUCION: 'crp-is-execution', FINALIZADA: 'crp-is-finalized', CANCELADA: 'crp-is-cancelled' };
+/** The reservation_status codes the customer area reads (PROPUESTO until the contract, G-B). */
+export const STATUS_CODE: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'PENDING_PAYMENT', CONFIRMADA: 'CONFIRMED',
+  EN_EJECUCION: 'IN_EXECUTION', FINALIZADA: 'FINALIZED', CANCELADA: 'CANCELLED' };
+export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago', PARCIAL: 'Parcial' };
+export const money = formatCop;
+/** "1 viajero" or "N viajeros"; "1 persona" or "N personas". */
+export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
+export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
 /** RBAC: only the administrator and the collaborator create; any other role, known or not, reads. */
 export const canCreateReservations = (actor: { role: string }) => actor.role === 'TENANT_ADMINISTRATOR' || actor.role === 'OPERATIONAL_COLLABORATOR';

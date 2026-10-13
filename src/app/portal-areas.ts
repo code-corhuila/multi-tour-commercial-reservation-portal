@@ -28,32 +28,9 @@ import { DeparturesSource } from './reservations/data/departures-source';
 import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
-import { PaymentsWriter } from './payments/data/payments-writer';
-import { PaymentManagementPageComponent } from './payments/pages/payment-management-page.component';
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
-import { TransferPaymentPageComponent } from './payments/pages/transfer-payment-page.component';
-import { PaymentReceivedPageComponent, PaymentRejectedPageComponent } from './payments/pages/payment-result-pages.component';
-import { PAYMENT_RESULT_AREA } from './payments/payment-result-copy';
-import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
-import { PaymentsPageComponent } from './payments/pages/payments-page.component';
-import { ValidateProofPageComponent } from './payments/pages/validate-proof-page.component';
-import { PaymentDeadlineReader, PaymentFollowupsWriter } from './payments/data/payment-followup-ports';
-import { PaymentFollowupPageComponent } from './payments/pages/payment-followup-page.component';
-import { MyPaymentsSource } from './my-payments/data/my-payments-source';
-import { MyPaymentsPageComponent } from './my-payments/pages/my-payments-page.component';
-import { REFUND_SCREENS, refundsAvailable } from './refunds/data/refunds-ports';
-import { RefundDetailPageComponent } from './refunds/pages/refund-detail-page.component';
-import { RefundRequestsPageComponent } from './refunds/pages/refund-requests-page.component';
-import { MyProposalsSource, PROPOSAL_AREA, ProposalAnswerWriter, RESCHEDULING_AREA, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
-import { ReschedulingProposalPageComponent } from './rescheduling/pages/rescheduling-proposal-page.component';
-import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
-import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
-import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
-import { CREDIT_BALANCE_AREA, CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
-import { CreditBalancePageComponent } from './credit-balance/pages/credit-balance-page.component';
-import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -122,10 +99,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
     isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
   },
-  // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
-  { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer' },
-  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingOfferPageComponent, audience: 'customer' },
-  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer' },
+  // HU-COM-013 admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Reservas stays active (spec G-NAV closed by the base).
+  { key: RESERVATION_CHANGE_SCREEN, label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent, menu: false, parent: 'reservations',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canRegisterChange() && has(injector, ReservationsSource, CancellationQuote, CancellationWriter) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
