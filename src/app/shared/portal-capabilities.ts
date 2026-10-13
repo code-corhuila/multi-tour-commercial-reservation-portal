@@ -49,19 +49,21 @@ interface Row {
   readonly createReservations: boolean;
   /** HU-COM-009: RBAC row Register a payment. */
   readonly registerPayment: boolean;
+  /** HU-COM-013: RBAC row Create, modify or cancel a reservation; register a change from 10A. */
+  readonly changeReservation: boolean;
   /** RF-018 excludes the Collaborator even when the catalog permits descriptive edits. */
   readonly readEstablishments: boolean;
 }
 
-const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false } as const;
+const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false, changeReservation: false } as const;
 const READER: Row = { ...NONE, label: 'Solo lectura', operator: true, catalog: 'read', customers: 'read', readEstablishments: true };
 
 /** Today's nine matrices, moved row by row; no decision changed in the move. */
 const TABLE: Readonly<Record<ActorRole, Row>> = Object.freeze({
   TENANT_ADMINISTRATOR: { label: 'Administrador del tenant', operator: true, catalog: 'all', customers: 'register', sensitiveData: true,
-    manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, readEstablishments: true },
+    manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, changeReservation: true, readEstablishments: true },
   OPERATIONAL_COLLABORATOR: { ...NONE, label: 'Colaborador operativo', operator: true, catalog: 'description-if-enabled', customers: 'register',
-    sensitiveData: true, createReservations: true, registerPayment: true, readEstablishments: false },
+    sensitiveData: true, createReservations: true, registerPayment: true, changeReservation: true, readEstablishments: false },
   MANAGER: { ...READER, label: 'Gerente' },
   ANALYST: { ...READER, label: 'Analista' },
   ACCOUNTANT: { ...NONE, label: 'Contador', operator: true, catalog: 'denied', customers: 'denied', readEstablishments: false },
@@ -112,6 +114,7 @@ export class PortalCapabilities {
   canAuthorizeAdditionalDiscount(): boolean { return this.row.authorizeAdditionalDiscount; }
   canCreateReservations(): boolean { return this.row.createReservations; }
   canRegisterPayment(): boolean { return this.row.registerPayment; }
+  canRegisterChange(): boolean { return this.row.changeReservation; }
   canReadEstablishments(): boolean { return this.row.readEstablishments && this.catalog().canRead; }
   canRegisterEstablishments(): boolean { return this.catalog().canRegister; }
   /** The operator layout; otherwise the customer layout (a final customer or a visitor). */
