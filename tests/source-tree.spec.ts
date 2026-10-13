@@ -127,6 +127,12 @@ const SPECIFIED_TREE = [
   'src/app/rescheduling/data/rescheduling-ports.ts',
   'src/app/rescheduling/pages/rescheduling-page.component.ts',
   'src/app/rescheduling/components/rescheduling-entry.component.ts',
+  'src/app/demo/my-payments-demo.ts',
+  'src/app/my-payments/my-payments-copy.ts',
+  'src/app/my-payments/data/my-payments-source.ts',
+  'src/app/my-payments/pages/my-payments-page.component.ts',
+  'src/app/my-payments/components/my-payments-panel.component.ts',
+  'src/app/my-payments/components/reservation-economic-lines.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
