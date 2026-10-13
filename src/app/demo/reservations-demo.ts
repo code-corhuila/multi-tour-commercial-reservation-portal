@@ -4,6 +4,9 @@ import { DeparturesSource } from '../reservations/data/departures-source';
 import { LeadCustomersSource, ReservationDiscounts } from '../reservations/data/reservation-integrations';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
+import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
+import { DemoReservationQuotes } from './reservation-quote-demo';
+import type { ModificationTrace } from '../reservation-changes/travellers-modification/data/modification-ports';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
@@ -48,7 +51,9 @@ export class DemoReservationDiscounts extends ReservationDiscounts {
 }
 
 export class DemoReservationsStore extends ReservationsSource {
-  items: Reservation[] = [];
+  /** HU-COM-012 plan D-02: the modification traces of every reservation, in the same store. */
+  readonly modifications: ModificationTrace[] = [];
+  constructor(public items: Reservation[] = []) { super(); }
   override list(): Observable<readonly Reservation[]> { return of([...this.items]); }
 }
 

@@ -13,6 +13,7 @@ import { CancellationQuote, cancellationChangeType } from './app/reservation-cha
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
+import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -61,6 +62,10 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
       contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),
       { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
+      // HU-COM-009: Método y plazo de pago of 21.
+      contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
+      // HU-COM-012: "Modificación de viajeros", after Cancelación, on the screen of HU-COM-013 only (its area needs the cancellation ports).
+      provideTravellersModification(),
     ],
   }).then((created) => {
     app = created;
