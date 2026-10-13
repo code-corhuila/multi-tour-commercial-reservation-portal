@@ -48,3 +48,9 @@ export function formatMoney(minorUnits: number): string {
   const fraction = String(minorUnits % base).padStart(MINOR_UNIT_DIGITS, '0');
   return `${Math.floor(minorUnits / base)}.${fraction}`;
 }
+
+/** The pesos as the screens write them ("$100.000", grouping dots read as thousands); any other text is read by `parseMoney`. */
+export function parseCop(text: string): MoneyParse {
+  const grouped = /^\$?\s*(\d{1,3}(?:\.\d{3})+)$/.exec(text.trim());
+  return parseMoney(grouped ? grouped[1].replace(/\./g, '') : text.trim().replace(/^\$\s*/, ''));
+}
