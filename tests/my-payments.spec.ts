@@ -10,7 +10,7 @@ import { DemoMyPayments, myPaymentsDemoProviders } from '../src/app/demo/my-paym
 import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
 import { reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { selfServiceDemoProviders } from '../src/app/demo/self-service-reservation-demo';
-import { ContinuePaymentActionComponent, MyPaymentsActionComponent, PaymentNoticesComponent } from '../src/app/my-payments/components/my-payments-panel.component';
+import { ContinuePaymentActionComponent, MY_PAYMENTS_CONTRIBUTIONS, MyPaymentsActionComponent, PaymentNoticesComponent } from '../src/app/my-payments/components/my-payments-panel.component';
 import { ReservationEconomicLinesComponent } from '../src/app/my-payments/components/reservation-economic-lines.component';
 import { ContinuePaymentTarget, CustomerPaymentSummary, MyPaymentsSource, PaymentNotice } from '../src/app/my-payments/data/my-payments-source';
 import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
@@ -373,5 +373,13 @@ describe('myPaymentsDrawsNoValidateOrRejectAction', () => {
   it('Mis pagos with data draws no button at all', async () => {
     const view = await pageWith([SUMMARY]);
     expect(view.host.querySelectorAll('button')).toHaveLength(0);
+  });
+});
+
+describe('quickActionsKeepTheOrderOfTheMockup', () => {
+  it('orders Continuar pago before Mis pagos by their order, not by the order of registration', () => {
+    const order = (component: unknown) => (MY_PAYMENTS_CONTRIBUTIONS as { useValue: { component: unknown; order: number } }[])
+      .find((p) => p.useValue.component === component)!.useValue.order;
+    expect(order(ContinuePaymentActionComponent)).toBeLessThan(order(MyPaymentsActionComponent));
   });
 });
