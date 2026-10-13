@@ -19,6 +19,7 @@ import { ReservationChangeBlocksComponent } from './app/reservation-changes/comp
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
+import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -79,6 +80,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       provideTravellersModification(),
       // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
       RESCHEDULING_ENTRY,
+      // HU-COM-014: Continuar pago, Mis pagos and the proof notice of 17, and the economic lines of Mis reservas; each only with its port.
+      ...MY_PAYMENTS_CONTRIBUTIONS,
     ],
   }).then((created) => {
     app = created;
