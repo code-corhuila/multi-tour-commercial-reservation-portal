@@ -52,7 +52,7 @@ const fixtures = () => new DemoReservationsStore([
 const USER = new (class extends RegisteringUser { override label() { return 'Ana Torres (demo)'; } })();
 const demo = (role = 'TENANT_ADMINISTRATOR', cashFails: readonly string[] = []) => {
   const store = fixtures();
-  return { store, source: new DemoRefundsSource(store, new FixedClock(NOW)), writer: new DemoRefundsWriter(store, PortalCapabilities.for(role), new FixedClock(NOW), USER, new Set(cashFails)) };
+  return { store, source: new DemoRefundsSource(store), writer: new DemoRefundsWriter(store, PortalCapabilities.for(role), new FixedClock(NOW), USER, new Set(cashFails)) };
 };
 const factsOf = (store: DemoReservationsStore, id: string) => store.items.find((r) => r.id === id)!.refund;
 const byId = async (source: RefundsSource, id: string) => (await firstValueFrom(source.list())).find((r) => r.id === id)!;
@@ -64,12 +64,9 @@ class ControllableSource extends RefundsSource {
 }
 class ControllableWriter extends RefundsWriter {
   readonly authorizations: { id: string; reason: string; key: string; answer: Subject<Refund> }[] = [];
-  readonly executions: { id: string; method: RefundMethod | null; key: string; answer: Subject<ExecuteOutcome> }[] = [];
-  override decideFullRefund(): Observable<Refund> { return new Subject<Refund>(); }
+  readonly executions: { id: string; method: RefundMethod; key: string; answer: Subject<ExecuteOutcome> }[] = [];
   override authorize(id: string, reason: string, key: string) { const answer = new Subject<Refund>(); this.authorizations.push({ id, reason, key, answer }); return answer; }
-  override reject(): Observable<Refund> { return new Subject<Refund>(); }
-  override keepAsCreditBalance(): Observable<Refund> { return new Subject<Refund>(); }
-  override executeRefund(id: string, method: RefundMethod | null, key: string) { const answer = new Subject<ExecuteOutcome>(); this.executions.push({ id, method, key, answer }); return answer; }
+  override executeRefund(id: string, method: RefundMethod, key: string) { const answer = new Subject<ExecuteOutcome>(); this.executions.push({ id, method, key, answer }); return answer; }
 }
 
 function providers(o: { role?: string; source?: RefundsSource; writer?: RefundsWriter; id?: string; cashFails?: string[] } = {}) {
@@ -175,7 +172,7 @@ describe('refundsPanelAndListShowTheRefundsOfTheSharedStore', () => {
     expect(rows(s.host).map((r) => [r[0], r[4], r[6]])).toEqual([
       ['#RES-A', 'Pendiente de autorización', 'Autorizar devolución'], ['#RES-B', 'Autorizada', 'Registrar ejecución'],
       ['#RES-C', 'Pendiente de autorización', 'Autorizar devolución'], ['#RES-D', 'Pendiente de autorización', 'Autorizar devolución'],
-      ['#RES-E', 'Ejecutada', 'Consultar detalle'], ['#RES-G', 'Pendiente de decisión', 'Decidir tratamiento'],
+      ['#RES-E', 'Ejecutada', 'Consultar detalle'], ['#RES-G', 'Pendiente de decisión', 'Consultar detalle'],
     ]);
     s.host.querySelector<HTMLButtonElement>('tbody tr:nth-child(2) td:last-child button')!.click();
     expect(s.navigation.selected()).toBe(REFUND_SCREENS.detail);
@@ -201,10 +198,10 @@ describe('refundsPanelAndListShowTheRefundsOfTheSharedStore', () => {
 describe('detailShowsReasonPersonAmountDateReservationAndMovement', () => {
   it('shows every field of "Información de la devolución" for an executed refund', async () => {
     const s = await detail({ id: 'RES-E' });
-    expect(s.host.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Solo el Administrador del tenant puede autorizar o rechazar una devolución o decidir el tratamiento de valores abonados. El Colaborador operativo solo puede registrar la ejecución cuando exista autorización previa y trazable (o una determinación automática, que cuenta como autorización).');
-    expect(Array.from(s.host.querySelectorAll('dt'), (dt) => dt.textContent?.trim())).toEqual(['Reserva relacionada', 'Cliente', 'Motivo / causal', 'Observación administrativa', 'Monto',
-      'Motivo de la decisión', 'Responsable', 'Fecha', 'Método de devolución', 'Movimiento de caja asociado', 'Estado actual']);
-    expect(Array.from(s.host.querySelectorAll('dd'), (dd) => dd.textContent?.trim())).toEqual(['#RES-E', 'Cliente RES-E', 'El cliente desiste del viaje (demo)', 'Sin observaciones registradas.', '$300.000',
+    expect(s.host.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Solo el Administrador del tenant (Tenant Admin) puede autorizar o rechazar una devolución. El Colaborador operativo solo puede registrar la ejecución cuando exista autorización previa y trazable del Administrador.');
+    expect(Array.from(s.host.querySelectorAll('dt'), (dt) => dt.textContent?.trim())).toEqual(['Reserva relacionada', 'Cliente', 'Motivo / causal', 'Monto',
+      'Motivo de la decisión', 'Responsable', 'Fecha', 'Método de devolución/salida', 'Movimiento de caja asociado', 'Estado actual']);
+    expect(Array.from(s.host.querySelectorAll('dd'), (dd) => dd.textContent?.trim())).toEqual(['#RES-E', 'Cliente RES-E', 'El cliente desiste del viaje (demo)', '$300.000',
       'Cumple la política (demo)', 'Colaborador operativo (demo)', '13 oct 2026 · 08:15', 'Efectivo', 'MC-0001', 'Ejecutada']);
     s.button('Volver a solicitudes')!.click();
     expect(s.navigation.selected()).toBe(REFUND_SCREENS.requests);
@@ -212,7 +209,7 @@ describe('detailShowsReasonPersonAmountDateReservationAndMovement', () => {
 
   it('shows "No aplica" and "Sin responsable asignado" before any decision', async () => {
     const s = await detail({ id: 'RES-A' });
-    expect([s.field('Motivo de la decisión'), s.field('Responsable'), s.field('Método de devolución'), s.field('Movimiento de caja asociado'), s.field('Estado actual')])
+    expect([s.field('Motivo de la decisión'), s.field('Responsable'), s.field('Método de devolución/salida'), s.field('Movimiento de caja asociado'), s.field('Estado actual')])
       .toEqual(['No aplica', 'Sin responsable asignado', 'No aplica', 'No aplica', 'Pendiente de autorización']);
   });
 
@@ -222,7 +219,7 @@ describe('detailShowsReasonPersonAmountDateReservationAndMovement', () => {
     await s.type('  Cumple la política (demo)  ');
     await s.submit(0);
     expect(factsOf(s.d.store, 'RES-A')?.authorization).toEqual({ by: 'Ana Torres (demo)', at: NOW, reason: 'Cumple la política (demo)' });
-    expect(s.host.querySelector('[role="status"]')?.textContent?.trim()).toBe('Devolución autorizada correctamente. Debe ejecutarse en un máximo de 5 días hábiles.');
+    expect(s.host.querySelector('[role="status"]')?.textContent?.trim()).toBe('Devolución autorizada correctamente.');
     expect([s.field('Motivo de la decisión'), s.field('Responsable'), s.field('Fecha'), s.field('Estado actual')])
       .toEqual(['Cumple la política (demo)', 'Ana Torres (demo)', '12 oct 2026 · 15:00', 'Autorizada']);
     expect(s.host.querySelector<HTMLTextAreaElement>('textarea')!.disabled).toBe(true);
@@ -258,11 +255,11 @@ describe('collaboratorSeesNoDecisionPanel', () => {
     expect(s.host.textContent).not.toContain('Decisión');
   });
 
-  it('the Administrator sees the decision panel, with "Rechazar devolución"', async () => {
+  it('the Administrator sees the decision panel, without "Rechazar devolución"', async () => {
     const s = await detail({ id: 'RES-A' });
     expect(Array.from(s.host.querySelectorAll('.crp-operator-panel .crp-operator-eyebrow'), (e) => e.textContent?.trim())).toEqual(['Solicitud', 'Decisión']);
     expect(s.button('Autorizar devolución')).toBeTruthy();
-    expect(s.button('Rechazar devolución')).toBeTruthy();
+    expect(s.host.textContent).not.toContain('Rechazar devolución');
   });
 });
 
@@ -373,7 +370,7 @@ describe('executedFinalStateShowsTheMovementReadOnly', () => {
   it('shows En ejecución while the request is in flight, then Ejecutada with the method and the movement, nothing typed', async () => {
     const writer = new ControllableWriter();
     const s = await detail({ id: 'RES-B', writer });
-    expect(Array.from(s.host.querySelectorAll('#crp-refunds-outflow option'), (o) => o.textContent?.trim())).toEqual(['Selecciona una opción', 'Sí, se realizó la salida de dinero', 'No, se registra como saldo a favor']);
+    expect(Array.from(s.host.querySelectorAll('#crp-refunds-outflow option'), (o) => o.textContent?.trim())).toEqual(['Selecciona una opción', 'Sí, se realizó la salida de dinero']);
     expect(s.host.querySelector('#crp-refunds-method')).toBeNull();
     await s.choose('crp-refunds-outflow', 'yes');
     expect(Array.from(s.host.querySelectorAll('#crp-refunds-method option'), (o) => o.textContent?.trim())).toEqual(['Transferencia', 'Efectivo']);
@@ -385,9 +382,9 @@ describe('executedFinalStateShowsTheMovementReadOnly', () => {
     expect(s.field('Estado actual')).toBe('En ejecución');
     const { writer: real } = demo();
     writer.executions[0].answer.next(await firstValueFrom(real.executeRefund('RES-B', 'CASH', 'k9'))); await s.settle();
-    expect([s.field('Método de devolución'), s.field('Movimiento de caja asociado'), s.field('Responsable'), s.field('Fecha'), s.field('Estado actual')])
+    expect([s.field('Método de devolución/salida'), s.field('Movimiento de caja asociado'), s.field('Responsable'), s.field('Fecha'), s.field('Estado actual')])
       .toEqual(['Efectivo', 'MC-B', 'Ana Torres (demo)', '13 oct 2026 · 09:30', 'Ejecutada']);
-    expect(s.host.querySelector('[role="status"]')?.textContent?.trim()).toBe('Ejecución registrada correctamente. La salida de dinero quedó asociada a un movimiento de caja.');
+    expect(s.host.querySelector('[role="status"]')?.textContent?.trim()).toBe('Ejecución registrada correctamente.');
   });
 });
 
@@ -421,7 +418,7 @@ describe('rolesWithoutCapabilityAndUnknownRoleReachNoRefundScreen', () => {
 
 describe('refundTextsAreSpanishAndMoneyUsesFormatCop', () => {
   it('names every state and method in Spanish, never a code', () => {
-    expect(REFUND_STATE_LABEL).toEqual({ PENDIENTE_DE_DECISION: 'Pendiente de decisión', PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', AUTORIZADA: 'Autorizada', EJECUTADA: 'Ejecutada', RECHAZADA: 'Rechazada', SALDO_A_FAVOR: 'Saldo a favor' });
+    expect(REFUND_STATE_LABEL).toEqual({ PENDIENTE_DE_DECISION: 'Pendiente de decisión', PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', AUTORIZADA: 'Autorizada', EJECUTADA: 'Ejecutada' });
     expect(REFUND_METHOD_LABEL).toEqual({ BANK_TRANSFER: 'Transferencia', CASH: 'Efectivo' });
   });
 
