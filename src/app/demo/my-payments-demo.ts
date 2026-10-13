@@ -29,10 +29,11 @@ export class DemoMyPayments extends MyPaymentsSource {
     return this.listMine().pipe(map((all) => all.filter((r) => r.proofStatus === 'EN_VALIDACION').map(({ reservationId, proofStatus }) => ({ reservationId, proofStatus }))));
   }
 
-  /** DP-MP3, PROPUESTO: the own Pendiente de pago reservation paid by transfer (screen 24) with the nearest departure, for its balance. */
+  /** DP-MP3, PROPUESTO: the own Pendiente de pago reservation paid by transfer (screen 24) with the nearest departure, for its balance;
+   * one whose proof is already En validación waits for the operator, so it is not offered. */
   override continuePaymentTarget(): Observable<ContinuePaymentTarget | null> {
     return this.listMine().pipe(map((all) => {
-      const next = all.filter((r) => r.reservationStatus === 'PENDING_PAYMENT' && r.paymentMethod === 'BANK_TRANSFER')
+      const next = all.filter((r) => r.reservationStatus === 'PENDING_PAYMENT' && r.paymentMethod === 'BANK_TRANSFER' && r.proofStatus !== 'EN_VALIDACION')
         .sort((a, b) => a.departureAt.localeCompare(b.departureAt))[0];
       return next ? { reservationId: next.reservationId, paymentType: next.paymentType, amountCents: next.balanceCents } : null;
     }));
