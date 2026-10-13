@@ -155,6 +155,10 @@ const SPECIFIED_TREE = [
   'src/app/rescheduling/components/rescheduling-entry.component.ts',
   'src/app/rescheduling/pages/rescheduling-proposal-page.component.ts',
   'src/app/rescheduling/components/rescheduling-contributions.component.ts',
+  'src/app/demo/credit-balance-demo.ts',
+  'src/app/credit-balance/credit-balance-copy.ts',
+  'src/app/credit-balance/data/credit-balance-ports.ts',
+  'src/app/credit-balance/components/credit-balance-action.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
