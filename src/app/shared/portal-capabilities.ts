@@ -53,19 +53,23 @@ interface Row {
   readonly changeReservation: boolean;
   /** HU-COM-010: RBAC row Validate or reject a transfer proof; the Collaborator only with Validar comprobantes (HU-SEC-006, G-PERM). */
   readonly decideProof: 'always' | 'if-granted' | 'never';
+  /** HU-COM-016: RBAC row Authorize a refund (the Administrator); executing an authorized one also falls to the Collaborator (AC2, DP-RF5). */
+  readonly refund: 'authorize' | 'execute' | 'never';
   /** RF-018 excludes the Collaborator even when the catalog permits descriptive edits. */
   readonly readEstablishments: boolean;
 }
 
-const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false, changeReservation: false, decideProof: 'never' } as const;
+const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false, changeReservation: false, decideProof: 'never', refund: 'never' } as const;
 const READER: Row = { ...NONE, label: 'Solo lectura', operator: true, catalog: 'read', customers: 'read', readEstablishments: true };
 
 /** Today's nine matrices, moved row by row; no decision changed in the move. */
 const TABLE: Readonly<Record<ActorRole, Row>> = Object.freeze({
   TENANT_ADMINISTRATOR: { label: 'Administrador del tenant', operator: true, catalog: 'all', customers: 'register', sensitiveData: true,
-    manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'always', readEstablishments: true },
+    manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'always', refund: 'authorize',
+    readEstablishments: true },
   OPERATIONAL_COLLABORATOR: { ...NONE, label: 'Colaborador operativo', operator: true, catalog: 'description-if-enabled', customers: 'register',
-    sensitiveData: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'if-granted', readEstablishments: false },
+    sensitiveData: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'if-granted', refund: 'execute',
+    readEstablishments: false },
   MANAGER: { ...READER, label: 'Gerente' },
   ANALYST: { ...READER, label: 'Analista' },
   ACCOUNTANT: { ...NONE, label: 'Contador', operator: true, catalog: 'denied', customers: 'denied', readEstablishments: false },
@@ -117,6 +121,8 @@ export class PortalCapabilities {
   canCreateReservations(): boolean { return this.row.createReservations; }
   canRegisterPayment(): boolean { return this.row.registerPayment; }
   canRegisterChange(): boolean { return this.row.changeReservation; }
+  canAuthorizeRefund(): boolean { return this.row.refund === 'authorize'; }
+  canExecuteRefund(): boolean { return this.row.refund !== 'never'; }
   canDecideProof(): boolean { return this.row.decideProof === 'always' || (this.row.decideProof === 'if-granted' && this.collaboratorMayValidateProofs); }
   canReadEstablishments(): boolean { return this.row.readEstablishments && this.catalog().canRead; }
   canRegisterEstablishments(): boolean { return this.catalog().canRegister; }

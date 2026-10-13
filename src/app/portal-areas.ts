@@ -36,6 +36,9 @@ import { TransferPaymentPageComponent } from './payments/pages/transfer-payment-
 import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
 import { PaymentsPageComponent } from './payments/pages/payments-page.component';
 import { ValidateProofPageComponent } from './payments/pages/validate-proof-page.component';
+import { REFUND_SCREENS, refundsAvailable } from './refunds/data/refunds-ports';
+import { RefundDetailPageComponent } from './refunds/pages/refund-detail-page.component';
+import { RefundRequestsPageComponent } from './refunds/pages/refund-requests-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -126,6 +129,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
   { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent, menu: false, parent: 'payments',
     isAvailable: (injector) => has(injector, ReservationsSource, ProofReviewWriter, PaymentMethodsSource) },
+  // HU-COM-016 admin-solicitudes-devolucion.html and admin-detalle-devolucion.html with { refund }, sub-screens of 13; Pagos stays active.
+  { key: REFUND_SCREENS.requests, label: 'Solicitudes de devolución', component: RefundRequestsPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
+  { key: REFUND_SCREENS.detail, label: 'Detalle de devolución', component: RefundDetailPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }

@@ -32,7 +32,13 @@ export type Reservation = {
   readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string }; readonly reschedulingPending?: boolean;
   readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
     readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null };
+  /** HU-COM-016 D-02 (PROPUESTO): the refund of this reservation's money as facts; RefundsSource resolves its amount and state (DD-1). */
+  readonly refund?: { readonly origin: 'NON_PAYMENT' | 'LOWER_VALUE' | 'CUSTOMER_CANCELLATION' | 'NOT_ATTRIBUTABLE' | 'RESCHEDULING'; readonly reason: string;
+    readonly amountCents: number; readonly recognizedAt: string; readonly decision?: RefundAct; readonly authorization?: RefundAct & { readonly reason: string };
+    readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string } };
 };
+/** HU-COM-016: who acted and when (G-USR: a label until the session carries the user). */
+export type RefundAct = { readonly by: string; readonly at: string };
 /** HU-COM-009: a payment pending validation (RN-PY1); HU-COM-010 (D-02): when it was presented and the decision on its proof.
  * Field names await payment_attempts (G-B). */
 export type ReservationPayment = {
