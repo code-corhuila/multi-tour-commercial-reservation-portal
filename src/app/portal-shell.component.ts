@@ -38,7 +38,7 @@ import { PortalCapabilities } from './shared/portal-capabilities';
               @if (panelLink(); as link) { <button type="button" (click)="open(link.key)">{{ link.label }}</button> }
             </header>
           }
-          @if (current(); as area) { <ng-container *ngComponentOutlet="area.component" /> }
+          @for (s of [screen()]; track s) { @if (s.area; as area) { <ng-container *ngComponentOutlet="area.component" /> } }
         </main>
         @if (chrome() === 'site') {
         <footer class="crp-client-footer">
@@ -72,7 +72,7 @@ import { PortalCapabilities } from './shared/portal-capabilities';
           </nav>
         </aside>
         <main class="crp-operator-content">
-          @if (current(); as area) { <ng-container *ngComponentOutlet="area.component" /> }
+          @for (s of [screen()]; track s) { @if (s.area; as area) { <ng-container *ngComponentOutlet="area.component" /> } }
         </main>
       </div>
     }
@@ -89,6 +89,8 @@ export class PortalShellComponent {
   /** The operator lands on the first sidebar item; the customer on the panel cliente when the build has it. */
   protected readonly landing = (this.audience === 'customer' && this.areas.find((area) => area.key === CLIENT_AREA.panel)) || this.menu[0];
   protected readonly current = computed(() => this.areas.find((area) => area.key === this.navigation.selected()) ?? this.landing);
+  /** A new value on every opening, so the outlet recreates the area (see PortalNavigation.visit). */
+  protected readonly screen = computed(() => ({ area: this.current(), visit: this.navigation.visit() }));
   /** The sidebar item marked active: the parent of an open sub-screen, or the open area itself. */
   protected readonly active = computed(() => this.current()?.parent ?? this.current()?.key);
   protected readonly roleLabel = inject(PortalCapabilities).roleLabel();
