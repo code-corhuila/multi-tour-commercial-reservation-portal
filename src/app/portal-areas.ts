@@ -2,6 +2,8 @@ import { InjectionToken, Injector, Type } from '@angular/core';
 import { ActorContext } from './catalog/data/catalog-api.service';
 import { ActorRole } from './catalog/model/catalog-item';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
+import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
+import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
 import { CustomersSource } from './customers/data/customers-source';
 import { customersCapabilitiesOf } from './customers/model/customer-group';
 import { CustomersPageComponent } from './customers/pages/customers-page.component';
@@ -42,6 +44,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
   },
+  // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
+  { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
+    isAvailable: (injector) => injector.get(CurrentDiscountsSource, null) !== null },
   {
     key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
