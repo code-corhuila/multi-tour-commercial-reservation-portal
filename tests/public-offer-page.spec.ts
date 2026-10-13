@@ -10,6 +10,7 @@ import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-o
 import { CLIENT_AREA } from '../src/app/portal-areas';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PUBLIC_OFFER_COPY } from '../src/app/public-offer/public-offer-copy';
+import { tourPhoto } from '../src/app/shared/tour-photo';
 import { actorAs } from './actor-context.double';
 import { ControllablePublicEstablishmentsSource, ControllablePublicOfferSource, placeNamed, tourNamed } from './public-offer-sources.double';
 import { listSourceFiles, withoutComments } from './source-files';
@@ -306,6 +307,9 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     const photo = suaza.querySelector('.crp-tour-media img');
     expect(photo?.getAttribute('src')).toMatch(/^\/assets\/[\w-]+\.jpg$/);
     expect(photo?.getAttribute('alt')).toBe('Suaza');
+    // The photo follows the tour id, not the card position, so the tour looks the same in Reservar tour and Finalizar reserva.
+    expect(photo?.getAttribute('src')).toBe(tourPhoto('tour-Suaza'));
+    expect(pitalito.querySelector('.crp-tour-media img')?.getAttribute('src')).toBe(tourPhoto('tour-Pitalito'));
     expect(text(suaza.querySelector('.crp-tour-media .crp-tour-discount-tag'))).toBe('20% de descuento');
     expect(text(suaza.querySelector('.crp-tour-body strong'))).toBe('Suaza');
     expect(text(suaza.querySelector('.crp-tour-price'))).toBe('Antes: $1.299.000 Desde $1.039.200');
