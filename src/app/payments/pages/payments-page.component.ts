@@ -34,10 +34,9 @@ type State = PageState<PendingProofs & { labels: PaymentLabels }>;
           <div data-state="data">@if (d.overdueCount && canDecide) { <p class="crp-access-note">{{ t.overdue(d.overdueCount) }}</p> }
             <div class="crp-table-wrap"><table class="crp-operator-table"><thead><tr>@for (column of t.columns; track column) { <th>{{ column }}</th> }</tr></thead>
               <tbody>@for (row of d.rows; track row.payment.id) { @let r = row.reservation;
-                <tr><td><strong>#{{ r.id }}</strong></td><td>{{ r.leadCustomerName }}</td><td>{{ modality(r, d.labels) }}</td><td>{{ money(row.payment.amountCents) }}</td>
-                  <td><span class="crp-operator-status" [class]="statusClass[row.payment.proofStatus]">{{ common.proofStatus[row.payment.proofStatus] }}{{ row.overdue ? ' · ' + t.overdueMark : '' }}</span></td>
-                  <td>@if (row.payment.proofStatus === 'EN_VALIDACION') { <button type="button" (click)="open(row)">{{ canDecide ? t.validate : t.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" /> }
-                    @else { {{ t.noAction }} }</td></tr>
+                <tr><td><strong>#{{ r.id }}</strong></td><td>{{ r.leadCustomerName }}</td><td>{{ modality(r, d.labels) }}</td><td>{{ money(r.balanceCents) }}</td>
+                  <td><span class="crp-operator-status crp-is-pending">{{ common.proofStatus[row.payment.proofStatus] }}{{ row.overdue ? ' · ' + t.overdueMark : '' }}</span></td>
+                  <td><button type="button" (click)="open(row)">{{ canDecide ? t.validate : t.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" /></td></tr>
               }</tbody><ng-container *crpSlot="tableBodies; inputs: { proofs: d.rows.length }" /></table></div></div>
         }
       }
