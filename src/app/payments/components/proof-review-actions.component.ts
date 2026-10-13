@@ -4,6 +4,7 @@ import { Reservation } from '../../reservations/data/reservations-source';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PAYMENT_MANAGEMENT_ACTIONS, PAYMENT_MANAGEMENT_NOTES, RESERVATION_DETAIL_ACTIONS, RESERVATION_ROW_ACTIONS, TRANSFER_PAYMENT_LINES, contribute } from '../../shared/portal-slots';
 import { ProofReviewWriter, proofToDecide } from '../data/proof-review-ports';
+import { paymentEntryOf } from '../model/payment';
 import { PAYMENTS_TEXT } from '../payments-copy';
 import { PROOF_REVIEW_TEXT } from '../proof-review-copy';
 
@@ -25,11 +26,14 @@ export class ProofRowLinkComponent extends ProofLink {}
 @Component({ selector: 'app-proof-detail-action', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (proof()) { <button type="button" class="crp-operator-primary crp-page-header-action" (click)="open()">{{ canDecide ? t.validate : t.view }}</button> }` })
 export class ProofDetailActionComponent extends ProofLink {}
-/** 13 sub-screen (admin-gestion-pago.html): Validar and Rechazar soporte lead to the decision page (reason and amount, RN-RES-006A). */
+/** 13 sub-screen (admin-gestion-pago.html): Validar and Rechazar soporte lead to the decision page (reason and amount, RN-RES-006A);
+    hidden, as the mockup hides every payment entry, on a cancelled, closed or settled reservation (T-09). */
 @Component({ selector: 'app-proof-management-actions', changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (proof() && canDecide) { <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="open()">{{ t.reject }}</button>
+  template: `@if (proof() && canDecide && admitsPayment()) { <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="open()">{{ t.reject }}</button>
       <button type="button" class="crp-operator-primary" (click)="open()">{{ t.validate }}</button></div> }` })
-export class ProofManagementActionsComponent extends ProofLink {}
+export class ProofManagementActionsComponent extends ProofLink {
+  protected readonly admitsPayment = computed(() => !['cancelled', 'closed', 'settled'].includes(paymentEntryOf(this.reservation())));
+}
 /** 13 sub-screen: the review history under the Acción de pago copy, before the form (admin-gestion-pago.html:60). */
 @Component({ selector: 'app-proof-history-note', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (history()) { <p class="crp-access-note">{{ history() }}</p> }` })
