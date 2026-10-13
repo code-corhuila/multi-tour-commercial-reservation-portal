@@ -2,10 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { fireEvent, render, screen } from '@testing-library/angular';
 import { describe, expect, it } from 'vitest';
 import { CatalogItemFormComponent } from '../src/app/catalog/components/catalog-item-form.component';
-import { CatalogItemsWriter, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { itemNamed } from './catalog-items-source.double';
 import { apiError, ControllableCatalogItemsWriter, ControllableIdempotencyKeys } from './catalog-items-writer.double';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 /** Opens the form; with `controlKeys` false it uses the real generator that ships with the portal. */
 async function openForm(options: { item?: CatalogItem; controlKeys?: boolean; keys?: ControllableIdempotencyKeys } = {}) {

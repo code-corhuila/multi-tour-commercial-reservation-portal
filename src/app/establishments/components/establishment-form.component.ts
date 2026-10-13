@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, exhaustMap, tap } from 'rxjs';
-import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '../data/associated-establishments-writer';
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
 import { ESTABLISHMENTS_COPY } from '../establishments-copy';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 
 type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;

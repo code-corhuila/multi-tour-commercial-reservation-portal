@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
@@ -25,6 +25,7 @@ import { MyReservationsPageComponent } from '../src/app/self-service-reservation
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { actorAs } from './actor-context.double';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 @Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
 class CustomerPageDouble {}

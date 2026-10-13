@@ -1,9 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
-import { CatalogPageComponent, PageState } from '../src/app/catalog/pages/catalog-page.component';
+import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
 import { ControllableCatalogItemsWriter } from './catalog-items-writer.double';
+import { PageState } from '../src/app/shared/page-state';
 
 async function openPage() {
   const source = new ControllableCatalogItemsSource();

@@ -1,6 +1,5 @@
 import { ApplicationRef, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
-import { ActorContext } from './app/catalog/data/catalog-api.service';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { MountProps } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
@@ -10,6 +9,7 @@ import { reservationDemoProviders } from './app/demo/reservations-demo';
 import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
 import { roleOf } from './app/shared/portal-capabilities';
+import { ActorContext } from './app/shared/actor-context';
 
 /** Portals mounted now; the stylesheet leaves with the last one (001- amendment HC-5, plan H-D4). */
 let mounted = 0;

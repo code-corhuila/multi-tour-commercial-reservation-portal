@@ -1,12 +1,13 @@
 import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
 import { apiError, ControllableCatalogItemsWriter } from './catalog-items-writer.double';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 const inactive = (item: CatalogItem): CatalogItem => ({ ...item, catalogStatus: 'INACTIVE' });
 

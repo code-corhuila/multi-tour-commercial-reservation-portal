@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, map, of, startWith, switchMap } from 'rxjs';
-import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { DiscountRuleFormComponent } from '../components/discount-rule-form.component';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
@@ -9,6 +8,7 @@ import { DiscountRulesSource } from '../data/discount-rules-source';
 import { formatDateRange } from '../../shared/format';
 import { DISCOUNT_SELECTS, DISCOUNT_TEXT, DiscountRule, discountValidity, discountValueText } from '../model/discount-rule';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error' } | { kind: 'data'; items: readonly DiscountRule[] };
 @Component({
   selector: 'app-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [DiscountRuleFormComponent],
