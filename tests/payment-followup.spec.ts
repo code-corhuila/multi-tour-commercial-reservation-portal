@@ -214,7 +214,12 @@ describe('the effective deadline (T-02, T-04)', () => {
     const view = await screenOf(TransferPaymentPageComponent, [...providers({ role: 'READ_ONLY', params: { reservation: TOTAL, type: 'TOTAL', amount: '85000000' } }),
       ...selfServiceDemoProviders(), ...PROOF_REVIEW_CONTRIBUTIONS, { provide: CustomerContext, useValue: customerContextFor(['FINAL_CUSTOMER'], () => undefined) }]);
     const sentences = Array.from(view.element.querySelectorAll('.crp-transfer-proof p')).map(flat);
-    expect(sentences.slice(-2)).toEqual(['Plazo máximo de revisión: 24 horas.', 'Ningún plazo de pago supera el inicio de la salida, 07 nov 2026 · 00:00.']);
+    // The 010 second pull request draws the slot before the proof state paragraph: find the two lines, in order, wherever they are.
+    const at = sentences.indexOf('Plazo máximo de revisión: 24 horas.');
+    expect(sentences.slice(at, at + 2)).toEqual(['Plazo máximo de revisión: 24 horas.', 'Ningún plazo de pago supera el inicio de la salida, 07 nov 2026 · 00:00.']);
+    // pago-transferencia.html writes both sentences in one travel-transfer-reference-copy paragraph: the deadline line carries its style.
+    expect(view.element.querySelector('app-payment-deadline-line p')?.classList.contains('crp-transfer-reference-copy')).toBe(true);
+    expect(readFileSync('src/styles/portal.css', 'utf8')).toMatch(/\.crp-root \.crp-transfer-reference-copy \{[^}]*color: var\(--crp-soft\)/);
     TestBed.resetTestingModule();
     const line = await screenOf(PaymentDeadlineLineComponent, providers());
     expect(flat(line.element)).toBe('');
