@@ -85,11 +85,13 @@ describe('theOperatorAndTheCustomerShareOneDemoStore (audit S24)', () => {
     const mine = (await demo.mine()).map((r) => r.reservationId);
     // The seeded RES-1842 is the one of the demo final customer, Laura Gómez; RES-1841 is of another customer.
     expect(operator.find((r) => r.id === 'RES-1842')?.leadCustomerName).toBe('Laura Gómez (demo)');
-    expect(mine).toEqual(['RES-1842']);
+    // HU-COM-018: the demo customer also owns RES-1829 (a proposal to answer) and RES-1828 (an episode to propose).
+    const OWN = ['RES-1842', 'RES-1829', 'RES-1828'];
+    expect(mine).toEqual(OWN);
     const created = await demo.request(TATACOA, 'key-1');
     expect(operator.length + 1).toBe((await demo.operator()).length);
     expect((await demo.operator()).find((r) => r.id === created.reservationId)?.leadCustomerName).toBe('Laura Gómez (demo)');
-    expect((await demo.mine()).map((r) => r.reservationId)).toEqual([created.reservationId, 'RES-1842']);
+    expect((await demo.mine()).map((r) => r.reservationId)).toEqual([created.reservationId, ...OWN]);
   });
 
   it('lists nothing for a session that is not a final customer', async () => {
