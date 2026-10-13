@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, afterNextRender, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
@@ -12,6 +12,7 @@ import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
 import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
 import { tourPhoto } from '../../shared/tour-photo';
+import { CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
 
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
@@ -31,6 +32,7 @@ const PANEL_TEXT = {
   discounts: 'Descuentos vigentes',
   noDiscounts: 'No hay descuentos vigentes en este momento.',
   validUntil: 'Válido hasta',
+  notices: 'Notificaciones',
   featured: 'Experiencias destacadas',
   noFeatured: 'No hay opciones disponibles en este momento.',
   from: 'Desde',
@@ -74,6 +76,7 @@ function discountTag(rule: DiscountRule): string {
 /** panel-cliente.html: the landing of the final customer and the Mis reservas link of the client header. It changes nothing. */
 @Component({
   selector: 'app-client-panel-page',
+  imports: [PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="crp-panel-hero" aria-labelledby="crp-panel-title">
@@ -114,11 +117,11 @@ function discountTag(rule: DiscountRule): string {
             }
           </article>
         </section>
-        @if (quick.length) {
+        @if (quick.length || quickSlots) {
         <section class="crp-panel-quick"><h2>{{ t.quick }}</h2>
           <ul>@for (action of quick; track action.key) {
             <li><button type="button" class="crp-panel-quick-item" (click)="go(action.key)"><span class="crp-panel-quick-icon" aria-hidden="true">{{ action.icon }}</span>&ngsp;<span class="crp-panel-quick-copy"><strong>{{ action.title }}</strong>&ngsp;<span>{{ action.copy }}</span></span></button></li>
-          }</ul>
+          }<ng-container *crpSlot="slots.quick" /></ul>
         </section>
         }
       </div>
@@ -131,6 +134,9 @@ function discountTag(rule: DiscountRule): string {
         } @else { <p>{{ t.noDiscounts }}</p> }
       </aside>
     </div>
+    @if (noticeSlots) {
+      <section class="crp-panel-notices"><h2>{{ t.notices }}</h2><div class="crp-operator-panel"><ng-container *crpSlot="slots.notices" /></div></section>
+    }
     <section class="crp-panel-featured"><h2>{{ t.featured }}</h2>
       @let f = featured();
       @switch (f.kind) {
@@ -162,6 +168,11 @@ export class ClientPanelPageComponent {
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly chips = CHIPS.filter((chip) => this.has(chip.key));
   protected readonly quick = QUICK.filter((action) => this.has(action.key));
+  /** HU-COM-001 portal foundation of 2026-10-13: what other stories add to Acciones rápidas and Notificaciones; nothing by default. */
+  protected readonly slots = { quick: CLIENT_QUICK_ACTIONS, notices: CLIENT_NOTICES };
+  private readonly injector = inject(Injector);
+  protected readonly quickSlots = slotEntries(CLIENT_QUICK_ACTIONS, this.injector).length;
+  protected readonly noticeSlots = slotEntries(CLIENT_NOTICES, this.injector).length;
   protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();

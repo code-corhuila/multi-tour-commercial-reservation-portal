@@ -27,8 +27,8 @@ const asCustomer = (r: Reservation, selection: Partial<ReservationSelection>): C
 /** The reservations whose lead customer is the demo final customer, read from the shared store; nothing for any other standing. */
 export class DemoMyReservations extends MyReservationsSource {
   /** The selections made here, so a created reservation keeps its departure and services. */
-  readonly selections = new Map<string, ReservationSelection>();
-  constructor(private readonly store: ReservationsSource, private readonly leads: LeadCustomersSource, private readonly customer: CustomerContext) { super(); }
+  constructor(private readonly store: ReservationsSource, private readonly leads: LeadCustomersSource, private readonly customer: CustomerContext,
+    readonly selections = new Map<string, ReservationSelection>()) { super(); }
   override listMine(): Observable<readonly CustomerReservation[]> {
     if (this.customer.standing !== 'FINAL_CUSTOMER') return of([]);
     return forkJoin({ all: this.store.list(), leads: this.leads.list() }).pipe(map(({ all, leads }) => {
@@ -74,8 +74,9 @@ export class DemoReservationRequester extends ReservationRequester {
 
 /** Over the providers of reservationDemoProviders() and the CustomerContext, which must come first. */
 export function selfServiceDemoProviders(): Provider[] {
+  const selections = new Map<string, ReservationSelection>();
   return [
-    { provide: DemoMyReservations, useFactory: (s: ReservationsSource, l: LeadCustomersSource, c: CustomerContext) => new DemoMyReservations(s, l, c), deps: [ReservationsSource, LeadCustomersSource, CustomerContext] },
+    { provide: DemoMyReservations, useFactory: (s: ReservationsSource, l: LeadCustomersSource, c: CustomerContext) => new DemoMyReservations(s, l, c, selections), deps: [ReservationsSource, LeadCustomersSource, CustomerContext] },
     { provide: MyReservationsSource, useExisting: DemoMyReservations },
     { provide: PaymentMethodsSource, useValue: new DemoPaymentMethods() },
     { provide: SelectionQuoteSource, useFactory: (d: DeparturesSource, q: ReservationQuoteSource) => new DemoSelectionQuotes(d, q), deps: [DeparturesSource, ReservationQuoteSource] },

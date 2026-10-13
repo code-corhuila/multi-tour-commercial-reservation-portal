@@ -79,12 +79,13 @@ export class DemoReservationsWriter extends ReservationsWriter {
 /** The reservation ports over the demo stores; mount-entry adds them until the -api exists (gap G-B). */
 export function reservationDemoProviders(): Provider[] {
   const departures = new DemoDeparturesStore(), store = new DemoReservationsStore([...SEEDED]);
+  let writer: DemoReservationsWriter | undefined;
   return [
     { provide: DeparturesSource, useValue: departures },
     { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
     { provide: ReservationDiscounts, useValue: new DemoReservationDiscounts() },
     { provide: ReservationsSource, useValue: store },
     { provide: ReservationQuoteSource, useFactory: (c: CatalogItemsSource, r: ReservationDiscounts) => new DemoReservationQuotes(departures, c, r), deps: [CatalogItemsSource, ReservationDiscounts] },
-    { provide: ReservationsWriter, useFactory: (q: ReservationQuoteSource) => new DemoReservationsWriter(store, departures, q), deps: [ReservationQuoteSource] },
+    { provide: ReservationsWriter, useFactory: (q: ReservationQuoteSource) => (writer ??= new DemoReservationsWriter(store, departures, q)), deps: [ReservationQuoteSource] },
   ];
 }
