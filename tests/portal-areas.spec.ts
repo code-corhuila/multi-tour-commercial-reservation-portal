@@ -8,6 +8,7 @@ import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstab
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
+import { CustomersPageComponent } from '../src/app/customers/pages/customers-page.component';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
@@ -70,6 +71,7 @@ describe('portalAreasRegistry', () => {
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
       { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
+      { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
   });
