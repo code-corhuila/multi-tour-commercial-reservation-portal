@@ -4,6 +4,9 @@ import { ActorRole } from './catalog/model/catalog-item';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
 import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
+import { CustomersSource } from './customers/data/customers-source';
+import { customersCapabilitiesOf } from './customers/model/customer-group';
+import { CustomersPageComponent } from './customers/pages/customers-page.component';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
 import { canManageDiscounts } from './discounts/model/discount-rule';
 import { DiscountsPageComponent } from './discounts/pages/discounts-page.component';
@@ -44,6 +47,11 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
   { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
     isAvailable: (injector) => injector.get(CurrentDiscountsSource, null) !== null },
+  {
+    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
+    // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
+    isAvailable: (injector) => customersCapabilitiesOf(injector.get(ActorContext).role).canRead && injector.get(CustomersSource, null) !== null,
+  },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
