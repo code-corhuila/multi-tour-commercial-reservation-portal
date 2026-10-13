@@ -108,6 +108,8 @@ const SPECIFIED_TREE = [
   'src/app/reservation-changes/pages/reservation-change-page.component.ts',
   'src/app/reservation-changes/components/reservation-change-action.component.ts',
   'src/app/reservation-changes/components/reservation-change-blocks.component.ts',
+  'src/app/payments/components/checkout-payment-block.component.ts',
+  'src/app/payments/pages/transfer-payment-page.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
