@@ -110,6 +110,12 @@ const SPECIFIED_TREE = [
   'src/app/reservation-changes/components/reservation-change-blocks.component.ts',
   'src/app/payments/components/checkout-payment-block.component.ts',
   'src/app/payments/pages/transfer-payment-page.component.ts',
+  'src/app/demo/my-payments-demo.ts',
+  'src/app/my-payments/my-payments-copy.ts',
+  'src/app/my-payments/data/my-payments-source.ts',
+  'src/app/my-payments/pages/my-payments-page.component.ts',
+  'src/app/my-payments/components/my-payments-panel.component.ts',
+  'src/app/my-payments/components/reservation-economic-lines.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
