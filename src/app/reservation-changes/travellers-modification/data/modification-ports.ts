@@ -45,7 +45,7 @@ export abstract class ReservationModificationWriter {
 /** Plan D-01, D-06: the "Modificación de viajeros" entry of Tipo. Not submittable until DP-MD5 gives it fields, so the page never sends it. */
 export function travellersModificationType(): ReservationChangeType {
   return {
-    key: TRAVELLERS_MODIFICATION_KEY, label: TRAVELLERS_MODIFICATION_COPY.label, form: TravellersModificationFormComponent, submittable: false, showsRefundable: false,
+    key: TRAVELLERS_MODIFICATION_KEY, label: TRAVELLERS_MODIFICATION_COPY.label, form: TravellersModificationFormComponent, submittable: false,
     submit: () => throwError(() => new Error('DP-MD5: the travellers modification has no fields to send yet')),
   };
 }

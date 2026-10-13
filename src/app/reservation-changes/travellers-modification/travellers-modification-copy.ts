@@ -1,6 +1,6 @@
 /** HU-COM-012: the option label is the mockup's; the policy answers are PROPUESTO (the mockup has no text for them, spec section 5). */
 export const TRAVELLERS_MODIFICATION_COPY = {
-  label: 'Modificación de servicio, salida o viajeros',
+  label: 'Modificación de viajeros',
   allowed: 'La política del tour admite la modificación de viajeros en esta reserva.',
   refused: {
     'not-allowed': 'La política del tour no admite la modificación de viajeros en esta reserva.',
