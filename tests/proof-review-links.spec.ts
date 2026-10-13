@@ -152,3 +152,23 @@ describe('where the history of 13 and the review limit of 24 are drawn', () => {
     expect(limit?.nextElementSibling?.textContent).toContain('Estado del comprobante');
   });
 });
+
+// T-09 (spec 010-): admin-gestion-pago.html hides every payment entry of a reservation that admits no payment (app.js renderEntryState);
+// the decision buttons of 13 follow paymentEntryOf of the 009 fix even while a proof is still En validación.
+describe('the decision buttons of 13 on reservations that admit no payment (T-09)', () => {
+  const buttons = async (r: Reservation) => Array.from((await drawn(ProofManagementActionsComponent, r)).element.querySelectorAll('button')).map((b) => b.textContent?.trim());
+
+  it.each([
+    ['cancelled', { status: 'CANCELADA' }],
+    ['in execution', { status: 'EN_EJECUCION' }],
+    ['finished', { status: 'FINALIZADA' }],
+    ['settled', { balanceCents: 0 }],
+  ] as const)('hides Rechazar and Validar soporte on a %s reservation with a proof En validación', async (_, over) => {
+    const example = await reservation(EXAMPLE);
+    expect(await buttons({ ...example, ...over } as Reservation)).toEqual([]);
+  });
+
+  it('keeps Rechazar and Validar soporte on an open reservation with a proof En validación', async () => {
+    expect(await buttons(await reservation(EXAMPLE))).toEqual(['Rechazar soporte', 'Validar soporte']);
+  });
+});
