@@ -65,7 +65,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                 </select>
                 <p id="self-service-method-error" class="self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
               </article>
-              <ng-container *crpSlot="checkout; inputs: { quote: current.quote, reservation: created() }" />
+              <ng-container *crpSlot="checkout; inputs: { quote: current.quote, method: method(), reservation: created() }" />
               @if (standing === 'OTHER') { <p role="status">{{ text.notCustomer }}</p> }
               @if (asked()) { <p role="status">{{ text.signIn }}</p> }
               @if (refusal()) { <p role="alert">{{ refusal() }}</p> }
