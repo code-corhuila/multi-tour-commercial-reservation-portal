@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
+import { Subject, catchError, map, of, startWith, switchMap, tap } from 'rxjs';
+import { PortalNavigation } from '../../portal-navigation';
 import { formatDate } from '../../shared/format';
 import { ReservationFormComponent } from '../components/reservation-form.component';
 import { ReservationViewComponent } from '../components/reservation-view.component';
@@ -72,8 +73,11 @@ export class ReservationsPageComponent {
   protected readonly detailActions = RESERVATION_DETAIL_ACTIONS;
   protected readonly view = signal<View>({ kind: 'list' });
   private readonly requests = new Subject<void>();
+  /** 001- foundation: a sub-screen opened from 10A returns with { reservation }; its detail opens once listed. */
+  private opening = inject(PortalNavigation, { optional: true })?.params()['reservation'];
   private readonly local = signal<PageState | null>(null);
   private readonly listed = toSignal(this.requests.pipe(switchMap(() => this.source.list().pipe(
+    tap((items) => { const r = items.find((x) => x.id === this.opening); this.opening = undefined; if (r) this.view.set({ kind: 'detail', reservation: r }); }),
     map((items): PageState => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
     catchError(() => of<PageState>({ kind: 'error' })), startWith<PageState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PageState });
