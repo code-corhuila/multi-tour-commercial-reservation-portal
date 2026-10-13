@@ -8,7 +8,11 @@ import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './
 import { ReservationSelectionSource, selectionSourceFor } from './app/self-service-reservation/data/reservation-confirmation-ports';
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
-import { RESERVATION_DETAIL_ACTIONS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
+import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
+import { CHECKOUT_BLOCKS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
+import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
@@ -64,8 +68,10 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
       // HU-COM-009: Método y plazo de pago of 21.
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
-      // HU-COM-014: Continuar pago, Mis pagos and the proof notice of 17, and the economic lines of Mis reservas; each only with its port.
-      ...MY_PAYMENTS_CONTRIBUTIONS,
+      // HU-COM-010: Validar soporte of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.
+      ...PROOF_REVIEW_CONTRIBUTIONS,
+      // HU-COM-016: "Devoluciones monetarias" of 13, only for who authorizes or executes and with the refund ports.
+      contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
     ],
   }).then((created) => {
     app = created;
