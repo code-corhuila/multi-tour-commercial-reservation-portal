@@ -525,3 +525,13 @@
 .crp-root .crp-rescheduling-hero h2 { margin: 4px 0 0; color: var(--crp-text); font-size: clamp(1.25rem, 1.1rem + 0.45vw, 1.58rem); line-height: 1.25; letter-spacing: -0.045em; }
 .crp-root .crp-rescheduling-hero .crp-status { justify-self: end; }
 @media (max-width: 620px) { .crp-root .crp-rescheduling-hero { grid-template-columns: 1fr; } .crp-root .crp-rescheduling-hero .crp-status { justify-self: start; } }
+
+/* HU-COM-014: mis-pagos.html (travel-dashboard-reservation-grid and -card), the card lines of Mis reservas and the notices of 17. */
+.crp-root .crp-my-payments h2 { margin: 0 0 14px; color: var(--crp-text); font-size: 1.35rem; }
+.crp-root .crp-my-payments-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 0; padding: 0; list-style: none; }
+.crp-root .crp-my-payments-card { display: grid; gap: 6px; padding: 22px; background: var(--crp-surface); border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); box-shadow: var(--crp-shadow); overflow-wrap: anywhere; }
+.crp-root .crp-my-payments-card p, .crp-root .crp-my-payments-card h3 { margin: 0; }
+.crp-root .crp-my-payments-card p { color: var(--crp-soft); }
+.crp-root .crp-my-payments-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--crp-soft); font-size: 0.88rem; }
+.crp-root crp-my-payments-card-lines { display: grid; gap: 6px; color: var(--crp-soft); }
+.crp-root crp-my-payments-notices p { margin: 0 0 8px; }
