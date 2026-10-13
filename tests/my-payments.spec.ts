@@ -44,12 +44,13 @@ class SourceDouble extends MyPaymentsSource {
 
 afterEach(() => TestBed.resetTestingModule());
 
-async function render<T>(component: Type<T>, source: MyPaymentsSource, options: { params?: Record<string, string>; areas?: string[] } = {}) {
+async function render<T>(component: Type<T>, source: MyPaymentsSource, options: { params?: Record<string, string>; areas?: string[]; roles?: string[] } = {}) {
   const navigation = new PortalNavigation();
   navigation.register(options.areas ?? [CLIENT_AREA.panel, CLIENT_AREA.payments, 'transfer-payment']);
   navigation.params.set(options.params ?? {});
   const open = vi.spyOn(navigation, 'open');
-  TestBed.configureTestingModule({ providers: [{ provide: MyPaymentsSource, useValue: source }, { provide: PortalNavigation, useValue: navigation }] });
+  TestBed.configureTestingModule({ providers: [{ provide: MyPaymentsSource, useValue: source }, { provide: PortalNavigation, useValue: navigation },
+    { provide: CustomerContext, useValue: customerContextFor(options.roles ?? ['FINAL_CUSTOMER'], () => undefined) }] });
   const fixture = TestBed.createComponent(component);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
   await settle();
@@ -86,6 +87,18 @@ describe('everyMyPaymentsScreenShowsOneOfTheFourStates', () => {
     expect(view.host.querySelector('.crp-page-header-desc')?.textContent)
       .toBe('Consulta pagos, abonos, saldos y soportes de tus reservas propias. Esta consulta no permite validar ni rechazar soportes.');
     expect(view.host.querySelector('h2')?.textContent).toBe('Estado económico de mis reservas');
+  });
+});
+
+describe('aVisitorInMyPaymentsSeesTheSignInNoticeOfMyReservations', () => {
+  it('without a final-customer session, writes the notice of Mis reservas instead of the empty state, and reads nothing', async () => {
+    const source = new SourceDouble();
+    const view = await render(MyPaymentsPageComponent, source, { roles: ['UNKNOWN'] });
+    expect(view.host.querySelector('h1')?.textContent).toBe('Mis pagos');
+    expect(view.host.querySelector('[role="status"]')?.textContent?.trim()).toBe('Inicia sesión como cliente para ver tus reservas.');
+    expect(view.host.querySelector('[data-state]')).toBeNull();
+    expect(view.text()).not.toContain('Todavía no tienes pagos ni reservas registradas.');
+    expect(source.reads).toHaveLength(0);
   });
 });
 
