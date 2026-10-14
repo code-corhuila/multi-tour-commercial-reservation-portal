@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop } from '../../shared/format';
@@ -12,7 +14,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
 /** AC3 / RN-RS7 as mis-reservas.html, without payment lines: the customer's panel shows and never changes (plan D-06). */
 @Component({
   selector: 'app-my-reservations-page',
-  imports: [PortalSlotOutlet],
+  imports: [ReadErrorComponent, PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="self-service-panel" aria-labelledby="self-service-panel-title">
@@ -27,7 +29,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
         @let current = state();
         @switch (current.kind) {
           @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-          @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
+          @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
           @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
           @case ('data') {
             <ul data-state="data" class="self-service-list">
@@ -65,7 +67,7 @@ export class MyReservationsPageComponent {
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => this.source.listMine().pipe(
     map((items): PanelState => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError(() => of<PanelState>({ kind: 'error' })),
+    catchError((error) => of<PanelState>({ kind: 'error', ...readFailure(error) })),
     startWith<PanelState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PanelState });
 

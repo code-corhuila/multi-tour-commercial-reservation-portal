@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -18,7 +20,7 @@ type Note = { readonly text: string; readonly done: boolean } | null;
  * "Registrar devolución del 100 %" hands over to the detail, where it is authorized (DP-RF1); a contribution through REFUND_TREATMENT_ACTIONS may record another choice.
  */
 @Component({
-  selector: 'app-refund-treatment-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [PortalSlotOutlet],
+  selector: 'app-refund-treatment-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, PortalSlotOutlet],
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.trace }}</p><h1 class="crp-page-header-title crp-h1">{{ t.treatmentTitle }}</h1></div>
       <button type="button" class="crp-operator-outline crp-page-header-action" (click)="navigation?.open(screens.requests)">{{ t.backToRefunds }}</button></header>
@@ -26,7 +28,7 @@ type Note = { readonly text: string; readonly done: boolean } | null;
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
       @case ('empty') { <p class="crp-operator-copy" role="status" data-state="empty">{{ t.treatmentEmpty }}</p> }
       @case ('data') { <div data-state="data">
         @for (r of cards(s.items); track r.id) { @let decided = closed().includes(r.id);
@@ -57,7 +59,7 @@ export class RefundTreatmentPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.list().pipe(
     map((all): State => { const items = all.filter((r) => r.state === 'PENDIENTE_DE_DECISION'); return items.length ? { kind: 'data', items } : { kind: 'empty' }; }),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   /** Only who authorizes decides a treatment (RN-RES-006C): anyone else is sent back to the list. */
   private readonly authorizes = inject(PortalCapabilities).canAuthorizeRefund();

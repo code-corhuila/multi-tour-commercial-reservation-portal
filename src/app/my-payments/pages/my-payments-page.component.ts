@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -10,7 +12,7 @@ import { gridRows } from '../economic-rows';
 import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
 
 /** mis-pagos.html, opened from 17: one card per own reservation, read only (RN-MP4). With { reservation }, only that own one (AC-MP.5). */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-my-payments-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -25,7 +27,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
       @let s = state();
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ t.empty }}</p> }
         @case ('data') {
           @let credit = creditNote(s.items);
@@ -66,7 +68,7 @@ export class MyPaymentsPageComponent {
       const items = this.only ? all.filter((r) => r.reservationId === this.only) : all;
       return items.length ? { kind: 'data', items } : { kind: 'empty' };
     }),
-    catchError(() => of<PageState<CustomerPaymentSummary>>({ kind: 'error', retry: () => this.reload() })),
+    catchError((error) => of<PageState<CustomerPaymentSummary>>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
     startWith<PageState<CustomerPaymentSummary>>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PageState<CustomerPaymentSummary> });
 

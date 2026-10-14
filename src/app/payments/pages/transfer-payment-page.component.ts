@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
@@ -17,7 +19,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
 
 /** Screen 24 (pago-transferencia.html), opened by Continuar al pago of 21 with { reservation, type, amount }; only the customer's own reservation. */
 @Component({
-  selector: 'app-transfer-payment-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [PortalSlotOutlet],
+  selector: 'app-transfer-payment-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, PortalSlotOutlet],
   template: `
     <form class="crp-transfer" novalidate (submit)="$event.preventDefault(); send()">
       <header class="crp-booking-topbar"><button type="button" class="crp-booking-back" (click)="navigation?.open(reservations)"><span aria-hidden="true">←</span>&ngsp;<span>{{ text.panel }}</span></button><h1>{{ text.title }}</h1><span></span></header>
@@ -25,7 +27,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
         @let s = state();
         @switch (s.kind) {
           @case ('loading') { <p role="status" data-state="loading">{{ common.loading }}</p> }
-          @case ('error') { <div role="alert" data-state="error">{{ common.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ common.retry }}</button></div> }
+          @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="common.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ common.retry }}</button></div> }
           @case ('empty') { <div role="status" data-state="empty"><p>{{ text.none }}</p><button type="button" class="crp-outline" (click)="reload()">{{ common.retry }}</button></div> }
           @case ('data') {
             @let r = s.reservation;
@@ -73,7 +75,7 @@ export class TransferPaymentPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(switchMap(() => defer(() => forkJoin({ all: this.mine.listMine(), bank: this.methods.bankAccount() })).pipe(
     map(({ all, bank }): State => { const reservation = all.find((r) => r.reservationId === this.params['reservation']); return reservation ? { kind: 'data', reservation, bank } : { kind: 'empty' }; }),
-    catchError(() => of<State>({ kind: 'error' })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error) })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   constructor() { this.reload(); }
   protected reload(): void { this.requests.next(); }

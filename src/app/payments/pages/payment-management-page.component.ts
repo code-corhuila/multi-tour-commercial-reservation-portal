@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -23,13 +25,13 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
 
 /** Screen 13 (admin-gestion-pago.html), a sub-screen of Reservas opened from 10A or 10C with { reservation }. Validating is HU-COM-010. */
 @Component({
-  selector: 'app-payment-management-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [PortalSlotOutlet],
+  selector: 'app-payment-management-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, PortalSlotOutlet],
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ text.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ text.title }}</h1></div></header>
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
       @case ('empty') { <div role="status" data-state="empty"><p>{{ text.notFound }}</p><button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
       @case ('data') {
         @let r = s.reservation; @let last = r.payments?.at(-1); @let kind = kindOf(r); @let entry = entryOf(r); @let locked = !kind || entry === 'in-validation';
@@ -107,7 +109,7 @@ export class PaymentManagementPageComponent {
       const state = departures.find((d) => d.id === reservation.departureId)?.state;
       return (this.deadlines?.deadlineOf(reservation.id).pipe(catchError(() => of(null))) ?? of(null)).pipe(map((d): State => ({ kind: 'data', reservation, labels,
         info: { departure: departureText(reservation, state), deadline: d ? deadlineText(d) : '' } }))); }),
-    catchError(() => of<State>({ kind: 'error' })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error) })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   /** The reservation as the writer answered it; the newest answer wins over the list. */
   private readonly saved = signal<Reservation | null>(null);
   protected readonly state = computed((): State => { const s = this.loaded(), saved = this.saved(); return s.kind === 'data' && saved ? { ...s, reservation: saved } : s; });

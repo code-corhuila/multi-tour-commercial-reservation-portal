@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, Injector, Provider, inject, input } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -18,13 +20,13 @@ import { PaymentLabels, modalityOf, paymentLabels } from './reservation-payments
 type State = PageState<{ rows: readonly Reservation[]; labels: PaymentLabels }>;
 
 /** 13 (admin-pagos.html): the "Saldo pendiente" rows after the proofs of HU-COM-010; the action is a button, never the row (plan D-07). */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'tbody[crpPendingPaymentRows]', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <tr><td colspan="6" role="status" data-state="loading">{{ common.loading }}</td></tr> }
-      @case ('error') { <tr><td colspan="6" role="alert" data-state="error">{{ common.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></td></tr> }
+      @case ('error') { <tr><td colspan="6" role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="common.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></td></tr> }
       @case ('data') { @let d = s.items[0];
         @for (r of d.rows; track r.id) {
           <tr><td><strong>#{{ r.id }}</strong></td><td>{{ r.leadCustomerName }}</td><td>{{ modality(r, d.labels) }}</td><td>{{ money(r.balanceCents) }}</td>
@@ -46,7 +48,7 @@ export class PendingPaymentRowsComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => forkJoin({ rows: this.source.list(), labels: paymentLabels(this.methods) })).pipe(
     map(({ rows, labels }): State => (rows.length ? { kind: 'data', items: [{ rows, labels }] } : { kind: 'empty' })),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   protected open(r: Reservation): void { this.navigation?.open('payments-followup', { reservation: r.id }); }
 }
 
