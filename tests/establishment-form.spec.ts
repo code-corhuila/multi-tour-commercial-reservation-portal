@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { EstablishmentFormComponent } from '../src/app/establishments/components/establishment-form.component';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { AssociatedEstablishment } from '../src/app/establishments/model/associated-establishment';
@@ -10,6 +9,8 @@ import { ControllableEstablishmentsWriter } from './associated-establishments-wr
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
 
 import { formControls, imageFile } from './establishment-form.helpers';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 async function openForm() {
   const writer = new ControllableEstablishmentsWriter(), keys = new ControllableIdempotencyKeys();
   TestBed.configureTestingModule({ providers: [
@@ -54,7 +55,7 @@ describe('eachFieldHasItsLabelAndItsErrorBesideItThroughAriaDescribedby', () => 
       const control = field(name);
       expect(element.querySelector(`label[for="${control.id}"]`)).not.toBeNull();
       expect(control.getAttribute('aria-invalid')).toBe('true');
-      expect(errorFor(name)).toMatch(/required/i);
+      expect(errorFor(name)).toMatch(/obligatori/i);
       expect(control.parentElement!.querySelector('[role="alert"]')).not.toBeNull();
     }
     expect(writer.registrations).toEqual([]);
@@ -80,7 +81,7 @@ describe('submitIsDisabledWhileASubmissionIsPending', () => {
   });
   it('emits cancellation without submitting when nothing is pending', async () => {
     const { element, cancelled, writer, settle } = await openForm();
-    Array.from(element.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Cancel')!.click(); await settle();
+    Array.from(element.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Cancelar')!.click(); await settle();
     expect(cancelled).toEqual([true]); expect(writer.registrations).toEqual([]);
   });
 });
@@ -138,5 +139,20 @@ describe('aCorrectedImageResubmitsWithTheSameKey', () => {
     for (const text of ['Please correct these fields.', 'Name conflicts.', 'Choose another name.']) { expect(errorFor('commercialName')).toContain(text); }
     expect(errorFor('commercialInformation')).toContain('Contact required.'); expect(errorFor('image')).toContain('Unreadable file.');
     expect(Array.from(element.querySelectorAll('[role="alert"]')).every((alert) => alert.parentElement?.querySelector('input, textarea, select'))).toBe(true);
+  });
+});
+
+describe('theEstablishmentFormFollowsTheAuthorizedScreenInSpanish', () => {
+  it('numbers its sections and writes labels, options, guidance, buttons and messages in Spanish', async () => {
+    const { element, submit } = await openForm();
+    expect(Array.from(element.querySelectorAll('.crp-operator-eyebrow'), (node) => node.textContent?.trim())).toEqual(['01. Datos del establecimiento', '02. Imagen']);
+    expect(Array.from(element.querySelectorAll('label'), (label) => label.textContent?.trim())).toEqual(['Tipo de establecimiento', 'Nombre del establecimiento', 'Información comercial', 'Imagen']);
+    expect(Array.from(element.querySelectorAll('option'), (option) => option.textContent?.trim())).toEqual(['Alojamiento', 'Restaurante']);
+    expect(element.textContent).toContain('Máximo 800 KB (819200 bytes). Tipos aceptados: PNG, JPEG, WebP.');
+    expect(Array.from(element.querySelectorAll('.crp-form-actions button'), (button) => button.textContent?.trim())).toEqual(['Cancelar', 'Guardar establecimiento']);
+    await submit();
+    const alerts = Array.from(element.querySelectorAll('[role="alert"]'), (alert) => alert.textContent?.trim());
+    expect(alerts).toEqual(['Obligatorio: de 1 a 255 caracteres.', 'La información comercial es obligatoria.', 'La imagen es obligatoria.']);
+    expect(element.textContent).not.toMatch(/HOTEL|RESTAURANT|Required|Save|Cancel\b|At most/);
   });
 });

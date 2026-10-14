@@ -1,61 +1,85 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, exhaustMap, tap } from 'rxjs';
-import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
-import { capabilitiesOf } from '../../catalog/model/catalog-item';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '../data/associated-establishments-writer';
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
+import { ESTABLISHMENTS_COPY } from '../establishments-copy';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { FilePickerComponent } from '../../shared/file-picker.component';
 
 type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;
-const TEXT_FIELDS = [{ name: 'commercialName', label: 'Commercial name' },
-  { name: 'commercialInformation', label: 'Description and contact' }] as const;
+const TEXT_FIELDS = [{ name: 'commercialName', label: 'Nombre del establecimiento' },
+  { name: 'commercialInformation', label: 'Información comercial' }] as const;
 let nextFormId = 0;
 
 @Component({
   selector: 'app-establishment-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FilePickerComponent],
   template: `
     @if (canRegister) {
       <form novalidate (submit)="submit($event)">
+        <section class="crp-form-panel">
+        <p class="crp-operator-eyebrow">01. Datos del establecimiento</p>
+        <div class="crp-form-grid">
         <div>
-          <label [for]="id('establishmentType')">Establishment type</label>
+          <label [for]="id('establishmentType')">Tipo de establecimiento</label>
           <select name="establishmentType" [id]="id('establishmentType')" [disabled]="pending()"
             [attr.aria-invalid]="messages().establishmentType ? 'true' : null"
             [attr.aria-describedby]="describedBy('establishmentType')" (change)="edit('establishmentType', $event)">
-            @for (type of types; track type) { <option [value]="type" [selected]="draft().establishmentType === type">{{ type }}</option> }
+            @for (type of types; track type) { <option [value]="type" [selected]="draft().establishmentType === type">{{ typeLabels[type] }}</option> }
           </select>
           @if (messages().establishmentType; as text) { <p role="alert" [id]="id('establishmentType') + '-error'">{{ text }}</p> }
         </div>
         @for (field of textFields; track field.name) {
           <div>
             <label [for]="id(field.name)">{{ field.label }}</label>
-            <textarea [name]="field.name" [id]="id(field.name)" [value]="draft()[field.name]" [disabled]="pending()"
-              [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
-              [attr.aria-describedby]="describedBy(field.name)" (input)="edit(field.name, $event)"></textarea>
+            <!-- admin-configurar-hospedaje.html: the name is a one-line input. -->
+            @if (field.name === 'commercialName') {
+              <input [name]="field.name" [id]="id(field.name)" [value]="draft()[field.name]" [disabled]="pending()"
+                [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
+                [attr.aria-describedby]="describedBy(field.name)" (input)="edit(field.name, $event)">
+            } @else {
+              <textarea [name]="field.name" [id]="id(field.name)" [value]="draft()[field.name]" [disabled]="pending()"
+                [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
+                [attr.aria-describedby]="describedBy(field.name)" (input)="edit(field.name, $event)"></textarea>
+            }
             @if (messages()[field.name]; as text) { <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p> }
           </div>
         }
-        <div>
-          <label [for]="id('image')">Image</label>
-          <input type="file" name="image" [id]="id('image')" [accept]="acceptedTypes" [disabled]="pending()"
-            [attr.aria-invalid]="messages().image ? 'true' : null" [attr.aria-describedby]="describedBy('image')" (change)="chooseImage($event)">
-          <p [id]="id('image') + '-help'">{{ guidance }}</p>
-          @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
         </div>
-        <button type="submit" [disabled]="pending()">Save</button>
-        <button type="button" [disabled]="pending()" (click)="cancel()">Cancel</button>
+        <p class="crp-operator-copy">No se configuran habitaciones, tarifas, disponibilidad, inventario ni políticas de cupo.</p>
+        </section>
+        <section class="crp-form-panel">
+        <p class="crp-operator-eyebrow">02. Imagen</p>
+        <div>
+          <label [for]="id('image')">Imagen</label>
+          <app-file-picker inputName="image" [inputId]="id('image')" [accept]="acceptedTypes" [disabled]="pending()" [file]="image()"
+            [invalid]="!!messages().image" [describedBy]="describedBy('image')" (chosen)="chooseImage($event)">
+            <p [id]="id('image') + '-help'">{{ guidance }}</p>
+            @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
+          </app-file-picker>
+        </div>
+        </section>
+        <div class="crp-form-actions">
+        <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">Cancelar</button>
+        <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar establecimiento</button>
+      </div>
       </form>
     }
   `,
 })
 export class EstablishmentFormComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   private readonly writer = inject(AssociatedEstablishmentsWriter);
   private readonly keys = inject(IdempotencyKeys);
-  private readonly actor = inject(ActorContext);
-  protected readonly canRegister = capabilitiesOf(this.actor.role, this.actor.collaboratorMayEditDescription).canRegister;
+  protected readonly canRegister = inject(PortalCapabilities).canRegisterEstablishments();
   private idempotencyKey = this.keys.generate();
   private readonly prefix = `establishment-form-${nextFormId++}`;
   private submittedForm: HTMLFormElement | null = null;
@@ -63,20 +87,21 @@ export class EstablishmentFormComponent {
   readonly cancelled = output<void>();
   readonly saving = output<boolean>();
   protected readonly types = ESTABLISHMENT_TYPES;
+  protected readonly typeLabels = ESTABLISHMENTS_COPY.types;
   protected readonly textFields = TEXT_FIELDS;
   protected readonly guidance = IMAGE_GUIDANCE;
   protected readonly acceptedTypes = IMAGE_TYPES.join(',');
   protected readonly pending = signal(false);
   protected readonly draft = signal({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '' });
-  private readonly image = signal<File | null>(null);
+  protected readonly image = signal<File | null>(null);
   private readonly attempted = signal(false);
   private readonly refused = signal<Messages>({});
   protected readonly messages = computed(() => {
     const local: Messages = {}, draft = this.draft();
     if (this.attempted()) {
-      if (!this.types.includes(draft.establishmentType as EstablishmentType)) { local.establishmentType = 'Type required.'; }
-      if (!draft.commercialName.trim() || draft.commercialName.trim().length > 255) { local.commercialName = 'Required: 1 to 255 characters.'; }
-      if (!draft.commercialInformation.trim()) { local.commercialInformation = 'Description and contact required.'; }
+      if (!this.types.includes(draft.establishmentType as EstablishmentType)) { local.establishmentType = 'El tipo es obligatorio.'; }
+      if (!draft.commercialName.trim() || draft.commercialName.trim().length > 255) { local.commercialName = 'Obligatorio: de 1 a 255 caracteres.'; }
+      if (!draft.commercialInformation.trim()) { local.commercialInformation = 'La información comercial es obligatoria.'; }
     }
     if (this.attempted() || this.image()) { const message = imageMessage(this.image()); if (message) { local.image = message; } }
     return { ...this.refused(), ...local };
@@ -90,7 +115,7 @@ export class EstablishmentFormComponent {
         this.draft.set({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '' });
         this.image.set(null); this.submittedForm?.reset(); this.finish(); this.saved.emit(stored);
       }),
-      catchError((error: unknown) => { this.showRefusal(error); this.finish(); return EMPTY; }),
+      catchError((error: unknown) => { this.showRefusal(error); this.finish(); this.focusFirstErrorOnRender(); return EMPTY; }),
     ),
   )));
 
@@ -102,9 +127,9 @@ export class EstablishmentFormComponent {
     if (this.pending()) { return; }
     this.draft.update((draft) => ({ ...draft, [field]: (event.target as HTMLInputElement).value })); this.clearRefusal(field);
   }
-  protected chooseImage(event: Event): void {
+  protected chooseImage(file: File | null): void {
     if (this.pending()) { return; }
-    this.image.set((event.target as HTMLInputElement).files?.[0] ?? null); this.clearRefusal('image');
+    this.image.set(file); this.clearRefusal('image');
   }
   private clearRefusal(field: Field): void { this.refused.update(({ [field]: _previous, ...rest }) => rest); }
   protected cancel(): void { if (!this.pending()) { this.cancelled.emit(); } }
@@ -112,7 +137,7 @@ export class EstablishmentFormComponent {
     event.preventDefault(); if (this.pending() || !this.canRegister) { return; }
     this.attempted.set(true);
     // Service messages must not block retrying an otherwise valid intention.
-    this.refused.set({}); if (Object.keys(this.messages()).length) { return; }
+    this.refused.set({}); if (Object.keys(this.messages()).length) { this.focusFirstErrorOnRender(); return; }
     this.pending.set(true); this.saving.emit(true);
     this.submittedForm = event.target as HTMLFormElement;
     const draft = this.draft();
@@ -122,7 +147,7 @@ export class EstablishmentFormComponent {
   private finish(): void { this.pending.set(false); this.saving.emit(false); }
   private showRefusal(value: unknown): void {
     const error = value as Partial<ApiError> | null, messages: Messages = {};
-    const reason = error?.userMessage ?? 'The request failed.';
+    const reason = error?.userMessage ?? ESTABLISHMENTS_COPY.requestFailed;
     for (const detail of Array.isArray(error?.details) ? error.details : []) {
       const field: Field = ['establishmentType', 'commercialName', 'commercialInformation', 'image'].includes(detail.field) ? detail.field as Field : 'image';
       messages[field] = `${messages[field] ?? reason} ${detail.message}`;

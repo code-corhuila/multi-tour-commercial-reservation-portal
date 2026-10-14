@@ -45,6 +45,13 @@
           "defaultConfiguration": "development",
           "options": { "port": 4201 }
         },
+        "module": {
+          "builder": "@angular/build:application",
+          "options": { "browser": "src/mount-entry.ts", "index": false, "outputPath": "dist/module", "tsConfig": "tsconfig.module.json", "outputHashing": "none", "styles": [] },
+          "configurations": {
+            "demo": { "fileReplacements": [{ "replace": "src/app/sources.ts", "with": "src/app/sources.demo.ts" }] }
+          }
+        },
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {

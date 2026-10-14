@@ -16,17 +16,19 @@ async function openForm(item?: CatalogItem) {
   });
   const type = (label: string, value: string) => fireEvent.input(screen.getByLabelText(label), { target: { value } });
   const fillAll = (overrides: Partial<Record<string, string>> = {}) => {
-    type('Commercial name', overrides['name'] ?? 'Canyon walk');
-    type('Base rate', overrides['rate'] ?? '12.50');
-    type('Base operational cost', overrides['cost'] ?? '7');
-    type('Configured capacity', overrides['capacity'] ?? '18');
+    type('Nombre comercial', overrides['name'] ?? 'Canyon walk');
+    type('Tarifa base', overrides['rate'] ?? '12.50');
+    type('Costo operativo base', overrides['cost'] ?? '7');
+    type('Capacidad configurada', overrides['capacity'] ?? '18');
+    type('Vigencia desde', '2026-09-01');
+    type('Vigencia hasta', '2026-09-30');
   };
   const settle = async () => {
     await view.fixture.whenStable();
     view.fixture.detectChanges();
   };
   const save = async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tour' }));
     await view.fixture.whenStable();
     view.fixture.detectChanges();
   };
@@ -43,9 +45,9 @@ describe('marksTheMissingFieldBesideItAndDisablesSubmit', () => {
     const { writer, fillAll, save, describedBy } = await openForm();
     fillAll({ rate: '' });
     await save();
-    expect(screen.getByLabelText('Base rate').getAttribute('aria-invalid')).toBe('true');
-    expect(describedBy('Base rate')).not.toBe('');
-    expect(screen.getByLabelText('Base operational cost').getAttribute('aria-invalid')).not.toBe('true');
+    expect(screen.getByLabelText('Tarifa base').getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy('Tarifa base')).not.toBe('');
+    expect(screen.getByLabelText('Costo operativo base').getAttribute('aria-invalid')).not.toBe('true');
     expect(writer.calls).toHaveLength(0);
   });
 
@@ -53,8 +55,8 @@ describe('marksTheMissingFieldBesideItAndDisablesSubmit', () => {
     const { writer, fillAll, save, describedBy } = await openForm();
     fillAll({ cost: '' });
     await save();
-    expect(screen.getByLabelText('Base operational cost').getAttribute('aria-invalid')).toBe('true');
-    expect(describedBy('Base operational cost')).not.toBe('');
+    expect(screen.getByLabelText('Costo operativo base').getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy('Costo operativo base')).not.toBe('');
     expect(writer.calls).toHaveLength(0);
   });
 
@@ -62,8 +64,8 @@ describe('marksTheMissingFieldBesideItAndDisablesSubmit', () => {
     const { writer, fillAll, save, describedBy } = await openForm();
     fillAll({ rate: text });
     await save();
-    expect(screen.getByLabelText('Base rate').getAttribute('aria-invalid')).toBe('true');
-    expect(describedBy('Base rate')).not.toBe('');
+    expect(screen.getByLabelText('Tarifa base').getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy('Tarifa base')).not.toBe('');
     expect(writer.calls).toHaveLength(0);
   });
 
@@ -73,13 +75,13 @@ describe('marksTheMissingFieldBesideItAndDisablesSubmit', () => {
     await save();
     const alerts = screen.getAllByRole('alert');
     expect(alerts).toHaveLength(2);
-    const field = screen.getByLabelText('Base rate');
+    const field = screen.getByLabelText('Tarifa base');
     expect(alerts.some((alert) => alert.previousElementSibling === field)).toBe(true);
   });
 
   it('gives every field a label', async () => {
     await openForm();
-    for (const label of ['Commercial name', 'Service type', 'Base rate', 'Base operational cost', 'Configured capacity', 'Transport required', 'High risk']) {
+    for (const label of ['Nombre comercial', 'Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Transporte obligatorio', 'Alto riesgo']) {
       expect(screen.getByLabelText(label)).not.toBeNull();
     }
   });
@@ -89,7 +91,7 @@ describe('theSubmitActionIsDisabledWhilePending', () => {
   it('sends one request for a double click and disables the button while it is pending', async () => {
     const { writer, fillAll, view } = await openForm();
     fillAll();
-    const button = screen.getByRole('button', { name: 'Save' });
+    const button = screen.getByRole('button', { name: 'Guardar tour' });
     fireEvent.click(button);
     fireEvent.click(button);
     await view.fixture.whenStable();
@@ -113,7 +115,7 @@ describe('theSubmitActionIsDisabledWhilePending', () => {
     await save();
     writer.calls[0].fail(apiError());
     await settle();
-    expect(screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: 'Guardar tour' }).hasAttribute('disabled')).toBe(false);
   });
 });
 
@@ -121,31 +123,31 @@ describe('aRefusedChangeKeepsWhatWasTyped', () => {
   it('shows the userMessage and keeps every typed value', async () => {
     const { writer, fillAll, view } = await openForm();
     fillAll({ name: 'Canyon walk', rate: '12.50', cost: '7', capacity: '18' });
-    fireEvent.click(screen.getByLabelText('Transport required'));
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByLabelText('Transporte obligatorio'));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tour' }));
     writer.calls[0].fail(apiError({ userMessage: 'The capacity cannot be reduced.' }));
     await view.fixture.whenStable();
     view.fixture.detectChanges();
     expect(screen.getByText('The capacity cannot be reduced.')).not.toBeNull();
-    expect((screen.getByLabelText('Commercial name') as HTMLInputElement).value).toBe('Canyon walk');
-    expect((screen.getByLabelText('Base rate') as HTMLInputElement).value).toBe('12.50');
-    expect((screen.getByLabelText('Base operational cost') as HTMLInputElement).value).toBe('7');
-    expect((screen.getByLabelText('Configured capacity') as HTMLInputElement).value).toBe('18');
-    expect((screen.getByLabelText('Transport required') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Nombre comercial') as HTMLInputElement).value).toBe('Canyon walk');
+    expect((screen.getByLabelText('Tarifa base') as HTMLInputElement).value).toBe('12.50');
+    expect((screen.getByLabelText('Costo operativo base') as HTMLInputElement).value).toBe('7');
+    expect((screen.getByLabelText('Capacidad configurada') as HTMLInputElement).value).toBe('18');
+    expect((screen.getByLabelText('Transporte obligatorio') as HTMLInputElement).checked).toBe(true);
   });
 
   it('shows a field message beside the field named in the details', async () => {
     const { writer, fillAll, view, describedBy } = await openForm();
     fillAll();
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tour' }));
     writer.calls[0].fail(
       apiError({ details: [{ field: 'configuredCapacity', message: 'Below the booked seats.' }] }),
     );
     await view.fixture.whenStable();
     view.fixture.detectChanges();
-    expect(describedBy('Configured capacity')).toContain('Below the booked seats.');
-    expect(screen.getByLabelText('Configured capacity').getAttribute('aria-invalid')).toBe('true');
-    expect((screen.getByLabelText('Configured capacity') as HTMLInputElement).value).toBe('18');
+    expect(describedBy('Capacidad configurada')).toContain('Below the booked seats.');
+    expect(screen.getByLabelText('Capacidad configurada').getAttribute('aria-invalid')).toBe('true');
+    expect((screen.getByLabelText('Capacidad configurada') as HTMLInputElement).value).toBe('18');
   });
 });
 
@@ -170,6 +172,8 @@ describe('sendsMoneyAsMinorUnits', () => {
     expect(writer.calls[0].kind).toBe('create');
     expect(writer.calls[0].command).toEqual({
       serviceType: expect.any(String),
+      validFrom: '2026-09-01',
+      validTo: '2026-09-30',
       commercialName: 'Canyon walk',
       baseRateCents: 1250,
       baseOperationalCostCents: 7,
@@ -183,7 +187,7 @@ describe('sendsMoneyAsMinorUnits', () => {
 describe('formOffersTheHighRiskControl', () => {
   it('offers a labelled High risk checkbox that starts unchecked', async () => {
     await openForm();
-    const box = screen.getByLabelText('High risk') as HTMLInputElement;
+    const box = screen.getByLabelText('Alto riesgo') as HTMLInputElement;
     expect(box.type).toBe('checkbox');
     expect(box.checked).toBe(false);
   });
@@ -192,7 +196,7 @@ describe('formOffersTheHighRiskControl', () => {
     const { writer, fillAll, save } = await openForm();
     fillAll();
     if (marked) {
-      fireEvent.click(screen.getByLabelText('High risk'));
+      fireEvent.click(screen.getByLabelText('Alto riesgo'));
     }
     await save();
     expect(writer.calls[0].command.highRisk).toBe(marked);
@@ -201,11 +205,11 @@ describe('formOffersTheHighRiskControl', () => {
   it('shows a refusal of the field beside the High risk control', async () => {
     const { writer, fillAll, view, describedBy } = await openForm();
     fillAll();
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tour' }));
     writer.calls[0].fail(apiError({ details: [{ field: 'highRisk', message: 'Needs a review.' }] }));
     await view.fixture.whenStable();
     view.fixture.detectChanges();
-    expect(describedBy('High risk')).toContain('Needs a review.');
+    expect(describedBy('Alto riesgo')).toContain('Needs a review.');
   });
 });
 
@@ -214,19 +218,19 @@ describe('capacityDependsOnTheServiceType', () => {
     const { writer, fillAll, save, describedBy } = await openForm();
     fillAll({ capacity: '' });
     await save();
-    expect(screen.getByLabelText('Configured capacity').getAttribute('aria-invalid')).toBe('true');
-    expect(describedBy('Configured capacity')).toBe('Required for a tour');
+    expect(screen.getByLabelText('Capacidad configurada').getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy('Capacidad configurada')).toBe('Obligatoria para un tour');
     expect(writer.calls).toHaveLength(0);
   });
 
-  it('sends null capacity for a transportation item without one', async () => {
-    const { writer, fillAll, save } = await openForm();
-    fireEvent.change(screen.getByLabelText('Service type'), { target: { value: 'TRANSPORTATION' } });
+  // The type select left the tour form (v1.9: the tour is the only product here), so a transportation item is changed, not registered.
+  it('sends null capacity when a transportation item is changed without one', async () => {
+    const { writer, fillAll, save } = await openForm({ ...itemNamed('Bus Andino 01'), serviceType: 'TRANSPORTATION' });
     fillAll({ capacity: '' });
     await save();
     expect(writer.calls).toHaveLength(1);
     expect(writer.calls[0].command.configuredCapacity).toBeNull();
-    expect(writer.calls[0].command).toMatchObject({ serviceType: 'TRANSPORTATION' });
+    expect(writer.calls[0].kind).toBe('update');
   });
 });
 
@@ -234,10 +238,9 @@ describe('editsAnExistingItem', () => {
   it('starts from the item values and updates it by id', async () => {
     const item = { ...itemNamed('Old name'), baseRateCents: 1250, configuredCapacity: 18 };
     const { writer, type, save } = await openForm(item);
-    expect((screen.getByLabelText('Base rate') as HTMLInputElement).value).toBe('12.50');
-    expect((screen.getByLabelText('Configured capacity') as HTMLInputElement).value).toBe('18');
-    expect(screen.getByLabelText('Service type').hasAttribute('disabled')).toBe(true);
-    type('Commercial name', 'New name');
+    expect((screen.getByLabelText('Tarifa base') as HTMLInputElement).value).toBe('12.50');
+    expect((screen.getByLabelText('Capacidad configurada') as HTMLInputElement).value).toBe('18');
+    type('Nombre comercial', 'New name');
     await save();
     expect(writer.calls[0].kind).toBe('update');
     expect(writer.calls[0].serviceId).toBe(item.serviceId);
@@ -251,5 +254,32 @@ describe('editsAnExistingItem', () => {
     expect(writer.calls[0].kind).toBe('update');
     expect(Object.keys(writer.calls[0].command)).not.toContain('serviceType');
     expect(writer.calls[0].command).toMatchObject({ highRisk: false });
+  });
+});
+
+describe('theFormFollowsTheAuthorizedScreenInSpanish', () => {
+  it('numbers its sections, names the types, buttons and messages in Spanish and previews money with formatCop', async () => {
+    const { view, type, save, describedBy } = await openForm();
+    const host: HTMLElement = view.fixture.nativeElement;
+    expect(Array.from(host.querySelectorAll('.crp-operator-eyebrow'), (node) => node.textContent?.trim())).toEqual(['01. Datos del tour', '02. Condiciones']);
+    // The type select left the tour form (v1.9): the tour is the only product registered here.
+    expect(host.querySelectorAll('option')).toHaveLength(0);
+    expect(Array.from(host.querySelectorAll('.crp-form-actions button'), (button) => button.textContent?.trim())).toEqual(['Cancelar', 'Guardar tour']);
+    expect(host.querySelector('.crp-form-actions button.crp-operator-outline')?.textContent?.trim()).toBe('Cancelar');
+    expect(host.querySelector('.crp-form-actions button.crp-operator-primary')?.textContent?.trim()).toBe('Guardar tour');
+    type('Tarifa base', '1299000');
+    view.fixture.detectChanges();
+    expect(host.querySelector('[data-money-preview="baseRate"]')?.textContent?.trim()).toBe('$1.299.000');
+    type('Costo operativo base', '12,5');
+    await save();
+    expect(describedBy('Nombre comercial')).toBe('Obligatorio.');
+    expect(describedBy('Costo operativo base')).toBe('Usa solo dígitos y punto decimal, por ejemplo 180000 o 180000.50.');
+    expect(host.textContent).not.toMatch(/TOUR|TRANSPORTATION|Required|Save|Cancel\b/);
+  });
+
+  it('shows the stored rate of an item in whole pesos, never with two zero decimals', async () => {
+    const { view } = await openForm({ ...itemNamed('Alpha'), baseRateCents: 18_000_000 });
+    expect((screen.getByLabelText('Tarifa base') as HTMLInputElement).value).toBe('180000');
+    expect(view.fixture.nativeElement.querySelector('[data-money-preview="baseRate"]')?.textContent?.trim()).toBe('$180.000');
   });
 });

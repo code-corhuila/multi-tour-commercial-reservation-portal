@@ -18,5 +18,19 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run build
       - run: npm test
+      # What the container mounts (ADR-006 F4): dist/portal.js and dist/portal.css. Amendment 2026-10-13, HC-6.
+      # The demo module is what the delivered image serves until the API is connected; it must build too.
+      - run: npm run build:module:demo
+      - run: npm run build:module
+      - name: Record the size of the mounted module
+        run: |
+          {
+            echo '### Mounted module'
+            echo '| File | Bytes | KB |'
+            echo '|---|---:|---:|'
+            for f in dist/portal.js dist/portal.css; do
+              b=$(stat -c %s "$f")
+              echo "| \`$f\` | $b | $(awk -v b="$b" 'BEGIN { printf "%.1f", b / 1024 }') |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

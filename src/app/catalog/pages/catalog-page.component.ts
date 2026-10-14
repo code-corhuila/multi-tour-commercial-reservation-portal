@@ -1,20 +1,17 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
-import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
-
-/**
- * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
- * combinations for four legal states, and the illegal ones are the blank screens Annex H forbids.
- */
-export type PageState =
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'error'; readonly retry: () => void }
-  | { readonly kind: 'empty' }
-  | { readonly kind: 'data'; readonly items: readonly CatalogItem[] };
+import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
+import { CATALOG_COPY } from '../catalog-copy';
+import { formatCop, formatDateRange } from '../../shared/format';
+import { CatalogItem } from '../model/catalog-item';
+import { PageState } from '../../shared/page-state';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { PortalNavigation } from '../../portal-navigation';
 
 /** The one form the page may show: registering (no item) or changing the given item. */
 interface FormTarget {
@@ -24,20 +21,39 @@ interface FormTarget {
 /** The reason the service gave, or a generic one when the failure has no ApiError shape. */
 function reasonOf(error: unknown): string {
   const userMessage = (error as Partial<ApiError> | null)?.userMessage;
-  return typeof userMessage === 'string' ? userMessage : 'The request failed.';
+  return typeof userMessage === 'string' ? userMessage : CATALOG_COPY.requestFailed;
 }
 
 @Component({
   selector: 'app-catalog-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogItemFormComponent],
+  imports: [ReadErrorComponent, CatalogItemFormComponent],
   template: `
     @let current = state();
     @if (caps.isDenied) {
-      <p role="alert" data-state="denied">You do not have access to the catalog.</p>
+      <p role="alert" data-state="denied">{{ copy.denied }}</p>
     } @else {
+    <header class="crp-page-header">
+      <div class="crp-page-header-main">
+        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
+      </div>
+      <span class="crp-page-header-action crp-header-actions">
+      @if (caps.canRegister && current.kind !== 'loading' && current.kind !== 'error') {
+        <button class="crp-operator-primary" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
+      }
+      @if (navigation) {
+        <button class="crp-operator-outline" type="button" (click)="navigation.open('catalog')">{{ copy.backToCatalogs }}</button>
+      }
+      </span>
+    </header>
+    <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
+    <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ copy.panelEyebrow }}</p><h2>{{ copy.panelTitle }}</h2></div></div>
+    <p class="crp-operator-copy">{{ copy.panelCopy }}</p>
     <!-- Outside the states: a reload must not take away a form whose save is in flight. -->
     @if (formTarget(); as target) {
+      <div class="crp-form-section">
+      <h2>{{ target.item ? copy.editItem : copy.newItem }}</h2>
       <!-- Keyed, so another item or a new one starts a fresh form instead of reusing the old state. -->
       @for (key of [formKey()]; track key) {
         <app-catalog-item-form
@@ -48,53 +64,63 @@ function reasonOf(error: unknown): string {
           (saving)="saving.set($event)"
         />
       }
+      </div>
     }
     @if (current.kind === 'loading') {
-      <p role="status" data-state="loading">Loading</p>
+      <p role="status" data-state="loading">{{ copy.loading }}</p>
     } @else if (current.kind === 'error') {
       <div role="alert" data-state="error">
-        <p>The request failed.</p>
-        <button type="button" (click)="current.retry()">Retry</button>
+        <p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p>
+        <button class="crp-operator-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button>
       </div>
-    } @else {
-      @if (caps.canRegister) {
-        <button type="button" [disabled]="saving()" (click)="openForm(undefined)">New item</button>
-      }
     }
     @if (current.kind === 'empty') {
-      <p role="status" data-state="empty">No results</p>
+      <p role="status" data-state="empty">{{ copy.empty }}</p>
     } @else if (current.kind === 'data') {
-      <ul data-state="data">
+      <div class="crp-table-wrap">
+      <table class="crp-operator-table" data-state="data" [attr.aria-label]="copy.panelTitle">
+        <thead><tr><th scope="col">{{ copy.columns.service }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.validity }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+        <tbody>
         @for (item of current.items; track item.serviceId) {
-          <li>
-            {{ item.commercialName }} · {{ item.catalogStatus }}
+          <tr>
+            <td>{{ item.commercialName }}</td>
+            <td>{{ cop(item.baseRateCents) }}</td>
+            <td>{{ validity(item) }}</td>
+            <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.catalogStatus === 'ACTIVE'" [class.crp-is-pending]="item.catalogStatus === 'INACTIVE'">{{ copy.statuses[item.catalogStatus] }}</span></td>
+            <td class="crp-row-actions">
+            @if (canEdit) {
+              <button class="crp-row-manage" type="button" [disabled]="saving()" (click)="openForm(item)">{{ copy.edit }}</button>
+            }
             @if (caps.canChangeStatus) {
-              <button type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
+              <button class="crp-row-toggle" type="button" [disabled]="isPending(item.serviceId)" (click)="changeStatus(item)">
                 @if (item.catalogStatus === 'ACTIVE') {
-                  Inactivate
+                  {{ copy.inactivate }}
                 } @else {
-                  Reactivate
+                  {{ copy.reactivate }}
                 }
               </button>
-            }
-            @if (canEdit) {
-              <button type="button" [disabled]="saving()" (click)="openForm(item)">Edit</button>
             }
             @if (rowErrors()[item.serviceId]; as reason) {
               <p role="alert">{{ reason }}</p>
             }
-          </li>
+            </td>
+          </tr>
         }
-      </ul>
+        </tbody>
+      </table>
+      </div>
     }
+    </section>
     }
   `,
 })
 export class CatalogPageComponent {
+  protected readonly copy = CATALOG_COPY;
+  protected readonly cop = formatCop;
+  protected readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly source = inject(CatalogItemsSource);
   private readonly writer = inject(CatalogItemsWriter);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly actor = inject(ActorContext);
   private readonly requests = new Subject<void>();
 
   /**
@@ -102,10 +128,10 @@ export class CatalogPageComponent {
    * the service refuses what the actor may not do. DP-PT-06 is open, so it acts as the one internal
    * role the container reports.
    */
-  protected readonly caps = capabilitiesOf(this.actor.role, this.actor.collaboratorMayEditDescription);
+  protected readonly caps = inject(PortalCapabilities).catalog();
   protected readonly canEdit = this.caps.canEditCommercialFields || this.caps.canEditDescription;
 
-  readonly state = signal<PageState>({ kind: 'loading' });
+  readonly state = signal<PageState<CatalogItem>>({ kind: 'loading' });
   /** Per row, apart from the four states of the page: one item pending never blanks the others. */
   private readonly pendingIds = signal<Readonly<Record<string, true>>>({});
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
@@ -122,15 +148,28 @@ export class CatalogPageComponent {
         // arrives to overwrite a newer one (RN-P3, D-06).
         switchMap(() =>
           this.source.list().pipe(
-            map((items): PageState => (items.length === 0 ? { kind: 'empty' } : { kind: 'data', items })),
-            catchError(() => of<PageState>({ kind: 'error', retry: () => this.reload() })),
-            startWith<PageState>({ kind: 'loading' }),
+            // Tours only: transport belongs to operations-cost (spec A.2 row 2).
+            map((all): PageState<CatalogItem> => {
+              const items = all.filter((each) => each.serviceType === 'TOUR');
+              return items.length === 0 ? { kind: 'empty' } : { kind: 'data', items };
+            }),
+            catchError((error) => of<PageState<CatalogItem>>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
+            startWith<PageState<CatalogItem>>({ kind: 'loading' }),
           ),
         ),
         takeUntilDestroyed(),
       )
       .subscribe((next) => this.state.set(next));
     this.reload();
+    // "Nuevo servicio" of the hub opens the tour creation (spec A.2 row 7).
+    if (this.navigation?.params()['create'] === '1' && this.caps.canRegister) {
+      this.formTarget.set({ item: undefined });
+    }
+  }
+
+  /** The validity range of the offer, or a dash when the contract returns none (gap G-B). */
+  protected validity(item: CatalogItem): string {
+    return item.validFrom && item.validTo ? formatDateRange(item.validFrom, item.validTo) : this.copy.noValidity;
   }
 
   reload(): void {

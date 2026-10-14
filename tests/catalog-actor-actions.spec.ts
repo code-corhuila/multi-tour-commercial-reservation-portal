@@ -1,12 +1,14 @@
+import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
-import { ActorRole, capabilitiesOf } from '../src/app/catalog/model/catalog-item';
+import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableCatalogItemsSource, itemNamed } from './catalog-items-source.double';
 import { ControllableCatalogItemsWriter } from './catalog-items-writer.double';
+import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 // DP-PT-06 is open: an account with several roles has no defined way to choose which it acts as.
 // Every actor below acts as ONE internal role. The screen is convenience, not authority (D-09):
@@ -43,28 +45,28 @@ async function openAs(actor?: ActorContext, items = [itemNamed('Alpha'), itemNam
   return { source, writer, host, ui, settle, buttonNames, click };
 }
 
-const CHANGING_ACTIONS = ['New item', 'Edit', 'Inactivate', 'Reactivate', 'Save'];
+const CHANGING_ACTIONS = [CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.reactivate, 'Guardar tour'];
 
 describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
   it('offers only Edit on a row, with no New item and no status action', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    expect(page.buttonNames()).toEqual(['Edit', 'Edit']);
+    expect(page.buttonNames()).toEqual([CATALOG_COPY.edit, CATALOG_COPY.edit]);
   });
 
   it('shows the name and none of the rate, cost, capacity, type, transport or risk controls', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    await page.click(within(page.host.querySelector('li') as HTMLElement).getByRole('button', { name: 'Edit' }));
-    expect((page.ui.getByLabelText('Commercial name') as HTMLInputElement).value).toBe('Alpha');
-    for (const label of ['Base rate', 'Base operational cost', 'Configured capacity', 'Service type', 'Transport required', 'High risk']) {
+    await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
+    expect((page.ui.getByLabelText('Nombre comercial') as HTMLInputElement).value).toBe('Alpha');
+    for (const label of ['Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Transporte obligatorio', 'Alto riesgo']) {
       expect(page.ui.queryByLabelText(label), label).toBeNull();
     }
   });
 
   it('sends a command with the commercial name and nothing else', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    await page.click(within(page.host.querySelector('li') as HTMLElement).getByRole('button', { name: 'Edit' }));
-    fireEvent.input(page.ui.getByLabelText('Commercial name'), { target: { value: 'Alpha renamed' } });
-    await page.click(page.ui.getByRole('button', { name: 'Save' }));
+    await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
+    fireEvent.input(page.ui.getByLabelText('Nombre comercial'), { target: { value: 'Alpha renamed' } });
+    await page.click(page.ui.getByRole('button', { name: 'Guardar tour' }));
 
     expect(page.writer.calls).toHaveLength(1);
     expect(page.writer.calls[0]).toMatchObject({ kind: 'update', serviceId: itemNamed('Alpha').serviceId });
@@ -73,23 +75,23 @@ describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
 
     page.writer.calls[0].reply({ ...itemNamed('Alpha'), commercialName: 'Alpha renamed' });
     await page.settle();
-    expect(page.host.querySelector('li')?.textContent).toContain('Alpha renamed');
+    expect(page.host.querySelector('tbody tr')?.textContent).toContain('Alpha renamed');
   });
 
   it('still requires the commercial name and sends nothing without it', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
-    await page.click(within(page.host.querySelector('li') as HTMLElement).getByRole('button', { name: 'Edit' }));
-    fireEvent.input(page.ui.getByLabelText('Commercial name'), { target: { value: '  ' } });
-    await page.click(page.ui.getByRole('button', { name: 'Save' }));
+    await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
+    fireEvent.input(page.ui.getByLabelText('Nombre comercial'), { target: { value: '  ' } });
+    await page.click(page.ui.getByRole('button', { name: 'Guardar tour' }));
     expect(page.writer.calls).toHaveLength(0);
-    expect(page.ui.getByLabelText('Commercial name').getAttribute('aria-invalid')).toBe('true');
+    expect(page.ui.getByLabelText('Nombre comercial').getAttribute('aria-invalid')).toBe('true');
   });
 });
 
 describe('collaboratorOfANonEnablingTenantSeesNoSaveAction', () => {
   it('reads the list and offers no New item, Edit, Inactivate, Reactivate or Save', async () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', false), [itemNamed('Alpha'), { ...itemNamed('Beta'), catalogStatus: 'INACTIVE' }]);
-    expect(page.host.querySelectorAll('li')).toHaveLength(2);
+    expect(page.host.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(page.buttonNames()).toEqual([]);
     for (const name of CHANGING_ACTIONS) {
       expect(page.ui.queryByRole('button', { name }), name).toBeNull();
@@ -111,7 +113,7 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
   it.each<ActorRole>(['MANAGER', 'ANALYST'])('lets the %s read the list with no action that changes it', async (role) => {
     const page = await openAs(actorAs(role));
     expect(page.source.requests).toHaveLength(1);
-    expect(page.host.querySelectorAll('li')).toHaveLength(2);
+    expect(page.host.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(page.buttonNames()).toEqual([]);
   });
 
@@ -119,7 +121,7 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
     const page = await openAs(actorAs('ACCOUNTANT'));
     expect(page.source.requests).toHaveLength(0);
     expect(page.ui.getByRole('alert').textContent?.trim()).not.toBe('');
-    expect(page.host.querySelector('li')).toBeNull();
+    expect(page.host.querySelector('tbody tr')).toBeNull();
     expect(page.buttonNames()).toEqual([]);
   });
 });
@@ -127,13 +129,13 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
 describe('theAdministratorSeesEveryAction', () => {
   it('offers every action when the Administrator is provided explicitly', async () => {
     const page = await openAs(actorAs('TENANT_ADMINISTRATOR'));
-    expect(page.buttonNames()).toEqual(['New item', 'Inactivate', 'Edit', 'Inactivate', 'Edit']);
+    expect(page.buttonNames()).toEqual([CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.edit, CATALOG_COPY.inactivate]);
   });
 
   it('opens the full form with every control', async () => {
     const page = await openAs(actorAs('TENANT_ADMINISTRATOR'));
-    await page.click(page.ui.getByRole('button', { name: 'New item' }));
-    for (const label of ['Commercial name', 'Base rate', 'Base operational cost', 'Configured capacity', 'Service type', 'Transport required', 'High risk']) {
+    await page.click(page.ui.getByRole('button', { name: CATALOG_COPY.newItem }));
+    for (const label of ['Nombre comercial', 'Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Transporte obligatorio', 'Alto riesgo']) {
       expect(page.ui.queryByLabelText(label), label).not.toBeNull();
     }
   });
@@ -144,18 +146,18 @@ describe('capabilitiesOfTheRoleMatrix', () => {
   const none = { canRegister: false, canEditCommercialFields: false, canEditDescription: false, canChangeStatus: false, canRead: false, isDenied: false };
 
   it('gives the Administrator everything', () => {
-    expect(capabilitiesOf('TENANT_ADMINISTRATOR', false)).toEqual(all);
+    expect(PortalCapabilities.for('TENANT_ADMINISTRATOR', false).catalog()).toEqual(all);
   });
 
   it('gives the Collaborator descriptive edits only when the tenant enables them, and never rates, status or creation', () => {
-    expect(capabilitiesOf('OPERATIONAL_COLLABORATOR', true)).toEqual({ ...none, canRead: true, canEditDescription: true });
-    expect(capabilitiesOf('OPERATIONAL_COLLABORATOR', false)).toEqual({ ...none, canRead: true });
+    expect(PortalCapabilities.for('OPERATIONAL_COLLABORATOR', true).catalog()).toEqual({ ...none, canRead: true, canEditDescription: true });
+    expect(PortalCapabilities.for('OPERATIONAL_COLLABORATOR', false).catalog()).toEqual({ ...none, canRead: true });
   });
 
   it('ignores the tenant flag for every other role', () => {
-    expect(capabilitiesOf('MANAGER', true)).toEqual({ ...none, canRead: true });
-    expect(capabilitiesOf('ANALYST', true)).toEqual({ ...none, canRead: true });
-    expect(capabilitiesOf('ACCOUNTANT', true)).toEqual({ ...none, isDenied: true });
+    expect(PortalCapabilities.for('MANAGER', true).catalog()).toEqual({ ...none, canRead: true });
+    expect(PortalCapabilities.for('ANALYST', true).catalog()).toEqual({ ...none, canRead: true });
+    expect(PortalCapabilities.for('ACCOUNTANT', true).catalog()).toEqual({ ...none, isDenied: true });
   });
 });
 
@@ -166,9 +168,9 @@ describe('theDefaultActorFailsClosed', () => {
     expect(fallback.role).toBe('READ_ONLY');
     expect(fallback.collaboratorMayEditDescription).toBe(false);
     expect(page.source.requests).toHaveLength(1);
-    expect(page.host.querySelectorAll('li')).toHaveLength(2);
+    expect(page.host.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(page.buttonNames()).toEqual([]);
-    for (const name of ['New item', 'Edit', 'Inactivate', 'Reactivate']) {
+    for (const name of [CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.reactivate]) {
       expect(page.ui.queryByRole('button', { name }), name).toBeNull();
     }
   });

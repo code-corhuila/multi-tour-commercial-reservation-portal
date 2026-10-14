@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoney, parseMoney } from '../src/app/catalog/model/money';
+import { formatMoney, parseCop, parseMoney } from '../src/app/shared/money';
 
 const minorUnitsOf = (text: string): number | string => {
   const result = parseMoney(text);
@@ -91,5 +91,23 @@ describe('convertsTypedTextToIntegerUnits', () => {
     for (let units = 0; units <= 2000; units++) {
       expect(minorUnitsOf(formatMoney(units))).toBe(units);
     }
+  });
+});
+
+describe('readsThePesosAsTheScreensWriteThem (HU-COM-010, Valor recibido)', () => {
+  it.each([
+    ['$100.000', 10_000_000],
+    ['$ 1.039.200', 103_920_000],
+    ['100.000', 10_000_000],
+    ['100000', 10_000_000],
+    ['$100000', 10_000_000],
+    ['0.07', 7],
+    ['12.5', 1250],
+  ])('reads %s as %i cents', (text, cents) => {
+    expect(parseCop(text)).toEqual({ kind: 'valid', minorUnits: cents });
+  });
+
+  it.each([['', 'empty'], ['$', 'empty'], ['$1.00.000', 'format'], ['-$100.000', 'negative'], ['1,000', 'format']])('refuses %j as %s', (text, reason) => {
+    expect(parseCop(text)).toEqual({ kind: 'invalid', reason });
   });
 });

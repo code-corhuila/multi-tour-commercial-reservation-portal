@@ -2,10 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { fireEvent, render, screen } from '@testing-library/angular';
 import { describe, expect, it } from 'vitest';
 import { CatalogItemFormComponent } from '../src/app/catalog/components/catalog-item-form.component';
-import { CatalogItemsWriter, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { itemNamed } from './catalog-items-source.double';
 import { apiError, ControllableCatalogItemsWriter, ControllableIdempotencyKeys } from './catalog-items-writer.double';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 /** Opens the form; with `controlKeys` false it uses the real generator that ships with the portal. */
 async function openForm(options: { item?: CatalogItem; controlKeys?: boolean; keys?: ControllableIdempotencyKeys } = {}) {
@@ -19,17 +20,19 @@ async function openForm(options: { item?: CatalogItem; controlKeys?: boolean; ke
     inputs: options.item ? { item: options.item } : {},
   });
   const fill = () => {
-    fireEvent.input(screen.getByLabelText('Commercial name'), { target: { value: 'Canyon walk' } });
-    fireEvent.input(screen.getByLabelText('Base rate'), { target: { value: '12.50' } });
-    fireEvent.input(screen.getByLabelText('Base operational cost'), { target: { value: '7' } });
-    fireEvent.input(screen.getByLabelText('Configured capacity'), { target: { value: '18' } });
+    fireEvent.input(screen.getByLabelText('Nombre comercial'), { target: { value: 'Canyon walk' } });
+    fireEvent.input(screen.getByLabelText('Tarifa base'), { target: { value: '12.50' } });
+    fireEvent.input(screen.getByLabelText('Costo operativo base'), { target: { value: '7' } });
+    fireEvent.input(screen.getByLabelText('Capacidad configurada'), { target: { value: '18' } });
+    fireEvent.input(screen.getByLabelText('Vigencia desde'), { target: { value: '2026-09-01' } });
+    fireEvent.input(screen.getByLabelText('Vigencia hasta'), { target: { value: '2026-09-30' } });
   };
   const settle = async () => {
     await view.fixture.whenStable();
     view.fixture.detectChanges();
   };
   const save = async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tour' }));
     await settle();
   };
   return { writer, keys, view, fill, save, settle };
@@ -42,7 +45,7 @@ describe('doubleSubmitSendsOneIdempotencyKey', () => {
   it('sends one create with one key when the same intention is submitted twice', async () => {
     const { writer, keys, view, fill } = await openForm();
     fill();
-    const button = screen.getByRole('button', { name: 'Save' });
+    const button = screen.getByRole('button', { name: 'Guardar tour' });
     fireEvent.click(button);
     fireEvent.click(button);
     fireEvent.submit(view.container.querySelector('form') as HTMLFormElement);
