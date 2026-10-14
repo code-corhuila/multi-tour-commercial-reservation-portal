@@ -25,7 +25,9 @@ import { demoSessionProviders } from './demo/demo-fixtures';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
 export function sourceProviders(_client: PortalApiClient): Provider[] {
-  return [...oncePerPage(demoStores), ...demoSessionProviders()];
+  const stores = oncePerPage(demoStores);
+  const named = demoSessionProviders();
+  return named.length ? [...stores, ...named] : stores;
 }
 
 function demoStores(): Provider[] {

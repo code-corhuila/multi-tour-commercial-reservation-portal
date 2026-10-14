@@ -156,7 +156,7 @@ function discountTag(rule: DiscountRule): string {
 export class ClientPanelPageComponent {
   protected readonly t = PANEL_TEXT;
   protected readonly text = SELF_SERVICE_TEXT;
-  /** HU-FRT-001 amendment 003: the display name of the session as text, or the generic greeting when there is none. */
+  /** HU-FRT-001 (003-): the display name of the session as text, or the generic greeting when there is none. */
   protected readonly greeting = ((name) => (name ? SESSION_TEXT.greeting(name) : SESSION_TEXT.anonymousGreeting))(inject(SESSION_IDENTITY).name);
   protected readonly area = CLIENT_AREA;
   protected readonly photo = tourPhoto;
