@@ -6,6 +6,7 @@ import { PortalNavigation } from './portal-navigation';
 import { focusHeading } from './shared/focus';
 import { CLIENT_NOTICES, PortalSlotOutlet, slotEntries } from './shared/portal-slots';
 import { PortalCapabilities } from './shared/portal-capabilities';
+import { CONTAINER_NAVIGATION, PROFILE_TARGET } from './shell-contract';
 import { SESSION_TEXT } from './shared/session-copy';
 import { SESSION_IDENTITY } from './shared/session-identity';
 
@@ -28,8 +29,9 @@ import { SESSION_IDENTITY } from './shared/session-identity';
                 (click)="open(link.key)">{{ link.label }}</button> }
           </nav>
           <div class="crp-client-actions">
-            @for (link of headerAccount; track link.key) { <button type="button" [class.crp-client-profile]="link.key === profileKey" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
+            @for (link of headerAccount; track link.key) { <button type="button" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
                 (click)="open(link.key)">{{ link.label }}</button> }
+            @if (openProfile) { <button type="button" class="crp-client-profile" (click)="openProfile()">{{ profileLabel }}</button> }
           </div>
         </header>
         }
@@ -52,7 +54,8 @@ import { SESSION_IDENTITY } from './shared/session-identity';
                     </div>
                   </div>
                 }
-                <button type="button" class="crp-client-avatar" [attr.aria-label]="avatarLabel" (click)="open(profileKey)">{{ initials }}</button>
+                @if (openProfile) { <button type="button" class="crp-client-avatar" [attr.aria-label]="avatarLabel" (click)="openProfile()">{{ initials }}</button> }
+                @else { <span class="crp-client-avatar" role="img" [attr.aria-label]="avatarLabel">{{ initials }}</span> }
               </div>
             </header>
           }
@@ -112,7 +115,10 @@ export class PortalShellComponent {
   protected readonly active = computed(() => this.current()?.parent ?? this.current()?.key);
   protected readonly initials = inject(SESSION_IDENTITY).initials;
   protected readonly avatarLabel = SESSION_TEXT.avatarLabel;
-  protected readonly profileKey = CLIENT_AREA.profile;
+  protected readonly profileLabel = SESSION_TEXT.profile;
+  private readonly navigateTo = inject(CONTAINER_NAVIGATION);
+  /** Perfil belongs to the identity-audit portal: drawn only when the container offers navigate. */
+  protected readonly openProfile = this.navigateTo ? () => this.navigateTo?.(PROFILE_TARGET) : null;
   protected readonly roleLabel = inject(PortalCapabilities).roleLabel();
   private readonly drawn = (links: readonly ClientLink[]) => links.filter((link) => this.areas.some((area) => area.key === link.key));
   protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);

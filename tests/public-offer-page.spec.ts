@@ -253,9 +253,12 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(within(page.host).getByLabelText('Buscar tours por nombre o destino').getAttribute('placeholder')).toBe('Buscar tours por nombre o destino...');
     const header = page.host.querySelector('header.crp-offer-head')!;
     const action = header.querySelector('.crp-page-header-action.crp-offer-search')!;
-    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON', 'LABEL']);
-    expect(text(action.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
-    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBe(action);
+    // The pill of tours.html: magnifier, field and the dark Buscar on the right; the date filter is a separate, discreet control.
+    expect(Array.from(action.children, (child) => child.tagName.toLowerCase())).toEqual(['svg', 'input', 'button']);
+    expect(action.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(text(header.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
+    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBeNull();
+    expect(within(page.host).getByLabelText('Fecha').closest('header.crp-offer-head')).toBe(header);
     expect(page.host.querySelector('.crp-offer-when, [data-date]')).toBeNull();
     expect(page.host.textContent).not.toMatch(/Disponibles el|Fecha de consulta/);
     expect(page.part('tours').getAttribute('aria-label')).toBe('Listado de tours disponibles');
