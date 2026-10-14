@@ -9,6 +9,7 @@ const SPECIFIED_TREE = [
   'src/app/discounts/components/discount-rule-form.component.ts',
   'src/app/discounts/data/discount-rules-source.ts',
   'src/app/discounts/discounts.routes.ts',
+  'src/app/discounts/discounts-copy.ts',
   'src/app/discounts/pages/discounts-page.component.ts',
   'src/app/app.component.ts',
   'src/app/app.config.ts',

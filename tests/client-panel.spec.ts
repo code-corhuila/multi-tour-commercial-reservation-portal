@@ -19,8 +19,8 @@ import { CustomerStanding } from '../src/app/shared/portal-capabilities';
 
 const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
 const rule = (overrides: Partial<DiscountRule>): DiscountRule => ({
-  id: 'r1', name: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
-  type: 'PERCENTAGE', percentageBasisPoints: 2000, status: 'ACTIVE', ...overrides,
+  id: 'r1', tourId: 'svc-1', tourName: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
+  percentageBasisPoints: 2000, stackable: false, status: 'ACTIVE', ...overrides,
 } as DiscountRule);
 const tour = (n: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
   serviceId: `svc-${n}`, serviceType: 'TOUR', commercialName: `Tour ${n}`, catalogStatus: 'ACTIVE', baseRateCents: 18_000_000 + n * 100_000,
@@ -151,11 +151,11 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   });
 
   it('lists the discounts in force today, or says there are none', async () => {
-    const p = await openPanel({ rules: [rule({}), rule({ id: 'r2', name: 'Vencido', endsOn: '2001-01-01' }), rule({ id: 'r3', name: 'Inactivo', status: 'INACTIVE' }),
-      rule({ id: 'r4', name: 'Valor fijo', type: 'FIXED_AMOUNT', amountCents: 5_000_000, percentageBasisPoints: undefined })] });
+    const p = await openPanel({ rules: [rule({}), rule({ id: 'r2', tourName: 'Vencido', endsOn: '2001-01-01' }), rule({ id: 'r3', tourName: 'Inactivo', status: 'INACTIVE' }),
+      rule({ id: 'r4', tourName: 'Con decimales', percentageBasisPoints: 1250 })] });
     expect(p.text('.crp-panel-discounts h2')).toBe('Descuentos vigentes');
     expect(p.texts('.crp-panel-promo')).toEqual([
-      '20% de descuento Tour Montañas Válido hasta 31 dic 2999', '$50.000 de descuento Valor fijo Válido hasta 31 dic 2999',
+      '20% de descuento Tour Montañas Válido hasta 31 dic 2999', '12,5% de descuento Con decimales Válido hasta 31 dic 2999',
     ]);
     TestBed.resetTestingModule();
     for (const rules of [[], 'none'] as const) {
