@@ -202,7 +202,7 @@ describe('pendingTreatmentsAreListedAsCards', () => {
     expect(s.texts('article .crp-operator-status')).toEqual(['Quedan 18 h 42 min', 'Quedan 22 h 30 min']);
     expect(s.texts('article:first-of-type .crp-operator-copy')[0]).toBe('Cancelada por falta de pago');
     expect(s.texts('article:first-of-type button')).toEqual(['Registrar devolución del 100 %', 'Registrar saldo a favor del 100 %', 'Ver detalle']);
-    expect(s.host.querySelector('article textarea')?.closest('label')?.textContent).toContain('Motivo de la decisión (obligatorio)');
+    expect(s.host.querySelector('article label')?.textContent).toContain('Motivo de la decisión (obligatorio)');
   });
 
   it('registers the credit balance of one card with its reason, and the card leaves the list', async () => {
