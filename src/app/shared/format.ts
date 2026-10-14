@@ -27,7 +27,3 @@ export function formatDateRange(startIsoDate: string, endIsoDate: string): strin
   return `${formatDate(startIsoDate)} - ${formatDate(endIsoDate)}`;
 }
 
-/** The whole percentage a current value is below its base value (`20` for $1.299.000 against $1.039.200); 0 when there is no base. */
-export function pctOff(baseCents: number, currentCents: number): number {
-  return baseCents > 0 ? Math.round(((baseCents - currentCents) / baseCents) * 100) : 0;
-}
