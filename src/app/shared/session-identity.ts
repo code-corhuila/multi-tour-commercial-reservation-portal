@@ -18,7 +18,7 @@ const clean = (value: unknown): string => (typeof value === 'string' ? value.tri
 export function sessionIdentityOf(session: Pick<MountSession, 'displayName' | 'initials'>): SessionIdentity {
   const name = clean(session.displayName) || null;
   const given = clean(session.initials);
-  const derived = (name ?? '').split(/\s+/).map((word) => word.match(/[\p{L}\p{N}]/u)?.[0]).filter(Boolean).slice(0, 2).join('');
+  const derived = (name ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((word) => Array.from(word)[0]).join('');
   return { name, initials: (given ? Array.from(given).slice(0, 2).join('') : derived || SESSION_TEXT.neutralInitials).toUpperCase() };
 }
 
