@@ -101,10 +101,16 @@ export async function screenOf<T>(component: Type<T>, providers: unknown[]) {
   const type = async (name: string, value: string) => {
     const input = field<HTMLInputElement>(name); input.value = value; input.dispatchEvent(new Event('input')); await settle();
   };
-  const tick = async (serviceId: string) => { element.querySelector<HTMLInputElement>(`input[value="${serviceId}"]`)!.click(); await settle(); };
+  /** v1.9: one tour per reservation, chosen from a select (RN-RES-010). */
+  const tick = (serviceId: string) => choose('serviceId', serviceId);
+  /** The payment type and method, apart (mockup 04), and the acceptance of the conditions. */
+  const payWith = async (type = 'TOTAL', method = 'BANK_TRANSFER') => {
+    await choose('paymentType', type); await choose('paymentMethod', method);
+    field<HTMLInputElement>('accepted').click(); await settle();
+  };
   const button = (text: string) => Array.from(element.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
   const click = async (text: string) => { button(text)!.click(); await settle(); };
   const submit = async () => { element.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true })); await settle(); };
   await settle();
-  return { fixture, element, settle, field, choose, type, tick, button, click, submit };
+  return { fixture, element, settle, field, choose, type, tick, payWith, button, click, submit };
 }
