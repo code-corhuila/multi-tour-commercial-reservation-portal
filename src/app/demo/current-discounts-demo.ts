@@ -2,6 +2,8 @@ import { Provider } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../current-discounts/data/current-discounts-source';
+import { DiscountBreakdowns } from '../current-discounts/data/discount-breakdowns';
+import { DemoDiscountBreakdowns } from './discount-calculation';
 import { AdditionalDiscount, AdditionalDiscountCommand, PricedService } from '../current-discounts/model/current-discounts';
 import { ApplicableRule, applyDiscounts } from '../current-discounts/model/current-discounts';
 import { TourValueSource } from '../public-offer/data/public-offer-sources';
@@ -53,5 +55,6 @@ export class DemoTourValueSource extends TourValueSource {
 export function currentDiscountsProviders(): Provider[] {
   return [{ provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() },
     { provide: TourValueSource, useValue: new DemoTourValueSource() },
-    { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() }];
+    { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() },
+    { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }];
 }

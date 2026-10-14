@@ -198,7 +198,6 @@ describe('theOutletsOfTheScreensInDevelop', () => {
   it('draws RESERVATION_DETAIL_ACTIONS in the header of 10A, before Volver a reservas', async () => {
     mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 1 })], ['TENANT_ADMINISTRATOR']);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-    click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const id = host.querySelector('.crp-reservation-code')?.textContent?.slice(1);
     click('app-reservations-page [data-state="data"] tbody tr td:last-child button', 'Ver detalle');

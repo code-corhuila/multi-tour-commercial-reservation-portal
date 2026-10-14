@@ -1,0 +1,20 @@
+/** Interface texts of the Catálogos hub; the wording is that of `admin-catalogos.html` (mockup PDR v1.9). */
+export const CATALOG_HUB_COPY = {
+  eyebrow: 'Configuración operativa',
+  title: 'Catálogos',
+  newService: 'Nuevo servicio',
+  accessNote: 'El único servicio con reserva y cupo es el tour (por salida). Los hoteles y restaurantes son establecimientos asociados de carácter informativo: solo el Administrador del tenant los registra, inactiva y reactiva. El Colaborador operativo consulta los catálogos sin modificarlos.',
+  denied: 'No tienes acceso al catálogo.',
+  loading: 'Cargando',
+  empty: 'Sin resultados',
+  requestFailed: 'La solicitud falló.',
+  retry: 'Reintentar',
+  tours: { label: 'TOURS', text: 'La reserva y el cupo corresponden al tour y a una salida concreta.', action: 'Ver tours' },
+  departures: { label: 'SALIDAS', headline: 'Programación', text: 'Fechas, horas, vehículos y estados de ejecución.', action: 'Ver salidas' },
+  transport: { label: 'TRANSPORTE', text: 'Su capacidad restringe el cupo de la salida; la tarifa es por persona.', action: 'Ver transporte' },
+  lodging: { label: 'ALOJAMIENTO ASOCIADO', text: 'Contactos informativos, sin habitaciones, tarifas ni inventario.', action: 'Gestionar establecimientos' },
+  restaurants: { label: 'RESTAURANTES ASOCIADOS', text: 'Contactos y convenios; la comida puede estar incluida en el paquete del tour.', action: 'Gestionar establecimientos' },
+  activeTours: (n: number) => (n === 1 ? '1 tour activo' : `${n} tours activos`),
+  activeResources: (n: number) => (n === 1 ? '1 recurso activo' : `${n} recursos activos`),
+  activeEstablishments: (n: number) => (n === 1 ? '1 establecimiento activo' : `${n} establecimientos activos`),
+} as const;

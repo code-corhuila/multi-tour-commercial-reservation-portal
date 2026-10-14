@@ -425,7 +425,6 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
     document.body.append(host);
     cleanup = entry.mountWith(host, { apiClient: { request: vi.fn() } as never, session: { roles: ['OPERATIONAL_COLLABORATOR'], open: () => undefined, close: () => undefined } }, demoSources);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-    click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const row = Array.from(host.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes('#RES-1839'))!;
     row.querySelector('button')!.click();
