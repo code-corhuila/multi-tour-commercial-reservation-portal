@@ -72,7 +72,7 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('greets the customer as panel-cliente.html, with no name because the session carries none', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-eyebrow')).toBe('Portal cliente');
-    expect(p.text('h1')).toBe('Hola, te damos la bienvenida');
+    expect(p.text('h1')).toBe('Hola, bienvenido');
     expect(p.text('.crp-panel-hero > p:not(.crp-panel-eyebrow)')).toBe(
       'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.');
   });
@@ -80,8 +80,8 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('draws the search block with its chips, which open Explorar, Gastronomía and Alojamiento', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-search label')).toBe('Buscar tours o establecimientos asociados');
-    expect(p.host.querySelector('.crp-panel-search input')?.getAttribute('placeholder')).toBe('Buscar tours, alojamiento o experiencias...');
-    expect(p.texts('.crp-panel-chips button')).toEqual(['Gastronomía', 'Tours', 'Alojamiento asociado']);
+    expect(p.host.querySelector('.crp-panel-search input')?.getAttribute('placeholder')).toBe('Buscar tours o experiencias...');
+    expect(p.texts('.crp-panel-chips button')).toEqual(['Restaurantes asociados', 'Tours', 'Alojamiento asociado']);
     await p.click('.crp-panel-chips button', 'Alojamiento asociado');
     expect(p.navigation.selected()).toBe(CLIENT_AREA.lodging);
     await p.click('.crp-panel-search button', 'Buscar');
@@ -139,11 +139,11 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
     expect(p.text('.crp-panel-card')).toContain('Inicia sesión como cliente para ver tus reservas.');
   });
 
-  it('offers only the quick actions of this story: Nueva reserva and Gastronomía', async () => {
+  it('offers only the quick actions of this story: Nueva reserva and Restaurantes asociados', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-quick h2')).toBe('Acciones rápidas');
     expect(p.texts('.crp-panel-quick button')).toEqual([
-      'NR Nueva reserva Inicia una nueva reserva', 'GA Gastronomía Explora opciones gastronómicas disponibles.',
+      'NR Nueva reserva Inicia una nueva reserva', 'GA Restaurantes asociados Consulta los datos de contacto de restaurantes asociados.',
     ]);
     expect(p.host.textContent).not.toMatch(/Continuar pago|Mis pagos|Notificaciones|Responder propuesta/);
     await p.click('.crp-panel-quick button', 'NR Nueva reserva Inicia una nueva reserva');
