@@ -41,6 +41,11 @@ export type Reservation = {
   readonly refund?: { readonly origin: 'NON_PAYMENT' | 'LOWER_VALUE' | 'CUSTOMER_CANCELLATION' | 'NOT_ATTRIBUTABLE' | 'RESCHEDULING'; readonly reason: string;
     readonly amountCents: number; readonly recognizedAt: string; readonly decision?: RefundAct; readonly authorization?: RefundAct & { readonly reason: string };
     readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string } };
+    readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string };
+    /** v1.9 (PROPUESTO): the administrative note, the justified rejection, and the 100 % kept as a credit balance (decision or execution without outflow). */
+    readonly note?: string; readonly rejection?: RefundAct & { readonly reason: string }; readonly creditBalance?: RefundAct & { readonly reason?: string } };
+  /** HU-COM-018 D-02 (PROPUESTO): the rescheduling episode, on the same reservation; fields follow rescheduling_records (G-B). */
+  readonly reschedulingEpisode?: ReschedulingEpisode;
 };
 export type ReschedulingEpisode = {
   readonly originDepartureId: string; readonly originAt: string;
