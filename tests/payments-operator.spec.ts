@@ -153,7 +153,7 @@ describe('noPaymentOrProofFromTheScheduledStart (AC-PY.7, RN-PY6)', () => {
   it('refuses a payment and a proof once the departure started, by the demo clock, and accepts them the day before', async () => {
     demoQuery('?demoNow=2026-11-07T08:00:00-05:00');
     TestBed.configureTestingModule({ providers: demoProviders() });
-    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toBe('La salida ya inició: no se aceptan pagos ni soportes.');
+    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toBe('La salida ya inició: no se aceptan pagos ni comprobantes.');
     expect((await stored(TRANSFER)).payments ?? []).toHaveLength(0);
     demoQuery('?demoNow=2026-11-06T20:00:00-05:00');
     expect((await register(TRANSFER, 100, pdf(), 'k-2')).payments).toHaveLength(1);
@@ -190,12 +190,12 @@ describe('screen 13, Gestión de pago', () => {
       expect(text, label).toContain(label);
     }
     expect(element.querySelector('select')).toBeNull();
-    expect(element.querySelector('label[for="crp-payments-proof"]')?.textContent).toContain('Soporte de transferencia');
+    expect(element.querySelector('label[for="crp-payments-proof"]')?.textContent).toContain('Comprobante de transferencia');
     expect(element.querySelector('label[for="crp-payments-amount"]')?.textContent).toContain('Monto recibido');
   });
 
-  it('names the action by the modality: Registrar soporte, Registrar abono or Registrar pago', async () => {
-    expect((await managementOf()).submit()?.textContent?.trim()).toBe('Registrar soporte');
+  it('names the action by the modality: Registrar comprobante, Registrar abono or Registrar pago', async () => {
+    expect((await managementOf()).submit()?.textContent?.trim()).toBe('Registrar comprobante');
     TestBed.resetTestingModule();
     const cash = await managementOf('TENANT_ADMINISTRATOR', CASH);
     expect(cash.submit()?.textContent?.trim()).toBe('Registrar abono');
@@ -208,7 +208,7 @@ describe('screen 13, Gestión de pago', () => {
     expect(element.textContent).not.toMatch(/actualizar el estado de pago|Confirmada con pago completo/);
     await type('amount', '300000'); await attach(pdf()); submit()!.click(); await settle();
     expect(element.querySelector('[role="status"].crp-payments-feedback')?.textContent)
-      .toBe('Soporte registrado. El pago queda en validación y la reserva permanece pendiente de pago.');
+      .toBe('Comprobante registrado en nombre del cliente. Queda En validación y la reserva sigue Pendiente de pago hasta su aprobación.');
   });
 
   it('refuses to register on a reservation without a modality, with the message of the mockup', async () => {
@@ -223,7 +223,7 @@ describe('screen 13, Gestión de pago', () => {
   it('missingAmountOrProofIsShownBesideItsFieldAndNothingIsSent (AC-PY.10)', async () => {
     const { element, submit, settle } = await managementOf();
     submit()!.click(); await settle();
-    const messages: Record<string, string> = { amount: 'Registra un monto mayor a $0.', proof: 'Adjunta el soporte de transferencia para enviarlo a validación.' };
+    const messages: Record<string, string> = { amount: 'Registra un monto mayor a $0.', proof: 'Adjunta el comprobante de transferencia para enviarlo a validación.' };
     for (const name of ['amount', 'proof']) {
       const field = element.querySelector(`[name="${name}"]`)!;
       expect(field.getAttribute('aria-invalid'), name).toBe('true');
@@ -262,7 +262,7 @@ describe('screen 13, Gestión de pago', () => {
 
   it('paymentManagementDrawsNoValidateOrRejectAction, and offers PAYMENT_MANAGEMENT_ACTIONS in Acción de pago', async () => {
     const plain = await managementOf();
-    expect(plain.element.textContent).not.toMatch(/Validar soporte|Rechazar soporte|24 horas|Historial/);
+    expect(plain.element.textContent).not.toMatch(/Validar comprobante|Rechazar comprobante|24 horas|Historial/);
     TestBed.resetTestingModule();
     @Component({ selector: 'crp-test-action', template: '<button type="button">Acción {{ reservation()?.id }}</button>' })
     class ActionDouble { readonly reservation = input<Reservation>(); }
@@ -287,7 +287,7 @@ describe('screen 13, Gestión de pago', () => {
   });
 });
 
-describe('the Pagos y soportes block of 10A and the Gestionar pago action of 10C', () => {
+describe('the Pagos y comprobantes block of 10A and the Gestionar pago action of 10C', () => {
   async function viewOf(role: string, fresh: boolean, reservation: Reservation, methods: PaymentMethodsSource = new DemoPaymentMethods()) {
     TestBed.configureTestingModule({ providers: [...demoProviders(role), { provide: PaymentMethodsSource, useValue: methods },
       contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK)] });
@@ -305,7 +305,7 @@ describe('the Pagos y soportes block of 10A and the Gestionar pago action of 10C
   it('draws Tipo, Medio, Estado del comprobante, Situación financiera, Valores validados and Saldo pendiente on 10A', async () => {
     const { element, manage } = await viewOf('TENANT_ADMINISTRATOR', false, paid);
     const block = element.querySelector('.crp-payments-block')!;
-    expect(block.textContent).toContain('Pagos y soportes');
+    expect(block.textContent).toContain('Pagos y comprobantes');
     expect(block.textContent).toContain('Seguimiento económico');
     expect(Array.from(block.querySelectorAll('th'), (th) => th.textContent?.trim()))
       .toEqual(['Tipo', 'Medio', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente']);
@@ -395,7 +395,7 @@ describe('payment capabilities and wiring', () => {
 });
 
 describe('screen 13 registers money only for a payable reservation (mockup app.js 6700-6744, spec 009- section 5)', () => {
-  const CANCELLED_NOTE = 'Esta reserva está cancelada: no se pueden registrar nuevos pagos ni soportes. Se conserva la trazabilidad existente.';
+  const CANCELLED_NOTE = 'Esta reserva está cancelada: no se pueden registrar nuevos pagos ni comprobantes. Se conserva la trazabilidad existente.';
   const closedNote = (status: string) => `Esta reserva está en estado "${status}" y ya no admite modificaciones.`;
   const inValidation = (over: Partial<Reservation> = {}) => new DemoReservationsStore([reservationOf('RES-78', { departureId: 'demo-dep-1', paymentType: 'TOTAL',
     paymentMethod: 'BANK_TRANSFER', payments: [{ id: 'p-1', method: 'BANK_TRANSFER', amountCents: 100, proofName: 'a.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Demo' }], ...over })]);
