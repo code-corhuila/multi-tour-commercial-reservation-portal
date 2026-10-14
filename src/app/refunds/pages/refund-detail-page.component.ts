@@ -8,7 +8,7 @@ import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { PageState } from '../../shared/page-state';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { REFUND_SCREENS, Refund, RefundMethod, RefundsSource, RefundsWriter } from '../data/refunds-ports';
-import { REFUNDS_COPY, REFUND_METHOD_LABEL, REFUND_STATE_LABEL, formatDateTime } from '../refunds-copy';
+import { REFUNDS_COPY, REFUND_METHOD_LABEL, formatDateTime, refundStateText } from '../refunds-copy';
 
 type State = PageState<Refund>;
 type Note = { readonly text: string; readonly done: boolean } | null;
@@ -32,7 +32,7 @@ type Note = { readonly text: string; readonly done: boolean } | null;
             <div><dt>{{ f.decisionReason }}</dt><dd>{{ r.decisionReason ?? t.notApplicable }}</dd></div><div><dt>{{ f.owner }}</dt><dd>{{ r.owner ?? t.noOwner }}</dd></div>
             <div><dt>{{ f.date }}</dt><dd>{{ dateTime(r.date) }}</dd></div><div><dt>{{ f.method }}</dt><dd>{{ r.method ? methods[r.method] : t.notApplicable }}</dd></div>
             <div><dt>{{ f.movement }}</dt><dd>{{ r.cashMovement ?? t.notApplicable }}</dd></div>
-            <div><dt>{{ f.state }}</dt><dd>{{ busy() === 'execute' ? t.inExecution : label[r.state] }}</dd></div></dl></section>
+            <div><dt>{{ f.state }}</dt><dd>{{ busy() === 'execute' ? t.inExecution : stateText(r) }}</dd></div></dl></section>
         @if (authorizes && (r.state === 'PENDIENTE_DE_AUTORIZACION' || authorizeNote()?.done)) { @let locked = !!busy() || !!authorizeNote()?.done;
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.decisionEyebrow }}</p><h2>{{ t.authorize }}</h2>
             <form novalidate class="crp-refunds-form" (submit)="authorize($event, r)"><div class="crp-refunds-wide"><label for="crp-refunds-reason">{{ t.reason }}</label>
@@ -61,7 +61,7 @@ type Note = { readonly text: string; readonly done: boolean } | null;
   `,
 })
 export class RefundDetailPageComponent {
-  protected readonly t = REFUNDS_COPY; protected readonly label = REFUND_STATE_LABEL; protected readonly methods = REFUND_METHOD_LABEL;
+  protected readonly t = REFUNDS_COPY; protected readonly stateText = refundStateText; protected readonly methods = REFUND_METHOD_LABEL;
   protected readonly methodCodes = Object.keys(REFUND_METHOD_LABEL) as RefundMethod[];
   protected readonly screens = REFUND_SCREENS; protected readonly money = formatCop; protected readonly dateTime = formatDateTime;
   protected readonly navigation = inject(PortalNavigation, { optional: true });
