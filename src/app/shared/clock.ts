@@ -5,3 +5,7 @@ import { Injectable } from '@angular/core';
 export abstract class Clock { abstract now(): number; }
 
 class SystemClock extends Clock { override now(): number { return Date.now(); } }
+
+const TENANT_UTC_OFFSET_MS = -5 * 60 * 60 * 1000;
+/** The tenant's calendar day (America/Bogota, no daylight saving) as YYYY-MM-DD; views never use the browser's zone (pillar 2). */
+export const tenantDay = (nowMs: number): string => new Date(nowMs + TENANT_UTC_OFFSET_MS).toISOString().slice(0, 10);

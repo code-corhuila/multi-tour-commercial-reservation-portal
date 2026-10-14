@@ -24,7 +24,7 @@ export class DemoCashSession extends CashSessionStatus {
 /** D-07: the role label, or Cliente for the final customer, stands in for the user the container's session does not carry. */
 export class DemoRegisteringUser extends RegisteringUser {
   constructor(private readonly capabilities: PortalCapabilities, private readonly customer: CustomerContext) { super(); }
-  override label(): string { return `${this.customer.standing === 'FINAL_CUSTOMER' ? 'Cliente' : this.capabilities.roleLabel()} (demo)`; }
+  override label(): string { return `${this.customer.isFinalCustomer ? 'Cliente' : this.capabilities.roleLabel()} (demo)`; }
 }
 
 /** D-04 to D-06: proof, start, cash session and seat. A transfer is one line En validación (RN-PY1); cash received is validated at once (RF-015A, D9). */

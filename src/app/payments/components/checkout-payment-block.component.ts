@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -45,6 +46,8 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
   `,
 })
 export class CheckoutPaymentBlockComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   readonly quote = input.required<SelectionQuote>();
   readonly reservation = input<CustomerReservation | null>(null);
   /** The medium chosen on 21 before the reservation exists. */
@@ -66,7 +69,8 @@ export class CheckoutPaymentBlockComponent {
     const parsed = parseMoney(this.deposit()), cents = parsed.kind === 'valid' ? parsed.minorUnits : 0;
     const final = this.quote().finalValueCents, amount = type === 'PARTIAL' ? cents : final;
     this.invalid.set(amount <= 0 || amount > final);
-    if (!this.invalid()) this.navigation?.open('transfer-payment', { reservation: r.reservationId, type, amount: String(amount) });
+    if (this.invalid()) this.focusFirstErrorOnRender();
+    else this.navigation?.open('transfer-payment', { reservation: r.reservationId, type, amount: String(amount) });
   }
 }
 
