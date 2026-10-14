@@ -7,7 +7,8 @@ import { formatDate } from '../../shared/format';
 import { ReservationFormComponent } from '../components/reservation-form.component';
 import { ReservationViewComponent } from '../components/reservation-view.component';
 import { ReservationsSource } from '../data/reservations-source';
-import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, paymentState, travelers } from '../model/reservation';
+import { Reservation, STATUS_CLASS, money } from '../model/reservation';
+import { RESERVATION_TEXT, STATUS_LABEL, paymentState, travelers } from '../reservations-copy';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PortalSlotOutlet, RESERVATION_DETAIL_ACTIONS, RESERVATION_ROW_ACTIONS } from '../../shared/portal-slots';
 

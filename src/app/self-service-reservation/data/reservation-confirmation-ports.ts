@@ -24,7 +24,7 @@ export function selectionSourceFor(params: Readonly<Record<string, string>> | un
 
 /** What HU-COM-009 reads through this port instead of the model of 008-. */
 export type { CustomerReservation, SelectionQuote } from '../model/self-service-reservation';
-export { reservationState } from '../model/self-service-reservation';
+export { reservationState } from '../self-service-reservation-copy';
 /** HU-COM-009 "Datos bancarios" of 24 (DP-PY4: who configures them is NO DEFINIDO). */
 export type BankAccount = { readonly bank: string; readonly accountType: string; readonly accountNumber: string; readonly holder: string };
 

@@ -6,7 +6,8 @@ import { CashSessionStatus, PaymentsWriter, RegisterPaymentCommand, RegisteringU
 import { paymentEntryOf, proofProblem } from '../payments/model/payment';
 import { minimumPartial, situation } from './proof-review-demo';
 import { PAYMENTS_TEXT } from '../payments/payments-copy';
-import { Reservation, STATUS_LABEL } from '../reservations/model/reservation';
+import { Reservation } from '../reservations/model/reservation';
+import { STATUS_LABEL } from '../reservations/reservations-copy';
 import { formatDate } from '../shared/format';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import { CustomerContext } from '../self-service-reservation/data/customer-context';

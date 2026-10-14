@@ -10,42 +10,13 @@ import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
-import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
+import { CustomerReservation, RESERVATION_FLOW } from '../model/self-service-reservation';
+import { SELF_SERVICE_TEXT, reservationState } from '../self-service-reservation-copy';
 import { SESSION_TEXT } from '../../shared/session-copy';
+import { CHIPS, PANEL_TEXT, QUICK } from '../self-service-reservation-copy';
 import { SESSION_IDENTITY } from '../../shared/session-identity';
 import { tourPhoto } from '../../shared/tour-photo';
 import { CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
-
-/** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
-const PANEL_TEXT = {
-  eyebrow: 'Portal cliente',
-  intro: 'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.',
-  searchLabel: 'Buscar tours o establecimientos asociados',
-  searchPlaceholder: 'Buscar tours o experiencias...',
-  search: 'Buscar',
-  reservations: 'Mis reservas',
-  noActive: 'No tienes reservas activas',
-  noActiveCopy: 'Explora el catálogo y selecciona los servicios para comenzar una nueva reserva.',
-  seeReservations: 'Ver mis reservas',
-  consult: 'Consulta en Mis reservas',
-  own: 'Reservas propias',
-  quick: 'Acciones rápidas',
-  discounts: 'Descuentos vigentes',
-  noDiscounts: 'No hay descuentos vigentes en este momento.',
-  validUntil: 'Válido hasta',
-  featured: 'Experiencias destacadas',
-  noFeatured: 'No hay opciones disponibles en este momento.',
-  from: 'Desde',
-  detail: 'Ver detalle',
-} as const;
-
-const CHIPS = [
-  { key: CLIENT_AREA.gastronomy, label: 'Restaurantes asociados' }, { key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento asociado' },
-];
-const QUICK = [
-  { key: CLIENT_AREA.tours, icon: 'NR', title: 'Nueva reserva', copy: 'Inicia una nueva reserva' },
-  { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Restaurantes asociados', copy: 'Consulta los datos de contacto de restaurantes asociados.' },
-];
 const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 
 type Part<T> = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly T[] };
@@ -88,7 +59,7 @@ function discountTag(rule: DiscountRule): string {
           <input id="crp-panel-search" type="search" [placeholder]="t.searchPlaceholder" (keydown.enter)="go(area.tours)" />
           @if (has(area.tours)) { <button type="button" class="crp-primary" (click)="go(area.tours)">{{ t.search }}</button> }
         </div>
-        <div class="crp-panel-chips" aria-label="Filtros rápidos">
+        <div class="crp-panel-chips" [attr.aria-label]="t.quickFilters">
           @for (chip of chips; track chip.key) { <button type="button" (click)="go(chip.key)">{{ chip.label }}</button> }
         </div>
       </div>

@@ -4,7 +4,8 @@ import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
-import { CustomerReservation, SELF_SERVICE_TEXT, departureLine, reservationState, travelers } from '../model/self-service-reservation';
+import { CustomerReservation, departureLine } from '../model/self-service-reservation';
+import { SELF_SERVICE_TEXT, reservationState, travelers } from '../self-service-reservation-copy';
 import { PortalSlotOutlet, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS } from '../../shared/portal-slots';
 
 type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; items: readonly CustomerReservation[] };

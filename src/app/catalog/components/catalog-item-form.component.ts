@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
+import { CATALOG_COPY } from '../catalog-copy';
 import { CatalogItemsWriter } from '../data/catalog-api.service';
 import { CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
 import { formatCop } from '../../shared/format';
@@ -166,7 +167,7 @@ let nextFormId = 0;
   template: `
     <form novalidate (submit)="submit($event)">
       <section class="crp-form-panel">
-      <p class="crp-operator-eyebrow">01. Datos del tour</p>
+      <p class="crp-operator-eyebrow">{{ copy.dataEyebrow }}</p>
       <div class="crp-form-grid">
       @for (field of shownTextFields(); track field.name) {
         <div>
@@ -191,7 +192,7 @@ let nextFormId = 0;
       </section>
       @if (scope() === 'all') {
       <section class="crp-form-panel">
-      <p class="crp-operator-eyebrow">02. Condiciones</p>
+      <p class="crp-operator-eyebrow">{{ copy.conditionsEyebrow }}</p>
       <div class="crp-form-grid">
       @for (field of checkFields; track field.name) {
         <div>
@@ -214,8 +215,8 @@ let nextFormId = 0;
       }
       <div class="crp-form-actions">
       <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
-      <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancelar</button>
-      <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar tour</button>
+      <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">{{ copy.cancel }}</button>
+      <button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ copy.save }}</button>
       </div>
       @for (text of formMessages(); track $index) {
         <p role="alert">{{ text }}</p>
@@ -224,6 +225,7 @@ let nextFormId = 0;
   `,
 })
 export class CatalogItemFormComponent implements OnInit {
+  protected readonly copy = CATALOG_COPY.form;
   private readonly writer = inject(CatalogItemsWriter);
   private readonly keys = inject(IdempotencyKeys);
   private readonly destroyRef = inject(DestroyRef);

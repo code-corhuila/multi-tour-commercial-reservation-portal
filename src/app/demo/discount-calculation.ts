@@ -1,5 +1,6 @@
 import { DiscountBreakdowns } from '../current-discounts/data/discount-breakdowns';
-import { AdditionalDiscount, ApplicableRule, Breakdown, CURRENT_DISCOUNTS_TEXT, DiscountLine } from '../current-discounts/model/current-discounts';
+import { AdditionalDiscount, ApplicableRule, Breakdown, DiscountLine } from '../current-discounts/model/current-discounts';
+import { CURRENT_DISCOUNTS_TEXT } from '../current-discounts/current-discounts-copy';
 import { DiscountValue } from '../discounts/data/discount-rules-source';
 
 /** D-04 (DP-CD2 open): integer half-up per line, never more than the subtotal it is applied to; a cap limits what one rule takes off. */

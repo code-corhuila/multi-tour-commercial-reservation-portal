@@ -9,10 +9,8 @@ import { LeadCustomersSource } from '../data/reservation-integrations';
 import { QuoteRequest, ReservationQuoteSource } from '../data/reservation-quote-source';
 import { ReservationsWriter } from '../data/reservations-writer';
 import { ReservationBreakdownComponent } from './reservation-breakdown.component';
-import {
-  Departure, LeadCustomer, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, Reservation, ReservationDraft, ServiceOption,
-  capacityMessage, money, openDepartures, peopleOf, seats, validateReservation,
-} from '../model/reservation';
+import { Departure, LeadCustomer, Reservation, ReservationDraft, ServiceOption, money, openDepartures, peopleOf, validateReservation } from '../model/reservation';
+import { PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, capacityMessage, seats } from '../reservations-copy';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 
 type Options = { departures: readonly Departure[]; customers: readonly LeadCustomer[]; services: readonly ServiceOption[] };

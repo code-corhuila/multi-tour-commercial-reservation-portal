@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { Quote, RESERVATION_TEXT, money } from '../model/reservation';
+import { Quote, money } from '../model/reservation';
+import { RESERVATION_TEXT } from '../reservations-copy';
 
 /** Renders a quote line by line; it calculates nothing, so the detail shows exactly what was fixed (AC-RC.4, AC-RC.7). */
 @Component({

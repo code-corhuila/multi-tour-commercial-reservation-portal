@@ -6,7 +6,8 @@ import { AdditionalDiscountFormComponent } from '../components/additional-discou
 import { CurrentDiscountsValueComponent } from '../components/current-discounts-value.component';
 import { CurrentDiscountsSource } from '../data/current-discounts-source';
 import { DiscountBreakdowns } from '../data/discount-breakdowns';
-import { AdditionalDiscount, CURRENT_DISCOUNTS_TEXT, PricedService } from '../model/current-discounts';
+import { AdditionalDiscount, PricedService } from '../model/current-discounts';
+import { CURRENT_DISCOUNTS_TEXT } from '../current-discounts-copy';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; items: readonly PricedService[] };
 

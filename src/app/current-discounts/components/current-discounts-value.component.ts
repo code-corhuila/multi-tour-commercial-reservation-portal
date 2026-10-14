@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { formatCop } from '../../shared/format';
-import { Breakdown, CURRENT_DISCOUNTS_TEXT } from '../model/current-discounts';
+import { Breakdown } from '../model/current-discounts';
+import { CURRENT_DISCOUNTS_TEXT } from '../current-discounts-copy';
 
 /**
  * D-05: read-only, no actions, so HU-COM-006 mounts it as it is. Every line keeps its order (the list numbers it once)

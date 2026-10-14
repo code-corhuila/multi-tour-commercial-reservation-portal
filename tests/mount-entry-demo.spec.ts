@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
 import type { MountProps } from '../src/app/shell-contract';
 import { SIGN_IN_REQUESTED_EVENT } from '../src/app/self-service-reservation/data/customer-context';
-import { SELF_SERVICE_TEXT } from '../src/app/self-service-reservation/model/self-service-reservation';
+import { SELF_SERVICE_TEXT } from '../src/app/self-service-reservation/self-service-reservation-copy';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
 const propsFor = (roles: string[], initialParams?: Record<string, string>): MountProps => ({

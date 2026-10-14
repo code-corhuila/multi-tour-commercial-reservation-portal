@@ -28,6 +28,12 @@ export const ESTABLISHMENTS_COPY = {
   empty: 'Sin resultados',
   requestFailed: 'La solicitud falló.',
   retry: 'Reintentar',
+  form: {
+    dataEyebrow: '01. Datos del establecimiento', type: 'Tipo de establecimiento', noInventory: 'No se configuran habitaciones, tarifas, disponibilidad, inventario ni políticas de cupo.',
+    imageEyebrow: '02. Imagen', image: 'Imagen', cancel: 'Cancelar', save: 'Guardar establecimiento',
+    name: 'Nombre del establecimiento', info: 'Información comercial',
+    typeRequired: 'El tipo es obligatorio.', nameInvalid: 'Obligatorio: de 1 a 255 caracteres.', infoRequired: 'La información comercial es obligatoria.',
+  },
   types: { HOTEL: 'Alojamiento', RESTAURANT: 'Restaurante' } satisfies Record<EstablishmentType, string>,
   statuses: { ACTIVE: 'Activo', INACTIVE: 'Inactivo' } satisfies Record<AssociationStatus, string>,
 } as const;

@@ -1,6 +1,7 @@
 import { CREDIT_BALANCE_COPY as T } from '../credit-balance/credit-balance-copy';
 import { CreditApplyOutcome, CreditBalance, CreditCustomer, CreditMovement, CreditOverview } from '../credit-balance/data/credit-balance-ports';
-import { Reservation, STATUS_LABEL } from '../reservations/model/reservation';
+import { Reservation } from '../reservations/model/reservation';
+import { STATUS_LABEL } from '../reservations/reservations-copy';
 import { formatCop as money } from '../shared/format';
 import { minimumPartial, situation } from './proof-review-demo';
 import { resolveRefund } from './refunds-demo';

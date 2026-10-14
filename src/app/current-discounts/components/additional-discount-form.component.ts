@@ -3,8 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { defer, finalize } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
-import { AdditionalDiscount, AdditionalDraft, CURRENT_DISCOUNTS_TEXT, EMPTY_ADDITIONAL, additionalCommand,
-  validateAdditional } from '../model/current-discounts';
+import { AdditionalDiscount, AdditionalDraft, EMPTY_ADDITIONAL, additionalCommand, validateAdditional } from '../model/current-discounts';
+import { CURRENT_DISCOUNTS_TEXT } from '../current-discounts-copy';
 import { focusFirstError } from '../../shared/focus';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';

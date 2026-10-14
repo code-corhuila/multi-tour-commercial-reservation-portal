@@ -2,7 +2,8 @@ import { Observable } from 'rxjs';
 import { Reservation } from '../model/reservation';
 /** What HU-COM-009 and HU-COM-013 read through this port instead of the model of 007-. */
 export type { Reservation, ReservationPayment } from '../model/reservation';
-export { FINANCIAL_LABEL, STATUS_CLASS, STATUS_CODE, STATUS_LABEL } from '../model/reservation';
+export { STATUS_CLASS, STATUS_CODE } from '../model/reservation';
+export { FINANCIAL_LABEL, STATUS_LABEL } from '../reservations-copy';
 /** The container supplies the implementation and resolves the tenant (gap G-B: no operation yet). */
 export abstract class ReservationsSource {
   abstract list(): Observable<readonly Reservation[]>;

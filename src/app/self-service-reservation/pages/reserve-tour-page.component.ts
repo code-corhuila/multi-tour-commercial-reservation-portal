@@ -8,7 +8,8 @@ import { DeparturesSource } from '../../reservations/data/departures-source';
 import { Departure, hasCapacity, openDepartures } from '../../reservations/data/departures-source';
 import { formatCop, formatDate } from '../../shared/format';
 import { SelectionQuoteSource } from '../data/reservation-confirmation-ports';
-import { RESERVATION_FLOW, RESERVE_TEXT, SELF_SERVICE_TEXT, ReservationSelection, sameTour, travelers } from '../model/self-service-reservation';
+import { RESERVATION_FLOW, ReservationSelection, sameTour } from '../model/self-service-reservation';
+import { RESERVE_TEXT, SELF_SERVICE_TEXT, travelers } from '../self-service-reservation-copy';
 
 type Loaded = { kind: 'loading' | 'error' } | { kind: 'empty'; noTour: boolean }
   | { kind: 'data'; tour: CatalogItem; departures: readonly Departure[] };

@@ -29,7 +29,7 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
       @let current = state();
       <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.panelEyebrow }}</p><h2>{{ text.panelTitle }}</h2></div>
         @if (current.kind === 'data') { @let active = inForce(current.items);
-          <span class="crp-operator-status crp-is-confirmed">{{ active }} {{ active === 1 ? 'activa' : 'activas' }}</span> }</div>
+          <span class="crp-operator-status crp-is-confirmed">{{ active }} {{ active === 1 ? text.activeOne : text.activeMany }}</span> }</div>
       @if (selected(); as rule) {
         <div class="crp-discount-dialog" role="dialog" aria-modal="true" [attr.aria-label]="text.confirm">
           <p>{{ text.confirmation }}</p>

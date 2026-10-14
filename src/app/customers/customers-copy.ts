@@ -32,3 +32,9 @@ export const PERSON_LABELS: Record<Exclude<PersonField, 'serviceId' | 'acceptedT
 
 export const SENSITIVE_LABELS: readonly [HighRiskField, string][] = (['bloodType', 'emergencyContact', 'physicalRestrictions', 'informedConsent'] as const)
   .map((field) => [field, PERSON_LABELS[field]]);
+
+/** Validation messages of the lead and companion forms. */
+export const CUSTOMER_MESSAGES = {
+  required: 'Obligatorio.', email: 'Escribe un correo válido.', acceptedTerms: 'El cliente debe aceptar las condiciones.',
+  duplicateDocument: 'Este documento ya está en la reserva.', highRisk: 'Obligatorio para una actividad de riesgo.',
+} as const;

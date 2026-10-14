@@ -5,13 +5,10 @@ import { PortalNavigation } from '../../portal-navigation';
 import { RESCHEDULING_AREA } from '../../rescheduling/data/rescheduling-ports';
 import { departureLine, formatDate } from '../../shared/format';
 import { DeparturesSource } from '../data/departures-source';
-import {
-  DEPARTURE_STATE_LABEL, RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, executionOf, money, paymentLine, paymentState, persons, travelers,
-} from '../model/reservation';
+import { Reservation, STATUS_CLASS, money } from '../model/reservation';
+import { DEPARTURE_STATE_LABEL, RESERVATION_TEXT, RESERVATION_VIEW_TEXT, STATUS_LABEL, executionOf, paymentLine, paymentState, persons, travelers } from '../reservations-copy';
 import { ReservationBreakdownComponent } from './reservation-breakdown.component';
 import { PortalSlotOutlet, RESERVATION_DETAIL_BLOCKS } from '../../shared/portal-slots';
-
-const FROZEN = 'Plazo congelado: la salida fue cancelada o interrumpida por una causa no atribuible al cliente (la reserva se gestiona con la reprogramación).';
 
 /** Screen 10C (fresh) or 10A, without the payment parts (cash and payments stories). Renders the snapshot fixed at creation. */
 @Component({
@@ -29,21 +26,21 @@ const FROZEN = 'Plazo congelado: la salida fue cancelada o interrumpida por una 
         <section class="crp-operator-panel crp-reservation-hero">
           <span class="crp-success-mark" aria-hidden="true">✓</span>
           <div><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>#{{ r.id }}</h2>
-            <p>La reserva quedó registrada como proyección comercial dentro del operador activo, asociada a una única salida y sin cupo apartado hasta su primer pago.</p></div>
+            <p>{{ view.heroNote }}</p></div>
           <span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span>
         </section>
         <div class="crp-reservation-panels">
-          <article class="crp-operator-panel"><p class="crp-operator-eyebrow">Resumen</p><h2>{{ r.tourName }}</h2>
-            <dl><div><dt>Salida</dt><dd>{{ line(r.departureDate) }}</dd></div><div><dt>Viajeros</dt><dd>{{ persons(r.people) }}</dd></div>
-              <div><dt>Titular</dt><dd>{{ r.leadCustomerName }}</dd></div><div><dt>Plazo de pago</dt><dd>{{ r.deadline ? deadline() : 'Se define con la creación de la reserva' }}</dd></div></dl>
+          <article class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ view.summary }}</p><h2>{{ r.tourName }}</h2>
+            <dl><div><dt>{{ view.departure }}</dt><dd>{{ line(r.departureDate) }}</dd></div><div><dt>{{ view.travelers }}</dt><dd>{{ persons(r.people) }}</dd></div>
+              <div><dt>{{ view.holder }}</dt><dd>{{ r.leadCustomerName }}</dd></div><div><dt>{{ view.deadline }}</dt><dd>{{ r.deadline ? deadline() : view.deadlineOnCreate }}</dd></div></dl>
           </article>
-          <article class="crp-operator-panel"><p class="crp-operator-eyebrow">Estado económico</p><h2>Estado de pago</h2><p><strong>{{ state(r) }}</strong></p>
-            <dl><div><dt>Tipo y medio de pago</dt><dd>{{ pay(r) }}</dd></div><div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div>
+          <article class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ view.economic }}</p><h2>{{ view.paymentState }}</h2><p><strong>{{ state(r) }}</strong></p>
+            <dl><div><dt>{{ view.typeAndMethod }}</dt><dd>{{ pay(r) }}</dd></div><div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div>
               <div><dt>{{ text.applied }}</dt><dd>{{ money(-r.quote.discountCents) }}</dd></div><div><dt>{{ text.balance }}</dt><dd>{{ money(r.balanceCents) }}</dd></div></dl>
           </article>
         </div>
-        <section class="crp-operator-panel crp-next-step"><p class="crp-operator-eyebrow">Siguiente paso</p><h2>Gestiona el pago según el tipo y el medio elegidos.</h2>
-          <p class="crp-operator-copy">La reserva se confirmará solo cuando se valide el 100 % del valor final (pago total) o el abono mínimo (abono). La promesa de pago en efectivo no confirma la reserva. El cupo se aparta con el primer pago, previa verificación de disponibilidad en la salida.</p>
+        <section class="crp-operator-panel crp-next-step"><p class="crp-operator-eyebrow">{{ view.nextStep }}</p><h2>{{ view.nextTitle }}</h2>
+          <p class="crp-operator-copy">{{ view.nextCopy }}</p>
           <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="detail.emit()">{{ text.view }}</button>
             <ng-container *crpSlot="blocks; inputs: { reservation: r, fresh: true }" /></div>
         </section>
@@ -51,29 +48,29 @@ const FROZEN = 'Plazo congelado: la salida fue cancelada o interrumpida por una 
     } @else {
       <div class="reservation-detail">
         <section class="crp-operator-panel crp-reservation-hero">
-          <div><p class="crp-operator-eyebrow">#{{ r.id }}</p><h2>{{ r.tourName }}</h2><p>Salida: {{ line(r.departureDate) }} · {{ travelers(r.people) }}</p></div>
+          <div><p class="crp-operator-eyebrow">#{{ r.id }}</p><h2>{{ r.tourName }}</h2><p>{{ view.departureOf }} {{ line(r.departureDate) }} · {{ travelers(r.people) }}</p></div>
           <span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span>
         </section>
-        <p class="crp-operator-copy">Consulta disponible únicamente dentro del operador activo.</p>
+        <p class="crp-operator-copy">{{ view.consultNote }}</p>
         <div class="crp-reservation-panels">
-          <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Titular y viajeros</p><h2>{{ r.leadCustomerName }}</h2>
-            <dl><div><dt>Viajeros registrados</dt><dd>{{ persons(r.people) }}</dd></div><div><dt>Acompañantes registrados</dt><dd>{{ companions(r.people) }}</dd></div></dl>
+          <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ view.holderAndTravelers }}</p><h2>{{ r.leadCustomerName }}</h2>
+            <dl><div><dt>{{ view.registeredTravelers }}</dt><dd>{{ persons(r.people) }}</dd></div><div><dt>{{ view.registeredCompanions }}</dt><dd>{{ companions(r.people) }}</dd></div></dl>
           </section>
-          <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Estado económico</p><h2>{{ money(r.balanceCents) }} {{ r.balanceCents === 0 ? 'sin saldo pendiente' : 'pendientes' }}</h2>
+          <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ view.economic }}</p><h2>{{ money(r.balanceCents) }} {{ r.balanceCents === 0 ? view.noBalance : view.pendingBalance }}</h2>
             <dl><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div><div><dt>{{ text.applied }}</dt><dd>{{ money(-r.quote.discountCents) }}</dd></div>
-              <div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>Valores validados</dt><dd>{{ money(r.validatedCents ?? 0) }}</dd></div>
-              <div><dt>Valores devueltos</dt><dd>{{ money(r.refund?.execution ? r.refund?.amountCents ?? 0 : 0) }}</dd></div>
-              @if (r.paymentType !== 'PARTIAL') { <div><dt>Abono mínimo</dt><dd>No aplica</dd></div> }</dl>
+              <div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>{{ view.validated }}</dt><dd>{{ money(r.validatedCents ?? 0) }}</dd></div>
+              <div><dt>{{ view.returned }}</dt><dd>{{ money(r.refund?.execution ? r.refund?.amountCents ?? 0 : 0) }}</dd></div>
+              @if (r.paymentType !== 'PARTIAL') { <div><dt>{{ view.minimumDeposit }}</dt><dd>{{ view.notApplicable }}</dd></div> }</dl>
             <app-reservation-breakdown [quote]="r.quote" />
           </section>
         </div>
-        <section class="crp-operator-panel"><div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">Salida y plazos</p><h2>Salida asociada</h2></div>
-          @if (reschedule) { <button type="button" class="crp-operator-primary" (click)="openRescheduling()">Gestionar la reprogramación</button> }</div>
-          <dl><div><dt>Estado de la salida</dt><dd>{{ departureState() }}</dd></div><div><dt>Plazo de pago</dt><dd>{{ deadline() }}</dd></div>
-            <div><dt>Ampliación del plazo</dt><dd>{{ extension() }}</dd></div><div><dt>Causa de cancelación</dt><dd>{{ r.cancellation?.cause ?? 'No registrada' }}</dd></div></dl>
+        <section class="crp-operator-panel"><div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ view.departureAndDeadlines }}</p><h2>{{ view.associatedDeparture }}</h2></div>
+          @if (reschedule) { <button type="button" class="crp-operator-primary" (click)="openRescheduling()">{{ view.manageRescheduling }}</button> }</div>
+          <dl><div><dt>{{ view.departureState }}</dt><dd>{{ departureState() }}</dd></div><div><dt>{{ view.deadline }}</dt><dd>{{ deadline() }}</dd></div>
+            <div><dt>{{ view.extension }}</dt><dd>{{ extension() }}</dd></div><div><dt>{{ view.cancellationCause }}</dt><dd>{{ r.cancellation?.cause ?? view.notRecorded }}</dd></div></dl>
         </section>
-        <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Servicios reservados</p><h2>Proyección comercial</h2>
-          <div class="crp-table-wrap"><table class="crp-operator-table"><thead><tr><th>Servicio</th><th>Salida</th><th>Cantidad</th><th>Estado de ejecución</th></tr></thead>
+        <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ view.servicesEyebrow }}</p><h2>{{ view.commercialProjection }}</h2>
+          <div class="crp-table-wrap"><table class="crp-operator-table"><thead><tr><th>{{ view.service }}</th><th>{{ view.departure }}</th><th>{{ view.quantity }}</th><th>{{ view.executionState }}</th></tr></thead>
             <tbody>@for (line of r.quote.services; track $index) { <tr><td>{{ line.name }}</td><td>{{ date(r.departureDate) }}</td><td>{{ travelers(r.people) }}</td><td>{{ execution(r) }}</td></tr> }</tbody></table></div>
         </section>
         <ng-container *crpSlot="blocks; inputs: { reservation: r, fresh: false }" />
@@ -87,6 +84,7 @@ export class ReservationViewComponent {
   readonly fresh = input(false);
   readonly detail = output<void>();
   protected readonly text = RESERVATION_TEXT;
+  protected readonly view = RESERVATION_VIEW_TEXT;
   protected readonly status = STATUS_LABEL;
   protected readonly money = money;
   protected readonly date = formatDate;
@@ -109,16 +107,16 @@ export class ReservationViewComponent {
   /** Mockup describeOperatorPaymentDeadline, with what the reservation carries. */
   protected readonly deadline = computed(() => {
     const r = this.reservation(), due = r.deadline?.extendedUntil ?? r.deadline?.dueAt;
-    if (this.frozen()) return FROZEN;
-    if (r.status === 'CANCELADA') return 'La reserva no tiene un plazo de pago vigente.';
-    return due ? `Vence el ${departureLine(due)}.` : 'Sin información de plazo.';
+    if (this.frozen()) return this.view.frozen;
+    if (r.status === 'CANCELADA') return this.view.cancelledNoDeadline;
+    return due ? this.view.dueOn(due) : this.view.noDeadlineInfo;
   });
   protected readonly extension = computed(() => {
     const r = this.reservation();
-    if (r.deadline?.extendedUntil) return `Concedida hasta ${departureLine(r.deadline.extendedUntil)}`;
-    return r.status === 'PENDIENTE_DE_PAGO' && !this.frozen() ? 'Disponible (una única ampliación)' : 'No aplica';
+    if (r.deadline?.extendedUntil) return this.view.grantedUntil(r.deadline.extendedUntil);
+    return r.status === 'PENDIENTE_DE_PAGO' && !this.frozen() ? this.view.availableOnce : this.view.notApplicable;
   });
-  protected companions = (people: number) => `${people > 1 ? people - 1 : 0} ${people === 2 ? 'acompañante' : 'acompañantes'}`;
+  protected readonly companions = RESERVATION_VIEW_TEXT.companions;
   /** The rescheduling button exists only while the reservation waits for it and the build has the area. */
   protected get reschedule(): boolean { return !!this.reservation().reschedulingPending && !!this.navigation?.has(RESCHEDULING_AREA); }
   protected openRescheduling(): void { this.navigation?.open(RESCHEDULING_AREA, { reservation: this.reservation().id }); }

@@ -11,8 +11,8 @@ import { IdempotencyKeys } from '../../shared/idempotency-keys';
 
 type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;
-const TEXT_FIELDS = [{ name: 'commercialName', label: 'Nombre del establecimiento' },
-  { name: 'commercialInformation', label: 'Información comercial' }] as const;
+const TEXT_FIELDS = [{ name: 'commercialName', label: ESTABLISHMENTS_COPY.form.name },
+  { name: 'commercialInformation', label: ESTABLISHMENTS_COPY.form.info }] as const;
 let nextFormId = 0;
 
 @Component({
@@ -22,10 +22,10 @@ let nextFormId = 0;
     @if (canRegister) {
       <form novalidate (submit)="submit($event)">
         <section class="crp-form-panel">
-        <p class="crp-operator-eyebrow">01. Datos del establecimiento</p>
+        <p class="crp-operator-eyebrow">{{ copy.dataEyebrow }}</p>
         <div class="crp-form-grid">
         <div>
-          <label [for]="id('establishmentType')">Tipo de establecimiento</label>
+          <label [for]="id('establishmentType')">{{ copy.type }}</label>
           <select name="establishmentType" [id]="id('establishmentType')" [disabled]="pending()"
             [attr.aria-invalid]="messages().establishmentType ? 'true' : null"
             [attr.aria-describedby]="describedBy('establishmentType')" (change)="edit('establishmentType', $event)">
@@ -43,12 +43,12 @@ let nextFormId = 0;
           </div>
         }
         </div>
-        <p class="crp-operator-copy">No se configuran habitaciones, tarifas, disponibilidad, inventario ni políticas de cupo.</p>
+        <p class="crp-operator-copy">{{ copy.noInventory }}</p>
         </section>
         <section class="crp-form-panel">
-        <p class="crp-operator-eyebrow">02. Imagen</p>
+        <p class="crp-operator-eyebrow">{{ copy.imageEyebrow }}</p>
         <div>
-          <label [for]="id('image')">Imagen</label>
+          <label [for]="id('image')">{{ copy.image }}</label>
           <input type="file" name="image" [id]="id('image')" [accept]="acceptedTypes" [disabled]="pending()"
             [attr.aria-invalid]="messages().image ? 'true' : null" [attr.aria-describedby]="describedBy('image')" (change)="chooseImage($event)">
           <p [id]="id('image') + '-help'">{{ guidance }}</p>
@@ -56,14 +56,15 @@ let nextFormId = 0;
         </div>
         </section>
         <div class="crp-form-actions">
-        <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">Cancelar</button>
-        <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar establecimiento</button>
+        <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">{{ copy.cancel }}</button>
+        <button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ copy.save }}</button>
       </div>
       </form>
     }
   `,
 })
 export class EstablishmentFormComponent {
+  protected readonly copy = ESTABLISHMENTS_COPY.form;
   private readonly writer = inject(AssociatedEstablishmentsWriter);
   private readonly keys = inject(IdempotencyKeys);
   protected readonly canRegister = inject(PortalCapabilities).canRegisterEstablishments();
@@ -86,9 +87,9 @@ export class EstablishmentFormComponent {
   protected readonly messages = computed(() => {
     const local: Messages = {}, draft = this.draft();
     if (this.attempted()) {
-      if (!this.types.includes(draft.establishmentType as EstablishmentType)) { local.establishmentType = 'El tipo es obligatorio.'; }
-      if (!draft.commercialName.trim() || draft.commercialName.trim().length > 255) { local.commercialName = 'Obligatorio: de 1 a 255 caracteres.'; }
-      if (!draft.commercialInformation.trim()) { local.commercialInformation = 'La información comercial es obligatoria.'; }
+      if (!this.types.includes(draft.establishmentType as EstablishmentType)) { local.establishmentType = ESTABLISHMENTS_COPY.form.typeRequired; }
+      if (!draft.commercialName.trim() || draft.commercialName.trim().length > 255) { local.commercialName = ESTABLISHMENTS_COPY.form.nameInvalid; }
+      if (!draft.commercialInformation.trim()) { local.commercialInformation = ESTABLISHMENTS_COPY.form.infoRequired; }
     }
     if (this.attempted() || this.image()) { const message = imageMessage(this.image()); if (message) { local.image = message; } }
     return { ...this.refused(), ...local };

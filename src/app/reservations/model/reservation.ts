@@ -1,4 +1,5 @@
 import { formatCop } from '../../shared/format';
+import { RESERVATION_MESSAGES, capacityMessage } from '../reservations-copy';
 
 /** PROPUESTO: field names await the reservation contract (gap G-B). A departure stands in for HU-OPS-001 (gap G-OPS). */
 export type Departure = {
@@ -69,61 +70,18 @@ export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCI
 /** RN-RES-010: one tour (a catalog service) per reservation. */
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceId: string; people: string; paymentType: string; paymentMethod: string; accepted: boolean };
 export type ReservationMessages = Partial<Record<keyof ReservationDraft, string>>;
-
-export const RESERVATION_TEXT = {
-  eyebrow: 'Gestión comercial', title: 'Reservas', create: 'Crear reserva', save: 'Registrar reserva', cancel: 'Cancelar', back: 'Volver a reservas', view: 'Ver detalle',
-  listEyebrow: 'Reservas activas', listTitle: 'Seguimiento de reservas', columns: ['Reserva', 'Cliente', 'Servicio y salida', 'Estado', 'Saldo', 'Acción'],
-  loading: 'Cargando…', empty: 'Aún no hay reservas registradas.', noDepartures: 'No hay salidas abiertas para reservas.', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
-  offerEyebrow: '02. Servicios y viajeros', offerTitle: 'Oferta seleccionada', customer: 'Cliente titular', departure: 'Salida concreta', services: 'Servicios',
-  people: 'Cantidad total de viajeros', choose: 'Selecciona una opción', perPerson: 'por persona',
-  conditionsEyebrow: '04. Condiciones', conditionsTitle: 'Reglas aplicables', conditions: 'Condiciones de reserva', chooseDeparture: 'Selecciona una salida para consultar sus condiciones.',
-  valuesEyebrow: 'Valores calculados', valuesTitle: 'Resumen de la reserva', valuesNote: 'Se recalcula con la salida, los servicios, las personas y los descuentos vigentes.',
-  feedback: 'Completa los campos obligatorios para registrar la reserva.',
-  transport: 'Transporte por persona', projected: 'Valor proyectado', applicable: 'Descuentos aplicables', applied: 'Descuentos aplicados', final: 'Valor final', balance: 'Saldo pendiente',
-  ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior',
-  noSeat: 'Aún no se aparta cupo: el cupo se aparta con el primer pago.',
-  offerEyebrow02: '02. Tour, salida y viajeros', tour: 'Tour', scheduled: 'Salida programada', vehicles: 'Vehículo(s) de la salida', vehiclesValue: 'Se define con la salida',
-  payEyebrow: '04. Condiciones y pago', payType: 'Tipo de pago esperado', payMethod: 'Medio de pago esperado', chooseType: 'Selecciona el tipo de pago', chooseMethod: 'Selecciona el medio de pago',
-  accept: 'Confirmo que el cliente acepta las condiciones aplicables a esta reserva.',
-  payNote: 'El tipo de pago (Pago total o Abono) y el medio (Transferencia o Efectivo) se eligen por separado.',
-  heroEyebrow: 'Nueva reserva', heroTitle: 'Elige el tour y su salida, registra a las personas y los valores antes de continuar al pago.',
-  heroNote: 'La reserva aplica únicamente condiciones, disponibilidad y descuentos vigentes del operador activo. Pertenece a una única salida y no aparta cupo hasta su primer pago.',
-  followEyebrow: 'Seguimiento', followTitle: 'Reserva, salida, cupo y valores siempre conectados.',
-  followNote: 'Cada reserva pertenece a una única salida. Las modificaciones permitidas antes de la ejecución recalculan disponibilidad, descuentos y saldo; el cambio exclusivo de fecha se registra sobre la misma reserva.',
-  all: 'Ver todas las reservas', active: 'Ver reservas activas', pay: 'Gestionar pago', seePay: 'Ver pago', reschedule: 'Reprogramar',
-};
-/** Spanish badges of the screens; a code is never shown. */
-export const STATUS_LABEL: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'Pendiente de pago', CONFIRMADA: 'Confirmada',
-  EN_EJECUCION: 'En ejecución', FINALIZADA: 'Finalizada', CANCELADA: 'Cancelada' };
 /** The badge class of each state the service returns. */
 export const STATUS_CLASS: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'crp-is-pending', CONFIRMADA: 'crp-is-confirmed',
   EN_EJECUCION: 'crp-is-execution', FINALIZADA: 'crp-is-finalized', CANCELADA: 'crp-is-cancelled' };
 /** The reservation_status codes the customer area reads (PROPUESTO until the contract, G-B). */
 export const STATUS_CODE: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'PENDING_PAYMENT', CONFIRMADA: 'CONFIRMED',
   EN_EJECUCION: 'IN_EXECUTION', FINALIZADA: 'FINALIZED', CANCELADA: 'CANCELLED' };
-export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago', PARCIAL: 'Parcial',
-  ABONO_RECIBIDO: 'Abono recibido', PAGO_COMPLETO: 'Pago completo' };
-export const PAYMENT_TYPE_LABEL: Readonly<Record<string, string>> = { TOTAL: 'Pago total', PARTIAL: 'Abono' };
-export const PAYMENT_METHOD_LABEL: Readonly<Record<string, string>> = { BANK_TRANSFER: 'Transferencia', CASH_AT_OFFICE: 'Efectivo' };
-const PROOF_LABEL: Record<ReservationPayment['proofStatus'], string> = { EN_VALIDACION: 'En validación', SIN_COMPROBANTE: 'Sin comprobante', APROBADO: 'Aprobado', RECHAZADO: 'Rechazado' };
-export const DEPARTURE_STATE_LABEL: Record<Departure['state'], string> = { PROGRAMADA: 'Programada', EN_CURSO: 'En ejecución', FINALIZADA: 'Finalizada', CANCELADA: 'Cancelada' };
-/** Mockup 10, 10A, 10C: the latest proof beside the financial situation ("Sin comprobante · Sin pago"). */
-export const paymentState = (r: Reservation) => `${PROOF_LABEL[r.payments?.at(-1)?.proofStatus ?? 'SIN_COMPROBANTE']} · ${FINANCIAL_LABEL[r.financialStatus]}`;
-/** "Pago total · Transferencia", or "Sin definir" while the reservation carries neither. */
-export const paymentLine = (r: Reservation) => [r.paymentType, r.paymentMethod].some(Boolean)
-  ? [PAYMENT_TYPE_LABEL[r.paymentType ?? ''], PAYMENT_METHOD_LABEL[r.paymentMethod ?? '']].filter(Boolean).join(' · ') : 'Sin definir';
-export const executionOf = (r: Reservation) => r.status === 'CANCELADA' ? 'No ejecutada' : r.status === 'EN_EJECUCION' || r.status === 'FINALIZADA' ? STATUS_LABEL[r.status] : 'Pendiente de ejecución';
-export const seats = (n: number) => `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`;
 export const money = formatCop;
-/** "1 viajero" or "N viajeros"; "1 persona" or "N personas". */
-export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
-export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
 /** RN-RES-010, RN-SAL-001: only a Programada departure that is open for reservations is offered. */
 export const openDepartures = (all: readonly Departure[]) => all.filter((d) => d.state === 'PROGRAMADA' && d.openForReservations);
 /** RN-RES-007: a read-only comparison; it holds no seat. */
 export const hasCapacity = (departure: Departure, people: number) => people <= departure.effectiveCapacity;
-export const capacityMessage = (d: Departure) => `No hay cupo suficiente en esta salida: quedan ${d.effectiveCapacity} cupos. No se registró la reserva.`;
 
 /** A whole number of people of at least one, or null. */
 export function peopleOf(text: string): number | null {
@@ -133,13 +91,13 @@ export function peopleOf(text: string): number | null {
 
 export function validateReservation(draft: ReservationDraft, departure: Departure | undefined): ReservationMessages {
   const errors: ReservationMessages = {}, people = peopleOf(draft.people);
-  if (!draft.leadCustomerId) errors.leadCustomerId = 'El cliente titular es obligatorio.';
-  if (!departure) errors.departureId = 'La salida es obligatoria.';
-  if (!draft.serviceId) errors.serviceId = 'El tour es obligatorio.';
-  if (!draft.paymentType) errors.paymentType = 'El tipo de pago esperado es obligatorio.';
-  if (!draft.paymentMethod) errors.paymentMethod = 'El medio de pago esperado es obligatorio.';
-  if (!draft.accepted) errors.accepted = 'Confirma que el cliente acepta las condiciones.';
-  if (people === null) errors.people = 'La cantidad de viajeros es obligatoria: un número entero de al menos uno.';
+  if (!draft.leadCustomerId) errors.leadCustomerId = RESERVATION_MESSAGES.leadCustomerId;
+  if (!departure) errors.departureId = RESERVATION_MESSAGES.departureId;
+  if (!draft.serviceId) errors.serviceId = RESERVATION_MESSAGES.serviceId;
+  if (!draft.paymentType) errors.paymentType = RESERVATION_MESSAGES.paymentType;
+  if (!draft.paymentMethod) errors.paymentMethod = RESERVATION_MESSAGES.paymentMethod;
+  if (!draft.accepted) errors.accepted = RESERVATION_MESSAGES.accepted;
+  if (people === null) errors.people = RESERVATION_MESSAGES.people;
   else if (departure && !hasCapacity(departure, people)) errors.people = capacityMessage(departure);
   return errors;
 }

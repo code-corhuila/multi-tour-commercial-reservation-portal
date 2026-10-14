@@ -22,5 +22,6 @@ export const CATALOG_COPY = {
   empty: 'Sin resultados',
   requestFailed: 'La solicitud falló.',
   retry: 'Reintentar',
+  form: { dataEyebrow: '01. Datos del tour', conditionsEyebrow: '02. Condiciones', cancel: 'Cancelar', save: 'Guardar tour' },
   statuses: { ACTIVE: 'Activo', INACTIVE: 'Inactivo' } satisfies Record<CatalogItem['catalogStatus'], string>,
 } as const;

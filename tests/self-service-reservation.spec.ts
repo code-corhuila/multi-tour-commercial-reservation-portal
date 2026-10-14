@@ -9,13 +9,8 @@ import {
   ReservationSelectionSource,
   SelectionQuoteSource,
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
-import {
-  RESERVATION_FLOW,
-  ReservationSelection,
-  SELF_SERVICE_TEXT as T,
-  selectionFromParams,
-  selectionFromQuery,
-} from '../src/app/self-service-reservation/model/self-service-reservation';
+import { RESERVATION_FLOW, ReservationSelection, selectionFromParams, selectionFromQuery } from '../src/app/self-service-reservation/model/self-service-reservation';
+import { SELF_SERVICE_TEXT as T } from '../src/app/self-service-reservation/self-service-reservation-copy';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
