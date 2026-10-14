@@ -25,7 +25,7 @@ export function modalityOf(r: Reservation, labels: PaymentLabels): string {
   return r.paymentMethod && parts.length ? parts.join(' · ') : PAYMENTS_TEXT.noModality;
 }
 
-/** 10A "Pagos y soportes" (fresh = false) or the "Gestionar pago" action of 10C (fresh = true). The values come resolved. */
+/** 10A "Pagos y comprobantes" (fresh = false) or the "Gestionar pago" action of 10C (fresh = true). The values come resolved. */
 @Component({
   selector: 'app-reservation-payments-block', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

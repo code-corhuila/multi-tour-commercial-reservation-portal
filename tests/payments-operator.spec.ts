@@ -262,7 +262,7 @@ describe('screen 13, Gestión de pago', () => {
 
   it('paymentManagementDrawsNoValidateOrRejectAction, and offers PAYMENT_MANAGEMENT_ACTIONS in Acción de pago', async () => {
     const plain = await managementOf();
-    expect(plain.element.textContent).not.toMatch(/Validar soporte|Rechazar soporte|Historial/);
+    expect(plain.element.textContent).not.toMatch(/Validar comprobante|Rechazar comprobante|Historial/);
     TestBed.resetTestingModule();
     @Component({ selector: 'crp-test-action', template: '<button type="button">Acción {{ reservation()?.id }}</button>' })
     class ActionDouble { readonly reservation = input<Reservation>(); }

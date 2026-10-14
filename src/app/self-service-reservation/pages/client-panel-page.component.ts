@@ -17,10 +17,10 @@ import { CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } f
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
   eyebrow: 'Portal cliente',
-  greeting: 'Hola, te damos la bienvenida',
+  greeting: 'Hola, bienvenido',
   intro: 'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.',
   searchLabel: 'Buscar tours o establecimientos asociados',
-  searchPlaceholder: 'Buscar tours, alojamiento o experiencias...',
+  searchPlaceholder: 'Buscar tours o experiencias...',
   search: 'Buscar',
   reservations: 'Mis reservas',
   noActive: 'No tienes reservas activas',
@@ -40,11 +40,11 @@ const PANEL_TEXT = {
 } as const;
 
 const CHIPS = [
-  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }, { key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento asociado' },
+  { key: CLIENT_AREA.gastronomy, label: 'Restaurantes asociados' }, { key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento asociado' },
 ];
 const QUICK = [
   { key: CLIENT_AREA.tours, icon: 'NR', title: 'Nueva reserva', copy: 'Inicia una nueva reserva' },
-  { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Gastronomía', copy: 'Explora opciones gastronómicas disponibles.' },
+  { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Restaurantes asociados', copy: 'Consulta los datos de contacto de restaurantes asociados.' },
 ];
 const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 
