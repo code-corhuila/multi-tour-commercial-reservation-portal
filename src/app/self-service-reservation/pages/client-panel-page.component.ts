@@ -167,7 +167,11 @@ export class ClientPanelPageComponent {
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly chips = CHIPS.filter((chip) => this.has(chip.key));
   protected readonly quick = QUICK.filter((action) => this.has(action.key));
-  protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
+  /** HU-COM-001 portal foundation of 2026-10-13: what other stories add to Acciones rápidas (Notificaciones is the bell of the shell header); nothing by default. */
+  protected readonly slots = { quick: CLIENT_QUICK_ACTIONS };
+  private readonly injector = inject(Injector);
+  protected readonly quickSlots = slotEntries(CLIENT_QUICK_ACTIONS, this.injector).length;
+  protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   protected readonly reservations = toSignal(this.requests.pipe(switchMap(() => partOf(this.source.listMine()))), { initialValue: { kind: 'loading' } as Part<CustomerReservation> });

@@ -25,12 +25,18 @@ const asCustomer = (r: Reservation, selection: Partial<ReservationSelection>): C
   reservationStatus: STATUS_CODE[r.status], paymentStatus: r.financialStatus,
 });
 
-export class DemoMyReservationsStore extends MyReservationsSource {
-  items: CustomerReservation[] = [
-    reservation('RES-1843', 'demo-dep-1', ['demo-svc-1'], 2),
-    reservation('RES-1842', 'demo-dep-2', ['demo-svc-2', 'demo-svc-4'], 1),
-  ];
-  override listMine(): Observable<readonly CustomerReservation[]> { return of([...this.items]); }
+/** The reservations whose lead customer is the demo final customer, read from the shared store; nothing for any other standing. */
+export class DemoMyReservations extends MyReservationsSource {
+  /** The selections made here, so a created reservation keeps its departure and services. */
+  constructor(private readonly store: ReservationsSource, private readonly leads: LeadCustomersSource, private readonly customer: CustomerContext,
+    readonly selections = new Map<string, ReservationSelection>()) { super(); }
+  override listMine(): Observable<readonly CustomerReservation[]> {
+    if (!this.customer.isFinalCustomer) return of([]);
+    return forkJoin({ all: this.store.list(), leads: this.leads.list() }).pipe(map(({ all, leads }) => {
+      const name = leads.find((l) => l.id === DEMO_FINAL_CUSTOMER)?.fullName;
+      return all.filter((r) => r.leadCustomerName === name).map((r) => asCustomer(r, this.selections.get(r.id) ?? {}));
+    }));
+  }
 }
 
 export class DemoPaymentMethods extends PaymentMethodsSource {

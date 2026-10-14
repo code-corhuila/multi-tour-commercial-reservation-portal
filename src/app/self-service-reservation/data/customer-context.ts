@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CustomerStanding, standingOf } from '../model/self-service-reservation';
+import { CustomerStanding, customerStandingOf, isFinalCustomerStanding, hasSessionStanding } from '../../shared/portal-capabilities';
 
 /** PROPUESTO, pending HU-FRT-001: the event the portal raises on its host so the container opens its sign-in. */
 export const SIGN_IN_REQUESTED_EVENT = 'crp-sign-in-requested';
@@ -13,6 +13,9 @@ export const SIGN_IN_REQUESTED_EVENT = 'crp-sign-in-requested';
 @Injectable({ providedIn: 'root', useFactory: () => customerContextFor(['UNKNOWN'], () => undefined) })
 export abstract class CustomerContext {
   abstract readonly standing: CustomerStanding;
+  /** The only question the areas ask of the standing; the role literal stays inside the capabilities port. */
+  get isFinalCustomer(): boolean { return isFinalCustomerStanding(this.standing); }
+  get hasSession(): boolean { return hasSessionStanding(this.standing); }
   abstract requestSignIn(): void;
 }
 
