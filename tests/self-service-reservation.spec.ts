@@ -432,3 +432,15 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
     expect(rule('.crp-root .self-service-panel .crp-page-header-desc + .crp-page-header-desc')).toMatch(/margin-top:\s*8px;\s*color:\s*#17252b/);
   });
 });
+
+describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('changes the key when the payment method changes and keeps it for the same data', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    await p.confirm(); p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    await p.choose('CASH_AT_OFFICE'); await p.confirm();
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+    p.requester.calls[1].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    await p.confirm();
+    expect(p.requester.calls[2].idempotencyKey).toBe(p.requester.calls[1].idempotencyKey);
+  });
+});

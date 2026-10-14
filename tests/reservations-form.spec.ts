@@ -134,3 +134,17 @@ describe('everyScreenShowsOneOfTheFourStates (form)', () => {
     expect(failing.element.querySelector('[data-state="error"] button')).not.toBeNull();
   });
 });
+
+describe('aCorrectedCreationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('keeps the key for the same data and changes it when the person corrects the people', async () => {
+    const { fill, submit, writer, settle, type } = await openForm();
+    await fill('3'); await submit();
+    writer.calls[0].fail(apiError()); await settle();
+    await type('people', '2'); await submit();
+    expect(writer.calls[1].command).toMatchObject({ people: 2 });
+    expect(writer.calls[1].key).not.toBe(writer.calls[0].key);
+    writer.calls[1].fail(apiError()); await settle();
+    await submit();
+    expect(writer.calls[2].key).toBe(writer.calls[1].key);
+  });
+});
