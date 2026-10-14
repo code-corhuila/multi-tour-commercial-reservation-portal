@@ -9,6 +9,11 @@ const FIXED: Readonly<Record<string, string>> = {
   'demo-svc-5': '/assets/destino-sendero-del-condor.jpg', // Caminata al Nevado del Huila
 };
 
+/** The photo of an associated establishment by its type: a hotel for lodging, a restaurant for gastronomy (landing img/*-asociado.jpg, served by the container). */
+export function establishmentPhoto(type: 'HOTEL' | 'RESTAURANT'): string {
+  return type === 'HOTEL' ? '/assets/alojamiento-asociado.jpg' : '/assets/restaurante-asociado.jpg';
+}
+
 /** The photo of a tour by its id, the same in every card and summary; null when there is no tour. */
 export function tourPhoto(serviceId: string | undefined): string | null {
   if (!serviceId) return null;

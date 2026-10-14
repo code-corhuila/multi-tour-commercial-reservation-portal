@@ -128,6 +128,7 @@ describe('portalAreasRegistry', () => {
       { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent },
       { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
       { key: 'rescheduling-proposal', label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent },
+      { key: 'profile', label: 'Perfil', component: ProfilePageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
@@ -307,7 +308,78 @@ describe('customerShellHeader', () => {
     expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar', 'Alojamiento', 'Gastronomía']);
     expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
     expect(host.querySelector('app-catalog-page')).toBeNull();
-    expect(PORTAL_AREAS.find((area) => area.key === 'offer')?.audience).toBe('customer');
+    expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.tours)?.audience).toBe('customer');
+  });
+});
+
+describe('customerPanelChrome', () => {
+  const texts = (host: HTMLElement, selector: string) => Array.from(host.querySelectorAll(selector)).map((e) => e.textContent?.trim());
+  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button):not(.crp-client-avatar)';
+
+  it('draws the compact header of panel-cliente.html inside the canvas, with Ver catálogo, no avatar and no footer', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    expect(host.querySelector('.crp-client-header')).toBeNull();
+    expect(host.querySelector('.crp-client-footer')).toBeNull();
+    const header = host.querySelector('.crp-client-content > header.crp-client-panel-header')!;
+    // panel-cliente.html draws no brand in its header: Ver catálogo and the bell of Notificaciones.
+    expect(header.querySelector('.crp-client-panel-brand')).toBeNull();
+    expect(texts(host, link)).toEqual(['Ver catálogo']);
+    const bell = header.querySelector<HTMLButtonElement>('.crp-client-bell-button')!;
+    expect(header.querySelector('.crp-client-panel-actions > button + .crp-client-bell')).not.toBeNull();
+    expect(bell.getAttribute('aria-label')).toBe('Notificaciones');
+    expect(bell.getAttribute('aria-expanded')).toBe('false');
+    const panel = header.querySelector<HTMLElement>('.crp-client-bell-panel')!;
+    expect(panel.hidden).toBe(true);
+    expect(panel.querySelector('h2')?.textContent?.trim()).toBe('Notificaciones');
+    expect(panel.textContent).toContain('No tienes notificaciones nuevas.');
+    bell.click();
+    await settle();
+    expect(panel.hidden).toBe(false);
+    expect(bell.getAttribute('aria-expanded')).toBe('true');
+    bell.click();
+    await settle();
+    expect(panel.hidden).toBe(true);
+    expect(host.textContent).not.toMatch(/Perfil/);
+    host.querySelector<HTMLButtonElement>(link)!.click();
+    await settle();
+    expect(host.querySelector('crp-test-customer-page')).not.toBeNull();
+    expect(host.querySelector('.crp-client-panel-header')).toBeNull();
+    expect(host.querySelector('.crp-client-header')).not.toBeNull();
+    expect(host.querySelector('.crp-client-footer')).not.toBeNull();
+  });
+
+  it('offers Volver al panel on the reservations list', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
+    await settle();
+    expect(texts(host, link)).toEqual(['Volver al panel']);
+    expect(host.querySelector('.crp-client-panel-brand')?.textContent?.trim()).toBe('Multitour');
+    expect(host.querySelector('.crp-client-bell')).toBeNull();
+    host.querySelector<HTMLButtonElement>(link)!.click();
+    await settle();
+    expect(host.querySelector('crp-test-panel-page')).not.toBeNull();
+  });
+});
+
+@Component({ selector: 'crp-test-flow-page', template: '<header class="flow-bar">Volver al tour</header>' })
+class FlowPageDouble {}
+@Component({ selector: 'crp-test-go-flow', template: '<button type="button" class="go" (click)="nav.open(\'flow\')">Reservar</button>' })
+class GoFlowPageDouble { protected readonly nav = inject(PortalNavigation); }
+
+describe('customerFlowChrome', () => {
+  const FLOW_AREAS: PortalArea[] = [
+    { key: CLIENT_AREA.panel, label: 'Panel cliente', component: GoFlowPageDouble, audience: 'customer', clientChrome: 'panel' },
+    { key: 'flow', label: 'Reservar tour', component: FlowPageDouble, audience: 'customer', clientChrome: 'none' },
+  ];
+
+  it('draws no client header, panel header or footer on a flow screen with its own top bar, inside the canvas', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, FLOW_AREAS);
+    host.querySelector<HTMLButtonElement>('crp-test-go-flow .go')!.click();
+    await settle();
+    expect(host.querySelector('.crp-client-content > crp-test-flow-page .flow-bar')).not.toBeNull();
+    expect(host.querySelector('.crp-client-header')).toBeNull();
+    expect(host.querySelector('.crp-client-panel-header')).toBeNull();
+    expect(host.querySelector('.crp-client-footer')).toBeNull();
   });
 });
 
