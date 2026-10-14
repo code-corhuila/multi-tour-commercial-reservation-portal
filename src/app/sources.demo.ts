@@ -20,12 +20,11 @@ import { paymentFollowupDemoProviders } from './demo/payment-followup-demo';
 import { reservationModificationDemoProviders } from './demo/reservation-modification-demo';
 import { myPaymentsDemoProviders } from './demo/my-payments-demo';
 import { reschedulingDemoProviders } from './demo/rescheduling-demo';
+import { demoSessionProviders } from './demo/demo-fixtures';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
 export function sourceProviders(_client: PortalApiClient): Provider[] {
-  const stores = oncePerPage(demoStores);
-  const named = demoSessionProviders();
-  return named.length ? [...stores, ...named] : stores;
+  return [...oncePerPage(demoStores), ...demoSessionProviders()];
 }
 
 function demoStores(): Provider[] {

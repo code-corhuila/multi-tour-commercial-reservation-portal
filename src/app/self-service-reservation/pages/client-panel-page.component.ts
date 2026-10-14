@@ -11,12 +11,13 @@ import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
 import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
+import { SESSION_TEXT } from '../../shared/session-copy';
+import { SESSION_IDENTITY } from '../../shared/session-identity';
 import { tourPhoto } from '../../shared/tour-photo';
 
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
   eyebrow: 'Portal cliente',
-  greeting: 'Hola, bienvenido',
   intro: 'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.',
   searchLabel: 'Buscar tours o establecimientos asociados',
   searchPlaceholder: 'Buscar tours o experiencias...',
@@ -80,7 +81,7 @@ function discountTag(rule: DiscountRule): string {
   template: `
     <section class="crp-panel-hero" aria-labelledby="crp-panel-title">
       <p class="crp-panel-eyebrow">{{ t.eyebrow }}</p>
-      <h1 id="crp-panel-title">{{ t.greeting }}</h1>
+      <h1 id="crp-panel-title">{{ greeting }}</h1>
       <p>{{ t.intro }}</p>
       <div class="crp-panel-search">
         <label for="crp-panel-search">{{ t.searchLabel }}</label>
@@ -155,6 +156,8 @@ function discountTag(rule: DiscountRule): string {
 export class ClientPanelPageComponent {
   protected readonly t = PANEL_TEXT;
   protected readonly text = SELF_SERVICE_TEXT;
+  /** HU-FRT-001 amendment 003: the display name of the session as text, or the generic greeting when there is none. */
+  protected readonly greeting = ((name) => (name ? SESSION_TEXT.greeting(name) : SESSION_TEXT.anonymousGreeting))(inject(SESSION_IDENTITY).name);
   protected readonly area = CLIENT_AREA;
   protected readonly photos = PHOTOS;
   protected readonly cop = formatCop;
