@@ -54,7 +54,7 @@ describe('mountEntryContract', () => {
     expect(text()).toContain(CATALOG_COPY.newItem);
     expect(text()).toMatch(new RegExp(`${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}`));
     await goToCard('Gestionar establecimientos');
-    await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(ESTABLISHMENTS_COPY.title.all));
+    await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(ESTABLISHMENTS_COPY.title.HOTEL));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(3));
     expect(text()).toContain(ESTABLISHMENTS_COPY.newEstablishment);
   });
