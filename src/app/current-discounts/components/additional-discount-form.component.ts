@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { defer, finalize } from 'rxjs';
 import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
 import { AdditionalDiscount, AdditionalDraft, CURRENT_DISCOUNTS_TEXT, EMPTY_ADDITIONAL, additionalCommand,
-  canAuthorizeAdditionalDiscount, validateAdditional } from '../model/current-discounts';
+  validateAdditional } from '../model/current-discounts';
+import { focusFirstError } from '../../shared/focus';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
 
 /** T-03: value, type and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
@@ -44,6 +47,7 @@ export class AdditionalDiscountFormComponent {
   protected readonly allowed = canAuthorizeAdditionalDiscount(inject(ActorContext));
   private readonly writer = inject(AdditionalDiscountWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   private key = this.keys.generate(); private fingerprint: string | null = null;
   private readonly prefix = `current-discounts-form-${formSequence++}`;
   protected readonly text = CURRENT_DISCOUNTS_TEXT;
@@ -58,7 +62,7 @@ export class AdditionalDiscountFormComponent {
   protected submit(event: Event): void {
     event.preventDefault(); if (!this.allowed || this.pending()) return;
     this.attempted.set(true); this.failure.set('');
-    if (Object.keys(validateAdditional(this.draft())).length) return;
+    if (Object.keys(validateAdditional(this.draft())).length) { afterNextRender(() => { focusFirstError(event.target as HTMLFormElement); }, { injector: this.injector }); return; }
     const command = additionalCommand(this.serviceId(), this.draft()), fingerprint = JSON.stringify(command);
     if (this.fingerprint !== null && this.fingerprint !== fingerprint) this.key = this.keys.generate();
     this.fingerprint = fingerprint; this.pending.set(true);
