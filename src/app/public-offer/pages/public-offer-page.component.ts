@@ -1,3 +1,4 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
@@ -120,7 +121,7 @@ export class PublicOfferPageComponent {
   private readonly offer = inject(PublicOfferSource, { optional: true });
   // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });
-  protected readonly date = signal(new Date().toLocaleDateString('en-CA'));
+  protected readonly date = signal(tenantDay(inject(Clock).now()));
   protected readonly search = signal('');
   protected readonly chosen = signal<PricedTour | null>(null);
   private readonly dates = new Subject<string>();

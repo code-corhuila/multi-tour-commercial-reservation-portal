@@ -1,3 +1,4 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
@@ -74,7 +75,7 @@ export class DiscountsPageComponent {
   protected readonly range = formatDateRange;
   protected baseLabel(rule: DiscountRule): string { return DISCOUNT_SELECTS[0].options.find(o => o.value === rule.calculationBase)?.label ?? ''; }
   protected inForce(items: readonly DiscountRule[]): number { return items.filter(r => this.validity(r, this.today).tone === 'confirmed').length; }
-  protected readonly today = new Date().toLocaleDateString('en-CA');
+  protected readonly today = tenantDay(inject(Clock).now());
   private readonly requests = new Subject<void>();
   private readonly local = signal<DiscountsPageState | null>(null);
   private readonly listed = toSignal(this.requests.pipe(switchMap(() => this.source.list().pipe(
