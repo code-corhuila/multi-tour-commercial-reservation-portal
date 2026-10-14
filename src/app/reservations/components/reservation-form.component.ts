@@ -25,88 +25,78 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
 /** Screen 10B, sections 02 and 04 and the calculated values; sections 01 and 03 belong to HU-COM-005. */
 @Component({
   selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationBreakdownComponent],
-  styles: [`.crp-reservation-form { display: block; }
-    .crp-reservation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .crp-reservation-field { display: grid; align-content: start; gap: 4px; } .crp-reservation-field label { margin: 0; }
-    fieldset { grid-column: 1 / -1; margin: 0; border: 1px solid #dce8e1; border-radius: 10px; } fieldset label { font-weight: 500; }
-    .reservation-error { margin: 0; color: var(--crp-error); font-size: 0.82rem; } .crp-reservation-conditions p { margin: 6px 0 0; }
-    .crp-reservation-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-    .crp-reservation-values span { display: block; color: #667579; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
-    .crp-reservation-values strong { font-size: 1.2rem; } .crp-form-actions { margin-top: 22px; }
-    .crp-reservation-hero-card { margin: 0 0 16px; } .crp-reservation-hero-card h2 { margin: 4px 0; } .crp-reservation-hint { grid-column: 1 / -1; margin: 0; }
-    @media (max-width: 720px) { .crp-reservation-grid, .crp-reservation-values { grid-template-columns: 1fr; } }`],
   template: `
     @let current = state();
     @switch (current.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
       @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" /><button type="button" (click)="reload()">{{ text.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ text.noDepartures }}</p> }
-      @case ('data') { @let o = current.options; @let e = errors(); @let q = preview();         <form class="crp-reservation-form" data-state="data" novalidate (submit)="submit($event, o)">
-          <section class="crp-reservation-hero-card"><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>{{ text.heroTitle }}</h2><p>{{ text.heroNote }}</p></section>
+      @case ('data') { @let o = current.options; @let e = errors(); @let q = preview();         <form class="crp-reservations-form" data-state="data" novalidate (submit)="submit($event, o)">
+          <section class="crp-reservations-hero-card"><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>{{ text.heroTitle }}</h2><p>{{ text.heroNote }}</p></section>
           <section class="crp-operator-panel">
             <p class="crp-operator-eyebrow">{{ text.offerEyebrow02 }}</p><h2>{{ text.offerTitle }}</h2>
-            <div class="crp-reservation-grid">
-              <div class="crp-reservation-field">
+            <div class="crp-reservations-grid">
+              <div class="crp-reservations-field">
                 <label for="reservation-customer">{{ text.customer }}</label>
                 <select id="reservation-customer" name="leadCustomerId" (change)="set('leadCustomerId', $event)" [attr.aria-invalid]="e.leadCustomerId ? true : null" [attr.aria-describedby]="e.leadCustomerId ? 'reservation-customer-error' : null">
                   <option value="">{{ text.choose }}</option>
                   @for (c of o.customers; track c.id) { <option [value]="c.id" [selected]="c.id === draft().leadCustomerId">{{ c.fullName }}</option> }
                 </select>
-                @if (e.leadCustomerId) { <p id="reservation-customer-error" class="reservation-error">{{ e.leadCustomerId }}</p> }
+                @if (e.leadCustomerId) { <p id="reservation-customer-error" class="crp-reservations-error">{{ e.leadCustomerId }}</p> }
               </div>
-              <div class="crp-reservation-field">
+              <div class="crp-reservations-field">
                 <label for="reservation-service">{{ text.tour }}</label>
                 <select id="reservation-service" name="serviceId" (change)="set('serviceId', $event)" [attr.aria-invalid]="e.serviceId ? true : null" [attr.aria-describedby]="e.serviceId ? 'reservation-service-error' : null">
                   <option value="">{{ text.choose }}</option>
                   @for (s of o.services; track s.id) { <option [value]="s.id" [selected]="s.id === draft().serviceId">{{ s.name }} · {{ money(s.rateCents) }} {{ text.perPerson }}</option> }
                 </select>
-                @if (e.serviceId) { <p id="reservation-service-error" class="reservation-error">{{ e.serviceId }}</p> }
+                @if (e.serviceId) { <p id="reservation-service-error" class="crp-reservations-error">{{ e.serviceId }}</p> }
               </div>
-              <div class="crp-reservation-field">
+              <div class="crp-reservations-field">
                 <label for="reservation-departure">{{ text.scheduled }}</label>
                 <select id="reservation-departure" name="departureId" [disabled]="!draft().serviceId" (change)="set('departureId', $event)" [attr.aria-invalid]="e.departureId ? true : null" [attr.aria-describedby]="e.departureId ? 'reservation-departure-error' : null">
                   <option value="">{{ text.choose }}</option>
                   @for (d of o.departures; track d.id) { <option [value]="d.id" [selected]="d.id === draft().departureId">{{ d.tourName }} · {{ date(d.date) }} · {{ seatsOf(d) }}</option> }
                 </select>
-                @if (e.departureId) { <p id="reservation-departure-error" class="reservation-error">{{ e.departureId }}</p> }
+                @if (e.departureId) { <p id="reservation-departure-error" class="crp-reservations-error">{{ e.departureId }}</p> }
               </div>
-              <div class="crp-reservation-field">
+              <div class="crp-reservations-field">
                 <label for="reservation-people">{{ text.people }}</label>
                 <input id="reservation-people" name="people" inputmode="numeric" [value]="draft().people" (input)="set('people', $event)" [attr.aria-invalid]="e.people ? true : null" [attr.aria-describedby]="e.people ? 'reservation-people-error' : null">
-                @if (e.people) { <p id="reservation-people-error" class="reservation-error">{{ e.people }}</p> }
+                @if (e.people) { <p id="reservation-people-error" class="crp-reservations-error">{{ e.people }}</p> }
               </div>
-              <div class="crp-reservation-field"><label for="reservation-vehicles">{{ text.vehicles }}</label><input id="reservation-vehicles" readonly [value]="text.vehiclesValue"></div>
-              @if (chosen; as dep) { <p class="crp-reservation-hint" aria-live="polite">{{ seatsNote(dep) }}</p> }
+              <div class="crp-reservations-field"><label for="reservation-vehicles">{{ text.vehicles }}</label><input id="reservation-vehicles" readonly [value]="text.vehiclesValue"></div>
+              @if (chosen; as dep) { <p class="crp-reservations-hint" aria-live="polite">{{ seatsNote(dep) }}</p> }
             </div>
           </section>
           <section class="crp-operator-panel">
             <p class="crp-operator-eyebrow">{{ text.payEyebrow }}</p><h2>{{ text.conditionsTitle }}</h2>
-            <div class="crp-reservation-grid">
-              <div class="crp-reservation-field">
+            <div class="crp-reservations-grid">
+              <div class="crp-reservations-field">
                 <label for="reservation-pay-type">{{ text.payType }}</label>
                 <select id="reservation-pay-type" name="paymentType" [disabled]="!draft().serviceId" (change)="set('paymentType', $event)" [attr.aria-invalid]="e.paymentType ? true : null" [attr.aria-describedby]="e.paymentType ? 'reservation-pay-type-error' : null">
                   <option value="">{{ text.chooseType }}</option>
                   @for (t of paymentTypes; track t[0]) { <option [value]="t[0]" [selected]="t[0] === draft().paymentType">{{ t[1] }}</option> }
                 </select>
-                @if (e.paymentType) { <p id="reservation-pay-type-error" class="reservation-error">{{ e.paymentType }}</p> }
+                @if (e.paymentType) { <p id="reservation-pay-type-error" class="crp-reservations-error">{{ e.paymentType }}</p> }
               </div>
-              <div class="crp-reservation-field">
+              <div class="crp-reservations-field">
                 <label for="reservation-pay-method">{{ text.payMethod }}</label>
                 <select id="reservation-pay-method" name="paymentMethod" [disabled]="!draft().serviceId" (change)="set('paymentMethod', $event)" [attr.aria-invalid]="e.paymentMethod ? true : null" [attr.aria-describedby]="e.paymentMethod ? 'reservation-pay-method-error' : null">
                   <option value="">{{ text.chooseMethod }}</option>
                   @for (m of paymentMethods; track m[0]) { <option [value]="m[0]" [selected]="m[0] === draft().paymentMethod">{{ m[1] }}</option> }
                 </select>
-                @if (e.paymentMethod) { <p id="reservation-pay-method-error" class="reservation-error">{{ e.paymentMethod }}</p> }
+                @if (e.paymentMethod) { <p id="reservation-pay-method-error" class="crp-reservations-error">{{ e.paymentMethod }}</p> }
               </div>
             </div>
             <p class="crp-operator-copy" data-payment-note>{{ paymentNote() }}</p>
-            <div class="crp-reservation-conditions" data-conditions><strong>{{ text.conditions }}</strong><p>{{ chosen?.conditions ?? text.chooseDeparture }}</p><p>{{ text.noSeat }}</p></div>
+            <div class="crp-reservations-conditions" data-conditions><strong>{{ text.conditions }}</strong><p>{{ chosen?.conditions ?? text.chooseDeparture }}</p><p>{{ text.noSeat }}</p></div>
             <label><input type="checkbox" name="accepted" [checked]="draft().accepted" (change)="toggleAccepted()"> {{ text.accept }}</label>
-            @if (e.accepted) { <p class="reservation-error">{{ e.accepted }}</p> }
+            @if (e.accepted) { <p class="crp-reservations-error">{{ e.accepted }}</p> }
           </section>
           <section class="crp-operator-panel">
             <p class="crp-operator-eyebrow">{{ text.valuesEyebrow }}</p><h2>{{ text.valuesTitle }}</h2><p>{{ text.valuesNote }}</p>
-            <div class="crp-reservation-values">
+            <div class="crp-reservations-values">
               <div><span>{{ text.projected }}</span><strong>{{ money(q?.projectedCents ?? 0) }}</strong></div>
               <div><span>{{ text.applicable }}</span><strong>{{ money(q ? -q.discountCents : 0) }}</strong></div>
               <div><span>{{ text.final }}</span><strong>{{ money(q?.finalCents ?? 0) }}</strong></div>
@@ -115,7 +105,7 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
           </section>
           @if (!complete()) { <p class="crp-operator-form-feedback" aria-live="polite">{{ text.feedback }}</p> }
           @if (failure()) { <p role="alert">{{ failure() }}</p> }
-          <div class="crp-form-actions">
+          <div class="crp-form-actions crp-reservations-actions">
             <button type="button" class="crp-operator-outline" [disabled]="pending()" (click)="cancelled.emit()">{{ text.cancel }}</button>
             <button type="submit" class="crp-operator-primary" [disabled]="pending() || !complete()">{{ text.save }}</button>
           </div>

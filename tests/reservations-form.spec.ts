@@ -76,7 +76,7 @@ describe('eachDiscountLineNamesItsBaseInTheOrderApplied', () => {
     const { element, fill, discounts, settle } = await openForm();
     discounts.lines = [{ name: 'Early bird', base: 'ORIGINAL_VALUE', amountCents: 1000 }, { name: 'Group', base: 'PREVIOUS_SUBTOTAL', amountCents: 500 }];
     await fill(); await settle();
-    const breakdown = element.querySelector('.reservation-breakdown')!;
+    const breakdown = element.querySelector('.crp-reservations-breakdown')!;
     expect(breakdown.textContent).toContain('Kayak'); expect(breakdown.textContent).toContain('$60');
     expect(breakdown.textContent).toContain('Transporte por persona'); expect(breakdown.textContent).toContain('$15');
     expect(Array.from(breakdown.querySelectorAll('[data-discount]')).map((d) => d.textContent?.trim()))

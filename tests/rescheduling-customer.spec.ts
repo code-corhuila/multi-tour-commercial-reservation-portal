@@ -236,15 +236,15 @@ describe('reschedulingTextsAreSpanishAndUseFormatCopAndFormatDate', () => {
   const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.trim().startsWith(selector + ' {'))?.split('{')[1] ?? '';
 
   it('draws the mark of a Mis reservas card as the small status tag of the mockup, not as the card title', () => {
-    expect(rule('.crp-root .self-service-card-copy strong.crp-status')).toMatch(/font-size:\s*0\.72rem/);
+    expect(rule('.crp-root .crp-self-service-card-copy strong.crp-status')).toMatch(/font-size:\s*0\.72rem/);
   });
 
   it('keeps the status column at the top, so the badge is not stretched by a taller card', () => {
-    expect(rule('.crp-root .self-service-card-status')).toMatch(/align-content:\s*start/);
+    expect(rule('.crp-root .crp-self-service-card-status')).toMatch(/align-content:\s*start/);
   });
 
   it('lays Responder propuesta across the card, at its end, as travel-dashboard-reservation-actions', () => {
-    expect(rule('.crp-root .self-service-card > crp-rescheduling-card-action')).toMatch(/grid-column:\s*1 \/ -1/);
+    expect(rule('.crp-root .crp-self-service-card > crp-rescheduling-card-action')).toMatch(/grid-column:\s*1 \/ -1/);
     expect(rule('.crp-root .crp-rescheduling-card-actions')).toMatch(/justify-content:\s*flex-end/);
   });
 });

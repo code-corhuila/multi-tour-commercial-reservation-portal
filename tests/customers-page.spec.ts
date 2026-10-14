@@ -218,8 +218,8 @@ describe('the screen follows the authorized screen 10B, in Spanish', () => {
     const p = await openPeople(); await p.answer(groupWith(false, [personNamed('Acompanante Ficticio', 'DOC 6006', false)]));
     expect(texts(p, '.crp-operator-panel .crp-operator-eyebrow')).toContain('03. Acompañantes');
     expect(p.element.textContent).toContain('Los documentos no pueden repetirse dentro de la misma reserva.');
-    expect(texts(p, '.customers-card > strong')).toEqual(['Acompañante 1', 'Acompañante 2']);
-    expect(p.element.querySelector('.customers-grid h2, .customers-grid strong')).toBeNull();
+    expect(texts(p, '.crp-customers-card > strong')).toEqual(['Acompañante 1', 'Acompañante 2']);
+    expect(p.element.querySelector('.crp-customers-grid h2, .crp-customers-grid strong')).toBeNull();
   });
   it('shows dates as 01 may 1990 and no English or raw value', async () => {
     const p = await openPeople(); await p.answer(groupWith(true));
@@ -231,7 +231,7 @@ describe('the screen follows the authorized screen 10B, in Spanish', () => {
   it('draws the high-risk panel per person with its labels', async () => {
     const p = await openPeople('TENANT_ADMINISTRATOR', true); await p.answer(groupWith(true, [personNamed('Acompanante Ficticio', 'DOC 6006')]));
     expect(texts(p, '.crp-operator-panel .crp-operator-eyebrow')).toContain('Requisitos de actividad de riesgo');
-    expect(texts(p, '.customers-risk-card > strong')).toEqual(['Titular', 'Acompañante 1']);
+    expect(texts(p, '.crp-customers-risk-card > strong')).toEqual(['Titular', 'Acompañante 1']);
     for (const label of ['Tipo de sangre', 'Contacto de emergencia', 'Restricciones físicas o movilidad reducida', 'Consentimiento informado o exoneración registrado.'])
       expect(p.element.textContent).toContain(label);
   });
