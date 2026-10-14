@@ -16,7 +16,9 @@ export abstract class CancellationQuote {
   abstract quote(code: string): Observable<CancellationQuoteResult | null>;
 }
 
-export interface CancelCommand { readonly code: string; readonly cause: string; readonly idempotencyKey: string }
+/** Mockup select Origen de la cancelación: who or what caused it (PROPUESTO until the contract, gap G-B). */
+export type CancellationOrigin = 'customer' | 'not-attributable' | 'non-payment';
+export interface CancelCommand { readonly code: string; readonly cause: string; readonly origin: CancellationOrigin; readonly idempotencyKey: string }
 export type CancellationOutcome = { readonly kind: 'registered'; readonly reservation: Reservation }
   | { readonly kind: 'refused'; readonly eligibility: Eligibility; readonly reservation: Reservation };
 
@@ -35,7 +37,7 @@ export function cancellationChangeType(): ReservationChangeType {
   const writer = inject(CancellationWriter);
   return {
     key: 'cancellation', label: RESERVATION_CHANGES_COPY.cancellationType,
-    submit: ({ reservationCode, cause, idempotencyKey }) => writer.cancel({ code: reservationCode, cause, idempotencyKey }).pipe(map((o) =>
+    submit: ({ reservationCode, cause, origin, idempotencyKey }) => writer.cancel({ code: reservationCode, cause, origin, idempotencyKey }).pipe(map((o) =>
       o.kind === 'registered' ? { kind: 'registered' as const } : { kind: 'refused' as const, reason: refusalOf(o.eligibility, STATUS_LABEL[o.reservation.status]) ?? '' })),
   };
 }

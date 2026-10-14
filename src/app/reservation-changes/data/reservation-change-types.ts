@@ -1,11 +1,12 @@
 import { InjectionToken, Type } from '@angular/core';
+import type { CancellationOrigin } from './cancellation-ports';
 import { Observable } from 'rxjs';
 
 /** The key of admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; a sub-screen of Reservas. */
 export const RESERVATION_CHANGE_SCREEN = 'reservation-change';
 
 /** What "Registrar novedad" sends for the selected type; the key is created when the screen opens and reused on retry. */
-export interface ReservationChangeInput { readonly reservationCode: string; readonly cause: string; readonly idempotencyKey: string }
+export interface ReservationChangeInput { readonly reservationCode: string; readonly cause: string; readonly origin: CancellationOrigin; readonly idempotencyKey: string }
 /** Registered, or refused with the Spanish reason the screen shows. */
 export type ReservationChangeOutcome = { readonly kind: 'registered' } | { readonly kind: 'refused'; readonly reason: string };
 
