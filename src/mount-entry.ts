@@ -9,7 +9,8 @@ import { ReservationSelectionSource, selectionSourceFor } from './app/self-servi
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
-import { RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
+import { CHECKOUT_BLOCKS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
@@ -67,6 +68,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
       contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),
       { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
+      // HU-COM-009: Método y plazo de pago of 21.
+      contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
     ],
   }).then((created) => {
     app = created;

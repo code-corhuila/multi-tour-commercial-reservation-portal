@@ -61,6 +61,7 @@ export class ControllablePaymentMethods extends PaymentMethodsSource {
   readonly requests: Pending<readonly PaymentMethod[]>[] = [];
   override listEnabled(): Observable<readonly PaymentMethod[]> { return controllable(this.requests); }
   override listTypes(): Observable<readonly PaymentMethod[]> { return of(TYPES); }
+  override bankAccount() { return of({ bank: 'Banco de prueba', accountType: 'Ahorros', accountNumber: '111', holder: 'Operador de prueba' }); }
 }
 
 export class RecordingRequester extends ReservationRequester {
