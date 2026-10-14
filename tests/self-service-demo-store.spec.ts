@@ -86,7 +86,7 @@ describe('theOperatorAndTheCustomerShareOneDemoStore (audit S24)', () => {
     // The seeded RES-1842 is the one of the demo final customer, Laura Gómez; RES-1841 is of another customer.
     expect(operator.find((r) => r.id === 'RES-1842')?.leadCustomerName).toBe('Laura Gómez (demo)');
     // HU-COM-014: the demo customer also owns the four payment situations of the mockup's demo data.
-    // HU-COM-018: and RES-1829 (a proposal to answer) and RES-1828 (an episode to propose).
+    // HU-COM-018: the demo customer also owns RES-1829 (a proposal to answer) and RES-1828 (an episode to propose).
     const OWN = ['RES-1842', 'RES-1840', 'RES-1832', 'RES-1831', 'RES-1830', 'RES-1829', 'RES-1828'];
     expect(mine).toEqual(OWN);
     const created = await demo.request(TATACOA, 'key-1');
