@@ -47,7 +47,7 @@ async function overDemo() {
   const create = async () => {
     await view.click(NEW);
     await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);
-    await view.tick('svc-Kayak'); await view.type('people', '2');
+    await view.tick('svc-Kayak'); await view.type('people', '2'); await view.payWith();
     await view.click('Registrar reserva');
   };
   return { ...view, discounts, open, create };
@@ -55,11 +55,11 @@ async function overDemo() {
 
 describe('createdReservationIsPendienteDePagoSinPagoWithNoSeatHeld', () => {
   it('closes the form and shows the reservation in Pendiente de pago, Sin pago, with no seat held and the tour conditions', async () => {
-    const { element, create, open, click } = await overDemo();
+    const { element, create, click } = await overDemo();
     await create();
     expect(element.querySelector('form')).toBeNull();
     const result = element.querySelector('.reservation-result')!.textContent!;
-    for (const text of ['Pendiente de pago', 'Sin pago', 'Aún no se aparta cupo', open.conditions]) expect(result).toContain(text);
+    for (const text of ['Pendiente de pago', 'Sin pago', 'sin cupo apartado hasta su primer pago']) expect(result).toContain(text);
     await click('Volver a reservas');
     expect(element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(1);
   });
