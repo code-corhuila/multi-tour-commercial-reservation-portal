@@ -1,6 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { CustomerPaymentSummary, MyPaymentsSource, TRANSFER_PAYMENT_AREA } from '../../my-payments/data/my-payments-source';
@@ -26,7 +24,7 @@ abstract class PaymentResultPage {
   protected abstract pick(all: readonly CustomerPaymentSummary[]): CustomerPaymentSummary | undefined;
   protected readonly state = toSignal(this.requests.pipe(switchMap(() => this.source.listMine().pipe(
     map((all): PageState<CustomerPaymentSummary> => { const found = this.pick(all); return found ? { kind: 'data', items: [found] } : { kind: 'empty' }; }),
-    catchError((error) => of<PageState<CustomerPaymentSummary>>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
+    catchError(() => of<PageState<CustomerPaymentSummary>>({ kind: 'error', retry: () => this.reload() })),
     startWith<PageState<CustomerPaymentSummary>>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PageState<CustomerPaymentSummary> });
 
@@ -38,14 +36,14 @@ abstract class PaymentResultPage {
 }
 
 /** pago-exitoso.html (22, "Comprobante recibido"): the proof is En validación and does not confirm the reservation. */
-@Component({ imports: [ReadErrorComponent],
+@Component({
   selector: 'app-payment-received-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="crp-result" aria-labelledby="crp-result-title">
       @let s = state();
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @case ('empty') { <h1 id="crp-result-title">{{ t.received.missingTitle }}</h1><p class="crp-result-copy" data-state="empty">{{ t.received.missing }}</p> }
         @case ('data') {
           @let r = s.items[0];
@@ -72,14 +70,14 @@ export class PaymentReceivedPageComponent extends PaymentResultPage {
 }
 
 /** pago-fallido.html (23, "Comprobante rechazado"): the reason decided in HU-COM-010, and a new proof on the same reservation while the deadline lasts. */
-@Component({ imports: [ReadErrorComponent],
+@Component({
   selector: 'app-payment-rejected-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="crp-result crp-result-rejected" aria-labelledby="crp-result-title">
       @let s = state();
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @case ('empty') {
           <h1 id="crp-result-title">{{ t.rejected.noneTitle }}</h1><p class="crp-result-copy" data-state="empty">{{ t.rejected.none }}</p>
           @if (navigation?.has(area.payments)) { <div class="crp-result-actions"><button type="button" class="crp-primary" (click)="open(area.payments)">{{ t.rejected.toPayments }}</button></div> }
