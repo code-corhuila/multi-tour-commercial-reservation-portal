@@ -41,7 +41,8 @@ const TOTAL = 'RES-1842';
 const AT = (iso: string) => Date.parse(iso);
 const NOW = AT('2026-10-13T09:00:00-05:00');
 /** The reservations whose proof waits in the demo store; other stories may seed more of them (HU-COM-014 seeds RES-1840). */
-const waitingIds = async () => (await firstValueFrom(TestBed.inject(PendingProofsSource).list())).rows.map((row) => row.reservation.id);
+const proofRows = async () => (await firstValueFrom(TestBed.inject(PendingProofsSource).list())).rows;
+const waitingIds = async () => (await proofRows()).filter((row) => row.payment.proofStatus === 'EN_VALIDACION').map((row) => row.reservation.id);
 
 class FixedClock extends Clock {
   constructor(public at = NOW) { super(); }
@@ -125,7 +126,7 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     expect(empty.element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('0 pendientes');
     TestBed.resetTestingModule();
     const seeded = await screenOf(PaymentsPageComponent, providers());
-    expect(seeded.element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength((await waitingIds()).length);
+    expect(seeded.element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength((await proofRows()).length);
     TestBed.resetTestingModule();
     const unknown = await validating('RES-1999-P1');
     expect(unknown.element.querySelector('[data-state="empty"]')?.textContent)
@@ -138,10 +139,10 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     expect(text).toContain('Control de cobro');
     expect(text).toContain('Pagos y devoluciones');
     expect(text).toContain('Confirma pagos sin perder trazabilidad.');
-    expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Modalidad', 'Valor pendiente', 'Estado', 'Acción']);
+    expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valor', 'Estado', 'Acción']);
     const ofExample = Array.from(element.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes(`#${EXAMPLE}`));
     const row = Array.from(ofExample?.querySelectorAll('td') ?? []).map((td) => td.textContent?.trim()).join(' ');
-    expect(row).toMatch(/#RES-183[34] .+ \(demo\) Abono · Transferencia \$[23]00\.000 En validación/);
+    expect(row).toMatch(/#RES-1833 .+ \(demo\) Abono · Transferencia \$100\.000 En validación/);
     expect(text).not.toMatch(/EN_VALIDACION|BANK_TRANSFER|PARTIAL|PENDIENTE_DE_PAGO|undefined|null|NaN/);
     TestBed.resetTestingModule();
     const page = await validating();
@@ -302,7 +303,7 @@ describe('Validar comprobante and Pagos as the mockup of PDR v1.9 writes them', 
     TestBed.configureTestingModule({ providers: providers() });
     cancelEXAMPLE();
     const cancelled = await decide({ verifiedAmountCents: 10_000_000 });
-    expect(cancelled.status).toBe('CANCELADA'); expect(cancelled.validatedCents ?? 0).toBe(0);
+    expect(cancelled).toMatchObject({ status: 'CANCELADA', validatedCents: 0 });
     expect(cancelled.payments![0].review).toMatchObject({ appliedCents: 0, surplusCents: 0, pendingTreatmentCents: 10_000_000 });
   });
 
@@ -355,7 +356,7 @@ describe('Validar comprobante and Pagos as the mockup of PDR v1.9 writes them', 
     expect(text).toContain('Valida o rechaza comprobantes, registra seguimientos y autoriza devoluciones cuando corresponda. La revisión de cada comprobante tiene un máximo de 24 horas corridas.');
     expect(text).toContain('Comprobantes y seguimiento');
     const rows = Array.from(element.querySelectorAll('tbody tr')).map((tr) => flat(tr as HTMLElement));
-    expect(rows.find((row) => row.includes(`#${VALIDATED}`) && row.includes('Aprobado'))).toMatch(/\$100\.000Aprobado Sin acción pendiente/);
+    expect(rows.find((row) => row.includes(`#${VALIDATED}`) && row.includes('Aprobado'))).toMatch(/\$100\.000 Aprobado Sin acción pendiente/);
     expect(element.querySelector('tbody tr .crp-operator-status.crp-is-confirmed')?.textContent?.trim()).toBe('Aprobado');
     expect(rows.find((row) => row.includes(`#${EXAMPLE}`))).toContain('Validar comprobante');
   });
@@ -443,7 +444,7 @@ describe('the 24-hour mark (T-05)', () => {
   it('paymentsTableShowsTheOverdueNotice', async () => {
     const { element } = await screenOf(PaymentsPageComponent, providers());
     expect(element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe(`${(await waitingIds()).length} pendientes`);
-    expect(element.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Hay 1 soporte(s) con revisión vencida. La marca no cambia el estado ni libera cupos.');
+    expect(element.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Hay 1 comprobante(s) con revisión vencida (más de 24 horas corridas En validación). La marca no cambia el estado, no cancela la reserva ni libera cupos.');
     const rows = Array.from(element.querySelectorAll('tbody tr')).map((tr) => flat(tr as HTMLElement));
     expect(rows.find((row) => row.includes(`#${VALIDATED}`) && row.includes('En validación'))).toContain('En validación · Revisión vencida');
     expect(rows.find((row) => row.includes(`#${EXAMPLE}`))).not.toContain('Revisión vencida');
@@ -539,7 +540,7 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [body] }));
     const bodies = Array.from(element.querySelectorAll('table tbody'));
     expect(bodies).toHaveLength(2);
-    expect(bodies[0].querySelectorAll('tr')).toHaveLength((await waitingIds()).length);
+    expect(bodies[0].querySelectorAll('tr')).toHaveLength((await proofRows()).length);
     expect(bodies[1].textContent?.trim()).toBe('Fila de seguimiento');
     TestBed.resetTestingModule();
     const none = new (class extends PendingProofsSource { override list() { return of({ rows: [], overdueCount: 0 }); } })();

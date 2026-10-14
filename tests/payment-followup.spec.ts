@@ -307,7 +307,7 @@ describe('the rows of 13 and the roles (T-06)', () => {
       '#RES-1842 Laura Gómez (demo) Pago total · Transferencia $850.000 Saldo pendiente Registrar seguimiento',
       '#RES-1841 Mateo Ríos (demo) Abono · Efectivo $418.000 Saldo pendiente Registrar seguimiento',
     ]);
-    expect(flat(bodies[1])).not.toMatch(/Validar soporte|Ver soporte|En validación/);
+    expect(flat(bodies[1])).not.toMatch(/Validar comprobante|Ver comprobante|En validación/);
     pendingRows(element)[0].querySelector('button')!.click();
     await settle();
     const navigation = TestBed.inject(PortalNavigation);
@@ -340,5 +340,19 @@ describe('the rows of 13 and the roles (T-06)', () => {
     await failed.click('Reintentar');
     expect(failing.calls).toBe(2);
     expect(pendingRows((await rowsWith(answering(() => of([])))).element)).toHaveLength(0);
+  });
+
+  it('theTableShowsTheEmptyTextOfHU010OnlyWhenNoProofAndNoPendingRowWait', async () => {
+    // Spec 011-: the empty text of the table is HU-COM-010's, drawn once, only when neither the proofs nor the pending rows have one.
+    const noProofs = { provide: PendingProofsSource, useValue: new (class extends PendingProofsSource { override list() { return of({ rows: [], overdueCount: 0 }); } })() };
+    const noPending = { provide: PendingPaymentsSource, useValue: new (class extends PendingPaymentsSource { override list() { return of([]); } })() };
+    const empty = 'No hay comprobantes por revisar.';
+    const view = (extra: unknown[]) => { TestBed.resetTestingModule(); return screenOf(PaymentsPageComponent, providers({ extra })); };
+    const both = (await view([noProofs, noPending])).element;
+    expect(both.querySelector('tbody[crppendingpaymentrows] [data-state="empty"]')?.textContent?.trim()).toBe(empty);
+    expect(flat(both).split(empty)).toHaveLength(2);
+    expect(flat(await view([noProofs]).then((v) => v.element))).not.toContain(empty);
+    expect(flat(await view([noPending]).then((v) => v.element))).not.toContain(empty);
+    expect(flat(await view([]).then((v) => v.element))).not.toContain(empty);
   });
 });
