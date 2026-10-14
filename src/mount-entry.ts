@@ -8,6 +8,8 @@ import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './
 import { ReservationSelectionSource, selectionSourceFor } from './app/self-service-reservation/data/reservation-confirmation-ports';
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
+import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
+import { RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
 
 /** Portals mounted now; the stylesheet leaves with the last one (001- amendment HC-5, plan H-D4). */
 let mounted = 0;
@@ -52,6 +54,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
       { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
       { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
+      // HU-COM-009: Pagos y soportes of 10A and Gestionar pago of 10C, drawn only with the payment ports.
+      contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK),
     ],
   }).then((created) => {
     app = created;

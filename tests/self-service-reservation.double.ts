@@ -29,6 +29,7 @@ function controllable<T>(requests: Pending<T>[]): Observable<T> {
 }
 
 export const SELECTION: ReservationSelection = { departureId: 'demo-dep-7', serviceIds: ['demo-svc-1', 'demo-svc-2'], people: 2 };
+export const TYPES: readonly PaymentMethod[] = [{ code: 'TOTAL', label: 'Pago total' }, { code: 'PARTIAL', label: 'Abono' }];
 export const METHODS: readonly PaymentMethod[] = [
   { code: 'BANK_TRANSFER', label: 'Transferencia' },
   { code: 'CASH_AT_OFFICE', label: 'Efectivo' },
@@ -59,6 +60,7 @@ export class ControllableMyReservationsSource extends MyReservationsSource {
 export class ControllablePaymentMethods extends PaymentMethodsSource {
   readonly requests: Pending<readonly PaymentMethod[]>[] = [];
   override listEnabled(): Observable<readonly PaymentMethod[]> { return controllable(this.requests); }
+  override listTypes(): Observable<readonly PaymentMethod[]> { return of(TYPES); }
 }
 
 export class RecordingRequester extends ReservationRequester {
