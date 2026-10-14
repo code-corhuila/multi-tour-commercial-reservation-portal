@@ -50,6 +50,8 @@ class ControllableWriter extends CreditBalanceWriter {
     return answers;
   }
   override recordExcess(): never { throw new Error('not used'); }
+  override apply(): never { throw new Error('not used'); }
+  override requestRefund(): never { throw new Error('not used'); }
 }
 
 function providers(o: { role?: string; source?: CreditBalanceSource; writer?: CreditBalanceWriter } = {}) {
