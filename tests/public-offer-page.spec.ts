@@ -282,9 +282,12 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(within(page.host).getByLabelText('Buscar tours por nombre o destino').getAttribute('placeholder')).toBe('Buscar tours por nombre o destino...');
     const header = page.host.querySelector('header.crp-offer-head')!;
     const action = header.querySelector('.crp-page-header-action.crp-offer-search')!;
-    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON', 'LABEL']);
-    expect(text(action.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
-    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBe(action);
+    // The pill of tours.html: magnifier, field and the dark Buscar on the right; the date filter is a separate, discreet control.
+    expect(Array.from(action.children, (child) => child.tagName.toLowerCase())).toEqual(['svg', 'input', 'button']);
+    expect(action.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(text(header.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
+    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBeNull();
+    expect(within(page.host).getByLabelText('Fecha').closest('header.crp-offer-head')).toBe(header);
     expect(page.host.querySelector('.crp-offer-when, [data-date]')).toBeNull();
     expect(page.host.textContent).not.toMatch(/Disponibles el|Fecha de consulta/);
     expect(page.part('tours').getAttribute('aria-label')).toBe('Listado de tours disponibles');
@@ -408,8 +411,8 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*height: 140px;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-meta \{[^}]*flex-wrap: nowrap;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-card \.crp-tour-body strong \{[^}]*white-space: nowrap;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 1rem; font-weight: 400;[^}]*text-transform: none;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 2rem; font-weight: 700;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 0.92rem; [^}]*font-weight: 400;[^}]*text-transform: none;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 1.84rem; font-weight: 700;/);
   });
 
   it('shows Volver al panel cliente only when the shell can open the panel, and opens it', async () => {
@@ -433,7 +436,9 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(page.host.querySelector('.crp-offer-agreement'))).toBe('Información del convenio Coordina directamente con el establecimiento '
       + 'Multitour no genera reservas de habitación ni administra tarifas, disponibilidad o inventario. Las condiciones de reserva, cambio o cancelación se acuerdan directamente entre tú y el hotel.');
     const [hotel, posada] = page.cards('establishments');
-    expect(hotel.querySelector('img')?.getAttribute('src')).toMatch(/^\/assets\//);
+    // The photo follows the TYPE of the establishment (a hotel for every card of Alojamiento), as alojamiento.html.
+    expect(hotel.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
+    expect(posada.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
     expect(hotel.querySelector('img')?.getAttribute('alt')).toBe('Casa Neiva');
     expect(text(hotel.querySelector('strong'))).toBe('Casa Neiva');
     expect(text(hotel.querySelector('.crp-establishment-type'))).toBe('Alojamiento asociado · Región Andina');
@@ -470,6 +475,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(page.part('establishments').getAttribute('aria-label')).toBe('Restaurantes asociados');
     expect(page.cards('establishments').map((card) => text(card.querySelector('strong')))).toEqual(['Sabores del Huila', 'Fogón']);
     expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-type'))).toBe('Restaurante asociado');
+    expect(page.cards('establishments').map((card) => card.querySelector('img')?.getAttribute('src'))).toEqual(Array(2).fill('/assets/restaurante-asociado.jpg'));
     expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');
     expect(text(page.cards('establishments')[0].querySelector('button.crp-offer-link'))).toBe('Ver contacto');
   });
@@ -492,7 +498,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     const venue = page.host.querySelector('[data-part="venue"]')!;
     expect(text(venue.querySelector('.crp-offer-back'))).toBe('← Volver a gastronomía');
     expect(text(venue.querySelector('.crp-page-header-eyebrow'))).toBe('Restaurante asociado');
-    expect(venue.querySelector('img.crp-venue-hero')?.getAttribute('src')).toMatch(/^\/assets\//);
+    expect(venue.querySelector('img.crp-venue-hero')?.getAttribute('src')).toBe('/assets/restaurante-asociado.jpg');
     expect(text(venue.querySelector('h1'))).toBe('Sabores del Huila');
     expect(text(venue.querySelector('.crp-venue-category'))).toBe('Restaurante asociado');
     expect(text(venue.querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');
