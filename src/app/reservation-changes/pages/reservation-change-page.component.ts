@@ -6,7 +6,7 @@ import { PortalNavigation } from '../../portal-navigation';
 import { Reservation, STATUS_LABEL } from '../../reservations/data/reservations-source';
 import { focusFirstError } from '../../shared/focus';
 import { formatCop, formatDate } from '../../shared/format';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 import { PageState } from '../../shared/page-state';
 import { CancellationOrigin, CancellationQuote, CancellationQuoteResult } from '../data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from '../data/reservation-change-types';
@@ -90,8 +90,8 @@ export class ReservationChangePageComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly code = this.navigation?.params()['reservation'] ?? '';
-  /** One key per opening of the screen, reused on every retry (plan D-06). */
-  private readonly key = inject(IdempotencyKeys).generate();
+  /** The key follows the body: reused on every retry of the same data, new when the cause is corrected (plan D-06). */
+  private readonly intention = new IntentionKey(inject(IdempotencyKeys));
   private readonly quotes = inject(CancellationQuote);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly injector = inject(Injector);
@@ -118,7 +118,8 @@ export class ReservationChangePageComponent {
     if (!cause) { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
     this.pending.set(true);
     this.failure.set(null);
-    type.submit({ reservationCode: q.reservation.id, cause, origin: this.origin(), idempotencyKey: this.key }).subscribe({
+    const body = { reservationCode: q.reservation.id, cause, origin: this.origin() };
+    type.submit({ ...body, idempotencyKey: this.intention.keyFor(body) }).subscribe({
       next: (outcome) => {
         if (outcome.kind === 'registered') { this.showRegistered(q); return; }
         this.failure.set(outcome.reason); this.pending.set(false);
