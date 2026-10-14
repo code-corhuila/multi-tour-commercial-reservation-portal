@@ -4,6 +4,9 @@ import { CustomerStanding, customerStandingOf } from '../../shared/portal-capabi
 /** PROPUESTO, pending HU-FRT-001: the event the portal raises on its host so the container opens its sign-in. */
 export const SIGN_IN_REQUESTED_EVENT = 'crp-sign-in-requested';
 
+/** What a visitor without a final-customer session reads in Mis reservas (HU-COM-008) and in Mis pagos (HU-COM-014). */
+export const SIGN_IN_AS_CUSTOMER_NOTICE = 'Inicia sesión como cliente para ver tus reservas.';
+
 /**
  * DP-RS2: the final customer as this area sees them, derived from props.session.roles in mount-entry.ts.
  * ActorContext of HU-COM-001 is untouched. With nothing provided it fails closed to OTHER: no confirmation.

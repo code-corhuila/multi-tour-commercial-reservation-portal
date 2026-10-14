@@ -16,6 +16,12 @@ export function formatDate(isoDate: string): string {
   return match && month ? `${match[3]} ${month} ${match[1]}` : isoDate;
 }
 
+/** `2026-09-18T06:30:00` to `18 sep 2026 · 06:30`, as the client screens write a departure; a date alone stays a date. */
+export function departureLine(isoDateTime: string): string {
+  const time = /T(\d{2}:\d{2})/.exec(isoDateTime)?.[1];
+  return time ? `${formatDate(isoDateTime)} · ${time}` : formatDate(isoDateTime);
+}
+
 /** `01 sep 2026 - 30 sep 2026`. */
 export function formatDateRange(startIsoDate: string, endIsoDate: string): string {
   return `${formatDate(startIsoDate)} - ${formatDate(endIsoDate)}`;

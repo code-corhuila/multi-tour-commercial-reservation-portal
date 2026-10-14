@@ -14,6 +14,7 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
+import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
 import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea } from '../src/app/portal-areas';
@@ -103,6 +104,7 @@ describe('portalAreasRegistry', () => {
       { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
       { key: 'payments', label: 'Pagos', component: PaymentsPageComponent },
       { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent },
+      { key: 'my-payments', label: 'Mis pagos', component: MyPaymentsPageComponent },
       { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
