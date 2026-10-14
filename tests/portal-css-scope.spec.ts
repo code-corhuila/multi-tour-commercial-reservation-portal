@@ -26,7 +26,7 @@ describe('portalCssIsScopedAndPrefixed', () => {
     const styled = sources.filter((file) => /\bstyles\s*:|\bstyleUrls?\s*:/.test(withoutComments(readFileSync(file, 'utf8'))));
     expect(styled).toEqual([]);
     const loose = sources.flatMap((file) => [...readFileSync(file, 'utf8').matchAll(/\bclass="([^"]*)"/g)]
-      .flatMap(([, names]) => names.split(/\s+/).filter((name) => name && !name.startsWith('crp-')).map((name) => `${file}: ${name}`)));
+      .flatMap(([, names]) => names.replace(/\{\{[^}]*\}\}/g, ' ').split(/\s+/).filter((name) => name && !name.startsWith('crp-')).map((name) => `${file}: ${name}`)));
     expect(loose).toEqual([]);
   });
 });
