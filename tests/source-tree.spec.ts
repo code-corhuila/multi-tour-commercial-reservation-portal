@@ -58,6 +58,8 @@ const SPECIFIED_TREE = [
   'src/styles/portal.css',
   'src/app/current-discounts/model/current-discounts.ts',
   'src/app/current-discounts/data/current-discounts-source.ts',
+  'src/app/current-discounts/data/discount-breakdowns.ts',
+  'src/app/demo/discount-calculation.ts',
   'src/app/current-discounts/data/additional-discount-writer.ts',
   'src/app/current-discounts/components/current-discounts-value.component.ts',
   'src/app/current-discounts/components/additional-discount-form.component.ts',

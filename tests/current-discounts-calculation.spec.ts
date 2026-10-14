@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyDiscounts } from '../src/app/current-discounts/model/current-discounts';
+import { applyDiscounts } from '../src/app/demo/discount-calculation';
 import { DiscountRule } from '../src/app/discounts/model/discount-rule';
 import { ruleNamed } from './current-discounts.double';
 

@@ -82,7 +82,11 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                   <p class="self-service-summary-copy"><strong>{{ current.quote.tourName }}</strong>&ngsp;<span>{{ date(current.quote.departureAt) }}</span>&ngsp;<span>{{ travelers(selection!.people) }}</span></p></div>
                 <dl class="self-service-pricing">
                   <dt>{{ text.basePrice }}</dt><dd>{{ cop(current.quote.baseValueCents) }}</dd>
-                  @if (current.quote.discountCents) { <dt>{{ text.discounts }}</dt><dd>{{ cop(-current.quote.discountCents) }}</dd> }
+                  @if (current.quote.discountCents) { <dt>{{ text.discounts }}</dt><dd>{{ cop(-current.quote.discountCents) }}</dd>
+                    @if (current.quote.discountLines?.length) {
+                      <dd class="self-service-breakdown"><ol>@for (line of current.quote.discountLines; track line.order) {
+                        <li>{{ line.order }}. {{ line.name }} · {{ text.bases[line.base] }} · {{ cop(-line.amountCents) }} · {{ text.subtotal }} {{ cop(line.subtotalCents) }}</li> }</ol></dd>
+                    } }
                   <dt>{{ text.final }}</dt><dd class="self-service-total">{{ cop(current.quote.finalValueCents) }}</dd>
                 </dl>
               </article>
