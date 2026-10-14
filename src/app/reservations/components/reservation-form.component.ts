@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, output, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, distinctUntilChanged, finalize, forkJoin, map, of, startWith, switchMap, take } from 'rxjs';
@@ -8,20 +10,21 @@ import { ApiError } from '../../shell-contract';
 import { DeparturesSource } from '../data/departures-source';
 import { LeadCustomersSource } from '../data/reservation-integrations';
 import { QuoteRequest, ReservationQuoteSource } from '../data/reservation-quote-source';
+import { DepartureCapacity } from '../data/departure-capacity';
 import { ReservationsWriter } from '../data/reservations-writer';
 import { ReservationBreakdownComponent } from './reservation-breakdown.component';
 import {
   Departure, LeadCustomer, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, Reservation, ReservationDraft, ServiceOption,
-  capacityMessage, money, openDepartures, peopleOf, seats, validateReservation,
+  money, openDepartures, peopleOf, seats, validateReservation,
 } from '../model/reservation';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 
 type Options = { departures: readonly Departure[]; customers: readonly LeadCustomer[]; services: readonly ServiceOption[] };
 type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; options: Options };
 
 /** Screen 10B, sections 02 and 04 and the calculated values; sections 01 and 03 belong to HU-COM-005. */
 @Component({
-  selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationBreakdownComponent],
+  selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationBreakdownComponent],
   styles: [`.crp-reservation-form { display: block; }
     .crp-reservation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     .crp-reservation-field { display: grid; align-content: start; gap: 4px; } .crp-reservation-field label { margin: 0; }
@@ -36,7 +39,7 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
     @let current = state();
     @switch (current.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ text.failed }}<button type="button" (click)="reload()">{{ text.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" /><button type="button" (click)="reload()">{{ text.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ text.noDepartures }}</p> }
       @case ('data') { @let o = current.options; @let e = errors(); @let q = preview();         <form class="crp-reservation-form" data-state="data" novalidate (submit)="submit($event, o)">
           <section class="crp-reservation-hero-card"><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>{{ text.heroTitle }}</h2><p>{{ text.heroNote }}</p></section>
@@ -128,9 +131,10 @@ export class ReservationFormComponent {
   readonly cancelled = output<void>();
   private readonly departures = inject(DeparturesSource); private readonly customers = inject(LeadCustomersSource);
   private readonly catalog = inject(CatalogItemsSource); private readonly quotes = inject(ReservationQuoteSource);
+  private readonly seatRule = inject(DepartureCapacity);
   private readonly writer = inject(ReservationsWriter); private readonly lifetime = inject(DestroyRef);
-  /** One key per opening of the form, reused by every retry of this intention (AC-RC.8). */
-  private readonly key = inject(IdempotencyKeys).generate();
+  /** The key follows the body: reused by every retry of the same data, new when the person corrects it (AC-RC.8). */
+  private readonly intention = new IntentionKey(inject(IdempotencyKeys));
   protected readonly text = RESERVATION_TEXT;
   protected readonly money = money;
   protected readonly date = formatDate;
@@ -149,12 +153,12 @@ export class ReservationFormComponent {
       const services = items.filter((i) => i.catalogStatus === 'ACTIVE').map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents }));
       return open.length ? { kind: 'data', options: { departures: open, customers, services } } : { kind: 'empty' };
     }),
-    catchError(() => of<OptionsState>({ kind: 'error' })), startWith<OptionsState>({ kind: 'loading' }),
+    catchError((error) => of<OptionsState>({ kind: 'error', ...readFailure(error) })), startWith<OptionsState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as OptionsState });
   protected readonly errors = computed(() => {
     const current = this.state();
     if (!this.tried() || current.kind !== 'data') return {};
-    const errors = validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId));
+    const errors = validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId), this.seatRule);
     return this.refusedForCapacity() && !errors.people ? { ...errors, people: this.refusedForCapacity() } : errors;
   });
   constructor() { this.reload(); }
@@ -172,7 +176,7 @@ export class ReservationFormComponent {
   /** Mockup data-departure-capacity-info: the seats of the departure, or the shortage for the people typed. */
   protected seatsNote(d: Departure): string {
     const people = peopleOf(this.draft().people);
-    return people !== null && people > d.effectiveCapacity ? capacityMessage(d) : `Hay ${seats(d.effectiveCapacity)} en la salida seleccionada. El cupo no se garantiza hasta el primer pago.`;
+    return people !== null && !this.seatRule.fits(d, people) ? this.seatRule.refusal(d) : `Hay ${seats(d.effectiveCapacity)} en la salida seleccionada. El cupo no se garantiza hasta el primer pago.`;
   }
   /** Mockup data-payment-deadline-note: the hours are tenant parameters that no port hands to the portal yet. */
   protected readonly paymentNote = computed(() => {
@@ -182,7 +186,7 @@ export class ReservationFormComponent {
   /** The submit button enables when nothing mandatory is missing (mockup data-register-reservation). */
   protected readonly complete = computed(() => {
     const current = this.state();
-    return current.kind === 'data' && !Object.keys(validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId))).length;
+    return current.kind === 'data' && !Object.keys(validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId), this.seatRule)).length;
   });
   /** What is quoted: a departure on offer, at least one service and a valid number of people; else nothing. */
   private readonly request = computed((): QuoteRequest | null => {
@@ -200,14 +204,14 @@ export class ReservationFormComponent {
     if (this.pending()) return;
     this.tried.set(true); this.refusedForCapacity.set(''); this.failure.set('');
     const d = this.draft(), departure = o.departures.find((x) => x.id === d.departureId), q = this.preview();
-    if (Object.keys(validateReservation(d, departure)).length || !departure || !q) { this.focusFirstErrorOnRender(); return; }
+    if (Object.keys(validateReservation(d, departure, this.seatRule)).length || !departure || !q) { this.focusFirstErrorOnRender(); return; }
     // 007- H-D8: the command carries no value; the service quotes again and is the authority.
     const command = { leadCustomerId: d.leadCustomerId, departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod };
     this.pending.set(true);
-    defer(() => this.writer.create(command, this.key)).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
+    defer(() => this.writer.create(command, this.intention.keyFor(command))).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
       next: (reservation) => this.created.emit(reservation),
       error: (error: Partial<ApiError> | null) => error?.code === 'insufficient-capacity'
-        ? this.refusedForCapacity.set(capacityMessage(departure)) : this.failure.set(error?.userMessage ?? this.text.failed),
+        ? this.refusedForCapacity.set(this.seatRule.refusal(departure)) : this.failure.set(error?.userMessage ?? this.text.failed),
     });
   }
 }

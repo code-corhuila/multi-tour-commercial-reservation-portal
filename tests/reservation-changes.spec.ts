@@ -549,3 +549,15 @@ describe('registeredCancellationMessageFollowsTheDeterminedValue', () => {
     expect(status(s.host)).toBe('Cancelación registrada. Valor a devolver: $300.000 (100 %, causa no atribuible al cliente), determinado y autorizado automáticamente; se ejecuta en máximo 5 días hábiles desde Solicitudes de devolución.');
   });
 });
+
+describe('aCorrectedCancellationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('changes the key when the cause is corrected', async () => {
+    const writer = new ControllableWriter();
+    const s = await page({ writer });
+    await s.type('Viaje aplazado'); await s.submit();
+    writer.calls[0].fail(); await s.settle();
+    await s.type('El cliente desiste'); await s.submit();
+    const [first, second] = writer.calls.map((c) => c.command.idempotencyKey);
+    expect(second).not.toBe(first);
+  });
+});

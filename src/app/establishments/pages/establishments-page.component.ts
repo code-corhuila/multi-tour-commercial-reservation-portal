@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
@@ -20,7 +22,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
 @Component({
   selector: 'app-establishments-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EstablishmentFormComponent],
+  imports: [ReadErrorComponent, EstablishmentFormComponent],
   template: `
     @if (!canRead) {
       <p role="alert" data-state="denied">{{ copy.denied }}</p>
@@ -75,7 +77,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loading }}</p> }
         @case ('error') {
           <div role="alert" data-state="error">
-            <p>{{ copy.requestFailed }}</p>
+            <p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p>
             <button class="crp-operator-outline" type="button" [disabled]="saving()" (click)="current.retry()">{{ copy.retry }}</button>
           </div>
         }
@@ -134,7 +136,7 @@ export class EstablishmentsPageComponent {
     // RN-PE3: only the most recent request may supply the screen's next state.
     switchMap((filters) => this.source.list(filters).pipe(
       map((items): EstablishmentsPageState => items.length ? { kind: 'data', items } : { kind: 'empty' }),
-      catchError(() => of<EstablishmentsPageState>({ kind: 'error', retry: () => this.reload() })),
+      catchError((error) => of<EstablishmentsPageState>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
       startWith<EstablishmentsPageState>({ kind: 'loading' }),
     )),
   ), { initialValue: { kind: 'loading' } as EstablishmentsPageState });

@@ -6,6 +6,7 @@ import { DiscountBreakdowns } from '../current-discounts/data/discount-breakdown
 import { DemoDiscountBreakdowns, applyDiscounts } from './discount-calculation';
 import { AdditionalDiscount, AdditionalDiscountCommand, PricedService } from '../current-discounts/model/current-discounts';
 import { ApplicableRule } from '../current-discounts/model/current-discounts';
+import { discountLabelOf } from './discount-label-demo';
 import { TourValueSource } from '../public-offer/data/public-offer-sources';
 import { PublicTour, TourValue } from '../public-offer/model/public-offer';
 
@@ -48,7 +49,8 @@ export class DemoTourValueSource extends TourValueSource {
   override valueOf(tour: PublicTour, date: string): TourValue {
     const rules = SERVICES.find((service) => service.serviceId === tour.serviceId)?.rules ?? [];
     const { finalCents } = applyDiscounts(tour.baseRateCents, rules, date);
-    return { baseRateCents: tour.baseRateCents, currentValueCents: finalCents };
+    const label = discountLabelOf(tour.baseRateCents, finalCents);
+    return { baseRateCents: tour.baseRateCents, currentValueCents: finalCents, ...(label ? { discountLabel: label } : {}) };
   }
 }
 

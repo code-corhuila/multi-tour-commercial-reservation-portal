@@ -18,7 +18,7 @@ describe('aRuleInForceReducesTheValueAndKeepsTheBaseVisible', () => {
 
   it('reads the DiscountRule of HU-COM-003 as a percentage of its tour', () => {
     const rule: DiscountRule = { id: 'r-1', tourId: 't-1', tourName: 'Model', startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 1,
-      calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', percentageBasisPoints: 500, stackable: false };
+      calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', percentageBasisPoints: 500, stackable: false, validity: { label: 'Vigente', tone: 'confirmed', inForce: true } };
     const applicable = { ...rule, name: rule.tourName, type: 'PERCENTAGE' as const };
     expect(applyDiscounts(ONE_HUNDRED_THOUSAND, [applicable], DATE).finalCents).toBe(9_500_000);
   });

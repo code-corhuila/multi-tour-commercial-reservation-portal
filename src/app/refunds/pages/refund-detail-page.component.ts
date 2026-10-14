@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -15,7 +17,7 @@ type Note = { readonly text: string; readonly done: boolean } | null;
 type Decision = 'authorize' | 'reject' | 'saldo' | 'devolver';
 
 /** admin-detalle-devolucion.html with { refund }: the decision panel for who authorizes (treatment buttons while the 24 hours run), the execution panel once authorized (AC-RF.1 to AC-RF.4). */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-refund-detail-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.detailTitle }}</h1></div>
@@ -24,7 +26,7 @@ type Decision = 'authorize' | 'reject' | 'saldo' | 'devolver';
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ t.notFound }}</p> }
       @case ('data') { @let r = shown() ?? s.items[0]; @let f = t.fields; @let treatment = s.items[0].state === 'PENDIENTE_DE_DECISION';
         @if (r.overdue) { <p class="crp-access-note">{{ t.overdueNote }}</p> }
@@ -87,7 +89,7 @@ export class RefundDetailPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.list().pipe(
     map((all): State => { const found = all.find((r) => r.id === this.id); return found ? { kind: 'data', items: [found] } : { kind: 'empty' }; }),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   protected value(event: Event): string { return (event.target as HTMLInputElement).value; }
   private key(intent: string): string { return (this.keys[intent] ??= this.ids.generate()); }

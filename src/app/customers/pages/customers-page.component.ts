@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
@@ -14,7 +16,7 @@ type Ready = { kind: 'ready'; group: CustomerGroup | null; activities: readonly 
 export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready;
 
 @Component({
-  selector: 'app-customers-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [CustomerFormComponent],
+  selector: 'app-customers-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, CustomerFormComponent],
   template: `
     @if (caps.isDenied) { <p role="alert">{{ text.denied }}</p> } @else {
       <section class="customers-page">
@@ -27,7 +29,7 @@ export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready
         </header>
         <p class="customers-banner">{{ text.banner }}</p>
         @if (state().kind === 'loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-        @if (state().kind === 'error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" (click)="reload()">{{ text.retry }}</button></div> }
+        @if (state().kind === 'error') { <div role="alert" data-state="error"><crp-read-error [state]="state()" [fallback]="text.failed" />&ngsp;<button type="button" (click)="reload()">{{ text.retry }}</button></div> }
         @if (ready(); as current) {
           @if (caps.canRegister && (!current.group || startingNew())) {
             @if (!current.group) { <p role="status" data-state="empty">{{ text.empty }}</p> }
@@ -80,7 +82,7 @@ export class CustomersPageComponent {
   private readonly local = signal<CustomersPageState | null>(null);
   private readonly loaded = toSignal(this.requests.pipe(switchMap(() => combineLatest([this.source.current(), this.catalog.list()]).pipe(
     map(([group, activities]): CustomersPageState => ({ kind: 'ready', group, activities })),
-    catchError(() => of<CustomersPageState>({ kind: 'error' })), startWith<CustomersPageState>({ kind: 'loading' }),
+    catchError((error) => of<CustomersPageState>({ kind: 'error', ...readFailure(error) })), startWith<CustomersPageState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as CustomersPageState });
   readonly state = computed(() => this.local() ?? this.loaded());
   protected readonly ready = computed(() => { const s = this.state(); return s.kind === 'ready' ? s : null; });

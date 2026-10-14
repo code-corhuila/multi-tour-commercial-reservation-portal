@@ -12,12 +12,15 @@ import { applyDiscounts } from './discount-calculation';
 import { DemoDiscountRulesStore } from './discounts-demo';
 import { DemoReservationQuotes } from './reservation-quote-demo';
 import type { ModificationTrace } from '../reservation-changes/travellers-modification/data/modification-ports';
-import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
+import { tourImagesProviders } from './tour-photo-demo';
+import { DemoDepartureCapacity, departureCapacityProviders } from './departure-capacity-demo';
+import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, openDepartures } from '../reservations/model/reservation';
 import { RESCHEDULING_DEPARTURES, RESCHEDULING_SEEDS } from './rescheduling-seeds';
 import type { CreditBalance, CreditRequest } from '../credit-balance/data/credit-balance-ports';
 import type { CreditApplication } from './credit-overview-demo';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
+const seatRule = new DemoDepartureCapacity();
 const CONDITIONS = 'Cambios hasta 72 horas antes de la salida; cancelación según la política del tour (texto de demostración, DP-RC4).';
 const departure = (n: number, tourName: string, date: string, state: Departure['state'], open: boolean, effectiveCapacity: number, transport: number): Departure =>
   ({ id: `demo-dep-${n}`, tourName, date, state, openForReservations: open, effectiveCapacity, transportPerPersonCents: transport, conditions: CONDITIONS });
@@ -118,7 +121,7 @@ export class DemoReservationsWriter extends ReservationsWriter {
     if (known) return of(known);
     const d = openDepartures(this.departures.items).find((x) => x.id === c.departureId);
     if (!d) return throwError(() => ({ status: 409, code: 'departure-not-open', userMessage: 'La salida no está abierta para reservas.' }));
-    if (!hasCapacity(d, c.people)) return throwError(() => ({ status: 409, code: 'insufficient-capacity', userMessage: capacityMessage(d) }));
+    if (!seatRule.fits(d, c.people)) return throwError(() => ({ status: 409, code: 'insufficient-capacity', userMessage: seatRule.refusal(d) }));
     return this.quotes.quote(c).pipe(map((quote) => {
       const again = this.byKey.get(key);
       if (again) return again;
@@ -140,6 +143,7 @@ export function reservationDemoProviders(): Provider[] {
   let writer: DemoReservationsWriter | undefined;
   return [
     { provide: DeparturesSource, useValue: departures },
+    ...departureCapacityProviders(), ...tourImagesProviders(),
     { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
     // Optional: a module mounted without the discounts story quotes no discount.
     { provide: ReservationDiscounts, useFactory: () => { const rules = inject(DiscountRulesSource, { optional: true }) as DemoDiscountRulesStore | null; return new DemoReservationDiscounts(() => rules?.rules ?? []); } },

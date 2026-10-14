@@ -20,7 +20,8 @@ import {
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
-import { tourPhoto } from '../src/app/shared/tour-photo';
+import { TourImages } from '../src/app/shared/tour-photo';
+import { DemoTourImages } from '../src/app/demo/tour-photo-demo';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
@@ -53,6 +54,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: SelectionQuoteSource, useValue: quoteOf() },
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
+    { provide: TourImages, useValue: new DemoTourImages() },
     ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
@@ -325,13 +327,6 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     }
   });
 
-  it('the summary photo is the photo of the tour in the featured cards, and no photo leaves the neutral block', () => {
-    expect(tourPhoto('svc-1')).toBe(tourPhoto('svc-1'));
-    expect(new Set(['svc-1', 'svc-2', 'svc-3', 'svc-4', 'svc-5', 'svc-6'].map(tourPhoto)).size).toBeGreaterThan(1);
-    expect(tourPhoto('')).toBeNull();
-    expect(tourPhoto(undefined)).toBeNull();
-    expect(tourPhoto('demo-svc-3')).toBe('/assets/destino-cascadas-de-iraka.jpg'); // Canotaje en el Río Suaza
-  });
 
   it('Volver a salida y viajeros reopens Reservar tour on the same tour', async () => {
     const navigation = new PortalNavigation();
@@ -431,5 +426,17 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
     expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/margin:\s*0;/);
     expect(rule('.crp-root .self-service-panel .crp-page-header-desc')).toMatch(/font-size:\s*1rem;\s*line-height:\s*1\.65/);
     expect(rule('.crp-root .self-service-panel .crp-page-header-desc + .crp-page-header-desc')).toMatch(/margin-top:\s*8px;\s*color:\s*#17252b/);
+  });
+});
+
+describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('changes the key when the payment method changes and keeps it for the same data', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    await p.confirm(); p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    await p.choose('CASH_AT_OFFICE'); p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+    p.requester.calls[1].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
+    expect(p.requester.calls[2].idempotencyKey).toBe(p.requester.calls[1].idempotencyKey);
   });
 });

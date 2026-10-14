@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -11,7 +13,7 @@ import { REFUNDS_COPY, REFUND_STATE_LABEL, formatDateTime } from '../refunds-cop
 type State = PageState<Refund>;
 
 /** admin-solicitudes-devolucion.html, opened by "Consultar solicitudes" of 13; the action of each row by role and state (app.js). */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-refund-requests-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.requestsTitle }}</h1></div>
@@ -27,7 +29,7 @@ type State = PageState<Refund>;
         @if (s.kind === 'data' || s.kind === 'empty') { <span class="crp-operator-status crp-is-pending">{{ t.count(s.kind === 'data' ? s.items.length : 0) }}</span> }</div>
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @default {
           <div class="crp-table-wrap" [attr.data-state]="s.kind === 'data' ? 'data' : null"><table class="crp-operator-table"><thead><tr>@for (column of t.columns; track column) { <th>{{ column }}</th> }</tr></thead>
             <tbody>@if (s.kind === 'data') { @for (r of s.items; track r.id) {
@@ -46,7 +48,7 @@ export class RefundRequestsPageComponent {
   protected readonly can = inject(PortalCapabilities); private readonly source = inject(RefundsSource); private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.list().pipe(
     map((items): State => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   /** The panel alerts, in the order of the mockup: overdue executions, decisions about to expire, automatic determinations. */
   protected alertLines(items: readonly Refund[]): string[] {

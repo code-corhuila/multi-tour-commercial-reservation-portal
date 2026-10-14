@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap } from 'rxjs';
@@ -8,8 +10,8 @@ import { CustomerContext } from '../data/customer-context';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
-import { tourPhoto } from '../../shared/tour-photo';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { TourImages } from '../../shared/tour-photo';
+import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
@@ -20,7 +22,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
  */
 @Component({
   selector: 'app-confirm-reservation-page',
-  imports: [PortalSlotOutlet],
+  imports: [ReadErrorComponent, PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let current = state();
@@ -34,7 +36,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
       <div class="crp-finish-content">
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ selection ? text.noMethods : text.noSelection }}</p> }
         @case ('data') {
           <p class="crp-finish-pill">{{ text.pill }}</p>
@@ -120,7 +122,8 @@ export class ConfirmReservationPageComponent {
   protected readonly date = formatDate;
   protected readonly travelers = travelers;
   protected readonly companions = companions;
-  protected readonly photo = tourPhoto;
+  private readonly images = inject(TourImages);
+  protected photo(serviceId: string | undefined): string | null { return this.images.urlOf(serviceId); }
   protected readonly flow = RESERVATION_FLOW;
   protected readonly cash = 'CASH_AT_OFFICE';
   /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
@@ -150,8 +153,8 @@ export class ConfirmReservationPageComponent {
   private readonly requester = inject(ReservationRequester);
   private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
-  /** Plan D-05: one key per intention, made when the confirmation opens and kept across retries. */
-  private readonly key = this.keys.generate();
+  /** Plan D-05: the key follows the body: kept across retries of the same data, new when the data is corrected. */
+  private readonly intention = new IntentionKey(this.keys);
   protected readonly method = signal('');
   protected readonly accepted = signal({ conditions: false, terms: false });
   protected readonly missing = signal(false);
@@ -165,7 +168,7 @@ export class ConfirmReservationPageComponent {
     methods: this.methods.listEnabled(), quote: this.quotes.quote(this.selection!),
   }).pipe(
     map(({ methods, quote }): ConfirmState => (methods.length ? { kind: 'data', methods, quote } : { kind: 'empty' })),
-    catchError(() => of<ConfirmState>({ kind: 'error' })),
+    catchError((error) => of<ConfirmState>({ kind: 'error', ...readFailure(error) })),
     startWith<ConfirmState>({ kind: 'loading' }),
   ))), { initialValue: (this.selection ? { kind: 'loading' } : { kind: 'empty' }) as ConfirmState });
 
@@ -195,7 +198,7 @@ export class ConfirmReservationPageComponent {
     if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
-    defer(() => this.requester.request(selection, this.method(), this.key)).pipe(
+    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method() }))).pipe(
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({

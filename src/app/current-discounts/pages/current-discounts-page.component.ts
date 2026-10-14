@@ -1,5 +1,7 @@
 import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { formatDate } from '../../shared/format';
@@ -17,7 +19,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
  */
 @Component({
   selector: 'app-current-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AdditionalDiscountFormComponent, CurrentDiscountsValueComponent],
+  imports: [ReadErrorComponent, AdditionalDiscountFormComponent, CurrentDiscountsValueComponent],
   template: `
     <header class="crp-page-header">
       <div class="crp-page-header-main">
@@ -37,7 +39,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
         @case ('error') {
-          <div role="alert" data-state="error">{{ text.failed }}
+          <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" />
             <button class="crp-operator-outline" type="button" (click)="reload()">{{ text.retry }}</button></div>
         }
         @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
@@ -76,7 +78,7 @@ export class CurrentDiscountsPageComponent {
   private readonly requests = new Subject<string>();
   readonly state = toSignal(this.requests.pipe(switchMap((date) => this.source.list(date).pipe(
     map((items): CurrentDiscountsState => items.length ? { kind: 'data', items } : { kind: 'empty' }),
-    catchError(() => of<CurrentDiscountsState>({ kind: 'error' })), startWith<CurrentDiscountsState>({ kind: 'loading' }),
+    catchError((error) => of<CurrentDiscountsState>({ kind: 'error', ...readFailure(error) })), startWith<CurrentDiscountsState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as CurrentDiscountsState });
   protected readonly rows = computed(() => {
     const current = this.state();
