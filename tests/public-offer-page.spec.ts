@@ -301,12 +301,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(pitalito.querySelector('.crp-tour-media img')?.getAttribute('src')).not.toBe(photo?.getAttribute('src'));
   });
 
-  it('says Con descuento when the value port gives no label, and computes none itself', async () => {
-    const page = await openPage({ value: discounted() });
-    page.tours.requests[0].reply([tourNamed('Suaza', { baseRateCents: 129_900_000 })]);
-    await page.settle();
-    expect(text(page.cards('tours')[0].querySelector('.crp-tour-discount-tag'))).toBe('Con descuento');
-  });
+it('draws no discount tag when the value port gives no label: the view derives nothing', async () => {    const page = await openPage({ value: discounted() });    page.tours.requests[0].reply([tourNamed('Suaza', { baseRateCents: 129_900_000 })]);    await page.settle();    expect(page.cards('tours')[0].querySelector('.crp-tour-discount-tag')).toBeNull();  });
 
   it('filters the tours by name with Buscar, without asking the port again', async () => {
     const page = await withTours();
