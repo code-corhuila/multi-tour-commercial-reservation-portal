@@ -95,8 +95,8 @@ describe('myPaymentsShowsTypeMethodProofSituationValidatedAndBalance', () => {
       proofStatus: 'SIN_COMPROBANTE', financialStatus: 'PARCIAL', validatedCents: 30_000_000, balanceCents: 11_800_000 }]);
     const cards = Array.from(view.host.querySelectorAll('[data-state="data"] li.crp-my-payments-card'), (card) => flat(card.textContent));
     expect(cards).toEqual([
-      'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Tipo: Pago total Medio: Transferencia Comprobante: En validación Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $850.000',
-      'RES-1850 Desierto de la Tatacoa al atardecer 07 nov 2026 Tipo: Abono Medio: Efectivo Comprobante: Sin comprobante Situación financiera: Parcial Valores validados: $300.000 Saldo pendiente: $118.000',
+      'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: En validación Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $850.000',
+      'RES-1850 Desierto de la Tatacoa al atardecer 07 nov 2026 Estado de la reserva: Pendiente de pago Tipo de pago: Abono Medio de pago: Efectivo Estado del comprobante: Sin comprobante Situación financiera: Parcial Valores validados: $300.000 Saldo pendiente: $118.000 Comprobantes Sin comprobantes registrados.',
     ]);
     expect(view.host.querySelector('li.crp-my-payments-card h3')?.textContent).toBe('Desierto de la Tatacoa al atardecer');
   });
@@ -160,13 +160,15 @@ describe('aPaymentRegisteredOn24AppearsInMyPayments', () => {
     const bed = demo();
     expect(bed.inject(MyPaymentsSource)).toBeInstanceOf(DemoMyPayments);
     const before = (await firstValueFrom(bed.inject(MyPaymentsSource).listMine()))[0];
-    expect(before).toEqual({ ...SUMMARY, proofStatus: 'SIN_COMPROBANTE' });
-    expect(await firstValueFrom(bed.inject(MyPaymentsSource).notices())).toEqual([{ reservationId: 'RES-1840', proofStatus: 'EN_VALIDACION' }]);
+    expect(before).toMatchObject({ ...SUMMARY, proofStatus: 'SIN_COMPROBANTE' });
+    const noticed = async () => (await firstValueFrom(bed.inject(MyPaymentsSource).notices())).map((n) => n.reservationId);
+    // As setupDashboardNotifications: every own reservation that has something to tell, but not the ones in rescheduling (their notice is HU-COM-018's).
+    expect(await noticed()).toEqual(['RES-1842', 'RES-1840', 'RES-1832', 'RES-1831', 'RES-1828']);
     await firstValueFrom(bed.inject(PaymentsWriter).register({ reservationId: 'RES-1842', amountCents: 85_000_000, proof: pdf() }, 'k-1'));
     const after = (await firstValueFrom(bed.inject(MyPaymentsSource).listMine()))[0];
-    expect(after).toEqual(SUMMARY);
-    expect(await firstValueFrom(bed.inject(MyPaymentsSource).notices()))
-      .toEqual([{ reservationId: 'RES-1842', proofStatus: 'EN_VALIDACION' }, { reservationId: 'RES-1840', proofStatus: 'EN_VALIDACION' }]);
+    expect(after).toMatchObject(SUMMARY);
+    expect(await noticed()).toEqual(['RES-1842', 'RES-1840', 'RES-1832', 'RES-1831', 'RES-1828']);
+    expect((await firstValueFrom(bed.inject(MyPaymentsSource).notices())).filter((n) => n.proofStatus === 'EN_VALIDACION').map((n) => n.reservationId)).toEqual(['RES-1842', 'RES-1840']);
   });
 
   it('reads the cancellation cause the store holds, and no financial situation for a cancelled reservation without validated values', async () => {
@@ -362,13 +364,14 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
       await vi.waitFor(() => expect(host.querySelectorAll('li.crp-my-payments-card')).toHaveLength(7));
       const cards = Array.from(host.querySelectorAll('li.crp-my-payments-card'), (c) => flat(c.textContent));
       expect(cards.slice(5).map((card) => card.split(' ')[0])).toEqual(['RES-1829', 'RES-1828']);
-      expect(cards.slice(0, 5)).toEqual([
-        'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Tipo: Pago total Medio: Transferencia Comprobante: Sin comprobante Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $850.000',
-        'RES-1840 Ruta Andina 18 sep 2026 · 06:30 Tipo: Pago total Medio: Transferencia Comprobante: En validación Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $1.299.000',
-        'RES-1832 Tour de ejemplo 20 sep 2026 · 07:00 Tipo: Abono Medio: Transferencia Comprobante: Aprobado Situación financiera: Abono recibido Valores validados: $100.000 Saldo pendiente: $200.000',
-        'RES-1831 Ruta Andina 22 sep 2026 · 06:30 Tipo: Abono Medio: Transferencia Comprobante: Aprobado Situación financiera: Parcial Valores validados: $1.200.000 Saldo pendiente: $0',
-        'RES-1830 Ruta Andina 18 sep 2026 · 06:30 Tipo: Pago total Medio: Transferencia Comprobante: Aprobado Situación financiera: Pago completo Valores validados: $1.299.000 Saldo pendiente: $0',
-      ]);
+      const expected = [
+        'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: Sin comprobante Situación financiera: Sin pago Valor final: $850.000 Valores validados: $0 Saldo pendiente: $850.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes Sin comprobantes registrados.',
+        'RES-1840 Ruta Andina 18 sep 2026 · 06:30 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: En validación Situación financiera: Sin pago Valor final: $1.299.000 Valores validados: $0 Saldo pendiente: $1.299.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1840.pdf · $1.299.000 · En validación',
+        'RES-1832 Tour de ejemplo 20 sep 2026 · 07:00 Estado de la reserva: Confirmada Tipo de pago: Abono Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: Abono recibido Valor final: $300.000 Valores validados: $100.000 Saldo pendiente: $200.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1832.pdf · $100.000 · Aprobado',
+        'RES-1831 Ruta Andina 22 sep 2026 · 06:30 Estado de la reserva: Cancelada Tipo de pago: Abono Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: No aplica por reserva cancelada Valor final: $1.200.000 Valores validados: $1.200.000 Saldo pendiente: $0 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1831.pdf · $1.200.000 · Aprobado',
+        'RES-1830 Ruta Andina 18 sep 2026 · 06:30 Estado de la reserva: Confirmada Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: Pago completo Valor final: $1.299.000 Valores validados: $1.299.000 Saldo pendiente: $0 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1830.pdf · $1.299.000 · Aprobado',
+      ];
+      expected.forEach((card, i) => expect(cards[i]).toBe(card));
     } finally { cleanup(); }
   });
 
@@ -395,7 +398,7 @@ describe('clientPagesWithoutContributionsRenderAsBefore', () => {
 // validatedCents and "Valores validados" are values, not actions: the verb alone is the action.
 const ACTIONS = /modif|cancel|reschedul|reprogram|\bedit|validar|rechazar|\bvalidate(?!d)|\breject|approve|aprobar/i;
 // Not actions: the mockup's description, the read-only Cancelada state and its text, the cause and treatment the store holds.
-const INFORMATIVE = /Esta consulta no permite validar ni rechazar soportes\.|No aplica por reserva cancelada|CANCELADA|CANCELLED|cancellationCause|cancellation\b|APROBADO|Aprobado|RECHAZADO|Rechazado|EN_VALIDACION|En validación/g;
+const INFORMATIVE = /Esta consulta no permite validar ni rechazar comprobantes\.|Si una modificación, cancelación o pago validado genera|la reserva no se cancela mientras se revisa|respuesta de reprogramación\.|reschedulingPending|rejectionReason|Cancelada|No aplica por reserva cancelada|CANCELADA|CANCELLED|cancellationCause|cancellation\b|APROBADO|Aprobado|RECHAZADO|Rechazado|EN_VALIDACION|En validación/g;
 const FILES = () => [...listSourceFiles().filter((file) => file.startsWith('src/app/my-payments/')), 'src/app/demo/my-payments-demo.ts'];
 
 describe('myPaymentsDrawsNoValidateOrRejectAction', () => {
@@ -418,5 +421,190 @@ describe('myPaymentsDrawsNoValidateOrRejectAction', () => {
   it('Mis pagos with data draws no button at all', async () => {
     const view = await pageWith([SUMMARY]);
     expect(view.host.querySelectorAll('button')).toHaveLength(0);
+  });
+});
+
+describe('quickActionsKeepTheOrderOfTheMockup', () => {
+  it('orders Continuar pago before Mis pagos by their order, not by the order of registration', () => {
+    const order = (component: unknown) => (MY_PAYMENTS_CONTRIBUTIONS as { useValue: { component: unknown; order: number } }[])
+      .find((p) => p.useValue.component === component)!.useValue.order;
+    expect(order(ContinuePaymentActionComponent)).toBeLessThan(order(MyPaymentsActionComponent));
+  });
+});
+
+// Parity with the CURRENT mockup (PDR v1.9): mis-pagos.html (app.js 9613), mis-reservas.html (app.js 4486) and the notices of 17 (app.js 4758).
+const FULL: CustomerPaymentSummary = { ...SUMMARY, proofStatus: 'SIN_COMPROBANTE', finalValueCents: 85_000_000, refundedCents: 0, creditBalanceCents: 0, people: 2 };
+const gridOf = (view: { host: HTMLElement }) => Array.from(view.host.querySelectorAll('.crp-my-payments-meta span'), (s) => flat(s.textContent));
+
+describe('myPaymentsGridWritesEveryFieldOfTheMockupCard', () => {
+  it('draws, in the order of mis-pagos.html, the reservation state, payment type and method, proof, situation and the five values', async () => {
+    expect(gridOf(await pageWith([FULL]))).toEqual([
+      'Estado de la reserva: Pendiente de pago', 'Tipo de pago: Pago total', 'Medio de pago: Transferencia', 'Estado del comprobante: Sin comprobante',
+      'Situación financiera: Sin pago', 'Valor final: $850.000', 'Valores validados: $0', 'Saldo pendiente: $850.000', 'Valores devueltos: $0', 'Saldo a favor: $0',
+    ]);
+  });
+
+  it('adds En tratamiento pendiente only when there is one, and never draws a value the port does not hold', async () => {
+    const withTreatment = gridOf(await pageWith([{ ...FULL, reservationStatus: 'CANCELLED', financialStatus: null, pendingTreatmentCents: 5_000_000, refundedCents: 1_000_000 }]));
+    expect(withTreatment).toContain('Situación financiera: No aplica por reserva cancelada');
+    expect(withTreatment).toContain('Valores devueltos: $10.000');
+    expect(withTreatment.at(-1)).toBe('En tratamiento pendiente: $50.000');
+    TestBed.resetTestingModule();
+    const bare = gridOf(await pageWith([SUMMARY]));
+    expect(bare.join(' ')).not.toMatch(/Valor final|Valores devueltos|Saldo a favor|En tratamiento/);
+  });
+});
+
+describe('myPaymentsListsTheProofsOfEachReservation', () => {
+  const receipts = [{ support: 'comprobante-1.pdf', amountCents: 85_000_000, status: 'RECHAZADO', rejectionReason: 'El monto no coincide' },
+    { support: 'comprobante-2.pdf', amountCents: 85_000_000, status: 'EN_VALIDACION' }];
+
+  it('writes support, amount, state and, if rejected, the reason; with no Descargar because the port holds no file', async () => {
+    const view = await pageWith([{ ...FULL, receipts }]);
+    expect(view.host.querySelector('.crp-my-payments-receipts strong')?.textContent).toBe('Comprobantes');
+    expect(Array.from(view.host.querySelectorAll('.crp-my-payments-receipts li'), (li) => flat(li.textContent))).toEqual([
+      'comprobante-1.pdf · $850.000 · Rechazado (motivo: El monto no coincide)', 'comprobante-2.pdf · $850.000 · En validación']);
+    expect(view.text()).not.toContain('Descargar');
+    expect(view.host.querySelectorAll('a, button')).toHaveLength(0);
+  });
+});
+
+describe('myPaymentsShowsTheCreditBalancePanelOnlyWithTheValuesOfThePort', () => {
+  it('says there is no credit balance when every reservation reports none', async () => {
+    const view = await pageWith([FULL]);
+    expect(flat(view.host.querySelector('.crp-my-payments-credit')?.textContent))
+      .toBe('No tienes saldo a favor. Si una modificación, cancelación o pago validado genera un excedente a tu favor, aparecerá aquí.');
+  });
+
+  it('writes the available credit with its origin and offers no apply or refund action (HU-017 has no portal)', async () => {
+    const view = await pageWith([{ ...FULL, creditBalanceCents: 5_000_000 }]);
+    expect(flat(view.host.querySelector('.crp-my-payments-credit')?.textContent)).toBe(
+      'Saldo a favor disponible: $50.000 (origen: reserva RES-1842). No vence en Fase 1.');
+    expect(view.host.querySelectorAll('button, a')).toHaveLength(0);
+  });
+
+  it('draws no panel when the port does not report the credit', async () => {
+    expect((await pageWith([SUMMARY])).host.querySelector('.crp-my-payments-credit')).toBeNull();
+  });
+});
+
+describe('theCardOfMisReservasWritesTheDeadlinesOfTheMockup', () => {
+  async function smalls(summary: CustomerPaymentSummary) {
+    const source = new SourceDouble();
+    const view = await render(ReservationEconomicLinesComponent, source);
+    view.fixture.componentRef.setInput('reservationId', summary.reservationId); await view.settle();
+    source.reads.at(-1)!.next([summary]); await view.settle();
+    return { lines: Array.from(view.host.querySelectorAll('small'), (line) => flat(line.textContent)), host: view.host };
+  }
+
+  it('Pendiente de pago: the dated deadline when the port gives it, the generic one when not', async () => {
+    const dated = await smalls({ ...FULL, deadlineAt: '2026-10-20T18:00:00-05:00' });
+    expect(dated.lines.at(-1)).toBe('Plazo de pago vigente hasta 20 oct 2026 · 18:00 (una única ampliación posible; nunca después de la hora de inicio de la salida).');
+    TestBed.resetTestingModule();
+    expect((await smalls(FULL)).lines.at(-1)).toBe('Plazo de pago: según la configuración del operador, sin superar la hora de inicio de la salida.');
+  });
+
+  it('Confirmada with balance: the deadline to complete it; a reservation in rescheduling: the frozen deadlines', async () => {
+    const confirmed = { ...FULL, reservationStatus: 'CONFIRMED', financialStatus: 'ABONO_RECIBIDO', balanceCents: 20_000_000 };
+    expect((await smalls({ ...confirmed, deadlineAt: '2026-10-20T06:00:00-05:00' })).lines.at(-1))
+      .toBe('Plazo para completar el saldo: hasta 20 oct 2026 · 06:00 (antes de la hora de inicio de la salida).');
+    TestBed.resetTestingModule();
+    expect((await smalls(confirmed)).lines.at(-1)).toBe('Debes completar el saldo antes de la hora de inicio de la salida.');
+    TestBed.resetTestingModule();
+    expect((await smalls({ ...confirmed, reschedulingPending: true })).lines.at(-1))
+      .toBe('Tus plazos económicos están congelados mientras esperas tu respuesta de reprogramación.');
+  });
+
+  it('a cancelled reservation shows no balance and no deadline; a paid one no deadline either', async () => {
+    expect((await smalls({ ...FULL, reservationStatus: 'CANCELLED', financialStatus: null })).lines.join(' ')).not.toMatch(/Saldo:|Plazo/);
+    TestBed.resetTestingModule();
+    expect((await smalls({ ...FULL, reservationStatus: 'CONFIRMED', financialStatus: 'PAGO_COMPLETO', balanceCents: 0 })).lines.join(' ')).not.toMatch(/Plazo|Debes completar/);
+  });
+
+  it('adds the Ver detalle de la reserva disclosure with the rows of the mockup', async () => {
+    const { host } = await smalls({ ...FULL, deadlineAt: '2026-10-20T18:00:00-05:00', departureAt: '2026-09-18T06:30:00' });
+    expect(host.querySelector('details summary')?.textContent).toBe('Ver detalle de la reserva');
+    expect(Array.from(host.querySelectorAll('details dl div'), (row) => flat(row.textContent))).toEqual([
+      'Salida 18 sep 2026 · 06:30', 'Viajeros 2', 'Tipo de pago Pago total', 'Medio de pago Transferencia', 'Estado de la reserva Pendiente de pago',
+      'Estado del comprobante Sin comprobante', 'Situación financiera Sin pago', 'Valor final $850.000', 'Valores validados $0', 'Saldo pendiente $850.000',
+      'Plazo Plazo de pago vigente hasta 20 oct 2026 · 18:00 (una única ampliación posible; nunca después de la hora de inicio de la salida).']);
+  });
+});
+
+describe('theCardOfMisReservasOffersTheActionsOfTheMockupToTheAreasThatExist', () => {
+  async function actionsOf(summary: CustomerPaymentSummary, areas?: string[]) {
+    const source = new SourceDouble();
+    const view = await render(ReservationEconomicActionsComponent, source, areas ? { areas } : {});
+    view.fixture.componentRef.setInput('reservationId', summary.reservationId); await view.settle();
+    source.reads.at(-1)!.next([summary]); await view.settle();
+    return { ...view, labels: Array.from(view.host.querySelectorAll('button'), (b) => flat(b.textContent)) };
+  }
+  const pay = { ...FULL, paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' };
+
+  it('Continuar pago opens screen 24 with the balance, and Ver pagos y comprobantes opens Mis pagos with the reservation', async () => {
+    const view = await actionsOf(pay);
+    expect(view.labels).toEqual(['Continuar pago', 'Ver pagos y comprobantes']);
+    view.host.querySelectorAll('button')[0].click();
+    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1842', type: 'TOTAL', amount: '85000000' });
+    view.host.querySelectorAll('button')[1].click();
+    expect(view.open).toHaveBeenCalledWith(CLIENT_AREA.payments, { reservation: 'RES-1842' });
+  });
+
+  it('a Rechazado proof offers Presentar nuevo comprobante instead of Continuar pago', async () => {
+    expect((await actionsOf({ ...pay, proofStatus: 'RECHAZADO' })).labels).toEqual(['Presentar nuevo comprobante', 'Ver pagos y comprobantes']);
+  });
+
+  it('offers no payment action while the proof is En validación, when cancelled, in rescheduling or with nothing to pay', async () => {
+    expect((await actionsOf({ ...pay, proofStatus: 'EN_VALIDACION' })).labels).toEqual(['Ver pagos y comprobantes']);
+    TestBed.resetTestingModule();
+    expect((await actionsOf({ ...pay, reservationStatus: 'CANCELLED', proofStatus: 'RECHAZADO' })).labels).toEqual(['Ver pagos y comprobantes']);
+    TestBed.resetTestingModule();
+    expect((await actionsOf({ ...pay, reschedulingPending: true })).labels).toEqual(['Ver pagos y comprobantes']);
+    TestBed.resetTestingModule();
+    expect((await actionsOf({ ...pay, reservationStatus: 'CONFIRMED', balanceCents: 0 })).labels).toEqual(['Ver pagos y comprobantes']);
+  });
+
+  it('does not draw a button whose destination the build does not have (lesson A4)', async () => {
+    expect((await actionsOf(pay, [CLIENT_AREA.panel])).labels).toEqual([]);
+    TestBed.resetTestingModule();
+    expect((await actionsOf(pay, [CLIENT_AREA.panel, CLIENT_AREA.payments])).labels).toEqual(['Ver pagos y comprobantes']);
+  });
+});
+
+describe('thePanelNotificationsCarryTheContentOfTheMockup', () => {
+  const base = { reservationId: 'RES-1850', proofStatus: 'SIN_COMPROBANTE' };
+  async function noticesOf(...pending: PaymentNotice[]) {
+    const view = await render(PaymentNoticesComponent, new SourceDouble(null, pending));
+    return { ...view, lines: Array.from(view.host.querySelectorAll('p'), (p) => flat(p.textContent)) };
+  }
+
+  it('Rechazado: says so and offers Presentar nuevo comprobante on the same reservation', async () => {
+    const view = await noticesOf({ ...base, proofStatus: 'RECHAZADO', reservationStatus: 'PENDING_PAYMENT', balanceCents: 85_000_000, paymentType: 'TOTAL' });
+    expect(view.lines).toEqual(['Reserva RES-1850: comprobante Rechazado. Puedes presentar un nuevo comprobante sobre la misma reserva mientras el plazo de pago siga vigente.']);
+    view.host.querySelector('button')!.click();
+    expect(flat(view.host.querySelector('button')?.textContent)).toBe('Presentar nuevo comprobante');
+    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1850', type: 'TOTAL', amount: '85000000' });
+  });
+
+  it('Confirmada with balance and Pendiente de pago: the balance, the deadline and Continuar pago', async () => {
+    const view = await noticesOf(
+      { ...base, reservationStatus: 'CONFIRMED', balanceCents: 20_000_000, deadlineAt: '2026-10-20T06:00:00-05:00' },
+      { ...base, reservationId: 'RES-1851', reservationStatus: 'PENDING_PAYMENT', balanceCents: 85_000_000 });
+    expect(view.lines).toEqual([
+      'Reserva RES-1850: Confirmada con saldo pendiente de $200.000. Plazo para completar el saldo: hasta 20 oct 2026 · 06:00 (antes de la hora de inicio de la salida).',
+      'Reserva RES-1851: Pendiente de pago. Plazo de pago: según la configuración del operador, sin superar la hora de inicio de la salida.']);
+    expect(Array.from(view.host.querySelectorAll('button'), (b) => flat(b.textContent))).toEqual(['Continuar pago', 'Continuar pago']);
+  });
+
+  it('Cancelada: the cause and the treatment of the paid values; the credit balance with the link to Mis pagos', async () => {
+    const view = await noticesOf(
+      { ...base, reservationStatus: 'CANCELLED', cancellationCause: 'Cancelada por vencimiento', pendingTreatmentCents: 5_000_000 },
+      { ...base, reservationId: 'RES-1851', reservationStatus: 'CONFIRMED', balanceCents: 0, creditBalanceCents: 3_000_000 });
+    expect(view.lines).toEqual([
+      'Reserva RES-1850: Cancelada por vencimiento. Los valores abonados ($50.000) quedaron en tratamiento pendiente.',
+      'Reserva RES-1851: tienes un saldo a favor de $30.000.']);
+    expect(flat(view.host.querySelector('button')?.textContent)).toBe('Consultar saldo a favor');
+    view.host.querySelector('button')!.click();
+    expect(view.open).toHaveBeenCalledWith(CLIENT_AREA.payments, { reservation: 'RES-1851' });
   });
 });
