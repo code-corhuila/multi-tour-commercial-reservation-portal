@@ -33,7 +33,7 @@ type Note = { readonly text: string; readonly done: boolean } | null;
           <article class="crp-operator-panel"><div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ t.cardOwner(r) }}</p><h2>{{ t.paid }} {{ money(r.amountCents) }}</h2></div>
               @if (r.remainingMinutes !== null) { <span class="crp-operator-status crp-is-pending">{{ t.left(r.remainingMinutes) }}</span> }</div>
             <p class="crp-operator-copy">{{ r.reason }}</p><p class="crp-operator-copy">{{ t.treatmentRule }} {{ t.cardRule }}</p>
-            <div class="crp-form-grid"><div class="crp-refunds-wide"><label>{{ t.motive }}<textarea [placeholder]="t.motivePlaceholder" [disabled]="busy()" [value]="motives()[r.id] ?? ''" (input)="motive(r.id, $event)"></textarea></label></div></div>
+            <div class="crp-form-grid"><div class="crp-refunds-wide"><label [attr.for]="'crp-motive-' + r.id">{{ t.motive }}</label><textarea [id]="'crp-motive-' + r.id" [placeholder]="t.motivePlaceholder" [disabled]="busy()" [value]="motives()[r.id] ?? ''" (input)="motive(r.id, $event)"></textarea></div></div>
             <div class="crp-form-actions crp-refunds-actions">
               @if (!decided) { <button type="button" class="crp-operator-primary" [disabled]="busy()" (click)="decide(r, 'devolver')">{{ t.fullRefund }}</button> }
               <button type="button" class="crp-operator-outline" [disabled]="busy()" (click)="decide(r, 'saldo')">{{ t.creditAction }}</button>
