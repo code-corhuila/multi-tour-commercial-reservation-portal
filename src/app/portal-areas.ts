@@ -76,8 +76,9 @@ export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTA
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  // 002 plan D-06, AC-PE.7: no menu entry for a role that cannot read establishments (the Colaborador operativo).
   { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent,
-    isAvailable: (injector) => has(injector, AssociatedEstablishmentsSource) },
+    isAvailable: (injector) => injector.get(PortalCapabilities).canReadEstablishments() && has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).

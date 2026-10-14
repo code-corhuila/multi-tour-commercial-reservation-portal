@@ -149,6 +149,14 @@
 }
 .crp-root input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--crp-accent); vertical-align: middle; }
 .crp-root input[aria-invalid="true"], .crp-root select[aria-invalid="true"], .crp-root textarea[aria-invalid="true"] { border-color: var(--crp-error); background: var(--crp-error-soft); }
+/* Shared Spanish file picker: the native input stays the focusable control, drawn as an outline button and the file name. */
+.crp-root .crp-file-picker { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.crp-root .crp-file-picker .crp-file-picker-input { position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; opacity: 0; overflow: hidden; }
+.crp-root .crp-file-picker-button { display: inline-flex; align-items: center; min-height: 42px; padding: 0 16px; border: 1px solid var(--crp-line-strong); border-radius: var(--crp-radius-control); background: var(--crp-surface); color: var(--crp-accent-strong); font-size: 0.86rem; font-weight: 700; cursor: pointer; }
+.crp-root .crp-file-picker-input:focus-visible + .crp-file-picker-button { box-shadow: var(--crp-focus); }
+.crp-root .crp-file-picker-input:disabled + .crp-file-picker-button { color: var(--crp-soft); cursor: not-allowed; }
+.crp-root .crp-file-picker-name { color: var(--crp-soft); font-size: 0.86rem; }
+.crp-root .crp-file-picker > p { flex-basis: 100%; margin: 0; }
 
 /* The four states: loading, empty, error, denied. Never conveyed by colour alone (each has its text). */
 .crp-root [role="status"], .crp-root [role="alert"] {
