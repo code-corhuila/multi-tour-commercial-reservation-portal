@@ -14,13 +14,16 @@ import { MyReservationsSource } from '../src/app/self-service-reservation/data/m
 import { ReservationSelectionSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerStanding, RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
-import { tourPhoto } from '../src/app/shared/tour-photo';
+import { TourImages } from '../src/app/shared/tour-photo';
+import { DemoTourImages, demoTourPhoto as tourPhoto } from '../src/app/demo/tour-photo-demo';
 import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION, selectionAt } from './self-service-reservation.double';
 
 const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
+import { validityOn } from '../src/app/demo/discounts-demo';
 const rule = (overrides: Partial<DiscountRule>): DiscountRule => ({
-  id: 'r1', name: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
-  type: 'PERCENTAGE', percentageBasisPoints: 2000, status: 'ACTIVE', ...overrides,
+  id: 'r1', tourId: 'svc-1', tourName: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
+  percentageBasisPoints: 2000, stackable: false, status: 'ACTIVE', ...overrides,
+  validity: validityOn({ status: 'ACTIVE', startsOn: '2000-01-01', endsOn: '2999-12-31', ...overrides }, '2026-10-14'),
 } as DiscountRule);
 const tour = (n: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
   serviceId: `svc-${n}`, serviceType: 'TOUR', commercialName: `Tour ${n}`, catalogStatus: 'ACTIVE', baseRateCents: 18_000_000 + n * 100_000,
@@ -39,6 +42,7 @@ async function openPanel(options: Options = {}) {
   navigation.register(options.areas ?? ALL_AREAS);
   const catalog = options.catalog ?? [tour(1)];
   TestBed.configureTestingModule({ providers: [
+    { provide: TourImages, useValue: new DemoTourImages() },
     { provide: CustomerContext, useValue: new CustomerAs(options.standing ?? 'FINAL_CUSTOMER') },
     { provide: MyReservationsSource, useValue: reservations },
     { provide: ReservationSelectionSource, useValue: selectionAt(options.selection ?? null) },

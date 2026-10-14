@@ -1,13 +1,23 @@
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
-import { parseMoney } from '../src/app/catalog/model/money';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
-import { canCreateReservations, hasCapacity, openDepartures, quote, validateReservation } from '../src/app/reservations/model/reservation';
-import { departureOf } from './reservations.double';
+import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
+import { openDepartures, validateReservation } from '../src/app/reservations/model/reservation';
+import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
+import { AppliedDiscount } from '../src/app/reservations/model/reservation';
+import { ReservationDiscounts } from '../src/app/reservations/data/reservation-integrations';
+import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
+import { StubCatalog, StubDepartures, departureOf, serviceOf } from './reservations.double';
+import { parseMoney } from '../src/app/shared/money';
 
 const cents = (text: string) => { const parsed = parseMoney(text); if (parsed.kind !== 'valid') throw new Error(text); return parsed.minorUnits; };
-const none = () => [];
+/** 007- H-D7: the cents rules now live in the demo quote source, which stands in for the service. */
+const quoteOver = (rateCents: number, people: number, transportPerPersonCents: number, apply: (original: number) => readonly AppliedDiscount[] = () => []) =>
+  firstValueFrom(new DemoReservationQuotes(new StubDepartures(() => of([departureOf(1, { transportPerPersonCents })])),
+    new StubCatalog([serviceOf('Kayak', rateCents)]), new (class extends ReservationDiscounts { override apply(o: number) { return apply(o); } })())
+    .quote({ departureId: 'dep-1', serviceIds: ['svc-Kayak'], people }));
 
+const capacity = new DemoDepartureCapacity();
 describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
   it('keeps only departures that are Programada and open for reservations', () => {
     const all = [departureOf(1), departureOf(2, { state: 'CANCELADA' }), departureOf(3, { openForReservations: false }), departureOf(4, { state: 'FINALIZADA' })];
@@ -16,17 +26,17 @@ describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
 });
 
 describe('projectedValueAddsServicesAndPerPersonTransportInCents', () => {
-  it('multiplies whole cents read from the text, so 19.99 for 3 people is 5997', () => {
-    const q = quote([{ id: 's', name: 'Kayak', rateCents: cents('19.99') }], 3, departureOf(1, { transportPerPersonCents: cents('5') }), none);
+  it('multiplies whole cents read from the text, so 19.99 for 3 people is 5997', async () => {
+    const q = await quoteOver(cents('19.99'), 3, cents('5'));
     expect(q.services).toEqual([{ name: 'Kayak', cents: 5997 }]);
     expect(q.transportCents).toBe(1500);
     expect(q.projectedCents).toBe(7497);
     expect(q.finalCents).toBe(7497);
   });
 
-  it('passes the original value to the discount calculation and subtracts each line in order', () => {
+  it('passes the original value to the discount calculation and subtracts each line in order', async () => {
     const bases: number[] = [];
-    const q = quote([{ id: 's', name: 'A', rateCents: 1000 }], 2, departureOf(1, { transportPerPersonCents: 0 }), (original) => {
+    const q = await quoteOver(1000, 2, 0, (original) => {
       bases.push(original);
       return [{ name: 'Early', base: 'ORIGINAL_VALUE', amountCents: 200 }, { name: 'Group', base: 'PREVIOUS_SUBTOTAL', amountCents: 180 }];
     });
@@ -37,27 +47,26 @@ describe('projectedValueAddsServicesAndPerPersonTransportInCents', () => {
 });
 
 describe('missing mandatory data and capacity, as rules', () => {
-  const blank = { leadCustomerId: '', departureId: '', serviceIds: [], people: '' };
+  const blank = { leadCustomerId: '', departureId: '', serviceId: '', people: '', paymentType: '', paymentMethod: '', accepted: false };
   it('names each missing datum', () => {
-    expect(Object.keys(validateReservation(blank, undefined)).sort()).toEqual(['departureId', 'leadCustomerId', 'people', 'serviceIds']);
+    expect(Object.keys(validateReservation(blank, undefined, capacity)).sort()).toEqual(['accepted', 'departureId', 'leadCustomerId', 'paymentMethod', 'paymentType', 'people', 'serviceId']);
   });
   it('refuses zero, decimals and words as a number of people', () => {
     for (const people of ['0', '2.5', 'two', '-1']) {
-      expect(validateReservation({ ...blank, people }, departureOf(1)).people).toBeDefined();
+      expect(validateReservation({ ...blank, people }, departureOf(1), capacity).people).toBeDefined();
     }
   });
   it('refuses more people than the effective capacity, and accepts exactly the capacity', () => {
-    const full = { leadCustomerId: 'c', departureId: 'dep-1', serviceIds: ['s'], people: '3' };
-    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 2 })).people).toContain('Not enough capacity');
-    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 3 }))).toEqual({});
-    expect(hasCapacity(departureOf(1, { effectiveCapacity: 3 }), 4)).toBe(false);
+    const full = { leadCustomerId: 'c', departureId: 'dep-1', serviceId: 's', people: '3', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER', accepted: true };
+    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 2 }), capacity).people).toContain('No hay cupo suficiente');
+    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 3 }), capacity)).toEqual({});
   });
 });
 
 describe('readOnlyRolesAndUnknownRolesGetNoCreateAction (rule)', () => {
   it('lets only the administrator and the collaborator create', () => {
-    expect(['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'].map((role) => canCreateReservations({ role }))).toEqual([true, true]);
-    expect(['MANAGER', 'ACCOUNTANT', 'ANALYST', 'READ_ONLY', 'SOMETHING_ELSE', ''].some((role) => canCreateReservations({ role }))).toBe(false);
+    expect(['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'].map((role) => PortalCapabilities.for(role).canCreateReservations())).toEqual([true, true]);
+    expect(['MANAGER', 'ACCOUNTANT', 'ANALYST', 'READ_ONLY', 'SOMETHING_ELSE', ''].some((role) => PortalCapabilities.for(role).canCreateReservations())).toBe(false);
   });
 });
 
@@ -65,9 +74,9 @@ describe('the demo writer', () => {
   const setup = () => {
     const departures = new DemoDeparturesStore(), store = new DemoReservationsStore();
     const open = departures.items.find((d) => d.state === 'PROGRAMADA' && d.openForReservations)!;
-    const command = (people: number) => ({ leadCustomerId: 'demo-cus-1', departureId: open.id, serviceIds: ['x'], people,
-      quote: { services: [], transportCents: 0, projectedCents: 0, discounts: [], finalCents: 0 } });
-    return { departures, store, open, command, writer: new DemoReservationsWriter(store, departures) };
+    const command = (people: number) => ({ leadCustomerId: 'demo-cus-1', departureId: open.id, serviceIds: ['x'], people });
+    const quotes = new DemoReservationQuotes(departures, new StubCatalog([]), new (class extends ReservationDiscounts { override apply() { return []; } })());
+    return { departures, store, open, command, writer: new DemoReservationsWriter(store, departures, quotes) };
   };
 
   it('capacityCheckHoldsNoSeat: neither a refused nor a created reservation changes the effective capacity', async () => {

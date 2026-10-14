@@ -27,9 +27,9 @@ describe('discount management intentions', () => {
     expect(p.writer.calls).toHaveLength(1); expect(p.writer.calls[0]).toMatchObject({ kind: 'inactivate', id: 'Promotion' });
     expect(p.element.querySelector<HTMLButtonElement>('[role="dialog"] button')!.disabled).toBe(true);
     p.writer.calls[0].fail(apiError()); await p.settle(); expect(p.element.querySelector('[role="dialog"] [role="alert"]')).not.toBeNull();
-    await p.click('Confirm inactivation'); expect(p.writer.calls[1].key).toBe(p.writer.calls[0].key);
-    p.writer.calls[1].reply({ ...discountNamed(), status: 'INACTIVE' }); await p.settle();
-    expect(p.element.querySelector('li')?.textContent).toContain('INACTIVE');
+    await p.click('Confirmar inactivación'); expect(p.writer.calls[1].key).toBe(p.writer.calls[0].key);
+    p.writer.calls[1].reply({ ...discountNamed(), status: 'INACTIVE', validity: { label: 'Inactivo', tone: 'pending', inForce: false } }); await p.settle();
+    expect(p.element.querySelector('li')?.textContent).toContain('Inactivo');
     expect(p.element.querySelector('[role="dialog"]')).toBeNull();
     expect(Array.from(p.element.querySelectorAll('button')).some(b => b.textContent?.trim() === 'Inactivate')).toBe(false);
   });

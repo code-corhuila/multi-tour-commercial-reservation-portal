@@ -22,7 +22,8 @@ import {
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
-import { tourPhoto } from '../src/app/shared/tour-photo';
+import { TourImages } from '../src/app/shared/tour-photo';
+import { DemoTourImages } from '../src/app/demo/tour-photo-demo';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
@@ -51,6 +52,8 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: PaymentMethodsSource, useValue: methods },
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
+    { provide: TourImages, useValue: new DemoTourImages() },
+    ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
@@ -278,13 +281,6 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     }
   });
 
-  it('the summary photo is the photo of the tour in the featured cards, and no photo leaves the neutral block', () => {
-    expect(tourPhoto('svc-1')).toBe(tourPhoto('svc-1'));
-    expect(new Set(['svc-1', 'svc-2', 'svc-3', 'svc-4', 'svc-5', 'svc-6'].map(tourPhoto)).size).toBeGreaterThan(1);
-    expect(tourPhoto('')).toBeNull();
-    expect(tourPhoto(undefined)).toBeNull();
-    expect(tourPhoto('demo-svc-3')).toBe('/assets/destino-cascadas-de-iraka.jpg'); // Canotaje en el Río Suaza
-  });
 
   it('Volver a fecha y viajeros reopens Reservar tour on the same tour', async () => {
     const navigation = new PortalNavigation();

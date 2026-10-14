@@ -16,7 +16,8 @@ import { ruleNamed } from './current-discounts.double';
 // HU-COM-003 amendment v1.9, T-V19-2: AC-PD.13, AC-PD.14, AC-PD.15. Money in cents, percentages in basis points.
 const AT = '2026-10-14';
 const HUNDRED = 10_000_000;
-const rule = (priority: number, over: Partial<DiscountRule> = {}): DiscountRule => ({ id: `r${priority}`, tourId: 'demo-svc-2', tourName: 'Ruta del café en Pitalito',
+import { validityOn } from '../src/app/demo/discounts-demo';
+const rule = (priority: number, over: Partial<DiscountRule> = {}): DiscountRule => ({ validity: validityOn({ status: 'ACTIVE', startsOn: '2026-01-01', endsOn: '2026-12-31', ...over }, '2026-10-14'), id: `r${priority}`, tourId: 'demo-svc-2', tourName: 'Ruta del café en Pitalito',
   percentageBasisPoints: 1000, stackable: true, startsOn: '2026-01-01', endsOn: '2026-12-31', priority, calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', ...over });
 const discountsOver = (...rules: DiscountRule[]) => { const store = new DemoDiscountRulesStore(); store.rules = rules; return new DemoReservationDiscounts(() => store.rules); };
 
