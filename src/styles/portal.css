@@ -530,3 +530,8 @@
 .crp-root .crp-refunds-form { display: grid; gap: var(--crp-space-3); } .crp-root .crp-refunds-wide { grid-column: 1 / -1; } .crp-root .crp-refunds-feedback { margin: 0; color: var(--crp-soft); font-size: 0.8rem; line-height: 1.45; } .crp-root .crp-refunds-feedback.crp-is-valid { color: var(--crp-success); font-weight: 700; }
 .crp-root .crp-refunds-feedback[role="alert"], .crp-root .crp-refunds-error { color: var(--crp-error); }
 @media (max-width: 720px) { .crp-root .crp-refunds-hero { grid-template-columns: minmax(0, 1fr); } }
+/* HU-COM-018 admin-reprogramar-reserva.html: the compact hero of operator-hero, with the episode badge beside the title. */
+.crp-root .crp-rescheduling-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); align-items: center; gap: 28px; margin-bottom: 22px; padding: 25px 28px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: linear-gradient(135deg, var(--crp-accent-soft), var(--crp-surface) 76%); }
+.crp-root .crp-rescheduling-hero h2 { margin: 4px 0 0; color: var(--crp-text); font-size: clamp(1.25rem, 1.1rem + 0.45vw, 1.58rem); line-height: 1.25; letter-spacing: -0.045em; }
+.crp-root .crp-rescheduling-hero .crp-status { justify-self: end; }
+@media (max-width: 620px) { .crp-root .crp-rescheduling-hero { grid-template-columns: 1fr; } .crp-root .crp-rescheduling-hero .crp-status { justify-self: start; } }

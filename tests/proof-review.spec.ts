@@ -122,7 +122,7 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     // The mockup always draws the badge of Pagos pendientes, also when no proof waits.
     expect(empty.element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('0 pendientes');
     TestBed.resetTestingModule();
-    expect((await screenOf(PaymentsPageComponent, providers())).element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(2);
+    expect((await screenOf(PaymentsPageComponent, providers())).element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(3); // HU-COM-018 seeds RES-1827 with a proof En validación (AC-RP.4).
     TestBed.resetTestingModule();
     const unknown = await validating('RES-1999-P1');
     expect(unknown.element.querySelector('[data-state="empty"]')?.textContent)
@@ -333,7 +333,7 @@ describe('the 24-hour mark (T-05)', () => {
 
   it('paymentsTableShowsTheOverdueNotice', async () => {
     const { element } = await screenOf(PaymentsPageComponent, providers());
-    expect(element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('2 pendientes');
+    expect(element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('3 pendientes');
     expect(element.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Hay 1 soporte(s) con revisión vencida. La marca no cambia el estado ni libera cupos.');
     const rows = Array.from(element.querySelectorAll('tbody tr')).map((tr) => flat(tr as HTMLElement));
     expect(rows.find((row) => row.includes(`#${VALIDATED}`))).toContain('En validación · Revisión vencida');
@@ -418,7 +418,7 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [
       contribute(PAYMENTS_ROW_ACTIONS, { component: RowDouble, order: 1 }), contribute(PAYMENTS_PAGE_PANELS, { component: PanelDouble, order: 1 })] }));
     const cells = Array.from(element.querySelectorAll('tbody tr td:last-child button + crp-test-row')).map((cell) => cell.textContent?.trim());
-    expect(cells.sort()).toEqual([`Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]);
+    expect(cells.sort()).toEqual(['Fila RES-1827', `Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]);
     expect(element.querySelector('section.crp-operator-panel:has(table) + crp-test-panel')).not.toBeNull();
   });
 
@@ -429,7 +429,7 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [body] }));
     const bodies = Array.from(element.querySelectorAll('table tbody'));
     expect(bodies).toHaveLength(2);
-    expect(bodies[0].querySelectorAll('tr')).toHaveLength(2);
+    expect(bodies[0].querySelectorAll('tr')).toHaveLength(3);
     expect(bodies[1].textContent?.trim()).toBe('Fila de seguimiento');
     TestBed.resetTestingModule();
     const none = new (class extends PendingProofsSource { override list() { return of({ rows: [], overdueCount: 0 }); } })();

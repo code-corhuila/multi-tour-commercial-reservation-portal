@@ -19,6 +19,7 @@ import { ReservationChangeActionComponent } from './app/reservation-changes/comp
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
+import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -79,6 +80,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       provideTravellersModification(),
       // HU-COM-016: "Devoluciones monetarias" of 13, only for who authorizes or executes and with the refund ports.
       contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
+      // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
+      RESCHEDULING_ENTRY,
     ],
   }).then((created) => {
     app = created;
