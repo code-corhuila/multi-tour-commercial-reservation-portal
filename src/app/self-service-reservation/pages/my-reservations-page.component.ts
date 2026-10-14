@@ -53,7 +53,10 @@ export class MyReservationsPageComponent {
   protected readonly cop = formatCop;
   protected readonly departure = departureLine;
   protected readonly travelers = travelers;
-  protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
+  /** HU-COM-001 portal foundation of 2026-10-13: the lines other stories add to each card, under the departure line. */
+  protected readonly cardExtras = RESERVATION_CARD_EXTRAS;
+  protected readonly cardActions = RESERVATION_CARD_ACTIONS;
+  protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => this.source.listMine().pipe(

@@ -56,5 +56,5 @@ export const RESCHEDULING_CONTRIBUTIONS: Provider[] = [
   contribute(RESERVATION_CARD_EXTRAS, { component: ReschedulingMarkComponent, order: 20, isAvailable: withPort }),
   contribute(RESERVATION_CARD_ACTIONS, { component: RespondProposalActionComponent, order: 0, isAvailable: withPort }),
   contribute(CLIENT_NOTICES, { component: ReschedulingNoticesComponent, order: 10,
-    isAvailable: (injector) => withPort(injector) && injector.get(CustomerContext).standing === 'FINAL_CUSTOMER' }),
+    isAvailable: (injector) => withPort(injector) && injector.get(CustomerContext).isFinalCustomer }),
 ];

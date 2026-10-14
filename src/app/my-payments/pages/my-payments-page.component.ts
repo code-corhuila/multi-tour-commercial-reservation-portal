@@ -53,6 +53,8 @@ export class MyPaymentsPageComponent {
   protected readonly cop = formatCop;
   protected readonly rows = gridRows;
   protected readonly departure = departureLine;
+  /** Owner decision of 2026-10-13 (option A): a visitor reads the notice of Mis reservas, not the empty state. */
+  protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly only = inject(PortalNavigation, { optional: true })?.params()['reservation'];
   private readonly source = inject(MyPaymentsSource);
   private readonly requests = new Subject<void>();
