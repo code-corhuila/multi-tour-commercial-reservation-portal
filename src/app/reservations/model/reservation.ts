@@ -1,4 +1,5 @@
-import { formatMoney } from '../../catalog/model/money';
+import { formatCop } from '../../shared/format';
+import type { DepartureCapacity } from '../data/departure-capacity';
 
 /** PROPUESTO: field names await the reservation contract (gap G-B). A departure stands in for HU-OPS-001 (gap G-OPS). */
 export type Departure = {
@@ -123,9 +124,6 @@ export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`
 export const canCreateReservations = (actor: { role: string }) => actor.role === 'TENANT_ADMINISTRATOR' || actor.role === 'OPERATIONAL_COLLABORATOR';
 /** RN-RES-010, RN-SAL-001: only a Programada departure that is open for reservations is offered. */
 export const openDepartures = (all: readonly Departure[]) => all.filter((d) => d.state === 'PROGRAMADA' && d.openForReservations);
-/** RN-RES-007: a read-only comparison; it holds no seat. */
-export const hasCapacity = (departure: Departure, people: number) => people <= departure.effectiveCapacity;
-export const capacityMessage = (d: Departure) => `Not enough capacity on this departure: ${d.effectiveCapacity} seats left. Nothing was created.`;
 
 /** A whole number of people of at least one, or null. */
 export function peopleOf(text: string): number | null {
@@ -133,21 +131,8 @@ export function peopleOf(text: string): number | null {
   return /^\d+$/.test(typed) && Number.isSafeInteger(people) && people >= 1 ? people : null;
 }
 
-/**
- * Integer cents only (RN-RC4). DP-RC1 PROPUESTO: every rate is per person. The discounts come from the
- * injected calculation of HU-COM-004 (RN-RC5); this function only subtracts the lines it returns.
- */
-export function quote(services: readonly ServiceOption[], people: number, departure: Departure,
-  discountsOn: (originalCents: number) => readonly AppliedDiscount[]): Quote {
-  const lines = services.map((s) => ({ name: s.name, cents: s.rateCents * people }));
-  const transportCents = departure.transportPerPersonCents * people;
-  const projectedCents = lines.reduce((sum, line) => sum + line.cents, transportCents);
-  const discounts = discountsOn(projectedCents);
-  return { services: lines, transportCents, projectedCents, discounts,
-    finalCents: Math.max(0, discounts.reduce((value, d) => value - d.amountCents, projectedCents)) };
-}
-
-export function validateReservation(draft: ReservationDraft, departure: Departure | undefined): ReservationMessages {
+/** The seat rule (RN-RES-007) is the port's: `capacity` answers whether the departure holds the people and with what text it refuses. */
+export function validateReservation(draft: ReservationDraft, departure: Departure | undefined, capacity: DepartureCapacity): ReservationMessages {
   const errors: ReservationMessages = {}, people = peopleOf(draft.people);
   if (!draft.leadCustomerId) errors.leadCustomerId = 'El cliente titular es obligatorio.';
   if (!departure) errors.departureId = 'La salida es obligatoria.';
@@ -156,6 +141,6 @@ export function validateReservation(draft: ReservationDraft, departure: Departur
   if (!draft.paymentMethod) errors.paymentMethod = 'El medio de pago esperado es obligatorio.';
   if (!draft.accepted) errors.accepted = 'Confirma que el cliente acepta las condiciones.';
   if (people === null) errors.people = 'La cantidad de viajeros es obligatoria: un número entero de al menos uno.';
-  else if (departure && !hasCapacity(departure, people)) errors.people = capacityMessage(departure);
+  else if (departure && !capacity.fits(departure, people)) errors.people = capacity.refusal(departure);
   return errors;
 }

@@ -33,7 +33,7 @@ describe('discount list states and newest request', () => {
     p.source.requests[0].fail(); await p.settle(); expect(p.state()).toBe('error');
     Array.from(p.element.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Retry')!.click(); await p.settle();
     expect(p.state()).toBe('loading'); p.source.requests[1].reply([]); await p.settle(); expect(p.state()).toBe('empty');
-    p.fixture.componentInstance.reload(); p.source.requests[2].reply([discountNamed('Second', 2), { ...discountNamed('First'), status: 'INACTIVE' }]);
+    p.fixture.componentInstance.reload(); p.source.requests[2].reply([discountNamed('Second', 2), { ...discountNamed('First'), status: 'INACTIVE', validity: { label: 'Inactivo', tone: 'pending', inForce: false } }]);
     await p.settle(); expect(p.state()).toBe('data');
     const rows = Array.from(p.element.querySelectorAll('li'), r => r.textContent);
     expect(rows[0]).toContain('First'); expect(rows[1]).toContain('Second');
