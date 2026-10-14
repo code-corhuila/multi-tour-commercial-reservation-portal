@@ -5,8 +5,6 @@ export const CLIENT_AREA = Object.freeze({
   panel: 'client-panel', tours: 'tours', lodging: 'lodging', gastronomy: 'gastronomy', reservations: 'my-reservations',
   /** HU-COM-014 mis-pagos.html, opened from 17. */
   payments: 'my-payments',
-  /** profile.html, opened by the Perfil button of the client header and by the avatar of the compact header. */
-  profile: 'profile',
 } as const);
 
 /**
