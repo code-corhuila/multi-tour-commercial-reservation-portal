@@ -149,7 +149,8 @@ describe('anotherCustomersReservationCodeGivesTheEmptyState', () => {
 
   it('the demo source reads only the reservations of the session customer, and nothing for another standing', async () => {
     const mine = await firstValueFrom(demo().inject(MyPaymentsSource).listMine());
-    expect(mine.map((r) => r.reservationId)).toEqual(['RES-1842', 'RES-1840', 'RES-1832', 'RES-1831', 'RES-1830']);
+    // HU-COM-018 also gives the demo customer RES-1829 and RES-1828 (rescheduling episodes).
+    expect(mine.map((r) => r.reservationId)).toEqual(['RES-1842', 'RES-1840', 'RES-1832', 'RES-1831', 'RES-1830', 'RES-1829', 'RES-1828']);
     TestBed.resetTestingModule();
     const visitor = await firstValueFrom(demo(['UNKNOWN']).inject(MyPaymentsSource).listMine());
     expect(visitor).toEqual([]);
@@ -370,8 +371,11 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
       await vi.waitFor(() => expect(flat(host.querySelector('.crp-panel-notices .crp-operator-panel')?.textContent))
         .toBe('Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas.'));
       press(host, 'MP Mis pagos Consulta pagos, abonos, saldos y soportes de tus reservas.');
-      await vi.waitFor(() => expect(host.querySelectorAll('li.crp-my-payments-card')).toHaveLength(5));
-      expect(Array.from(host.querySelectorAll('li.crp-my-payments-card'), (c) => flat(c.textContent))).toEqual([
+      // The five situations of the mockup come first; HU-COM-018 adds the demo customer's RES-1829 and RES-1828 after them.
+      await vi.waitFor(() => expect(host.querySelectorAll('li.crp-my-payments-card')).toHaveLength(7));
+      const cards = Array.from(host.querySelectorAll('li.crp-my-payments-card'), (c) => flat(c.textContent));
+      expect(cards.slice(5).map((card) => card.split(' ')[0])).toEqual(['RES-1829', 'RES-1828']);
+      expect(cards.slice(0, 5)).toEqual([
         'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Tipo: Pago total Medio: Transferencia Comprobante: Sin comprobante Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $850.000',
         'RES-1840 Ruta Andina 18 sep 2026 · 06:30 Tipo: Pago total Medio: Transferencia Comprobante: En validación Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $1.299.000',
         'RES-1832 Tour de ejemplo 20 sep 2026 · 07:00 Tipo: Abono Medio: Transferencia Comprobante: Aprobado Situación financiera: Abono recibido Valores validados: $100.000 Saldo pendiente: $200.000',
