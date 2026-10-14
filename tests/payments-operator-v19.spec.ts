@@ -73,7 +73,9 @@ describe('cash received by the team is a validated payment (RF-015A, RN-RES-004,
 
   it('a transfer registered by the team is still only En validación', async () => {
     TestBed.configureTestingModule({ providers: providers(TRANSFER) });
-    expect(await register(TRANSFER, 30_000_000, 'k-1', pdf())).toMatchObject({ validatedCents: undefined, balanceCents: 85_000_000, status: 'PENDIENTE_DE_PAGO' });
+    const after = await register(TRANSFER, 30_000_000, 'k-1', pdf());
+    expect(after.validatedCents).toBeUndefined();
+    expect(after).toMatchObject({ balanceCents: 85_000_000, status: 'PENDIENTE_DE_PAGO' });
   });
 
   it('the blocking messages are the ones of the mockup', async () => {
@@ -148,7 +150,7 @@ describe('admin-gestion-pago, labels and texts of the current mockup', () => {
     const done = flat(element.querySelector('.crp-payments-completed')!);
     expect(done).toContain('Total validado');
     expect(done).toContain('$418.000');
-    expect(done).toMatch(/Efectivo recibido \(\d{2} \w{3} \d{4} · \d{2}:\d{2}\) \$418\.000/);
+    expect(done).toMatch(/Efectivo recibido \(\d{2} \w{3} \d{4} · \d{2}:\d{2}\)\$418\.000/);
   });
 });
 
