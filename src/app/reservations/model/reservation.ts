@@ -21,7 +21,7 @@ export type CreateReservationCommand = {
 /** The snapshot fixed at creation and the balance the service keeps; the screens never recalculate them (RN-RES-003, 007- H-D8). */
 export type Reservation = {
   readonly id: string; readonly leadCustomerName: string; readonly tourName: string; readonly departureDate: string; readonly conditions: string;
-  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL';
+  readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL' | 'ABONO_RECIBIDO' | 'PAGO_COMPLETO';
   /** HU-COM-009 RN-PY5: held with the first payment. */
   readonly seatHeld: boolean; readonly departureId?: string;
   /** HU-COM-009 DP-PY3: type and method codes of PaymentMethodsSource; absent while none was set. */
@@ -33,10 +33,13 @@ export type Reservation = {
   readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
     readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null };
 };
-/** HU-COM-009: a payment pending validation (RN-PY1); field names await payment_attempts (G-B). */
+/** HU-COM-009: a payment pending validation (RN-PY1); HU-COM-010 (D-02): when it was presented and the decision on its proof.
+ * Field names await payment_attempts (G-B). */
 export type ReservationPayment = {
   readonly id: string; readonly method: string; readonly amountCents: number; readonly proofName: string | null;
-  readonly proofStatus: 'EN_VALIDACION' | 'SIN_COMPROBANTE'; readonly registeredBy: string;
+  readonly proofStatus: 'EN_VALIDACION' | 'SIN_COMPROBANTE' | 'APROBADO' | 'RECHAZADO'; readonly registeredBy: string;
+  readonly presentedAt?: string; readonly review?: { readonly decision: 'APROBADO' | 'RECHAZADO'; readonly verifiedAmountCents: number | null; readonly reason: string;
+    readonly actorLabel: string; readonly decidedAt: string };
 };
 export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCION' | 'FINALIZADA' | 'CANCELADA';
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };
@@ -64,7 +67,8 @@ export const STATUS_CLASS: Record<Reservation['status'], string> = { PENDIENTE_D
 /** The reservation_status codes the customer area reads (PROPUESTO until the contract, G-B). */
 export const STATUS_CODE: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'PENDING_PAYMENT', CONFIRMADA: 'CONFIRMED',
   EN_EJECUCION: 'IN_EXECUTION', FINALIZADA: 'FINALIZED', CANCELADA: 'CANCELLED' };
-export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago', PARCIAL: 'Parcial' };
+export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago', PARCIAL: 'Parcial',
+  ABONO_RECIBIDO: 'Abono recibido', PAGO_COMPLETO: 'Pago completo' };
 export const money = formatCop;
 /** "1 viajero" or "N viajeros"; "1 persona" or "N personas". */
 export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;

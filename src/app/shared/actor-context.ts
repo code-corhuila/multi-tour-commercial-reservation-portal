@@ -15,6 +15,8 @@ export abstract class ActorContext {
   abstract readonly role: ActorRole;
   /** Whether the tenant enabled the Collaborator to change descriptive information. False unless declared. */
   readonly collaboratorMayEditDescription: boolean = false;
+  /** HU-COM-010 G-PERM: whether the Administrator granted the Collaborator Validar comprobantes (HU-SEC-006). False unless declared. */
+  readonly collaboratorMayValidateProofs: boolean = false;
 }
 
 /** The default actor: reads and changes nothing. collaboratorMayEditDescription stays false. */
