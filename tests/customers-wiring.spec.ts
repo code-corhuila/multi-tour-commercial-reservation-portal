@@ -17,8 +17,8 @@ describe('customers wiring in the mounted portal', () => {
     mountAs(['TENANT_ADMINISTRATOR']);
     await vi.waitFor(() => expect(peopleEntry()).toBeTruthy());
     peopleEntry()!.click();
-    await vi.waitFor(() => expect(host.querySelector('.customers-page [data-state="data"]')).toBeTruthy());
-    expect(host.textContent).toContain('Restricted');
+    await vi.waitFor(() => expect(host.querySelector('.crp-customers-page [data-state="data"]')).toBeTruthy());
+    expect(host.textContent).toContain('Restringido');
     expect(request.mock.calls.every(([path]) => !String(path).includes('customer'))).toBe(true);
   });
 

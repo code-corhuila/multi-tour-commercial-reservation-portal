@@ -27,8 +27,8 @@ describe('theAdditionalDiscountIsLastWithItsReasonAndAuthor', () => {
     const lines = page.lines();
     expect(lines).toHaveLength(2);
     expect(lines[0]).toContain('Season');
-    for (const text of ['Additional discount', 'Loyal customer', 'Laura Demo', '90000.00', '4500.00', '85500.00']) expect(lines[1]).toContain(text);
-    expect(page.element.textContent).toContain('85500.00');
+    for (const text of ['Descuento adicional', 'Loyal customer', 'Autorizado por Laura Demo', '$90.000', '-$4.500', '$85.500']) expect(lines[1]).toContain(text);
+    expect(page.element.querySelector('.crp-current-discounts-final')?.textContent).toContain('$85.500');
   });
 
   it('takes the authorizer from the stored answer, never from a field the person types', async () => {
@@ -138,6 +138,84 @@ describe('theValueViewShowsOneOfTheFourStates', () => {
     expect(page.element.querySelector(`label[for="${date.id}"]`)).not.toBeNull();
     date.value = '2026-03-01'; date.dispatchEvent(new Event('change')); await page.settle();
     expect(page.source.requests.at(-1)!.date).toBe('2026-03-01');
+  });
+});
+
+describe('theScreenFollowsTheAuthorizedMockup', () => {
+  // 12-ux-ui/authorized-screens.md, HU-COM-004: admin-aplicar-descuento.html and the values block of admin-crear-reserva.html.
+  const text = (element: Element, selector: string) => Array.from(element.querySelectorAll(selector), (node) => node.textContent?.trim());
+
+  it('draws the header and the two numbered panels in Spanish', async () => {
+    const page = await withData();
+    expect(page.element.querySelector('.crp-page-header-eyebrow')?.textContent?.trim()).toBe('Descuento adicional');
+    expect(page.element.querySelector('h1')?.textContent?.trim()).toBe('Aplicar descuento');
+    expect(text(page.element, '.crp-operator-panel > .crp-operator-eyebrow')).toEqual(['01. Descuentos vigentes', '02. Descuento adicional']);
+    expect(text(page.element, '.crp-operator-panel > h2')).toEqual(['Valores por servicio', 'Autorización']);
+    expect(page.submitButton().textContent?.trim()).toBe('Aplicar descuento');
+    expect(page.element.querySelector('select[name="type"]')).toBeNull();
+    expect(page.field('reason').getAttribute('placeholder')).toBe('Describe el motivo del descuento adicional (por ejemplo, fidelización)');
+    expect(page.element.querySelector('.crp-current-discounts-note')?.textContent).toBe('El motivo y el responsable quedan asociados a la reserva.');
+  });
+
+  it('offers the outline Cancelar of the mockup, which clears the form without sending', async () => {
+    const page = await withData();
+    const actions = Array.from(page.element.querySelectorAll<HTMLButtonElement>('form .crp-form-actions button'));
+    expect(actions.map((b) => b.textContent?.trim())).toEqual(['Cancelar', 'Aplicar descuento']);
+    expect(actions[0].type).toBe('button'); expect(actions[0].classList).toContain('crp-operator-outline');
+    await submit(page); await fillAdditional(page, '7', 'Cliente frecuente');
+    actions[0].click(); await page.settle();
+    expect((page.field('value') as HTMLInputElement).value).toBe('');
+    expect((page.field('reason') as HTMLInputElement).value).toBe('');
+    expect(page.errorFor('reason')).toBeFalsy();
+    expect(page.writer.calls).toHaveLength(0);
+  });
+
+  it('writes the demo rule names in Spanish with their accents', async () => {
+    const services = await firstValueFrom(new DemoCurrentDiscountsStore().list());
+    expect(services.flatMap((s) => s.rules.map((r) => r.name))).toContain('Promoción de lanzamiento');
+  });
+
+  it('shows the values block with formatted money and dates, and numbers each discount once', async () => {
+    const page = await withData();
+    expect(text(page.element, '.crp-current-discounts-summary span')).toEqual(['Valor proyectado', 'Descuentos aplicables', 'Valor final']);
+    expect(text(page.element, '.crp-current-discounts-summary strong')).toEqual(['$100.000', '-$10.000', '$90.000']);
+    expect(page.element.querySelector('ol [data-line]')).not.toBeNull();
+    expect(page.lines()[0].replace(/\s+/g, ' ').trim()).toBe('Season · sobre el valor original $100.000 · -$10.000 · Subtotal $90.000');
+    expect(page.element.textContent).toMatch(/Vigentes al \d{2} [a-z]{3} \d{4}/);
+  });
+
+  it('never shows raw codes or unformatted amounts', async () => {
+    const page = await withData();
+    expect(page.element.textContent).not.toMatch(/\d\.\d{2}(?!\d)/);
+    for (const raw of ['ORIGINAL_VALUE', 'PREVIOUS_SUBTOTAL', 'PERCENTAGE', 'FIXED_AMOUNT', 'ACTIVE', 'svc-']) {
+      expect(page.element.textContent).not.toContain(raw);
+    }
+  });
+
+  it('offers the services to choose and applies the discount to the chosen one', async () => {
+    const page = await openCurrentDiscounts();
+    page.source.requests[0].reply([serviceNamed('Tatacoa'), serviceNamed('Pitalito')]); await page.settle();
+    const service = page.element.querySelector<HTMLSelectElement>('select[name="service"]')!;
+    expect(page.element.querySelector(`label[for="${service.id}"]`)?.textContent?.trim()).toBe('Servicio');
+    expect(text(page.element, 'select[name="service"] option')).toEqual(['Tatacoa', 'Pitalito']);
+    service.value = 'svc-Pitalito'; service.dispatchEvent(new Event('change')); await page.settle();
+    await fillAdditional(page);
+    await submit(page);
+    expect(page.writer.calls[0].command.serviceId).toBe('svc-Pitalito');
+  });
+
+  it('draws only the first panel for a role that cannot authorize', async () => {
+    const page = await withData('MANAGER');
+    expect(text(page.element, '.crp-operator-panel > .crp-operator-eyebrow')).toEqual(['01. Descuentos vigentes']);
+  });
+
+  it('writes the four states in Spanish', async () => {
+    const page = await openCurrentDiscounts();
+    expect(page.element.querySelector('[data-state="loading"]')?.textContent).toContain('Cargando');
+    page.source.requests[0].fail(); await page.settle();
+    expect(page.element.querySelector('[data-state="error"]')?.textContent).toContain('No fue posible cargar');
+    page.fixture.componentInstance.reload(); page.source.requests[1].reply([]); await page.settle();
+    expect(page.element.querySelector('[data-state="empty"]')?.textContent).toContain('No hay servicios');
   });
 });
 

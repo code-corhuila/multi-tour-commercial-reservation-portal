@@ -51,7 +51,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
                 <p><strong>{{ text.proofState }}</strong> {{ common.proofStatus[r.proofStatus ?? ''] ?? common.noProof }}<br />
                   <strong>{{ text.financial }}</strong> {{ financial[r.paymentStatus] }}</p>
                 <p id="crp-transfer-proof-feedback" aria-live="polite">{{ feedback() }}</p>
-                <p class="self-service-note">{{ text.seatNote }}</p>
+                <p class="crp-self-service-note">{{ text.seatNote }}</p>
                 @if (refused()) { <p role="alert">{{ refused() }}</p> }
               </article>
               <div class="crp-form-actions"><button type="submit" class="crp-primary" [disabled]="pending()">{{ text.send }}</button>

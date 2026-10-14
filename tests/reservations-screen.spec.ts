@@ -94,7 +94,7 @@ describe('the form is screen 10B', () => {
     expect(texts(element, '[name="departureId"] option')).toContain('Tour 1 · 07 nov 2026 · 10 cupos disponibles');
     await choose('leadCustomerId', 'cus-1'); await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '3');
     expect(element.querySelector('[data-conditions]')?.textContent).toContain('Changes up to 72 hours before (demo).');
-    const values = element.querySelector('.crp-reservation-values')!;
+    const values = element.querySelector('.crp-reservations-values')!;
     expect(texts(values, 'span')).toEqual(['Valor proyectado', 'Descuentos aplicables', 'Valor final']);
     expect(texts(values, 'strong')).toEqual(['$75', '-$15', '$60']);
     expect(view.button('Registrar reserva')?.type).toBe('submit');
@@ -107,7 +107,7 @@ describe('the result is screen 10C and the detail is screen 10A, both without pa
     const { element, create, button } = await overDemo();
     await create();
     expect(header(element)).toEqual({ eyebrow: 'Registro completado', title: 'Reserva registrada' });
-    const result = element.querySelector('.reservation-result')!;
+    const result = element.querySelector('.crp-reservations-result')!;
     expect(result.querySelector('h2')?.textContent).toMatch(/^#RES-\d+$/);
     expect(result.querySelector('.crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
     for (const label of ['Salida', 'Viajeros', 'Titular', 'Plazo de pago', 'Tipo y medio de pago', 'Pago total · Transferencia', 'Valor final', 'Valor proyectado', 'Descuentos aplicados', 'Saldo pendiente', 'Sin comprobante · Sin pago']) {
@@ -121,7 +121,7 @@ describe('the result is screen 10C and the detail is screen 10A, both without pa
     const { element, create, click } = await overDemo();
     await create(); await click('Ver detalle');
     expect(header(element)).toEqual({ eyebrow: 'Consulta de reserva', title: 'Detalle de reserva' });
-    const detail = element.querySelector('.reservation-detail')!;
+    const detail = element.querySelector('.crp-reservations-detail')!;
     expect(texts(detail, '.crp-operator-eyebrow')).toEqual(expect.arrayContaining(['Titular y viajeros', 'Estado económico', 'Salida y plazos', 'Servicios reservados']));
     expect(detail.textContent).toContain('2 personas');
     expect(detail.textContent).toMatch(/\$[\d.]+ pendientes/);
@@ -133,7 +133,7 @@ describe('the result is screen 10C and the detail is screen 10A, both without pa
   it('writes one traveler and one person in singular in the detail', async () => {
     const { element, create, click } = await overDemo('1');
     await create(); await click('Ver detalle');
-    const detail = element.querySelector('.reservation-detail')!;
+    const detail = element.querySelector('.crp-reservations-detail')!;
     expect(detail.textContent).toContain('1 viajero'); expect(detail.textContent).toContain('1 persona');
     expect(detail.textContent).not.toContain('1 viajeros'); expect(detail.textContent).not.toContain('1 personas');
   });
