@@ -1,6 +1,6 @@
 import { Provider, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { DemoReservationsStore } from '../src/app/demo/reservations-demo';
@@ -8,6 +8,7 @@ import { FixedClock } from '../src/app/demo/reservation-changes-demo';
 import { DemoRefundsSource, DemoRefundsWriter } from '../src/app/demo/refunds-demo';
 import { RegisteringUser } from '../src/app/payments/data/payments-writer';
 import { Reservation } from '../src/app/reservations/model/reservation';
+import { PendingProofsSource } from '../src/app/payments/data/proof-review-ports';
 import { REFUND_SCREENS, RefundsSource, RefundsWriter } from '../src/app/refunds/data/refunds-ports';
 import { REFUND_ALERTS, RefundAlertsComponent } from '../src/app/refunds/components/refund-alerts.component';
 import { RefundDetailPageComponent } from '../src/app/refunds/pages/refund-detail-page.component';
@@ -43,7 +44,7 @@ const byId = async (source: RefundsSource, id: string) => (await firstValueFrom(
 
 function providers(role = 'TENANT_ADMINISTRATOR', id = 'RES-P') {
   const navigation = new PortalNavigation();
-  navigation.register(Object.values(REFUND_SCREENS));
+  navigation.register([...Object.values(REFUND_SCREENS), 'payments']);
   navigation.params.set({ refund: id });
   const d = demo(role);
   return { navigation, d, list: [{ provide: ActorContext, useValue: actorAs(role as never) }, { provide: RefundsSource, useValue: d.source },
@@ -122,7 +123,7 @@ describe('refundDetailFollowsTheCurrentMockup', () => {
     const s = await screen(RefundDetailPageComponent);
     expect(s.texts('.crp-form-actions button')).toEqual(['Registrar saldo a favor del 100 %', 'Devolver el 100 %']);
     await s.button('Registrar saldo a favor del 100 %')!.click(); await s.settle();
-    expect(s.host.querySelector('[role="alert"]')?.textContent?.trim()).toBe('Registra el motivo para autorizar la devolución.');
+    expect(s.host.querySelector('[role="alert"]')?.textContent?.trim()).toBe('Registra el motivo de la decisión.');
     await s.type('El cliente prefiere conservar el valor (demo)');
     s.button('Registrar saldo a favor del 100 %')!.click(); await s.settle();
     expect(s.field('Estado actual')).toBe('Saldo a favor');
@@ -230,9 +231,24 @@ describe('notificationsShowTheRefundAlertsOfTheCurrentMockup', () => {
   it('shows each decision pending with its countdown and each overdue refund', async () => {
     const s = await screen(RefundAlertsComponent);
     expect(s.texts('.crp-refunds-alert-copy')).toEqual(expect.arrayContaining([
-      'Devolución pendiente de decisión · RES-P Decisión del Administrador del tenant: quedan 18 h 42 min. Si no decide en 24 horas, Multitour determina la devolución del 100 %.',
-      'Devolución vencida · RES-V Superó los 5 días hábiles para ejecutarse. Sigue siendo una obligación pendiente.']));
+      'Devolución pendiente de decisión · RES-P Decisión del Administrador del tenant: quedan 18 h 42 min. Si no decide en 24 horas, Multitour determina la devolución del 100 %. Abrir',
+      'Devolución vencida · RES-V Superó los 5 días hábiles para ejecutarse. Sigue siendo una obligación pendiente. Abrir']));
     expect(s.texts('.crp-refunds-alert-icon')[0]).toBe('DV');
     expect(REFUND_ALERTS.isAvailable).toBeTruthy();
+  });
+
+  it('adds the priority alert of proofs with an overdue review when the review port exists, before the refund alerts', async () => {
+    const proofs = new (class extends PendingProofsSource { override list() { return of({ rows: [{ reservation: reservationOf('RES-Z'), payment: {} as never, overdue: true },
+      { reservation: reservationOf('RES-Y'), payment: {} as never, overdue: false }], overdueCount: 1 }); } })();
+    const p = providers();
+    TestBed.configureTestingModule({ providers: [...p.list, { provide: PendingProofsSource, useValue: proofs }] });
+    const fixture = TestBed.createComponent(RefundAlertsComponent);
+    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    const first = fixture.nativeElement.querySelector('.crp-refunds-alert') as HTMLElement;
+    expect(first.querySelector('.crp-refunds-alert-icon')?.textContent).toBe('CP');
+    expect(first.querySelector('strong')?.textContent).toBe('Alerta prioritaria · Comprobantes con revisión vencida (1)');
+    expect(first.textContent).toContain('Reservas RES-Z: llevan más de 24 horas corridas En validación. Siguen pendientes: no cancelan la reserva ni liberan cupos.');
+    first.querySelector('button')!.click();
+    expect(p.navigation.selected()).toBe('payments');
   });
 });
