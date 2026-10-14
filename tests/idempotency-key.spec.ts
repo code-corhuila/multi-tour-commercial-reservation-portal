@@ -24,13 +24,15 @@ async function openForm(options: { item?: CatalogItem; controlKeys?: boolean; ke
     fireEvent.input(screen.getByLabelText('Tarifa base'), { target: { value: '12.50' } });
     fireEvent.input(screen.getByLabelText('Costo operativo base'), { target: { value: '7' } });
     fireEvent.input(screen.getByLabelText('Capacidad configurada'), { target: { value: '18' } });
+    fireEvent.input(screen.getByLabelText('Vigencia desde'), { target: { value: '2026-09-01' } });
+    fireEvent.input(screen.getByLabelText('Vigencia hasta'), { target: { value: '2026-09-30' } });
   };
   const settle = async () => {
     await view.fixture.whenStable();
     view.fixture.detectChanges();
   };
   const save = async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar servicio' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tour' }));
     await settle();
   };
   return { writer, keys, view, fill, save, settle };
@@ -43,7 +45,7 @@ describe('doubleSubmitSendsOneIdempotencyKey', () => {
   it('sends one create with one key when the same intention is submitted twice', async () => {
     const { writer, keys, view, fill } = await openForm();
     fill();
-    const button = screen.getByRole('button', { name: 'Guardar servicio' });
+    const button = screen.getByRole('button', { name: 'Guardar tour' });
     fireEvent.click(button);
     fireEvent.click(button);
     fireEvent.submit(view.container.querySelector('form') as HTMLFormElement);

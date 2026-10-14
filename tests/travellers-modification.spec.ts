@@ -152,7 +152,6 @@ describe('travellersEntryIsProvidedThroughTheChangeTypesToken', () => {
       const click = (selector: string, label: string) =>
         Array.from(host.querySelectorAll<HTMLButtonElement>(selector)).find((b) => b.textContent?.trim() === label)!.click();
       await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-      click('nav button', 'Reservas');
       await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
       Array.from(host.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes('#RES-1842'))!.querySelector('button')!.click();
       await vi.waitFor(() => expect(host.querySelector('header')?.textContent).toContain('Cancelar o modificar reserva'));

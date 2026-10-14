@@ -12,6 +12,7 @@ import {
   AssociationStatus, EstablishmentFilters, EstablishmentType,
 } from '../model/associated-establishment';
 import { PageState } from '../../shared/page-state';
+import { PortalNavigation } from '../../portal-navigation';
 
 /** The shared four states, carrying establishment records. */
 export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
@@ -120,7 +121,11 @@ export class EstablishmentsPageComponent {
   protected readonly canRead = this.capabilities.canReadEstablishments();
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly statuses = ASSOCIATION_STATUSES;
-  protected readonly filters = signal<EstablishmentFilters>({});
+  /** The hub opens the area with { type } (admin-catalogos.html cards); anything else shows both types. */
+  private readonly openedType = inject(PortalNavigation, { optional: true })?.params()['type'];
+  protected readonly filters = signal<EstablishmentFilters>(
+    ESTABLISHMENT_TYPES.find((type) => type === this.openedType) ? { establishmentType: this.openedType as EstablishmentType } : {},
+  );
   private readonly requests = new Subject<EstablishmentFilters>();
   private readonly listed = toSignal(this.requests.pipe(
     // RN-PE3: only the most recent request may supply the screen's next state.
