@@ -81,14 +81,18 @@ export class DemoReservationsWriter extends ReservationsWriter {
     const d = openDepartures(this.departures.items).find((x) => x.id === c.departureId);
     if (!d) return throwError(() => ({ status: 409, code: 'departure-not-open', userMessage: 'The departure is not open for reservations.' }));
     if (!hasCapacity(d, c.people)) return throwError(() => ({ status: 409, code: 'insufficient-capacity', userMessage: capacityMessage(d) }));
-    const created: Reservation = {
-      id: `demo-res-${++this.sequence}`, leadCustomerName: CUSTOMERS.find((x) => x.id === c.leadCustomerId)?.fullName ?? c.leadCustomerId,
-      departureLabel: `${d.tourName} · ${d.date}`, conditions: d.conditions, people: c.people, quote: c.quote,
-      status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false,
-    };
-    this.byKey.set(key, created);
-    this.store.items = [created, ...this.store.items];
-    return of(created);
+    return this.quotes.quote(c).pipe(map((quote) => {
+      const again = this.byKey.get(key);
+      if (again) return again;
+      const created: Reservation = {
+        id: `RES-${++this.sequence}`, leadCustomerName: CUSTOMERS.find((x) => x.id === c.leadCustomerId)?.fullName ?? c.leadCustomerId,
+        departureId: d.id, tourName: d.tourName, departureDate: d.date, conditions: d.conditions, people: c.people, quote, balanceCents: quote.finalCents,
+        status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, paymentType: c.paymentType, paymentMethod: c.paymentMethod,
+      };
+      this.byKey.set(key, created);
+      this.store.items = [created, ...this.store.items];
+      return created;
+    }));
   }
 }
 
