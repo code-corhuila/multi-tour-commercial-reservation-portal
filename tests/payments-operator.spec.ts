@@ -153,7 +153,7 @@ describe('noPaymentOrProofFromTheScheduledStart (AC-PY.7, RN-PY6)', () => {
   it('refuses a payment and a proof once the departure started, by the demo clock, and accepts them the day before', async () => {
     demoQuery('?demoNow=2026-11-07T08:00:00-05:00');
     TestBed.configureTestingModule({ providers: demoProviders() });
-    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toBe('La salida ya inició: no se aceptan pagos ni comprobantes.');
+    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toBe('Se alcanzó la hora programada de inicio de la salida: ya no se aceptan pagos ni comprobantes.');
     expect((await stored(TRANSFER)).payments ?? []).toHaveLength(0);
     demoQuery('?demoNow=2026-11-06T20:00:00-05:00');
     expect((await register(TRANSFER, 100, pdf(), 'k-2')).payments).toHaveLength(1);
@@ -190,11 +190,11 @@ describe('screen 13, Gestión de pago', () => {
       expect(text, label).toContain(label);
     }
     expect(element.querySelector('select')).toBeNull();
-    expect(element.querySelector('label[for="crp-payments-proof"]')?.textContent).toContain('Comprobante de transferencia');
+    expect(element.querySelector('label[for="crp-payments-proof"]')?.textContent).toContain('Comprobante de transferencia (PDF, JPG, JPEG o PNG, máximo 5 MB)');
     expect(element.querySelector('label[for="crp-payments-amount"]')?.textContent).toContain('Monto recibido');
   });
 
-  it('names the action by the modality: Registrar comprobante, Registrar abono or Registrar pago', async () => {
+  it('names the action by the modality: Registrar comprobante or Registrar pago recibido', async () => {
     expect((await managementOf()).submit()?.textContent?.trim()).toBe('Registrar comprobante');
     TestBed.resetTestingModule();
     const cash = await managementOf('TENANT_ADMINISTRATOR', CASH);
@@ -262,7 +262,7 @@ describe('screen 13, Gestión de pago', () => {
 
   it('paymentManagementDrawsNoValidateOrRejectAction, and offers PAYMENT_MANAGEMENT_ACTIONS in Acción de pago', async () => {
     const plain = await managementOf();
-    expect(plain.element.textContent).not.toMatch(/Validar comprobante|Rechazar comprobante|24 horas|Historial/);
+    expect(plain.element.textContent).not.toMatch(/Validar soporte|Rechazar soporte|Historial/);
     TestBed.resetTestingModule();
     @Component({ selector: 'crp-test-action', template: '<button type="button">Acción {{ reservation()?.id }}</button>' })
     class ActionDouble { readonly reservation = input<Reservation>(); }

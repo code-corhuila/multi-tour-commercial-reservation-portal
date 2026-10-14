@@ -109,7 +109,7 @@ export class PaymentManagementPageComponent {
       const state = departures.find((d) => d.id === reservation.departureId)?.state;
       return (this.deadlines?.deadlineOf(reservation.id).pipe(catchError(() => of(null))) ?? of(null)).pipe(map((d): State => ({ kind: 'data', reservation, labels,
         info: { departure: departureText(reservation, state), deadline: d ? deadlineText(d) : '' } }))); }),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error) })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError(() => of<State>({ kind: 'error' })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   /** The reservation as the writer answered it; the newest answer wins over the list. */
   private readonly saved = signal<Reservation | null>(null);
   protected readonly state = computed((): State => { const s = this.loaded(), saved = this.saved(); return s.kind === 'data' && saved ? { ...s, reservation: saved } : s; });
