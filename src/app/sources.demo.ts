@@ -14,6 +14,7 @@ import { customersDemoProviders } from './demo/customers-demo';
 import { reservationDemoProviders } from './demo/reservations-demo';
 import { selfServiceDemoProviders } from './demo/self-service-reservation-demo';
 import { paymentsDemoProviders } from './demo/payments-demo';
+import { reservationChangesDemoProviders } from './demo/reservation-changes-demo';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
 export function sourceProviders(_client: PortalApiClient): Provider[] {
@@ -39,5 +40,6 @@ function demoStores(): Provider[] {
     ...reservationDemoProviders(),
     ...selfServiceDemoProviders(),
     ...paymentsDemoProviders(),
+    ...reservationChangesDemoProviders(),
   ];
 }

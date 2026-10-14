@@ -29,6 +29,9 @@ import { MyReservationsSource } from './self-service-reservation/data/my-reserva
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
 import { PaymentsWriter } from './payments/data/payments-writer';
 import { PaymentManagementPageComponent } from './payments/pages/payment-management-page.component';
+import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
+import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
+import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -109,6 +112,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-009 admin-gestion-pago.html (13): opened by Gestionar pago of 10A and 10C with { reservation }; Reservas stays active.
   { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent, menu: false, parent: 'reservations',
     isAvailable: (injector) => has(injector, ReservationsSource, PaymentsWriter, PaymentMethodsSource) },
+  // HU-COM-013 admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Reservas stays active (spec G-NAV closed by the base).
+  { key: RESERVATION_CHANGE_SCREEN, label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent, menu: false, parent: 'reservations',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canRegisterChange() && has(injector, ReservationsSource, CancellationQuote, CancellationWriter) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }

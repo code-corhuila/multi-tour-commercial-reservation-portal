@@ -2,7 +2,7 @@ import { Provider } from '@angular/core';
 import { Observable, forkJoin, map, of } from 'rxjs';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { LeadCustomersSource } from '../reservations/data/reservation-integrations';
-import { ReservationsSource } from '../reservations/data/reservations-source';
+import { ReservationsSource, STATUS_CODE } from '../reservations/data/reservations-source';
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
 import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
 import { Reservation } from '../reservations/model/reservation';
@@ -16,12 +16,11 @@ import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuot
 // reservation path yet (G-B); the service will decide whose reservations they are (RN-RS8).
 /** PROVISIONAL, demo only: the lead customer the signed-in final customer stands for (no customer id in the session yet). */
 const DEMO_FINAL_CUSTOMER = 'demo-cus-3';
-const STATUS: Readonly<Record<Reservation['status'], string>> = { PENDIENTE_DE_PAGO: 'PENDING_PAYMENT' };
 
 const asCustomer = (r: Reservation, selection: Partial<ReservationSelection>): CustomerReservation => ({
   reservationId: r.id, tourName: r.tourName, departureAt: r.departureDate, departureId: selection.departureId ?? '',
   serviceIds: selection.serviceIds ?? [], people: r.people, projectedValueCents: r.quote.projectedCents, finalValueCents: r.quote.finalCents,
-  reservationStatus: STATUS[r.status], paymentStatus: r.financialStatus,
+  reservationStatus: STATUS_CODE[r.status], paymentStatus: r.financialStatus,
 });
 
 /** The reservations whose lead customer is the demo final customer, read from the shared store; nothing for any other standing. */
