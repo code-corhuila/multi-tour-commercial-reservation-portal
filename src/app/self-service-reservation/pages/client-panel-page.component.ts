@@ -1,3 +1,4 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, Injector, afterNextRender, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
@@ -11,16 +12,17 @@ import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
 import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
+import { SESSION_TEXT } from '../../shared/session-copy';
+import { SESSION_IDENTITY } from '../../shared/session-identity';
 import { tourPhoto } from '../../shared/tour-photo';
-import { CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
+import { CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
 
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
   eyebrow: 'Portal cliente',
-  greeting: 'Hola, te damos la bienvenida',
   intro: 'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.',
   searchLabel: 'Buscar tours o establecimientos asociados',
-  searchPlaceholder: 'Buscar tours, alojamiento o experiencias...',
+  searchPlaceholder: 'Buscar tours o experiencias...',
   search: 'Buscar',
   reservations: 'Mis reservas',
   noActive: 'No tienes reservas activas',
@@ -32,7 +34,6 @@ const PANEL_TEXT = {
   discounts: 'Descuentos vigentes',
   noDiscounts: 'No hay descuentos vigentes en este momento.',
   validUntil: 'Válido hasta',
-  notices: 'Notificaciones',
   featured: 'Experiencias destacadas',
   noFeatured: 'No hay opciones disponibles en este momento.',
   from: 'Desde',
@@ -40,11 +41,11 @@ const PANEL_TEXT = {
 } as const;
 
 const CHIPS = [
-  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }, { key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento asociado' },
+  { key: CLIENT_AREA.gastronomy, label: 'Restaurantes asociados' }, { key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento asociado' },
 ];
 const QUICK = [
   { key: CLIENT_AREA.tours, icon: 'NR', title: 'Nueva reserva', copy: 'Inicia una nueva reserva' },
-  { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Gastronomía', copy: 'Explora opciones gastronómicas disponibles.' },
+  { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Restaurantes asociados', copy: 'Consulta los datos de contacto de restaurantes asociados.' },
 ];
 const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 
@@ -67,10 +68,9 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
   };
 }
 
-/** "20% de descuento" or "$50.000 de descuento", from the rule of HU-COM-003. */
+/** "20% de descuento", from the percentage of the rule of HU-COM-003. */
 function discountTag(rule: DiscountRule): string {
-  const value = rule.type === 'PERCENTAGE' ? `${String(rule.percentageBasisPoints / 100).replace('.', ',')}%` : formatCop(rule.amountCents);
-  return `${value} de descuento`;
+  return `${String(rule.percentageBasisPoints / 100).replace('.', ',')}% de descuento`;
 }
 
 /** panel-cliente.html: the landing of the final customer and the Mis reservas link of the client header. It changes nothing. */
@@ -81,7 +81,7 @@ function discountTag(rule: DiscountRule): string {
   template: `
     <section class="crp-panel-hero" aria-labelledby="crp-panel-title">
       <p class="crp-panel-eyebrow">{{ t.eyebrow }}</p>
-      <h1 id="crp-panel-title">{{ t.greeting }}</h1>
+      <h1 id="crp-panel-title">{{ greeting }}</h1>
       <p>{{ t.intro }}</p>
       <div class="crp-panel-search">
         <label for="crp-panel-search">{{ t.searchLabel }}</label>
@@ -129,14 +129,11 @@ function discountTag(rule: DiscountRule): string {
         @let promos = discounts();
         @if (promos.length) {
           <ul>@for (rule of promos; track rule.id) {
-            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.name }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
+            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.tourName }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
           }</ul>
         } @else { <p>{{ t.noDiscounts }}</p> }
       </aside>
     </div>
-    @if (noticeSlots) {
-      <section class="crp-panel-notices"><h2>{{ t.notices }}</h2><div class="crp-operator-panel"><ng-container *crpSlot="slots.notices" /></div></section>
-    }
     <section class="crp-panel-featured"><h2>{{ t.featured }}</h2>
       @let f = featured();
       @switch (f.kind) {
@@ -159,6 +156,8 @@ function discountTag(rule: DiscountRule): string {
 export class ClientPanelPageComponent {
   protected readonly t = PANEL_TEXT;
   protected readonly text = SELF_SERVICE_TEXT;
+  /** HU-FRT-001 (003-): the display name of the session as text, or the generic greeting when there is none. */
+  protected readonly greeting = ((name) => (name ? SESSION_TEXT.greeting(name) : SESSION_TEXT.anonymousGreeting))(inject(SESSION_IDENTITY).name);
   protected readonly area = CLIENT_AREA;
   protected readonly photo = tourPhoto;
   protected readonly cop = formatCop;
@@ -168,16 +167,15 @@ export class ClientPanelPageComponent {
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly chips = CHIPS.filter((chip) => this.has(chip.key));
   protected readonly quick = QUICK.filter((action) => this.has(action.key));
-  /** HU-COM-001 portal foundation of 2026-10-13: what other stories add to Acciones rápidas and Notificaciones; nothing by default. */
-  protected readonly slots = { quick: CLIENT_QUICK_ACTIONS, notices: CLIENT_NOTICES };
+  /** HU-COM-001 portal foundation of 2026-10-13: what other stories add to Acciones rápidas (Notificaciones is the bell of the shell header); nothing by default. */
+  protected readonly slots = { quick: CLIENT_QUICK_ACTIONS };
   private readonly injector = inject(Injector);
   protected readonly quickSlots = slotEntries(CLIENT_QUICK_ACTIONS, this.injector).length;
-  protected readonly noticeSlots = slotEntries(CLIENT_NOTICES, this.injector).length;
-  protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
+  protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   protected readonly reservations = toSignal(this.requests.pipe(switchMap(() => partOf(this.source.listMine()))), { initialValue: { kind: 'loading' } as Part<CustomerReservation> });
-  private readonly today = new Date().toLocaleDateString('en-CA');
+  private readonly today = tenantDay(inject(Clock).now());
   // Read-only: the rules of HU-COM-003 in force today. Without the port, or if it fails, there is nothing in force to show.
   protected readonly discounts = toSignal((inject(DiscountRulesSource, { optional: true })?.list() ?? of<readonly DiscountRule[]>([])).pipe(
     map((rules) => rules.filter((rule) => rule.status === 'ACTIVE' && rule.startsOn <= this.today && this.today <= rule.endsOn)),

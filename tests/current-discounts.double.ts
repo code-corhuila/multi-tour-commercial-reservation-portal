@@ -3,6 +3,8 @@ import { Observable, Subject } from 'rxjs';
 import { AdditionalDiscountWriter } from '../src/app/current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../src/app/current-discounts/data/current-discounts-source';
 import { AdditionalDiscount, AdditionalDiscountCommand, ApplicableRule, PricedService } from '../src/app/current-discounts/model/current-discounts';
+import { DiscountBreakdowns } from '../src/app/current-discounts/data/discount-breakdowns';
+import { DemoDiscountBreakdowns } from '../src/app/demo/discount-calculation';
 import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
@@ -42,7 +44,7 @@ export class ControllableAdditionalDiscountWriter extends AdditionalDiscountWrit
 export async function openCurrentDiscounts(role: ActorRole = 'TENANT_ADMINISTRATOR') {
   const source = new ControllableCurrentDiscountsSource(), writer = new ControllableAdditionalDiscountWriter(), keys = new ControllableIdempotencyKeys();
   TestBed.configureTestingModule({ providers: [{ provide: CurrentDiscountsSource, useValue: source },
-    { provide: AdditionalDiscountWriter, useValue: writer }, { provide: IdempotencyKeys, useValue: keys },
+    { provide: AdditionalDiscountWriter, useValue: writer }, { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }, { provide: IdempotencyKeys, useValue: keys },
     { provide: ActorContext, useValue: actorAs(role) }] });
   const fixture = TestBed.createComponent(CurrentDiscountsPageComponent);
   const element: HTMLElement = fixture.nativeElement;

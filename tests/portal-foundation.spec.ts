@@ -9,6 +9,7 @@ import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { ReservationViewComponent } from '../src/app/reservations/components/reservation-view.component';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { MyPaymentsSource } from '../src/app/my-payments/data/my-payments-source';
+import { MyProposalsSource } from '../src/app/rescheduling/data/rescheduling-ports';
 import { ActorContext } from '../src/app/shared/actor-context';
 import {
   CHECKOUT_BLOCKS, CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENT_MANAGEMENT_ACTIONS, PAYMENT_MANAGEMENT_NOTES,
@@ -164,20 +165,23 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     expect(methodCard.nextElementSibling?.tagName).toBe('CRP-TEST-SECOND');
   });
 
-  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES under Notificaciones of 17, which is absent without notices', async () => {
-    // HU-COM-014 registers CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with its port: without that port 17 is as the base left it.
-    mountAs([{ provide: MyPaymentsSource, useValue: null }], ['FINAL_CUSTOMER']);
+  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES in the Notificaciones bell of 17', async () => {
+    // HU-COM-014 and HU-COM-018 register CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with their ports: without those ports 17 is as the base left it.
+    mountAs([{ provide: MyPaymentsSource, useValue: null }, { provide: MyProposalsSource, useValue: null }], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
-    expect(host.textContent).not.toContain('Notificaciones');
+    expect(host.querySelector('.crp-client-bell-panel')?.textContent).toContain('No tienes notificaciones nuevas.');
+    expect(host.querySelector('app-client-panel-page .crp-panel-notices')).toBeNull();
     cleanup?.(); host.remove();
 
     mountAs([contribute(CLIENT_QUICK_ACTIONS, { component: QuickDouble, order: 1 }), contribute(CLIENT_NOTICES, { component: SecondDouble, order: 1 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     expect(host.querySelector('.crp-panel-quick ul > li:last-child')?.matches('[crpTestQuick]')).toBe(true);
-    const notices = host.querySelector('.crp-panel-layout + .crp-panel-notices');
+    // The notices live in the bell of the panel header (panel-cliente.html), not in a central block.
+    const notices = host.querySelector('.crp-client-bell-panel');
     expect(notices?.querySelector('h2')?.textContent).toBe('Notificaciones');
     expect(notices?.querySelector('crp-test-second')).toBeTruthy();
-    expect(notices?.nextElementSibling?.classList).toContain('crp-panel-featured');
+    expect(notices?.textContent).not.toContain('No tienes notificaciones nuevas.');
+    expect(host.querySelector('app-client-panel-page .crp-panel-notices')).toBeNull();
   });
 
   it('draws RESERVATION_CARD_EXTRAS in each card of Mis reservas, under the departure line', async () => {
@@ -194,7 +198,6 @@ describe('theOutletsOfTheScreensInDevelop', () => {
   it('draws RESERVATION_DETAIL_ACTIONS in the header of 10A, before Volver a reservas', async () => {
     mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 1 })], ['TENANT_ADMINISTRATOR']);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-    click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const id = host.querySelector('.crp-reservation-code')?.textContent?.slice(1);
     click('app-reservations-page [data-state="data"] tbody tr td:last-child button', 'Ver detalle');
@@ -206,7 +209,7 @@ describe('theOutletsOfTheScreensInDevelop', () => {
 
   // Mis reservas: "Responder propuesta" (018) closes the card (app.js:2694).
   it('draws RESERVATION_CARD_ACTIONS at the end of each card of Mis reservas', async () => {
-    mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 1 })], ['FINAL_CUSTOMER']);
+    mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 99 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     click('.crp-panel-card button', 'Ver mis reservas');
     await vi.waitFor(() => expect(host.querySelector('.self-service-panel [data-state="data"] li')).toBeTruthy());

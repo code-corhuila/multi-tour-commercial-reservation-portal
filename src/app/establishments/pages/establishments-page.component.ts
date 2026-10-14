@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
-import { PortalNavigation } from '../../portal-navigation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
@@ -13,6 +12,7 @@ import {
   AssociationStatus, EstablishmentFilters, EstablishmentType,
 } from '../model/associated-establishment';
 import { PageState } from '../../shared/page-state';
+import { PortalNavigation } from '../../portal-navigation';
 
 /** The shared four states, carrying establishment records. */
 export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
@@ -27,14 +27,14 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
     } @else {
       <header class="crp-page-header">
       <div class="crp-page-header-main">
-        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
-        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
+        <p class="crp-page-header-eyebrow">{{ fixedType ? copy.eyebrowOf[fixedType] : copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title[fixedType ?? 'all'] }}</h1>
       </div>
       @if (navigation?.has('catalog')) {
-        <button class="crp-operator-outline crp-page-header-action" type="button" (click)="navigation?.open('catalog')">{{ copy.back }}</button>
+        <button class="crp-operator-outline crp-page-header-action" type="button" (click)="navigation?.open('catalog')">{{ copy.backToCatalogs }}</button>
       }
       </header>
-      <p class="crp-access-note">{{ copy.accessNote }}</p>
+      <p class="crp-access-note">{{ fixedType ? copy.noteOf[fixedType] : copy.accessNote }}</p>
       <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
       <div class="crp-operator-panel-head">
         <div><p class="crp-operator-eyebrow">{{ copy.panelEyebrow }}</p><h2>{{ copy.panelTitle }}</h2></div>
@@ -115,7 +115,6 @@ export class EstablishmentsPageComponent {
   // Without the container's writer this slice stays readable; no local adapter is substituted.
   private readonly writer = inject(AssociatedEstablishmentsWriter, { optional: true });
   private readonly capabilities = inject(PortalCapabilities);
-  protected readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly canWrite = !!this.writer && this.capabilities.canRegisterEstablishments();
   protected readonly formOpen = signal(false);
   protected readonly formKey = signal(0);
@@ -126,7 +125,10 @@ export class EstablishmentsPageComponent {
   protected readonly canRead = this.capabilities.canReadEstablishments();
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly statuses = ASSOCIATION_STATUSES;
-  protected readonly filters = signal<EstablishmentFilters>({});
+  /** The hub opens the area with { type } (admin-catalogos.html cards); anything else shows both types. */
+  protected readonly navigation = inject(PortalNavigation, { optional: true });
+  protected readonly fixedType = ESTABLISHMENT_TYPES.find((type) => type === this.navigation?.params()['type']);
+  protected readonly filters = signal<EstablishmentFilters>(this.fixedType ? { establishmentType: this.fixedType } : {});
   private readonly requests = new Subject<EstablishmentFilters>();
   private readonly listed = toSignal(this.requests.pipe(
     // RN-PE3: only the most recent request may supply the screen's next state.

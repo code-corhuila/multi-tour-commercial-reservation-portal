@@ -114,10 +114,11 @@ describe('cancelScreenShowsOneOfTheFourStates', () => {
     expect(s.host.querySelector('[data-state="empty"]')?.textContent).toContain('No se encontró la reserva seleccionada.');
   });
 
-  it('shows the data: Reserva, Tour and Salida read only', async () => {
+  it('shows the data: Reserva, Cliente, Estado, Valores pagados y validados, Salida actual and Tratamiento económico read only', async () => {
     const s = await page();
     expect(s.host.querySelector('[data-state="data"]')).toBeTruthy();
-    expect(Array.from(s.host.querySelectorAll<HTMLInputElement>('input[readonly]'), (i) => i.value)).toEqual(['RES-A', 'Tour 1', '07 nov 2026']);
+    expect(Array.from(s.host.querySelectorAll<HTMLInputElement>('input[readonly]'), (i) => i.value)).toEqual([
+      'RES-A', 'Lead Demo', 'Confirmada', '$300.000', 'Tour 1 · 07 nov 2026', 'Cancelación solicitada por el cliente: Pendiente de parametrización comercial.']);
   });
 });
 
@@ -125,7 +126,7 @@ describe('tipoListsTheChangeTypesOfTheExtensionToken', () => {
   it('fills Tipo with every registered change type, Cancelación first', async () => {
     const other = { key: 'travelers', label: 'Modificación de viajeros', submit: () => of({ kind: 'registered' as const }) };
     const s = await page({ extra: [{ provide: RESERVATION_CHANGE_TYPES, multi: true, useValue: other }] });
-    expect(Array.from(s.host.querySelectorAll('select option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de viajeros']);
+    expect(Array.from(s.host.querySelectorAll('#crp-rc-type option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de viajeros']);
   });
 
   // HU-COM-012 AC-MD.9 (DP-MD5): a type that cannot be registered yet keeps "Registrar novedad" disabled and sends nothing.
@@ -173,10 +174,10 @@ describe('cancelScreenOpenedOnATerminalReservationIsDisabled', () => {
 describe('registeredCancellationLeavesTheReservationCancelada', () => {
   it('turns the reservation Cancelada with its cause, user and instant, and the quote then answers terminal', async () => {
     const { store, quotes, writer } = demo();
-    const outcome = await firstValueFrom(writer.cancel({ code: 'RES-B', cause: 'El cliente desiste del viaje', idempotencyKey: 'k1' }));
+    const outcome = await firstValueFrom(writer.cancel({ code: 'RES-B', cause: 'El cliente desiste del viaje', origin: 'customer', idempotencyKey: 'k1' }));
     expect(outcome.kind).toBe('registered');
     expect(find(store, 'RES-B').status).toBe('CANCELADA');
-    expect(find(store, 'RES-B').cancellation).toEqual({ cause: 'El cliente desiste del viaje', by: 'Colaborador operativo', at: NOW });
+    expect(find(store, 'RES-B').cancellation).toEqual({ cause: 'El cliente desiste del viaje', by: 'Colaborador operativo', at: NOW, origin: 'customer' });
     expect((await firstValueFrom(quotes.quote('RES-B')))?.eligibility).toBe('terminal');
   });
 
@@ -211,22 +212,22 @@ describe('registeredCancellationShowsTheMockupMessageBeforeReturningTo10A', () =
     const { gate, extra } = pause();
     const s = await page({ code: 'RES-B', extra });
     await s.type('El cliente desiste del viaje'); await s.submit();
-    expect(status(s.host)).toBe('Cancelación registrada: no hay pagos registrados, no se genera solicitud de devolución.');
+    expect(status(s.host)).toBe('Cancelación registrada: no hay valores pagados y validados que devolver, por lo que no se genera solicitud de devolución y la cancelación queda como cierre definitivo. El cupo se liberó.');
     gate.next(); await s.settle();
     expect(s.navigation.params()).toEqual({ reservation: 'RES-B' });
   });
 
-  it('shows no message while nothing is registered', async () => {
+  it('shows the mockup invitation while nothing is registered', async () => {
     const s = await page({ code: 'RES-B' });
-    expect(status(s.host)).toBeUndefined();
+    expect(status(s.host)).toBe('Completa el tipo y la causal para registrar la novedad.');
   });
 
-  it('waits 1400 ms by default, as app.js does', () => {
+  it('waits 1800 ms by default, as app.js does', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const done = vi.fn();
       TestBed.runInInjectionContext(() => inject(RESERVATION_CHANGE_RETURN_DELAY))().subscribe(done);
-      vi.advanceTimersByTime(1399);
+      vi.advanceTimersByTime(1799);
       expect(done).not.toHaveBeenCalled();
       vi.advanceTimersByTime(1);
       expect(done).toHaveBeenCalledTimes(1);
@@ -237,7 +238,7 @@ describe('registeredCancellationShowsTheMockupMessageBeforeReturningTo10A', () =
 describe('cancellationReleasesTheHeldSeat', () => {
   it('releases the seat held by the first payment', async () => {
     const { store, writer } = demo();
-    await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Viaje aplazado', idempotencyKey: 'k1' }));
+    await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Viaje aplazado', origin: 'customer', idempotencyKey: 'k1' }));
     expect(find(store, 'RES-A').seatHeld).toBe(false);
   });
 });
@@ -276,9 +277,9 @@ describe('aRetriedCancellationReusesItsIdempotencyKey', () => {
 describe('aClickAfterSuccessCreatesNoSecondCancellation', () => {
   it('answers the first outcome for a repeated key and refuses a new key, leaving one cancellation', async () => {
     const { store, writer } = demo();
-    const first = await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Primera', idempotencyKey: 'k1' }));
-    const again = await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Primera', idempotencyKey: 'k1' }));
-    const other = await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Segunda', idempotencyKey: 'k2' }));
+    const first = await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Primera', origin: 'customer', idempotencyKey: 'k1' }));
+    const again = await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Primera', origin: 'customer', idempotencyKey: 'k1' }));
+    const other = await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Segunda', origin: 'customer', idempotencyKey: 'k2' }));
     expect(again).toBe(first);
     expect(other).toMatchObject({ kind: 'refused', eligibility: 'terminal' });
     expect(find(store, 'RES-A').cancellation?.cause).toBe('Primera');
@@ -303,24 +304,24 @@ describe('paymentsPendingValidationDoNotCount', () => {
 
   it('shows on the screen what the port answers: pending policy, or no payments', async () => {
     const withPayments = await page({ code: 'RES-A' });
-    expect(withPayments.host.textContent).toContain('Pendiente de parametrización comercial');
+    expect(withPayments.host.querySelector<HTMLInputElement>('#crp-rc-treatment')!.value).toContain('Pendiente de parametrización comercial');
     TestBed.resetTestingModule();
     const without = await page({ code: 'RES-B' });
-    expect(without.host.textContent).toContain('No aplica: no hay pagos registrados en esta reserva.');
+    expect(without.host.querySelector<HTMLInputElement>('#crp-rc-treatment')!.value).toContain('No aplica: no hay valores pagados y validados en esta reserva; la cancelación es definitiva y no deja valores por tratar.');
   });
 });
 
 describe('refundableAboveZeroOpensTheCustomerCancellationDecision', () => {
   it('opens one decision at the clock instant when something is refundable, none otherwise', async () => {
     const { store, writer } = demo();
-    await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Viaje aplazado', idempotencyKey: 'k1' }));
-    await firstValueFrom(writer.cancel({ code: 'RES-B', cause: 'Viaje aplazado', idempotencyKey: 'k2' }));
+    await firstValueFrom(writer.cancel({ code: 'RES-A', cause: 'Viaje aplazado', origin: 'customer', idempotencyKey: 'k1' }));
+    await firstValueFrom(writer.cancel({ code: 'RES-B', cause: 'Viaje aplazado', origin: 'customer', idempotencyKey: 'k2' }));
     expect(find(store, 'RES-A').financialDecision).toEqual({
       kind: 'CUSTOMER_CANCELLATION', baseAmountCents: 30_000_000, penaltyAmountCents: null, refundableCents: null, recognizedAt: NOW, outcome: null,
     });
     expect(find(store, 'RES-B').financialDecision).toBeUndefined();
     const full = demo(fixtures(), 100);
-    await firstValueFrom(full.writer.cancel({ code: 'RES-A', cause: 'Viaje aplazado', idempotencyKey: 'k3' }));
+    await firstValueFrom(full.writer.cancel({ code: 'RES-A', cause: 'Viaje aplazado', origin: 'customer', idempotencyKey: 'k3' }));
     expect(find(full.store, 'RES-A').financialDecision).toBeUndefined();
   });
 });
@@ -332,7 +333,7 @@ describe('reservationPendingReschedulingAnswerIsNotCancelled', () => {
       .toBe('Esta reserva tiene una propuesta de reprogramación pendiente de respuesta: el cliente debe rechazarla.');
     expect(s.button('Registrar novedad')!.disabled).toBe(true);
     const { store, writer } = demo();
-    const outcome = await firstValueFrom(writer.cancel({ code: 'RES-F', cause: 'x', idempotencyKey: 'k1' }));
+    const outcome = await firstValueFrom(writer.cancel({ code: 'RES-F', cause: 'x', origin: 'customer', idempotencyKey: 'k1' }));
     expect(outcome).toMatchObject({ kind: 'refused', eligibility: 'rescheduling-pending' });
     expect(find(store, 'RES-F').status).toBe('CONFIRMADA');
     expect(find(store, 'RES-F').cancellation).toBeUndefined();
@@ -372,7 +373,8 @@ describe('readOnlyRolesGetNoCancelActionNorRefundLink', () => {
   });
 
   it('draws no "Gestionar devolución", refund or credit balance action in this feature', () => {
-    const code = listSourceFiles().filter((f) => f.startsWith('src/app/reservation-changes/')).map((f) => readFileSync(f, 'utf8')).join('\n');
+    // The copy file holds the mockup's registered messages, which only mention those words; no template or code draws an action.
+    const code = listSourceFiles().filter((f) => f.startsWith('src/app/reservation-changes/') && !f.endsWith('reservation-changes-copy.ts')).map((f) => readFileSync(f, 'utf8')).join('\n');
     expect(code).not.toMatch(/Gestionar devolución|Autorizar|saldo a favor/i);
   });
 });
@@ -423,7 +425,6 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
     document.body.append(host);
     cleanup = entry.mountWith(host, { apiClient: { request: vi.fn() } as never, session: { roles: ['OPERATIONAL_COLLABORATOR'], open: () => undefined, close: () => undefined } }, demoSources);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-    click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const row = Array.from(host.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes('#RES-1839'))!;
     row.querySelector('button')!.click();
@@ -446,10 +447,105 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
 });
 
 describe('theChangeScreenReturnsTo10AOfItsReservation', () => {
-  it.each(['Volver a la reserva', 'Cancelar'])('%s opens Reservas with { reservation } (base F-D4 reopens 10A)', async (label) => {
+  it.each(['Volver a la reserva', 'Volver'])('%s opens Reservas with { reservation } (base F-D4 reopens 10A)', async (label) => {
     const s = await page({ code: 'RES-B' });
     s.button(label)!.click(); await s.settle();
     expect(s.navigation.selected()).toBe('reservations');
     expect(s.navigation.params()).toEqual({ reservation: 'RES-B' });
+  });
+});
+
+// HU-COM-013 / v1.9: admin-cancelar-modificar-reserva.html of the current mockup ("Cancelar o modificar reserva").
+describe('cancelScreenFollowsTheCurrentMockupStructure', () => {
+  const texts = (host: HTMLElement, selector: string) => Array.from(host.querySelectorAll(selector), (e) => e.textContent?.trim());
+
+  it('writes the header eyebrow, the access note and the two numbered panels of the mockup', async () => {
+    const s = await page({ code: 'RES-A' });
+    expect(s.host.querySelector('.crp-page-header-eyebrow')?.textContent?.trim()).toBe('RF-003A · RF-021 · Gestión de reserva');
+    expect(s.host.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Cada reserva contiene un único tour asociado a una única salida. El cliente no cancela ni modifica por autogestión: la novedad la registra el Colaborador operativo o el Administrador del tenant, con causal y trazabilidad. Cancelada es un estado terminal.');
+    expect(texts(s.host, '.crp-operator-panel > .crp-operator-eyebrow')).toEqual(['01. Reserva', '02. Novedad']);
+    expect(texts(s.host, '.crp-operator-panel > h2')).toEqual(['Contexto', 'Tipo, origen y causal']);
+    expect(texts(s.host, 'label')).toEqual(['Reserva', 'Cliente', 'Estado', 'Valores pagados y validados', 'Salida actual', 'Tipo de novedad', 'Origen de la cancelación', 'Causal (obligatoria)', 'Tratamiento económico']);
+    expect(s.host.querySelector('textarea')?.getAttribute('placeholder')).toBe('Describe la causal de la cancelación o modificación');
+    expect(texts(s.host, '.crp-form-actions button')).toEqual(['Volver', 'Registrar novedad']);
+    expect(s.host.textContent).not.toContain('Devolución');
+  });
+
+  it('lists the three origins of the cancellation with the mockup wording, the customer first', async () => {
+    const s = await page({ code: 'RES-A' });
+    expect(texts(s.host, '#crp-rc-origin option')).toEqual([
+      'Solicitada por el cliente (aplica la penalidad vigente)',
+      'Causa no atribuible al cliente (devolución del 100 %)',
+      'Incumplimiento del pago (valores abonados en tratamiento pendiente)']);
+  });
+
+  it('hides the origin for a type that is not a cancellation', async () => {
+    const other = { key: 'travelers', label: 'Modificación de servicio, salida o viajeros', showsRefundable: false, submit: () => of({ kind: 'registered' as const }) };
+    const s = await page({ extra: [{ provide: RESERVATION_CHANGE_TYPES, multi: true, useValue: other }] });
+    const type = s.host.querySelector<HTMLSelectElement>('#crp-rc-type')!;
+    type.value = 'travelers'; type.dispatchEvent(new Event('change')); await s.settle();
+    expect(s.host.querySelector('#crp-rc-origin')).toBeNull();
+  });
+});
+
+describe('economicTreatmentFollowsTheOriginOfTheCancellation', () => {
+  const treatment = (host: HTMLElement) => host.querySelector<HTMLInputElement>('#crp-rc-treatment')!.value;
+  const choose = async (s: { host: HTMLElement; settle: () => Promise<void> }, origin: string) => {
+    const select = s.host.querySelector<HTMLSelectElement>('#crp-rc-origin')!;
+    select.value = origin; select.dispatchEvent(new Event('change')); await s.settle();
+  };
+
+  it('writes 100 % of the validated values for a cause not attributable to the customer and for non-payment', async () => {
+    const s = await page({ code: 'RES-A' });
+    await choose(s, 'not-attributable');
+    expect(treatment(s.host)).toBe('Causa no atribuible al cliente: devolución del 100 % de $300.000 pagados y validados.');
+    await choose(s, 'non-payment');
+    expect(treatment(s.host)).toBe('Cancelación por incumplimiento del pago: devolución del 100 % de $300.000 pagados y validados.');
+    await choose(s, 'customer');
+    expect(treatment(s.host)).toBe('Cancelación solicitada por el cliente: Pendiente de parametrización comercial.');
+  });
+
+  it('writes the validated values minus the penalty of the port for the customer (PDR example, test data only)', async () => {
+    const d = demo(fixtures(), 50);
+    const s = await page({ code: 'RES-A', quotes: d.quotes, writer: d.writer });
+    expect(treatment(s.host)).toBe('Cancelación solicitada por el cliente: $300.000 pagados y validados menos penalidad de $150.000 = $150.000 reembolsables.');
+  });
+
+  it('writes the no-payments text whatever the origin when nothing was validated', async () => {
+    const s = await page({ code: 'RES-B' });
+    await choose(s, 'not-attributable');
+    expect(treatment(s.host)).toBe('No aplica: no hay valores pagados y validados en esta reserva; la cancelación es definitiva y no deja valores por tratar.');
+  });
+
+  it('sends the chosen origin with the cause and keeps it in the cancellation of the store', async () => {
+    const writer = new ControllableWriter();
+    const s = await page({ code: 'RES-A', writer });
+    await choose(s, 'not-attributable');
+    await s.type('Salida suspendida por lluvias'); await s.submit();
+    expect(writer.calls[0].command).toMatchObject({ code: 'RES-A', cause: 'Salida suspendida por lluvias', origin: 'not-attributable' });
+    TestBed.resetTestingModule();
+    const d = demo();
+    await firstValueFrom(d.writer.cancel({ code: 'RES-A', cause: 'Lluvias', origin: 'not-attributable', idempotencyKey: 'k1' }));
+    expect(find(d.store, 'RES-A').cancellation).toMatchObject({ cause: 'Lluvias', origin: 'not-attributable' });
+  });
+});
+
+describe('registeredCancellationMessageFollowsTheDeterminedValue', () => {
+  const pause = () => ({ extra: [{ provide: RESERVATION_CHANGE_RETURN_DELAY, useValue: () => new Subject<void>() }] as Provider[] });
+  const status = (host: HTMLElement) => host.querySelector('.crp-reservation-changes-feedback[role="status"]')?.textContent?.trim();
+
+  it('names the determined value and the 24-hour decision when the port answers an amount', async () => {
+    const d = demo(fixtures(), 50);
+    const s = await page({ code: 'RES-A', quotes: d.quotes, writer: d.writer, ...pause() });
+    await s.type('Viaje aplazado'); await s.submit();
+    expect(status(s.host)).toBe('Cancelación registrada. Valor a devolver determinado: $150.000. El Administrador del tenant decide en 24 horas corridas (devolución del 100 % por defecto o saldo a favor); la devolución se ejecuta en máximo 5 días hábiles. Continúa desde el detalle de la reserva con Gestionar devolución.');
+  });
+
+  it('names the 100 % and the automatic authorization for a cause not attributable to the customer', async () => {
+    const s = await page({ code: 'RES-A', ...pause() });
+    const select = s.host.querySelector<HTMLSelectElement>('#crp-rc-origin')!;
+    select.value = 'not-attributable'; select.dispatchEvent(new Event('change')); await s.settle();
+    await s.type('Salida suspendida por lluvias'); await s.submit();
+    expect(status(s.host)).toBe('Cancelación registrada. Valor a devolver: $300.000 (100 %, causa no atribuible al cliente), determinado y autorizado automáticamente; se ejecuta en máximo 5 días hábiles desde Solicitudes de devolución.');
   });
 });

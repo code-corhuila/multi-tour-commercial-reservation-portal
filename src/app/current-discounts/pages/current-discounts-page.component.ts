@@ -1,3 +1,4 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
@@ -5,7 +6,8 @@ import { formatDate } from '../../shared/format';
 import { AdditionalDiscountFormComponent } from '../components/additional-discount-form.component';
 import { CurrentDiscountsValueComponent } from '../components/current-discounts-value.component';
 import { CurrentDiscountsSource } from '../data/current-discounts-source';
-import { AdditionalDiscount, CURRENT_DISCOUNTS_TEXT, PricedService, applyDiscounts } from '../model/current-discounts';
+import { DiscountBreakdowns } from '../data/discount-breakdowns';
+import { AdditionalDiscount, CURRENT_DISCOUNTS_TEXT, PricedService } from '../model/current-discounts';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; items: readonly PricedService[] };
 
@@ -64,10 +66,11 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
 export class CurrentDiscountsPageComponent {
   protected readonly mayAuthorize = inject(PortalCapabilities).canAuthorizeAdditionalDiscount();
   private readonly source = inject(CurrentDiscountsSource);
+  private readonly breakdowns = inject(DiscountBreakdowns);
   protected readonly text = CURRENT_DISCOUNTS_TEXT;
   protected readonly formatDate = formatDate;
   /** DP-CD1 open: the demo checks validity against the date the person picks. */
-  protected readonly date = signal(new Date().toLocaleDateString('en-CA'));
+  protected readonly date = signal(tenantDay(inject(Clock).now()));
   private readonly additional = signal<Readonly<Record<string, AdditionalDiscount>>>({});
   private readonly chosen = signal('');
   private readonly requests = new Subject<string>();
@@ -78,7 +81,7 @@ export class CurrentDiscountsPageComponent {
   protected readonly rows = computed(() => {
     const current = this.state();
     return current.kind !== 'data' ? [] : current.items.map((service) => ({
-      service, breakdown: applyDiscounts(service.baseCents, service.rules, this.date(), this.additional()[service.serviceId]) }));
+      service, breakdown: this.breakdowns.of(service.baseCents, service.rules, this.date(), this.additional()[service.serviceId]) }));
   });
   /** The chosen service while it is listed, otherwise the first one. */
   protected readonly selectedId = computed(() => {

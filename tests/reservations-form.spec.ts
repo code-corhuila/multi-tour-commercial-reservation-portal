@@ -14,7 +14,7 @@ async function openForm(over: Parameters<typeof reservationProviders>[0] = {}) {
   view.fixture.componentInstance.created.subscribe((r) => created.push(r));
   const fill = async (people = '3', departure = 'dep-1') => {
     await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', departure);
-    await view.tick('svc-Kayak'); await view.type('people', people);
+    await view.tick('svc-Kayak'); await view.type('people', people); await view.payWith();
   };
   return { ...view, writer, keys, discounts, created, fill };
 }
@@ -26,10 +26,10 @@ const errorBeside = (element: HTMLElement, name: string) => {
 describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
   it('offers one departure at a time, only Programada and open, among labelled fields', async () => {
     const { element } = await openForm();
-    const select = within(element).getByLabelText('Salida concreta') as HTMLSelectElement;
+    const select = within(element).getByLabelText('Salida programada') as HTMLSelectElement;
     expect(select.multiple).toBe(false);
     expect(Array.from(select.options).map((o) => o.value).filter(Boolean)).toEqual(['dep-1', 'dep-4']);
-    for (const label of ['Cliente titular', 'Cantidad total de viajeros']) expect(within(element).getByLabelText(label)).toBeTruthy();
+    for (const label of ['Cliente titular', 'Tour', 'Cantidad total de viajeros']) expect(within(element).getByLabelText(label)).toBeTruthy();
     expect(within(element).queryByLabelText(/Closed/)).toBeNull();
   });
 });
@@ -41,13 +41,13 @@ describe('missingMandatoryDataIsNamedBesideEachFieldAndNothingIsSent', () => {
     expect(errorBeside(element, 'leadCustomerId')).toContain('El cliente titular es obligatorio');
     expect(errorBeside(element, 'departureId')).toContain('La salida es obligatoria');
     expect(errorBeside(element, 'people')).toContain('La cantidad de viajeros es obligatoria');
-    expect(element.querySelector('fieldset')!.textContent).toContain('Selecciona al menos un servicio');
+    expect(errorBeside(element, 'serviceId')).toContain('El tour es obligatorio');
     expect(writer.calls).toHaveLength(0);
   });
 
   it('names only the lead customer when it is the one missing', async () => {
-    const { element, choose, tick, type, submit, writer } = await openForm();
-    await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2'); await submit();
+    const { element, choose, tick, type, payWith, submit, writer } = await openForm();
+    await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2'); await payWith(); await submit();
     expect(errorBeside(element, 'leadCustomerId')).toContain('El cliente titular es obligatorio');
     expect(errorBeside(element, 'people')).toBe('');
     expect(writer.calls).toHaveLength(0);
@@ -93,7 +93,7 @@ describe('submitIsDisabledWhileASubmissionIsPending and aRetriedCreationReusesIt
     await fill(); await submit(); await submit();
     expect(writer.calls).toHaveLength(1);
     expect(button('Registrar reserva')!.disabled).toBe(true);
-    expect(writer.calls[0].command).toMatchObject({ leadCustomerId: 'cus-1', departureId: 'dep-1', serviceIds: ['svc-Kayak'], people: 3 });
+    expect(writer.calls[0].command).toMatchObject({ leadCustomerId: 'cus-1', departureId: 'dep-1', serviceIds: ['svc-Kayak'], people: 3, paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' });
     expect('quote' in writer.calls[0].command).toBe(false);
   });
 

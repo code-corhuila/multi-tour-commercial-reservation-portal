@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop, formatDate } from '../../shared/format';
@@ -64,6 +65,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                   @for (m of current.methods; track m.code) { <option [value]="m.code">{{ m.label }}</option> }
                 </select>
                 <p id="self-service-method-error" class="self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
+                @if (text.methodHint[method()]; as hint) { <p class="self-service-note">{{ hint }}</p> }
               </article>
               <ng-container *crpSlot="checkout; inputs: { quote: current.quote, method: method(), reservation: created() }" />
               @if (standing === 'OTHER') { <p role="status">{{ text.notCustomer }}</p> }
@@ -81,7 +83,11 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                   <p class="self-service-summary-copy"><strong>{{ current.quote.tourName }}</strong>&ngsp;<span>{{ date(current.quote.departureAt) }}</span>&ngsp;<span>{{ travelers(selection!.people) }}</span></p></div>
                 <dl class="self-service-pricing">
                   <dt>{{ text.basePrice }}</dt><dd>{{ cop(current.quote.baseValueCents) }}</dd>
-                  @if (current.quote.discountCents) { <dt>{{ text.discounts }}</dt><dd>{{ cop(-current.quote.discountCents) }}</dd> }
+                  @if (current.quote.discountCents) { <dt>{{ text.discounts }}</dt><dd>{{ cop(-current.quote.discountCents) }}</dd>
+                    @if (current.quote.discountLines?.length) {
+                      <dd class="self-service-breakdown"><ol>@for (line of current.quote.discountLines; track line.order) {
+                        <li>{{ line.order }}. {{ line.name }} · {{ text.bases[line.base] }} · {{ cop(-line.amountCents) }} · {{ text.subtotal }} {{ cop(line.subtotalCents) }}</li> }</ol></dd>
+                    } }
                   <dt>{{ text.final }}</dt><dd class="self-service-total">{{ cop(current.quote.finalValueCents) }}</dd>
                 </dl>
               </article>
@@ -100,13 +106,15 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
           <div class="crp-booking-bar-selection"><span>{{ text.barSelected }}</span>&ngsp;<strong>{{ date(current.quote.departureAt) }} - {{ travelers(selection!.people) }}</strong></div>
           @if (created()) {
             @if (mine) { <button type="button" class="crp-primary crp-booking-continue" (click)="mine.open(area.reservations)">{{ text.seeMine }}</button> }
-          } @else if (standing !== 'OTHER') { <button type="submit" class="crp-primary crp-booking-continue" [disabled]="pending()">{{ text.confirm }}</button> }
+          } @else if (standing !== 'OTHER') { <button type="submit" class="crp-primary crp-booking-continue" [disabled]="pending()">{{ method() === cash ? text.confirmCash : text.confirm }}</button> }
         </aside>
       }
     </form>
   `,
 })
 export class ConfirmReservationPageComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   protected readonly text = SELF_SERVICE_TEXT;
   protected readonly cop = formatCop;
   protected readonly date = formatDate;
@@ -114,6 +122,7 @@ export class ConfirmReservationPageComponent {
   protected readonly companions = companions;
   protected readonly photo = tourPhoto;
   protected readonly flow = RESERVATION_FLOW;
+  protected readonly cash = 'CASH_AT_OFFICE';
   /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
   protected readonly checkout = CHECKOUT_BLOCKS;
   protected readonly holder = [
@@ -182,8 +191,8 @@ export class ConfirmReservationPageComponent {
     const { conditions, terms } = this.accepted();
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
-    if (this.missing() || this.unaccepted()) return;
-    if (this.standing === 'NO_SESSION') { this.asked.set(true); this.customer.requestSignIn(); return; }
+    if (this.missing() || this.unaccepted()) { this.focusFirstErrorOnRender(); return; }
+    if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
     defer(() => this.requester.request(selection, this.method(), this.key)).pipe(

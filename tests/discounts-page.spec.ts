@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -12,6 +13,7 @@ import { ControllableDiscountRulesSource, discountNamed } from './discount-rules
 import { ControllableDiscountRulesWriter } from './discount-rules-writer.double';
 import { ActorRole } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
+import { DISCOUNTS_PAGE_PANELS, contribute } from '../src/app/shared/portal-slots';
 const RAW_CODES = /\b(ACTIVE|INACTIVE|IN_FORCE|UPCOMING|EXPIRED|PERCENTAGE|FIXED_AMOUNT|ORIGINAL_VALUE|PREVIOUS_SUBTOTAL)\b/;
 
 export async function openDiscounts(role: ActorRole = 'TENANT_ADMINISTRATOR', providers: any[] = []) {
@@ -34,28 +36,34 @@ describe('discount list states and newest request', () => {
     await p.settle(); expect(p.state()).toBe('data');
     const rows = Array.from(p.element.querySelectorAll('li'), r => r.textContent);
     expect(rows[0]).toContain('First'); expect(rows[1]).toContain('Second');
-    for (const text of ['01 ene 2026 - 31 dic 2026', 'Prioridad 1', '12,5% de descuento', 'Inactivo']) expect(rows[0]).toContain(text);
+    for (const text of ['First', 'Vigente hasta el 31 dic 2026.', 'Prioridad 1, no acumulable.', '12,5% de descuento', 'Inactivo']) expect(rows[0]).toContain(text);
     expect(rows[0]).not.toMatch(/2026-01-01|12\.50/); expect(p.element.textContent).not.toMatch(RAW_CODES);
   });
   it('draws screen 12: header, hero, numbered panel, promotions and Spanish badges', async () => {
     const p = await openDiscounts('TENANT_ADMINISTRATOR', [{ provide: DiscountRulesWriter, useValue: new ControllableDiscountRulesWriter() }]);
     const rule = (name: string, startsOn: string, endsOn: string, priority: number) => ({ ...discountNamed(name, priority), startsOn, endsOn });
+    const capped = { ...rule('Tope', '2000-01-01', '2999-12-31', 5), capCents: 8_000_000, stackable: true, calculationBase: 'PREVIOUS_SUBTOTAL' as const };
     p.source.requests[0].reply([rule('En curso', '2000-01-01', '2999-12-31', 1), rule('Futuro', '2999-01-01', '2999-12-31', 2),
       rule('Pasado', '2000-01-01', '2000-12-31', 3), { ...rule('Apagado', '2000-01-01', '2999-12-31', 4), status: 'INACTIVE' },
-      { ...rule('Monto', '2000-01-01', '2999-12-31', 5), type: 'FIXED_AMOUNT', amountCents: 5_000_000, percentageBasisPoints: undefined }]);
+      capped]);
     await p.settle(); const e = p.element;
     expect(e.querySelector('.crp-page-header-eyebrow')?.textContent).toBe('Reglas comerciales');
     expect(e.querySelector('h1')?.textContent).toBe('Descuentos');
     expect(e.querySelector('.crp-page-header .crp-primary')?.textContent?.trim()).toBe('Crear descuento');
     expect(e.querySelector('.crp-discount-hero')?.textContent).toContain('Descuentos visibles y trazables.');
+    expect(e.querySelector('.crp-discount-hero')?.textContent).toContain('Define vigencia, prioridad, acumulación, topes y base de cálculo para los tours. Un descuento general se fija en el contexto comercial de cada reserva al crearla: los cambios posteriores no afectan reservas ya creadas.');
+    expect(e.querySelector('.crp-operator-panel .crp-operator-eyebrow')?.textContent).toBe('Vigentes');
+    expect(e.querySelector('.crp-operator-panel h2')?.textContent).toBe('Promociones activas');
     expect(e.querySelector('.crp-operator-panel .crp-operator-panel-head .crp-operator-status')?.textContent).toBe('2 activas');
     const items = Array.from(e.querySelectorAll('li.crp-discount-promo'));
     expect(items.map(i => i.querySelector('.crp-operator-status')?.textContent)).toEqual(['Vigente', 'Próximo', 'Vencido', 'Inactivo', 'Vigente']);
     expect(items[0].querySelector('.crp-operator-status')?.classList).toContain('crp-is-confirmed');
     expect(items[3].querySelector('.crp-operator-status')?.classList).toContain('crp-is-pending');
     expect(items[0].querySelector('strong')?.textContent).toBe('12,5% de descuento');
-    expect(items[4].querySelector('strong')?.textContent).toBe('$50.000 de descuento');
-    expect(items[0].textContent).toContain('Base de cálculo: Valor original');
+    expect(items[4].querySelector('strong')?.textContent).toBe('12,5% de descuento');
+    expect(items[0].querySelector('span')?.textContent).toBe('En curso'); expect(items[0].textContent).toContain('Base de cálculo: valor original.');
+    expect(items[4].querySelector('p')?.textContent).toBe('Vigente hasta el 31 dic 2999. Base de cálculo: subtotal resultante del descuento anterior. Prioridad 5, acumulable. Tope: $80.000.');
+    expect(items[0].querySelector('p')?.textContent).not.toContain('Tope');
     expect(Array.from(items[0].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros', 'Inactivar']);
     expect(Array.from(items[3].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros']);
     expect(e.textContent).not.toMatch(RAW_CODES); expect(e.textContent).not.toMatch(/Discount|Retry|Loading|No results/);
@@ -107,5 +115,19 @@ describe('discount route fails closed', () => {
   it('an absent container actor also denies the address', async () => {
     TestBed.configureTestingModule({ providers: [provideRouter(PORTAL_ROUTES)] });
     const h = await RouterTestingHarness.create(); await expect(h.navigateByUrl('/discounts')).rejects.toThrow('Cannot match any routes');
+  });
+});
+
+@Component({ selector: 'app-stub-panel', template: '<section data-stub-panel>Decisiones excepcionales</section>' })
+class StubPanelComponent {}
+describe('theDiscountsPageDrawsTheContributedPanels', () => {
+  it('draws what another story contributes after the list, and nothing when nobody does', async () => {
+    const bare = await openDiscounts(); bare.source.requests[0].reply([discountNamed()]); await bare.settle();
+    expect(bare.element.querySelector('[data-stub-panel]')).toBeNull();
+    TestBed.resetTestingModule();
+    const p = await openDiscounts('TENANT_ADMINISTRATOR', [contribute(DISCOUNTS_PAGE_PANELS, { component: StubPanelComponent, order: 1 })]);
+    p.source.requests[0].reply([discountNamed()]); await p.settle();
+    const panel = p.element.querySelector('[data-stub-panel]')!, list = p.element.querySelector('.crp-discount-list')!;
+    expect(panel.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 });

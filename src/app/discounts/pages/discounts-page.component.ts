@@ -1,3 +1,4 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, map, of, startWith, switchMap } from 'rxjs';
@@ -5,13 +6,14 @@ import { ApiError } from '../../shell-contract';
 import { DiscountRuleFormComponent } from '../components/discount-rule-form.component';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
 import { DiscountRulesSource } from '../data/discount-rules-source';
-import { formatDateRange } from '../../shared/format';
-import { DISCOUNT_SELECTS, DISCOUNT_TEXT, DiscountRule, discountValidity, discountValueText } from '../model/discount-rule';
+import { DISCOUNT_TEXT } from '../discounts-copy';
+import { DiscountRule, discountDetail, discountValidity, discountValueText } from '../model/discount-rule';
+import { DISCOUNTS_PAGE_PANELS, PortalSlotOutlet } from '../../shared/portal-slots';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error' } | { kind: 'data'; items: readonly DiscountRule[] };
 @Component({
-  selector: 'app-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [DiscountRuleFormComponent],
+  selector: 'app-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [DiscountRuleFormComponent, PortalSlotOutlet],
   template: `
     @if (allowed) {
       <header class="crp-page-header"><div class="crp-page-header-main">
@@ -43,8 +45,8 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
         @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
         @case ('data') {
           <ul class="crp-discount-list" data-state="data">@for (rule of current.items; track rule.id) { @let badge = validity(rule, today);
-            <li class="crp-discount-promo"><div><span>{{ rule.name }}</span><strong>{{ valueText(rule) }}</strong>
-              <p>Vigencia: {{ range(rule.startsOn, rule.endsOn) }} · Prioridad {{ rule.priority }} · Base de cálculo: {{ baseLabel(rule) }}</p>
+            <li class="crp-discount-promo"><div><span>{{ rule.tourName }}</span><strong>{{ valueText(rule) }}</strong>
+              <p>{{ detail(rule) }}</p>
               <em [class]="'crp-operator-status crp-is-' + badge.tone">{{ badge.label }}</em></div>
               @if (writer) { <div class="crp-row-actions">
                 <button type="button" [disabled]="busy()" (click)="openForm(rule)">{{ text.edit }}</button>
@@ -54,7 +56,8 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
           }</ul>
         }
       }
-      </section> }
+      </section>
+      <ng-container *crpSlot="panels" /> }
     } @else { <p role="alert" data-state="denied">{{ text.denied }}</p> }
   `,
 })
@@ -71,10 +74,10 @@ export class DiscountsPageComponent {
   protected readonly text = DISCOUNT_TEXT;
   protected readonly valueText = discountValueText;
   protected readonly validity = discountValidity;
-  protected readonly range = formatDateRange;
-  protected baseLabel(rule: DiscountRule): string { return DISCOUNT_SELECTS[0].options.find(o => o.value === rule.calculationBase)?.label ?? ''; }
+  protected readonly detail = discountDetail;
+  protected readonly panels = DISCOUNTS_PAGE_PANELS;
   protected inForce(items: readonly DiscountRule[]): number { return items.filter(r => this.validity(r, this.today).tone === 'confirmed').length; }
-  protected readonly today = new Date().toLocaleDateString('en-CA');
+  protected readonly today = tenantDay(inject(Clock).now());
   private readonly requests = new Subject<void>();
   private readonly local = signal<DiscountsPageState | null>(null);
   private readonly listed = toSignal(this.requests.pipe(switchMap(() => this.source.list().pipe(
