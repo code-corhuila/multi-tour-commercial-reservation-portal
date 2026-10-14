@@ -48,10 +48,6 @@ export const PUBLIC_OFFER_COPY = {
   },
 } as const;
 
-/** Self-hosted photos of the multi-tour-front container (same origin, CSP img-src 'self'); a card takes one by its position. */
-const PHOTOS = ['/assets/destino-sendero-del-condor.jpg', '/assets/destino-bahia-esmeralda.jpg', '/assets/destino-cascadas-de-iraka.jpg', '/assets/mountain-hero.jpg'];
-export function photoAt(position: number): string { return PHOTOS[position % PHOTOS.length]; }
-
 /** The search of a client page: a name contains the words typed, ignoring case and accents. */
 export function matchesSearch(name: string, query: string): boolean {
   const plain = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
