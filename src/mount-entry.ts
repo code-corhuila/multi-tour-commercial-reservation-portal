@@ -10,7 +10,8 @@ import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
 import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
-import { CHECKOUT_BLOCKS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { CHECKOUT_BLOCKS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
@@ -80,6 +81,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       provideTravellersModification(),
       // HU-COM-014: Continuar pago, Mis pagos and the proof notice of 17, and the economic lines of Mis reservas; each only with its port.
       ...MY_PAYMENTS_CONTRIBUTIONS,
+      // HU-COM-016: "Devoluciones monetarias" of 13, only for who authorizes or executes and with the refund ports.
+      contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
       // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
       RESCHEDULING_ENTRY,
     ],
