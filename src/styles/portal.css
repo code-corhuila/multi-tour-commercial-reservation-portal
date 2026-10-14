@@ -314,6 +314,9 @@
 .crp-root .crp-offer-facts div { padding: 16px 18px; border: 1px solid #d7e0de; border-radius: 14px; background: #fbfcfc; }
 .crp-root .crp-offer-facts dd { margin: 4px 0 0; color: #17252b; font-weight: 800; }
 .crp-root .crp-offer-conditions { margin-top: 22px; padding: 4px 24px 18px; border: 1px solid #cfe3dc; border-radius: 20px; background: #f4faf8; }
+.crp-root .crp-offer-departures { margin-top: 22px; }
+.crp-root .crp-offer-departures ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.crp-root .crp-offer-departures li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid #d7e0de; border-radius: 14px; background: #fbfcfc; }
 .crp-root .crp-offer-summary { display: grid; gap: 10px; padding: 24px; border: 1px solid #d7e0de; border-radius: 20px; background: #ffffff; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.06); }
 .crp-root .crp-offer-summary p { margin: 0; }
 .crp-root .crp-offer-summary-price { display: grid; gap: 4px; }
