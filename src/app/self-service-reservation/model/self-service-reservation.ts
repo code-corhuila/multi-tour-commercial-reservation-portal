@@ -34,6 +34,11 @@ export interface SelectionQuote {
   readonly baseValueCents: number;
   readonly discountCents: number;
   readonly finalValueCents: number;
+  /** HU-COM-004 T-V19-3 (DP-004-V19-3 PROPUESTO): the discount lines in application order, resolved by the port; absent when it sends none. */
+  readonly discountLines?: readonly SelectionDiscountLine[];
+}
+export interface SelectionDiscountLine {
+  readonly order: number; readonly name: string; readonly base: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly amountCents: number; readonly subtotalCents: number;
 }
 
 /** Spanish badge and its class for a reservation state; an unknown code is never shown (authorized screens P4). */
@@ -104,6 +109,8 @@ export const SELF_SERVICE_TEXT = {
   summaryTitle: 'Resumen de reserva',
   basePrice: 'Precio base',
   discounts: 'Descuentos aplicables',
+  subtotal: 'Subtotal',
+  bases: { ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior' } as const,
   final: 'Valor final',
   conditionsTitle: 'Condiciones de reserva',
   conditionsCopy: 'Reservas únicamente el tour y la salida seleccionada. La alimentación indicada forma parte del paquete cuando corresponda; el hospedaje y los restaurantes asociados no se reservan en Multitour.',
