@@ -357,7 +357,7 @@ describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;
       Object.defineProperty(proof, 'files', { value: [pdf()], configurable: true }); proof.dispatchEvent(new Event('change'));
       press(host, 'Enviar comprobante para validación');
-      await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-panel-notices .crp-operator-panel p'), (p) => flat(p.textContent)).filter((t) => t.includes('En validación'))).toEqual([
+      await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-client-bell-panel .crp-client-bell-list p'), (p) => flat(p.textContent)).filter((t) => t.includes('En validación'))).toEqual([
         'Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.',
         'Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.']));
       press(host, 'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
@@ -371,7 +371,7 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
   it('Mis pagos of the demo build shows Sin comprobante, En validación, Abono recibido, Pago completo and a cancelled reservation', async () => {
     const { host, cleanup } = mountDemo();
     try {
-      await vi.waitFor(() => expect(flat(host.querySelector('.crp-panel-notices .crp-operator-panel')?.textContent))
+      await vi.waitFor(() => expect(flat(host.querySelector('.crp-client-bell-panel .crp-client-bell-list')?.textContent))
         .toContain('Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.'));
       press(host, 'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
       // The five situations of the mockup come first; HU-COM-018 adds the demo customer's RES-1829 and RES-1828 after them.

@@ -238,16 +238,15 @@ describe('customerShellHeader', () => {
     expect(navigation().params()).toEqual({});
   });
 
-  it('draws the dark footer of tours.html, its Explorar column opening the areas and Cuenta as text', async () => {
+  it('draws the dark footer of tours.html, its Explorar column opening the areas and no Cuenta column (the session is open)', async () => {
     const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
     const footer = host.querySelector('.crp-client-shell > footer.crp-client-footer')!;
     expect(footer.querySelector('.crp-client-footer-brand')?.textContent?.trim()).toBe('MULTITOUR');
     expect(footer.textContent).toContain('Plataforma para descubrir, reservar y gestionar experiencias de turismo con operadores locales.');
-    expect(texts(host, '.crp-client-footer-col strong')).toEqual(['Explorar', 'Cuenta']);
+    expect(texts(host, '.crp-client-footer-col strong')).toEqual(['Explorar']);
     expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] button')).toEqual(['Tours', 'Alojamiento', 'Gastronomía']);
-    expect(texts(host, '.crp-client-footer-col[aria-label="Cuenta"] span')).toEqual(['Ingresar', 'Crear cuenta']);
-    expect(footer.querySelector('.crp-client-footer-col[aria-label="Cuenta"] button, .crp-client-footer-col[aria-label="Cuenta"] a')).toBeNull();
-    expect(footer.querySelector('.crp-client-footer-bottom')?.textContent?.trim()).toBe('© 2026 Multi Tour. Plataforma para operadores de turismo.');
+    expect(footer.textContent).not.toMatch(/Ingresar|Crear cuenta|Cuenta/);
+    expect(footer.querySelector('.crp-client-footer-bottom')?.textContent?.trim()).toBe('© 2026 Multitour. Plataforma para operadores de turismo.');
     button(host, '.crp-client-footer-col button', 'Alojamiento').click();
     await settle();
     expect(host.querySelector('crp-test-lodging-page')).not.toBeNull();
@@ -280,8 +279,24 @@ describe('customerPanelChrome', () => {
     expect(host.querySelector('.crp-client-header')).toBeNull();
     expect(host.querySelector('.crp-client-footer')).toBeNull();
     const header = host.querySelector('.crp-client-content > header.crp-client-panel-header')!;
-    expect(header.querySelector('.crp-client-panel-brand')?.textContent?.trim()).toBe('Multi Tour');
+    // panel-cliente.html draws no brand in its header: Ver catálogo and the bell of Notificaciones.
+    expect(header.querySelector('.crp-client-panel-brand')).toBeNull();
     expect(texts(host, link)).toEqual(['Ver catálogo']);
+    const bell = header.querySelector<HTMLButtonElement>('.crp-client-bell-button')!;
+    expect(header.querySelector('.crp-client-panel-actions > button + .crp-client-bell')).not.toBeNull();
+    expect(bell.getAttribute('aria-label')).toBe('Notificaciones');
+    expect(bell.getAttribute('aria-expanded')).toBe('false');
+    const panel = header.querySelector<HTMLElement>('.crp-client-bell-panel')!;
+    expect(panel.hidden).toBe(true);
+    expect(panel.querySelector('h2')?.textContent?.trim()).toBe('Notificaciones');
+    expect(panel.textContent).toContain('No tienes notificaciones nuevas.');
+    bell.click();
+    await settle();
+    expect(panel.hidden).toBe(false);
+    expect(bell.getAttribute('aria-expanded')).toBe('true');
+    bell.click();
+    await settle();
+    expect(panel.hidden).toBe(true);
     expect(host.textContent).not.toMatch(/Perfil/);
     host.querySelector<HTMLButtonElement>(link)!.click();
     await settle();
@@ -296,6 +311,8 @@ describe('customerPanelChrome', () => {
     host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
     await settle();
     expect(texts(host, link)).toEqual(['Volver al panel']);
+    expect(host.querySelector('.crp-client-panel-brand')?.textContent?.trim()).toBe('Multitour');
+    expect(host.querySelector('.crp-client-bell')).toBeNull();
     host.querySelector<HTMLButtonElement>(link)!.click();
     await settle();
     expect(host.querySelector('crp-test-panel-page')).not.toBeNull();
