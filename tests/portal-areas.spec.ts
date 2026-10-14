@@ -22,6 +22,8 @@ import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
+import { ProfilePageComponent } from '../src/app/profile/pages/profile-page.component';
+import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
@@ -47,7 +49,29 @@ import { ActorContext } from '../src/app/shared/actor-context';
 
 @Component({ selector: 'crp-test-customer-page', template: '<p>Oferta de prueba</p>' })
 class CustomerPageDouble {}
-const CUSTOMER_AREA: PortalArea = { key: 'explore', label: 'Área de prueba', component: CustomerPageDouble, audience: 'customer' };
+const CUSTOMER_AREA: PortalArea = { key: CLIENT_AREA.tours, label: 'Explorar', component: CustomerPageDouble, audience: 'customer' };
+
+/** A client page that opens another area through PortalNavigation, as "Ver mis reservas" or "Volver al panel cliente" do. */
+@Component({ selector: 'crp-test-panel-page', template: '<button type="button" class="go" (click)="nav.open(key)">Ver mis reservas</button>' })
+class PanelPageDouble { protected readonly nav = inject(PortalNavigation); protected readonly key = CLIENT_AREA.reservations; }
+@Component({ selector: 'crp-test-lodging-page', template: '<p>Alojamiento de prueba</p>' })
+class LodgingPageDouble {}
+@Component({ selector: 'crp-test-gastronomy-page', template: '<p>Gastronomía de prueba</p>' })
+class GastronomyPageDouble {}
+@Component({ selector: 'crp-test-reservations-page', template: '<p>Reservas de prueba</p>' })
+class ReservationsPageDouble {}
+const CLIENT_AREAS: PortalArea[] = [
+  CUSTOMER_AREA,
+  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingPageDouble, audience: 'customer' },
+  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyPageDouble, audience: 'customer' },
+  { key: CLIENT_AREA.panel, label: 'Panel cliente', component: PanelPageDouble, audience: 'customer', clientChrome: 'panel' },
+  { key: CLIENT_AREA.reservations, label: 'Mis reservas', component: ReservationsPageDouble, audience: 'customer', clientChrome: 'panel' },
+];
+@Component({ selector: 'crp-test-profile-page', template: '<p>Perfil de prueba</p>' })
+class ProfilePageDouble {}
+const PROFILE_AREA: PortalArea = { key: CLIENT_AREA.profile, label: 'Perfil', component: ProfilePageDouble, audience: 'customer', clientChrome: 'none', menu: false };
+/** The same areas, all with the site chrome of tours.html. */
+const SITE_CLIENT_AREAS: PortalArea[] = CLIENT_AREAS.map((area) => ({ ...area, clientChrome: 'site' }));
 
 async function openShell(role: ActorRole, withDiscounts = true, extra: PortalArea[] = []) {
   const catalog = new DemoCatalogStore();
@@ -172,12 +196,103 @@ describe('customerShellHeader', () => {
     expect(brand?.textContent?.trim()).toBe('MULTITOUR');
     expect(brand?.querySelector('span')?.textContent).toBe('TOUR');
     expect(host.querySelector('.crp-client-nav')?.getAttribute('aria-label')).toBe('Navegación principal del cliente');
-    // HU-COM-006: the public offer is the first customer area.
-    expect(links(host).map((b) => b.textContent?.trim())).toEqual(['Explorar', 'Área de prueba']);
-    expect(host.querySelector('.crp-client-eyebrow')?.textContent?.trim()).toBe('Portal cliente');
-    expect(host.querySelector('.crp-client-greeting')?.textContent?.trim()).toMatch(/^Hola/);
-    expect(links(host)[0].getAttribute('aria-current')).toBe('page');
-    expect(host.querySelector('.crp-client-content app-public-offer-page')).not.toBeNull();
+    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar', 'Alojamiento', 'Gastronomía']);
+    expect(texts(host, '.crp-client-actions button')).toEqual(['Mis reservas']);
+    expect(host.textContent).not.toMatch(/Perfil|Catálogos|Establecimientos|Descuentos/);
+  });
+
+  it('lands on the panel cliente and leaves the greeting to that page', async () => {
+    const { host } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    expect(host.querySelector('.crp-client-content crp-test-panel-page')).not.toBeNull();
+    expect(host.querySelector('.crp-client-greeting')).toBeNull();
+  });
+
+  it('opens the reservations list from Mis reservas and marks it active there', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
+    expect(button(host, '.crp-client-actions button', 'Mis reservas').getAttribute('aria-current')).toBeNull();
+    button(host, '.crp-client-actions button', 'Mis reservas').click();
+    await settle();
+    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
+    expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Mis reservas']);
+  });
+
+  it('draws Perfil as the dark filled button after Mis reservas and opens the profile (tours.html)', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, [...SITE_CLIENT_AREAS, PROFILE_AREA]);
+    expect(texts(host, '.crp-client-actions button')).toEqual(['Mis reservas', 'Perfil']);
+    const profile = button(host, '.crp-client-actions button', 'Perfil');
+    expect(profile.classList.contains('crp-client-profile')).toBe(true);
+    expect(button(host, '.crp-client-actions button', 'Mis reservas').classList.contains('crp-client-profile')).toBe(false);
+    profile.click();
+    await settle();
+    expect(host.querySelector('crp-test-profile-page')).not.toBeNull();
+  });
+
+  it('makes the avatar of the compact header a button that opens the profile (panel-cliente.html)', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, [...CLIENT_AREAS, PROFILE_AREA]);
+    const avatar = host.querySelector<HTMLButtonElement>('.crp-client-panel-header button.crp-client-avatar')!;
+    expect(avatar.getAttribute('aria-label')).toBe('Perfil del usuario');
+    avatar.click();
+    await settle();
+    expect(host.querySelector('crp-test-profile-page')).not.toBeNull();
+  });
+
+  it('registers the Perfil area for the customer with its own top bar', () => {
+    const area = PORTAL_AREAS.find((candidate) => candidate.key === CLIENT_AREA.profile)!;
+    expect(area).toMatchObject({ label: 'Perfil', audience: 'customer', clientChrome: 'none', menu: false });
+    expect(area.component).toBe(ProfilePageComponent);
+  });
+
+  it('opens the area of each header link and moves the active state with it', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
+    button(host, '.crp-client-nav button', 'Gastronomía').click();
+    await settle();
+    expect(host.querySelector('crp-test-gastronomy-page')).not.toBeNull();
+    expect(host.querySelector('crp-test-panel-page')).toBeNull();
+    expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Gastronomía']);
+  });
+
+  it('lets a client page open another area through PortalNavigation', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
+    host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
+    await settle();
+    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
+  });
+
+  it('hands the parameters of PortalNavigation.open to the opened area and clears them on the next opening', async () => {
+    const { host, settle, navigation } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
+    expect(navigation().params()).toEqual({});
+    expect(navigation().open(CLIENT_AREA.reservations, { departure: 'DEP-1', people: '2' })).toBe(true);
+    await settle();
+    expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
+    expect(navigation().params()).toEqual({ departure: 'DEP-1', people: '2' });
+    expect(navigation().open('unknown-area', { departure: 'X' })).toBe(false);
+    expect(navigation().params()).toEqual({ departure: 'DEP-1', people: '2' });
+    button(host, '.crp-client-nav button', 'Explorar').click();
+    await settle();
+    expect(navigation().params()).toEqual({});
+  });
+
+  it('draws the dark footer of tours.html, its Explorar column opening the areas and no Cuenta column (the session is open)', async () => {
+    const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
+    const footer = host.querySelector('.crp-client-shell > footer.crp-client-footer')!;
+    expect(footer.querySelector('.crp-client-footer-brand')?.textContent?.trim()).toBe('MULTITOUR');
+    expect(footer.textContent).toContain('Plataforma para descubrir, reservar y gestionar experiencias de turismo con operadores locales.');
+    expect(texts(host, '.crp-client-footer-col strong')).toEqual(['Explorar']);
+    expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] button')).toEqual(['Tours', 'Alojamiento', 'Gastronomía']);
+    expect(footer.textContent).not.toMatch(/Ingresar|Crear cuenta|Cuenta/);
+    expect(footer.querySelector('.crp-client-footer-bottom')?.textContent?.trim()).toBe('© 2026 Multitour. Plataforma para operadores de turismo.');
+    button(host, '.crp-client-footer-col button', 'Alojamiento').click();
+    await settle();
+    expect(host.querySelector('crp-test-lodging-page')).not.toBeNull();
+  });
+
+  it('draws only the links whose area the build has; the footer keeps the others as text', async () => {
+    const { host } = await openShell('READ_ONLY', true, [CUSTOMER_AREA]);
+    expect(texts(host, '.crp-client-nav button')).toEqual(['Explorar']);
+    expect(texts(host, '.crp-client-actions button')).toEqual([]);
+    expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] button')).toEqual(['Tours']);
+    expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] span')).toEqual(['Alojamiento', 'Gastronomía']);
+    expect(host.querySelector('.crp-client-content crp-test-customer-page')).not.toBeNull();
   });
 
   it('shows the customer the public offer under Explorar and no operator page', async () => {
