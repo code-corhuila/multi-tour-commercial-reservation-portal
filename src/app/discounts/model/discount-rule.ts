@@ -5,59 +5,27 @@ import { parsePercentage } from './percentage';
 export type DiscountValue = { type: 'PERCENTAGE'; percentageBasisPoints: number; amountCents?: never }
   | { type: 'FIXED_AMOUNT'; amountCents: number; percentageBasisPoints?: never };
 /** PROPUESTO (G-B): `tourId`, `tourName`, `capCents` and `stackable` await the published API contract (amendment A.5, pillar 11). */
+/** DP-PD2 (PROPUESTO): the badge pill of screen 11 ("Vigente", "Próximo", "Vencido", "Inactivo"), resolved by the source, never by the screen. */
+export type DiscountValidity = { readonly label: string; readonly tone: string; readonly inForce: boolean };
 export type DiscountRule = {
   readonly id: string; readonly tourId: string; readonly tourName: string; readonly percentageBasisPoints: number; readonly capCents?: number;
   readonly stackable: boolean; readonly startsOn: string; readonly endsOn: string; readonly priority: number;
-  readonly calculationBase: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly status: 'ACTIVE' | 'INACTIVE';
+  readonly calculationBase: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly status: 'ACTIVE' | 'INACTIVE'; readonly validity: DiscountValidity;
 };
-export type DiscountRuleCommand = Omit<DiscountRule, 'id' | 'status' | keyof DiscountValue> & DiscountValue;
-/** Texts of the authorized screen 12 (admin-descuentos, admin-nuevo-descuento, admin-editar-descuento). */
-export const DISCOUNT_TEXT = {
-  eyebrow: 'Reglas comerciales', title: 'Descuentos', newTitle: 'Nuevo descuento', editTitle: 'Editar descuento', back: 'Volver a descuentos',
-  heroEyebrow: 'Configuración', heroTitle: 'Descuentos visibles y trazables.',
-  heroCopy: 'Define vigencia, prioridad, base de cálculo y valor antes de habilitarlos.',
-  panelEyebrow: 'Por prioridad', panelTitle: 'Promociones configuradas',
-  loading: 'Cargando descuentos…', saving: 'Guardando…', empty: 'Aún no hay descuentos configurados.',
-  failed: 'No se pudieron cargar los descuentos.', retry: 'Reintentar', denied: 'No tienes acceso a los descuentos.',
-  create: 'Crear descuento', edit: 'Editar parámetros', inactivate: 'Inactivar', confirm: 'Confirmar inactivación', cancel: 'Cancelar',
-  save: 'Guardar cambios', newLead: 'Configura la promoción', editLead: 'Actualiza la promoción', orderLead: 'Vigencia y orden',
-  newFeedback: 'Completa los parámetros para publicar el descuento.',
-  editFeedback: 'Actualiza los parámetros y guarda para aplicar los cambios a este mismo descuento.',
-  confirmation: 'Las reservas existentes conservan el descuento que ya tienen. ¿Inactivar este descuento?',
-};
-export function canManageDiscounts(actor: { role: string }): boolean { return actor.role === 'TENANT_ADMINISTRATOR'; }
-/** `20% de descuento`, `12,5% de descuento`, `$50.000 de descuento`. */
-export function discountValueText(rule: DiscountValue): string {
-  if (rule.type !== 'PERCENTAGE') return `${formatCop(rule.amountCents)} de descuento`;
+export type DiscountRuleCommand = Omit<DiscountRule, 'id' | 'status' | 'tourName' | 'validity'>;
+/** `20% de descuento`, `12,5% de descuento`. */
+export function discountValueText(rule: Pick<DiscountRule, 'percentageBasisPoints'>): string {
   const points = rule.percentageBasisPoints, decimals = String(points % 100).padStart(2, '0').replace(/0$/, '');
   return `${Math.trunc(points / 100)}${points % 100 ? ',' + decimals : ''}% de descuento`;
 }
-/** DP-PD2 (PROPUESTO): the badge pills of screen 11, in Spanish. */
-export function discountValidity(rule: DiscountRule, today: string): { label: string; tone: string } {
-  return rule.status === 'INACTIVE' ? { label: 'Inactivo', tone: 'pending' } : today < rule.startsOn ? { label: 'Próximo', tone: 'execution' }
-    : today > rule.endsOn ? { label: 'Vencido', tone: 'finalized' } : { label: 'Vigente', tone: 'confirmed' };
+/** `Vigente hasta el 30 sep 2026. Base de cálculo: valor original. Prioridad 1, no acumulable. Tope: $80.000.` */
+export function discountDetail(rule: DiscountRule): string {
+  const t = DISCOUNT_TEXT;
+  return `${t.until} ${formatDate(rule.endsOn)}. ${t.base} ${t.baseInline[rule.calculationBase]}. ${t.priority} ${rule.priority}, ${rule.stackable ? t.stackable : t.notStackable}.`
+    + (rule.capCents ? ` ${t.cap} ${formatCop(rule.capCents)}.` : '');
 }
-export const DISCOUNT_FIELDS = [
-  { name: 'name', label: 'Nombre del descuento', kind: 'text' }, { name: 'startsOn', label: 'Vigencia desde', kind: 'date' },
-  { name: 'endsOn', label: 'Vigencia hasta', kind: 'date' }, { name: 'priority', label: 'Prioridad', kind: 'text' },
-  { name: 'value', label: 'Porcentaje de descuento', kind: 'text' },
-] as const;
-export const DISCOUNT_SELECTS = [
-  { name: 'calculationBase', label: 'Base de cálculo', options: [
-    { value: 'ORIGINAL_VALUE', label: 'Valor original', explanation: 'se calcula sobre el valor original de la reserva.' },
-    { value: 'PREVIOUS_SUBTOTAL', label: 'Subtotal resultante del descuento anterior', explanation: 'se calcula sobre el subtotal que deja el descuento previo.' },
-  ] },
-  { name: 'type', label: 'Tipo de valor', options: [
-    { value: 'PERCENTAGE', label: 'Porcentaje', explanation: '' }, { value: 'FIXED_AMOUNT', label: 'Monto fijo', explanation: '' },
-  ] },
-] as const;
-/** The two numbered panels of the form, in the order of the screen. */
-export const DISCOUNT_SECTIONS = [
-  { eyebrow: '01. Descuento', fields: ['name', 'type', 'value', 'calculationBase'] },
-  { eyebrow: '02. Vigencia y prioridad', fields: ['startsOn', 'endsOn', 'priority'] },
-] as const;
-export type DiscountDraft = Record<(typeof DISCOUNT_FIELDS)[number]['name'] | (typeof DISCOUNT_SELECTS)[number]['name'], string>;
-export type DiscountField = keyof DiscountDraft;
+export type DiscountField = 'tourId' | 'percentage' | 'calculationBase' | 'cap' | 'startsOn' | 'endsOn' | 'priority' | 'stackable';
+export type DiscountDraft = Record<DiscountField, string>;
 export type DiscountMessages = Partial<Record<DiscountField, string>>;
 export function discountDraft(rule: DiscountRule | null): DiscountDraft {
   return { tourId: rule?.tourId ?? '', percentage: rule ? formatMoney(rule.percentageBasisPoints) : '', calculationBase: rule?.calculationBase ?? 'ORIGINAL_VALUE',
