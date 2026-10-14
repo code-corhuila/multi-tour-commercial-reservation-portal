@@ -31,7 +31,7 @@ import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import { screenOf } from './reservations.double';
 
-// HU-COM-010 (spec 010-, tasks T-01 to T-07): "Pagos pendientes" and "Validar soporte" of screen 13, the links of 10, 10A and 13,
+// HU-COM-010 (spec 010-, tasks T-01 to T-07): "Pagos pendientes" and "Validar comprobante" of screen 13, the links of 10, 10A and 13,
 // and the review limit of 24, over the one reservations store of HU-COM-007 that HU-COM-009 writes.
 // Seeded proofs En validación: RES-1834 (Abono · Transferencia, $300.000, $100.000 already validated, a $50.000 proof presented
 // 2026-10-12 09:00) and RES-1833 (Abono · Transferencia, $300.000, a $100.000 proof presented 2026-10-13 09:00).
@@ -41,7 +41,8 @@ const TOTAL = 'RES-1842';
 const AT = (iso: string) => Date.parse(iso);
 const NOW = AT('2026-10-13T09:00:00-05:00');
 /** The reservations whose proof waits in the demo store; other stories may seed more of them (HU-COM-014 seeds RES-1840). */
-const waitingIds = async () => (await firstValueFrom(TestBed.inject(PendingProofsSource).list())).rows.map((row) => row.reservation.id);
+const proofRows = async () => (await firstValueFrom(TestBed.inject(PendingProofsSource).list())).rows;
+const waitingIds = async () => (await proofRows()).filter((row) => row.payment.proofStatus === 'EN_VALIDACION').map((row) => row.reservation.id);
 
 class FixedClock extends Clock {
   constructor(public at = NOW) { super(); }
@@ -96,11 +97,11 @@ const validating = (payment = `${EXAMPLE}-P1`, setup: Setup = {}) =>
 afterEach(() => TestBed.resetTestingModule());
 
 describe('the frame: areas, four states and texts (T-01)', () => {
-  it('registers Pagos as a sidebar area and Validar soporte as its sub-screen, each only with the review ports', () => {
+  it('registers Pagos as a sidebar area and Validar comprobante as its sub-screen, each only with the review ports', () => {
     const payments = PORTAL_AREAS.find((area) => area.key === 'payments')!, validate = PORTAL_AREAS.find((area) => area.key === 'payments-validate')!;
     expect(payments).toMatchObject({ label: 'Pagos', component: PaymentsPageComponent });
     expect(payments.menu).toBeUndefined();
-    expect(validate).toMatchObject({ label: 'Validar soporte', component: ValidateProofPageComponent, menu: false, parent: 'payments' });
+    expect(validate).toMatchObject({ label: 'Validar comprobante', component: ValidateProofPageComponent, menu: false, parent: 'payments' });
     TestBed.configureTestingModule({ providers: providers() });
     const injector = TestBed.inject(Injector);
     expect(payments.isAvailable!(injector)).toBe(true);
@@ -120,16 +121,16 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     await failed.click('Reintentar');
     expect(failing.calls).toBe(2);
     const empty = await pagesWith(answering(() => of({ rows: [], overdueCount: 0 })));
-    expect(empty.element.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay soportes por revisar.');
+    expect(empty.element.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay comprobantes por revisar.');
     // The mockup always draws the badge of Pagos pendientes, also when no proof waits.
     expect(empty.element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('0 pendientes');
     TestBed.resetTestingModule();
     const seeded = await screenOf(PaymentsPageComponent, providers());
-    expect(seeded.element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength((await waitingIds()).length);
+    expect(seeded.element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength((await proofRows()).length);
     TestBed.resetTestingModule();
     const unknown = await validating('RES-1999-P1');
     expect(unknown.element.querySelector('[data-state="empty"]')?.textContent)
-      .toContain('No se encontró el soporte de pago seleccionado. Vuelve a Pagos e ingresa nuevamente por Validar soporte.');
+      .toContain('No se encontró el comprobante seleccionado. Vuelve a Pagos e ingresa nuevamente por Validar comprobante.');
   });
 
   it('reviewTextsAreSpanishWithFormattedMoneyAndNoRawCodes', async () => {
@@ -138,22 +139,29 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     expect(text).toContain('Control de cobro');
     expect(text).toContain('Pagos y devoluciones');
     expect(text).toContain('Confirma pagos sin perder trazabilidad.');
-    expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Modalidad', 'Valor pendiente', 'Estado', 'Acción']);
+    expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valor', 'Estado', 'Acción']);
     const ofExample = Array.from(element.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes(`#${EXAMPLE}`));
     const row = Array.from(ofExample?.querySelectorAll('td') ?? []).map((td) => td.textContent?.trim()).join(' ');
-    expect(row).toMatch(/#RES-183[34] .+ \(demo\) Abono · Transferencia \$[23]00\.000 En validación/);
+    expect(row).toMatch(/#RES-1833 .+ \(demo\) Abono · Transferencia \$100\.000 En validación/);
     expect(text).not.toMatch(/EN_VALIDACION|BANK_TRANSFER|PARTIAL|PENDIENTE_DE_PAGO|undefined|null|NaN/);
     TestBed.resetTestingModule();
     const page = await validating();
     const form = flat(page.element);
-    expect(page.element.querySelector('h1')?.textContent?.trim()).toBe('Validar soporte');
+    expect(page.element.querySelector('h1')?.textContent?.trim()).toBe('Validar comprobante');
     expect(form).toContain('Revisa el comprobante antes de decidir');
     expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-code')?.value).toBe(`#${EXAMPLE}`);
     expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-method')?.value).toBe('Abono · Transferencia');
     expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-status')?.value).toBe('En validación');
     expect(page.element.querySelector<HTMLInputElement>('[name="verifiedAmount"]')?.value).toBe('$100.000');
-    expect(form).toContain('Motivo (obligatorio)');
-    expect(form).toContain('Registra el motivo y decide si apruebas o rechazas el soporte.');
+    expect(form).toContain('Motivo (obligatorio al rechazar o si el monto verificado difiere del declarado)');
+    expect(form).toContain('Verifica el monto y decide si apruebas o rechazas el comprobante.');
+    expect(Array.from(page.element.querySelectorAll('label')).map((l) => l.textContent?.trim()).slice(0, 6))
+      .toEqual(['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valor declarado', 'Monto verificado', 'Estado del comprobante']);
+    expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-declared')?.value).toBe('$100.000');
+    expect(page.element.querySelector<HTMLInputElement>('#crp-proof-review-declared')?.readOnly).toBe(true);
+    expect(form).toContain('Archivo: soporte-demo.pdf');
+    expect(form).toContain('El monto reconocido es el valor verificado en la evidencia. Si supera el valor pendiente de la reserva, solo se aplica lo necesario y el excedente se registra como saldo a favor del cliente dentro del tenant.');
+    expect(form).toContain('El comprobante se revisa dentro de 24 horas corridas; pasado ese plazo queda marcado como revisión vencida, sin cancelar la reserva ni liberar el cupo.');
     expect(form).not.toMatch(/EN_VALIDACION|BANK_TRANSFER|PARTIAL/);
   });
 });
@@ -174,14 +182,14 @@ describe('the decision form (T-02)', () => {
     const writer = new HeldWriter();
     const { element, click, type } = await screenOf(ValidateProofPageComponent, providers({
       params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: writer }] }));
-    await click('Rechazar soporte');
-    expect(element.querySelector('#crp-proof-review-reason-error')?.textContent?.trim()).toBe('Registra el motivo obligatorio antes de aprobar o rechazar el soporte.');
+    await click('Rechazar comprobante');
+    expect(element.querySelector('#crp-proof-review-reason-error')?.textContent?.trim()).toBe('Registra el motivo obligatorio del rechazo.');
     expect(element.querySelector('[name="reason"]')?.getAttribute('aria-invalid')).toBe('true');
     expect(element.querySelector('[name="reason"]')?.getAttribute('aria-describedby')).toBe('crp-proof-review-reason-error');
     await type('reason', 'Monto revisado');
     await type('verifiedAmount', '0');
-    await click('Aprobar soporte');
-    expect(element.querySelector('#crp-proof-review-amount-error')?.textContent?.trim()).toBe('Registra un monto mayor a $0.');
+    await click('Aprobar comprobante');
+    expect(element.querySelector('#crp-proof-review-amount-error')?.textContent?.trim()).toBe('Registra el monto verificado (mayor a $0).');
     expect(element.querySelector('[name="verifiedAmount"]')?.getAttribute('aria-invalid')).toBe('true');
     expect(writer.calls).toEqual([]);
   });
@@ -191,18 +199,18 @@ describe('the decision form (T-02)', () => {
     const { button, click, type, settle } = await screenOf(ValidateProofPageComponent, providers({
       keys, params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: writer }] }));
     await type('reason', 'Soporte legible');
-    button('Aprobar soporte')!.click(); button('Aprobar soporte')!.click(); await settle();
+    button('Aprobar comprobante')!.click(); button('Aprobar comprobante')!.click(); await settle();
     expect(writer.calls).toHaveLength(1);
-    expect(button('Aprobar soporte')!.disabled).toBe(true);
+    expect(button('Aprobar comprobante')!.disabled).toBe(true);
     writer.answers[0].error({ status: 500 }); await settle();
-    await click('Aprobar soporte');
+    await click('Aprobar comprobante');
     expect(writer.calls.map(([, key]) => key)).toEqual([writer.calls[0][1], writer.calls[0][1]]);
     const r = await stored(EXAMPLE);
     writer.answers[1].next({ ...r, payments: r.payments!.map((p) => ({ ...p, proofStatus: 'APROBADO' as const })) }); await settle();
-    await click('Aprobar soporte');
+    await click('Aprobar comprobante');
     expect(writer.calls).toHaveLength(2);
-    expect(button('Aprobar soporte')!.disabled).toBe(true);
-    expect(button('Rechazar soporte')!.disabled).toBe(true);
+    expect(button('Aprobar comprobante')!.disabled).toBe(true);
+    expect(button('Rechazar comprobante')!.disabled).toBe(true);
   });
 
   it('a decision in the demo store is recorded once per Idempotency-Key', async () => {
@@ -217,13 +225,13 @@ describe('the decision form (T-02)', () => {
     const { element, click, type } = await screenOf(ValidateProofPageComponent, providers({
       params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: writer }] }));
     expect(element.querySelector<HTMLInputElement>('[name="verifiedAmount"]')?.value).toBe('$100.000');
-    await type('reason', 'Soporte legible'); await click('Aprobar soporte');
+    await type('reason', 'Soporte legible'); await click('Aprobar comprobante');
     expect(writer.calls[0][0].verifiedAmountCents).toBe(10_000_000);
     TestBed.resetTestingModule();
     const edited = new HeldWriter();
     const again = await screenOf(ValidateProofPageComponent, providers({
       params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: edited }] }));
-    await again.type('verifiedAmount', '$150.000'); await again.type('reason', 'Monto del extracto'); await again.click('Aprobar soporte');
+    await again.type('verifiedAmount', '$150.000'); await again.type('reason', 'Monto del extracto'); await again.click('Aprobar comprobante');
     expect(edited.calls[0][0].verifiedAmountCents).toBe(15_000_000);
   });
 
@@ -232,7 +240,7 @@ describe('the decision form (T-02)', () => {
     const { click, type } = await screenOf(ValidateProofPageComponent, providers({
       params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: writer }] }));
     await type('verifiedAmount', '0.07'); await type('reason', 'Monto verificado en el extracto');
-    await click('Aprobar soporte');
+    await click('Aprobar comprobante');
     expect(writer.calls[0][0]).toEqual({ reservationId: EXAMPLE, paymentId: `${EXAMPLE}-P1`, decision: 'APROBADO', verifiedAmountCents: 7, reason: 'Monto verificado en el extracto' });
   });
 
@@ -244,21 +252,119 @@ describe('the decision form (T-02)', () => {
     expect((await stored(EXAMPLE)).payments![0].proofStatus).toBe('RECHAZADO');
     TestBed.resetTestingModule();
     const { element, button } = await validating(`${VALIDATED}-P1`);
-    expect(flat(element)).toContain('Este soporte ya fue validado. No se puede volver a decidir sobre el mismo intento.');
-    expect(button('Aprobar soporte')!.disabled).toBe(true);
-    expect(button('Rechazar soporte')!.disabled).toBe(true);
+    expect(flat(element)).toContain('Este comprobante ya fue aprobado por Administrador del tenant (demo). No se puede volver a decidir sobre el mismo comprobante.');
+    expect(button('Aprobar comprobante')!.disabled).toBe(true);
+    expect(button('Rechazar comprobante')!.disabled).toBe(true);
     expect(element.querySelector<HTMLTextAreaElement>('[name="reason"]')!.disabled).toBe(true);
   });
 
   it('answers each decision with the mockup sentence and draws the recalculated state', async () => {
     const { element, click, type } = await validating();
-    await type('reason', 'Soporte legible'); await click('Aprobar soporte');
-    expect(flat(element)).toContain('Soporte aprobado. La reserva y su situación financiera fueron recalculadas.');
+    await type('reason', 'Soporte legible'); await click('Aprobar comprobante');
+    expect(flat(element)).toContain('Comprobante aprobado por $100.000 aplicados. Situación financiera: Abono recibido. La reserva quedó Confirmada.');
     expect(element.querySelector<HTMLInputElement>('#crp-proof-review-status')?.value).toBe('Aprobado');
     TestBed.resetTestingModule();
     const rejected = await validating();
-    await rejected.type('reason', 'Imagen ilegible'); await rejected.click('Rechazar soporte');
-    expect(flat(rejected.element)).toContain('Soporte rechazado. La reserva conserva su estado y saldo pendiente.');
+    await rejected.type('reason', 'Imagen ilegible'); await rejected.click('Rechazar comprobante');
+    expect(flat(rejected.element)).toContain('Comprobante rechazado. La reserva conserva su estado, sus pagos validados y su saldo pendiente.');
+  });
+});
+
+describe('Validar comprobante and Pagos as the mockup of PDR v1.9 writes them', () => {
+  const heldPage = (writer: HeldWriter) =>
+    screenOf(ValidateProofPageComponent, providers({ params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` }, extra: [{ provide: ProofReviewWriter, useValue: writer }] }));
+  const cancelEXAMPLE = () => {
+    const store = TestBed.inject(ReservationsSource) as unknown as { items: Reservation[] };
+    store.items = store.items.map((r) => (r.id === EXAMPLE ? { ...r, status: 'CANCELADA' as const } : r));
+  };
+
+  it('approvingTheDeclaredAmountNeedsNoReason, a different verified amount does', async () => {
+    const writer = new HeldWriter();
+    const { click } = await heldPage(writer);
+    await click('Aprobar comprobante');
+    expect(writer.calls).toHaveLength(1);
+    expect(writer.calls[0][0]).toMatchObject({ decision: 'APROBADO', verifiedAmountCents: 10_000_000, reason: '' });
+    TestBed.resetTestingModule();
+    const other = new HeldWriter();
+    const again = await heldPage(other);
+    await again.type('verifiedAmount', '$90.000'); await again.click('Aprobar comprobante');
+    expect(other.calls).toEqual([]);
+    expect(again.element.querySelector('#crp-proof-review-reason-error')?.textContent?.trim())
+      .toBe('El monto verificado es distinto al declarado en el comprobante: registra el motivo de la diferencia.');
+    await again.type('reason', 'El extracto muestra menos'); await again.click('Aprobar comprobante');
+    expect(other.calls[0][0]).toMatchObject({ verifiedAmountCents: 9_000_000, reason: 'El extracto muestra menos' });
+  });
+
+  it('theDemoWriterAnswersTheAppliedAmountTheExcessAndTheCancelledTreatment', async () => {
+    TestBed.configureTestingModule({ providers: providers() });
+    const excess = await decide({ verifiedAmountCents: 40_000_000, reason: 'El extracto muestra más' });
+    expect(excess.payments![0].review).toMatchObject({ appliedCents: 30_000_000, surplusCents: 10_000_000, pendingTreatmentCents: 0 });
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: providers() });
+    cancelEXAMPLE();
+    const cancelled = await decide({ verifiedAmountCents: 10_000_000 });
+    expect(cancelled).toMatchObject({ status: 'CANCELADA', validatedCents: 0 });
+    expect(cancelled.payments![0].review).toMatchObject({ appliedCents: 0, surplusCents: 0, pendingTreatmentCents: 10_000_000 });
+  });
+
+  it('theDemoWriterRefusesARejectionOrADifferenceWithoutReason', async () => {
+    TestBed.configureTestingModule({ providers: providers() });
+    expect((await refusal(decide({ decision: 'RECHAZADO', reason: '' }))).userMessage).toBe('Registra el motivo obligatorio del rechazo.');
+    expect((await refusal(decide({ verifiedAmountCents: 9_000_000, reason: '' }, 'k-2'))).status).toBe(409);
+  });
+
+  it('writesTheExcessInThePage', async () => {
+    const { element, click, type } = await validating();
+    await type('verifiedAmount', '$400.000'); await type('reason', 'El extracto muestra más'); await click('Aprobar comprobante');
+    expect(flat(element)).toContain('Comprobante aprobado por $300.000 aplicados. Situación financiera: Pago completo. La reserva quedó Confirmada. El excedente de $100.000 se registró como saldo a favor del cliente.');
+  });
+
+  it('writesTheCancelledTreatmentInThePage', async () => {
+    TestBed.configureTestingModule({ providers: providers({ params: { reservation: EXAMPLE, payment: `${EXAMPLE}-P1` } }) });
+    cancelEXAMPLE();
+    const fixture = TestBed.createComponent(ValidateProofPageComponent);
+    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Aprobar comprobante')!.click();
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(flat(root)).toContain('La reserva estaba Cancelada: $100.000 pasan a tratamiento pendiente.');
+    expect(flat(root)).not.toContain('La reserva quedó Confirmada.');
+  });
+
+  it('goesBackToPagosAfterTheDecision (the mockup redirects after 1.6 s)', async () => {
+    vi.useFakeTimers();
+    try {
+      const { click, type } = await validating();
+      await type('reason', 'Imagen ilegible'); await click('Rechazar comprobante');
+      const navigation = TestBed.inject(PortalNavigation);
+      navigation.selected.set(undefined);
+      await vi.advanceTimersByTimeAsync(1700);
+      expect(navigation.selected()).toBe('payments');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('warnsOfAnOverdueReviewOnTheDecisionPage', async () => {
+    const { element } = await validating(`${VALIDATED}-P2`);
+    expect(flat(element)).toContain('Revisión vencida: este comprobante lleva más de 24 horas corridas En validación. Decide cuanto antes.');
+    TestBed.resetTestingModule();
+    expect(flat((await validating()).element)).not.toContain('Revisión vencida');
+  });
+
+  it('listsEveryProofWithSinAccionPendienteOnTheDecidedOnesAndTheMockupHero', async () => {
+    const { element } = await screenOf(PaymentsPageComponent, providers());
+    const text = flat(element);
+    expect(text).toContain('Valida o rechaza comprobantes, registra seguimientos y autoriza devoluciones cuando corresponda. La revisión de cada comprobante tiene un máximo de 24 horas corridas.');
+    expect(text).toContain('Comprobantes y seguimiento');
+    const rows = Array.from(element.querySelectorAll('tbody tr')).map((tr) => flat(tr as HTMLElement));
+    expect(rows.find((row) => row.includes(`#${VALIDATED}`) && row.includes('Aprobado'))).toMatch(/\$100\.000 Aprobado Sin acción pendiente/);
+    expect(element.querySelector('tbody tr .crp-operator-status.crp-is-confirmed')?.textContent?.trim()).toBe('Aprobado');
+    expect(rows.find((row) => row.includes(`#${EXAMPLE}`))).toContain('Validar comprobante');
+  });
+
+  it('showsTheOverdueNoticeOnlyToWhoCanValidate', async () => {
+    const analyst = await screenOf(PaymentsPageComponent, providers({ role: 'ANALYST' }));
+    expect(analyst.element.querySelector('.crp-access-note')).toBeNull();
+    expect(flat(analyst.element)).toContain('En validación · Revisión vencida');
   });
 });
 
@@ -338,7 +444,7 @@ describe('the 24-hour mark (T-05)', () => {
   it('paymentsTableShowsTheOverdueNotice', async () => {
     const { element } = await screenOf(PaymentsPageComponent, providers());
     expect(element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe(`${(await waitingIds()).length} pendientes`);
-    expect(element.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Hay 1 soporte(s) con revisión vencida. La marca no cambia el estado ni libera cupos.');
+    expect(element.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Hay 1 comprobante(s) con revisión vencida (más de 24 horas corridas En validación). La marca no cambia el estado, no cancela la reserva ni libera cupos.');
     const rows = Array.from(element.querySelectorAll('tbody tr')).map((tr) => flat(tr as HTMLElement));
     expect(rows.find((row) => row.includes(`#${VALIDATED}`))).toContain('En validación · Revisión vencida');
     expect(rows.find((row) => row.includes(`#${EXAMPLE}`))).not.toContain('Revisión vencida');
@@ -361,23 +467,23 @@ describe('the permission (T-06)', () => {
   it('withoutPermissionNoDecisionActionIsDrawnAndAForcedOneIsDenied (AC-PV.7)', async () => {
     for (const role of ['OPERATIONAL_COLLABORATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST', 'ROL_DESCONOCIDO']) {
       const { element, button } = await validating(`${EXAMPLE}-P1`, { role });
-      expect(element.querySelector('h1')?.textContent?.trim(), role).toBe('Ver soporte');
+      expect(element.querySelector('h1')?.textContent?.trim(), role).toBe('Ver comprobante');
       expect(flat(element), role).toContain('Consulta del comprobante de pago');
       expect(element.querySelector('[name="reason"]'), role).toBeNull();
-      expect(button('Aprobar soporte'), role).toBeUndefined();
-      expect(button('Rechazar soporte'), role).toBeUndefined();
+      expect(button('Aprobar comprobante'), role).toBeUndefined();
+      expect(button('Rechazar comprobante'), role).toBeUndefined();
       expect(button('Volver a pagos'), role).toBeDefined();
       const forced = await refusal(decide());
       expect(forced.status, role).toBe(403);
       expect((await stored(EXAMPLE)).payments![0].proofStatus, role).toBe('EN_VALIDACION');
       TestBed.resetTestingModule();
       const list = await screenOf(PaymentsPageComponent, providers({ role }));
-      expect(list.button('Validar soporte'), role).toBeUndefined();
-      expect(list.button('Ver soporte'), role).toBeDefined();
+      expect(list.button('Validar comprobante'), role).toBeUndefined();
+      expect(list.button('Ver comprobante'), role).toBeDefined();
       TestBed.resetTestingModule();
     }
     const allowed = await validating(`${EXAMPLE}-P1`, { role: 'OPERATIONAL_COLLABORATOR', mayValidate: true });
-    expect(allowed.button('Aprobar soporte')).toBeDefined();
+    expect(allowed.button('Aprobar comprobante')).toBeDefined();
   });
 });
 
@@ -393,10 +499,10 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
   }
   const reservation = async (id: string) => { TestBed.configureTestingModule({ providers: providers() }); const r = await stored(id); TestBed.resetTestingModule(); return r; };
 
-  it('the 13 sub-screen leads Validar and Rechazar soporte to the decision page, only for a proof under validation (AC-PV.3)', async () => {
+  it('the 13 sub-screen leads Validar and Rechazar comprobante to the decision page, only for a proof under validation (AC-PV.3)', async () => {
     const example = await reservation(EXAMPLE), plain = await reservation(TOTAL);
     const management = await drawn(ProofManagementActionsComponent, example);
-    for (const label of ['Validar soporte', 'Rechazar soporte']) {
+    for (const label of ['Validar comprobante', 'Rechazar comprobante']) {
       management.navigation.selected.set(undefined);
       management.press(label);
       expect(management.navigation.selected(), label).toBe('payments-validate');
@@ -434,7 +540,7 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [body] }));
     const bodies = Array.from(element.querySelectorAll('table tbody'));
     expect(bodies).toHaveLength(2);
-    expect(bodies[0].querySelectorAll('tr')).toHaveLength((await waitingIds()).length);
+    expect(bodies[0].querySelectorAll('tr')).toHaveLength((await proofRows()).length);
     expect(bodies[1].textContent?.trim()).toBe('Fila de seguimiento');
     TestBed.resetTestingModule();
     const none = new (class extends PendingProofsSource { override list() { return of({ rows: [], overdueCount: 0 }); } })();
@@ -445,10 +551,10 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     TestBed.resetTestingModule();
     const unavailable = contribute(PAYMENTS_TABLE_BODIES, { component: BodyDouble, order: 1, isAvailable: () => false });
     const empty = await screenOf(PaymentsPageComponent, providers({ extra: [unavailable, { provide: PendingProofsSource, useValue: none }] }));
-    expect(empty.element.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay soportes por revisar.');
+    expect(empty.element.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay comprobantes por revisar.');
   });
 
-  it('the demo build draws Pagos in the sidebar and opens Validar soporte from its row', async () => {
+  it('the demo build draws Pagos in the sidebar and opens Validar comprobante from its row', async () => {
     const host = document.createElement('div');
     document.body.append(host);
     const props: MountProps = { apiClient: { request: vi.fn() } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } };
@@ -459,7 +565,7 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
       press('nav button', 'Pagos');
       await vi.waitFor(() => expect(host.querySelector('app-payments-page [data-state="data"] tbody tr')).toBeTruthy());
       Array.from(host.querySelectorAll('app-payments-page tbody tr')).find((tr) => tr.textContent?.includes(`#${EXAMPLE}`))!.querySelector('button')!.click();
-      await vi.waitFor(() => expect(host.querySelector('app-validate-proof-page h1')?.textContent?.trim()).toBe('Validar soporte'));
+      await vi.waitFor(() => expect(host.querySelector('app-validate-proof-page h1')?.textContent?.trim()).toBe('Validar comprobante'));
       expect(host.querySelector('nav button.crp-is-active')?.textContent?.trim()).toBe('Pagos');
     } finally { cleanup(); host.remove(); }
   });

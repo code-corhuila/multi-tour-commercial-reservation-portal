@@ -112,6 +112,7 @@ describe('portalAreasRegistry', () => {
       { key: 'payments', label: 'Pagos', component: PaymentsPageComponent },
       { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent },
       { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
+      { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent },
       { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent },
       { key: 'my-payments', label: 'Mis pagos', component: MyPaymentsPageComponent },
       { key: 'refund-requests', label: 'Solicitudes de devolución', component: RefundRequestsPageComponent },

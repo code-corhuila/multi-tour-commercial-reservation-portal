@@ -13,7 +13,7 @@ const RAW = ['PENDIENTE_DE_PAGO', 'SIN_PAGO', 'ORIGINAL_VALUE', 'PREVIOUS_SUBTOT
 const texts = (root: Element, selector: string) => Array.from(root.querySelectorAll(selector)).map((e) => e.textContent?.trim());
 const header = (root: Element) => ({ eyebrow: root.querySelector('.crp-page-header-eyebrow')?.textContent?.trim(), title: root.querySelector('h1')?.textContent?.trim() });
 const noRawCodes = (root: Element) => { for (const code of RAW) expect(root.textContent, code).not.toContain(code); };
-const noPayments = (root: Element) => { for (const text of ['Gestionar pago', 'Pagos y soportes', 'Total recibido', 'Modalidad']) expect(root.textContent, text).not.toContain(text); };
+const noPayments = (root: Element) => { for (const text of ['Gestionar pago', 'Pagos y comprobantes', 'Total recibido', 'Modalidad']) expect(root.textContent, text).not.toContain(text); };
 
 async function overDemo(people = '2') {
   const departures = new DemoDeparturesStore(), store = new DemoReservationsStore(), discounts = new StubDiscounts();
