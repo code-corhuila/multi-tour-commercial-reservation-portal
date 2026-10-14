@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, output, signal } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap, take } from 'rxjs';
-import { CatalogItemsSource, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, output, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { Subject, catchError, defer, distinctUntilChanged, finalize, forkJoin, map, of, startWith, switchMap, take } from 'rxjs';
+import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
+import { formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { DeparturesSource } from '../data/departures-source';
 import { LeadCustomersSource, ReservationDiscounts } from '../data/reservation-integrations';
@@ -117,6 +119,8 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
   `,
 })
 export class ReservationFormComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   readonly created = output<Reservation>();
   readonly cancelled = output<void>();
   private readonly departures = inject(DeparturesSource); private readonly customers = inject(LeadCustomersSource);
@@ -192,8 +196,8 @@ export class ReservationFormComponent {
     event.preventDefault();
     if (this.pending()) return;
     this.tried.set(true); this.refusedForCapacity.set(''); this.failure.set('');
-    const d = this.draft(), departure = o.departures.find((x) => x.id === d.departureId), q = this.preview(o);
-    if (Object.keys(validateReservation(d, departure)).length || !departure || !q) return;
+    const d = this.draft(), departure = o.departures.find((x) => x.id === d.departureId), q = this.preview();
+    if (Object.keys(validateReservation(d, departure)).length || !departure || !q) { this.focusFirstErrorOnRender(); return; }
     // 007- H-D8: the command carries no value; the service quotes again and is the authority.
     const command = { leadCustomerId: d.leadCustomerId, departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod };
     this.pending.set(true);
