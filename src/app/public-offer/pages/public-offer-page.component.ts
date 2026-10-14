@@ -72,10 +72,11 @@ export function backToPanel(): (() => void) | null {
           <p class="crp-page-header-desc">{{ copy.description }}</p>
         </div>
         <div class="crp-page-header-action crp-offer-search">
-          <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchTours" #query (keydown.enter)="search.set(query.value)" />
+          <svg class="crp-offer-search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchToursHint" #query (keydown.enter)="search.set(query.value)" />
           <button type="button" class="crp-primary" (click)="search.set(query.value)">{{ copy.search }}</button>
-          <label class="crp-offer-date"><span>{{ copy.date }}</span><input type="date" [value]="date()" (change)="choose($event)" /></label>
         </div>
+        <label class="crp-offer-date"><span>{{ copy.date }}</span><input type="date" [value]="date()" (change)="choose($event)" /></label>
       </header>
       <section class="crp-offer-section" data-part="tours" [attr.aria-label]="copy.toursList">
         @let tours = toursState();

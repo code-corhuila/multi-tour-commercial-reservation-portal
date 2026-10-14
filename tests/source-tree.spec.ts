@@ -72,8 +72,6 @@ const SPECIFIED_TREE = [
   'src/app/public-offer/pages/establishments-offer-page.component.ts',
   'src/app/public-offer/pages/public-offer-page.component.ts',
   'src/app/public-offer/public-offer-copy.ts',
-  'src/app/profile/profile-copy.ts',
-  'src/app/profile/pages/profile-page.component.ts',
   'src/app/customers/customers-copy.ts',
   'src/app/customers/model/customer-group.ts',
   'src/app/customers/data/customers-source.ts',

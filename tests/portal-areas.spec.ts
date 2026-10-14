@@ -22,7 +22,6 @@ import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
-import { ProfilePageComponent } from '../src/app/profile/pages/profile-page.component';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
@@ -67,9 +66,6 @@ const CLIENT_AREAS: PortalArea[] = [
   { key: CLIENT_AREA.panel, label: 'Panel cliente', component: PanelPageDouble, audience: 'customer', clientChrome: 'panel' },
   { key: CLIENT_AREA.reservations, label: 'Mis reservas', component: ReservationsPageDouble, audience: 'customer', clientChrome: 'panel' },
 ];
-@Component({ selector: 'crp-test-profile-page', template: '<p>Perfil de prueba</p>' })
-class ProfilePageDouble {}
-const PROFILE_AREA: PortalArea = { key: CLIENT_AREA.profile, label: 'Perfil', component: ProfilePageDouble, audience: 'customer', clientChrome: 'none', menu: false };
 /** The same areas, all with the site chrome of tours.html. */
 const SITE_CLIENT_AREAS: PortalArea[] = CLIENT_AREAS.map((area) => ({ ...area, clientChrome: 'site' }));
 
@@ -130,7 +126,6 @@ describe('portalAreasRegistry', () => {
       { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent },
       { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
       { key: 'rescheduling-proposal', label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent },
-      { key: 'profile', label: 'Perfil', component: ProfilePageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
@@ -215,32 +210,6 @@ describe('customerShellHeader', () => {
     await settle();
     expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
     expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Mis reservas']);
-  });
-
-  it('draws Perfil as the dark filled button after Mis reservas and opens the profile (tours.html)', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, [...SITE_CLIENT_AREAS, PROFILE_AREA]);
-    expect(texts(host, '.crp-client-actions button')).toEqual(['Mis reservas', 'Perfil']);
-    const profile = button(host, '.crp-client-actions button', 'Perfil');
-    expect(profile.classList.contains('crp-client-profile')).toBe(true);
-    expect(button(host, '.crp-client-actions button', 'Mis reservas').classList.contains('crp-client-profile')).toBe(false);
-    profile.click();
-    await settle();
-    expect(host.querySelector('crp-test-profile-page')).not.toBeNull();
-  });
-
-  it('makes the avatar of the compact header a button that opens the profile (panel-cliente.html)', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, [...CLIENT_AREAS, PROFILE_AREA]);
-    const avatar = host.querySelector<HTMLButtonElement>('.crp-client-panel-header button.crp-client-avatar')!;
-    expect(avatar.getAttribute('aria-label')).toBe('Perfil del usuario');
-    avatar.click();
-    await settle();
-    expect(host.querySelector('crp-test-profile-page')).not.toBeNull();
-  });
-
-  it('registers the Perfil area for the customer with its own top bar', () => {
-    const area = PORTAL_AREAS.find((candidate) => candidate.key === CLIENT_AREA.profile)!;
-    expect(area).toMatchObject({ label: 'Perfil', audience: 'customer', clientChrome: 'none', menu: false });
-    expect(area.component).toBe(ProfilePageComponent);
   });
 
   it('opens the area of each header link and moves the active state with it', async () => {
