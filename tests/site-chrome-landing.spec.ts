@@ -24,7 +24,7 @@ describe('siteHeaderLooksAsTheLanding', () => {
     expect(nav).toMatch(/border:\s*1px solid #e6ebe9;/);
     expect(nav).toMatch(/background:\s*#f7f9f8;/);
     const active = ruleOf('.crp-root .crp-client-header .crp-client-nav button.crp-is-active');
-    expect(active).toMatch(/background:\s*#ffffff;/);
+    expect(active).toMatch(/background:\s*var\(--crp-surface\);/);
     expect(active).toMatch(/color:\s*#111111;/);
     expect(active).toMatch(/font-weight:\s*700;/);
   });
