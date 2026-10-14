@@ -9,7 +9,7 @@ import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
 
-/** T-03: value, type and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
+/** T-03: percentage (1 to 100, no fixed amount: the mockup defines none) and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
 @Component({
   selector: 'app-additional-discount-form', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -20,11 +20,6 @@ let formSequence = 0;
             [attr.aria-invalid]="messages().value ? 'true' : null" [attr.aria-describedby]="messages().value ? id('value') + '-error' : null"
             (input)="edit('value', $event)">
           @if (messages().value; as reason) { <p role="alert" [id]="id('value') + '-error'">{{ reason }}</p> }
-        </div>
-        <div><label [for]="id('type')">{{ text.type }}</label>
-          <select name="type" [id]="id('type')" [value]="draft().type" [disabled]="pending()" (change)="edit('type', $event)">
-            @for (option of text.types; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
-          </select>
         </div>
         <div class="current-discounts-wide"><label [for]="id('reason')">{{ text.reasonField }}</label>
           <textarea name="reason" [id]="id('reason')" [placeholder]="text.reasonHint" [value]="draft().reason" [disabled]="pending()"
