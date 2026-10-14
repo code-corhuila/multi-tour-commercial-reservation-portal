@@ -12,7 +12,7 @@ import { RegisteringUser } from '../src/app/payments/data/payments-writer';
 import { CREDIT_BALANCE_AREA, CreditBalance, CreditBalanceSource, CreditBalanceWriter } from '../src/app/credit-balance/data/credit-balance-ports';
 import { CREDIT_BALANCE_COPY } from '../src/app/credit-balance/credit-balance-copy';
 import { CreditBalancePageComponent } from '../src/app/credit-balance/pages/credit-balance-page.component';
-import { CreditBalanceDetailLinkComponent, CreditBalancePaymentsLinkComponent } from '../src/app/credit-balance/components/credit-balance-links.component';
+import { CreditBalancePaymentsLinkComponent } from '../src/app/credit-balance/components/credit-balance-links.component';
 import { formatDateTime } from '../src/app/refunds/refunds-copy';
 import { ActorContext } from '../src/app/shared/actor-context';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
@@ -110,30 +110,27 @@ describe('creditScreenDrawsSummaryCustomersAndRequestsAsTheMockup', () => {
 });
 
 describe('readOnlyRolesSeeTheCreditScreenWithoutForms', () => {
-  it('draws the same data without apply form, refund buttons or request form for Analyst and an unknown role', async () => {
+  it('draws the same data without the apply form for Analyst and an unknown role', async () => {
     for (const role of ['ANALYST', 'SOMETHING_ELSE']) {
       const s = await screen(role);
       expect(s.host.querySelector('[data-credit-customer]')).toBeTruthy();
-      expect(s.host.querySelector('form, [data-credit-refund-form]')).toBeNull();
-      expect(s.button('Solicitar devolución')).toBeUndefined();
+      expect(s.host.querySelector('form')).toBeNull();
       TestBed.resetTestingModule();
     }
   });
 });
 
 describe('aRoleWithoutTheCapabilityIsRefusedByTheWriter', () => {
-  it('grants both capabilities to the Administrator and the Collaborator only', () => {
+  it('grants the capability to the Administrator and the Collaborator only', () => {
     const roles = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST', 'READ_ONLY', 'SOMETHING_ELSE'];
     expect(roles.map((r) => PortalCapabilities.for(r).canApplyCreditBalance())).toEqual([true, true, false, false, false, false, false]);
-    expect(roles.map((r) => PortalCapabilities.for(r).canRequestCreditRefund())).toEqual([true, true, false, false, false, false, false]);
   });
 
-  it('refuses a direct apply and a direct request with 403 and changes nothing', async () => {
+  it('refuses a direct apply with 403 and changes nothing', async () => {
     const d = demo('ANALYST');
     await expect(firstValueFrom(d.writer.apply('RES-T1', 1_000_000, 'k1'))).rejects.toMatchObject({ status: 403 });
-    await expect(firstValueFrom(d.writer.requestRefund('RES-O1', 1_000_000, 'Pedido por correo', 'k2'))).rejects.toMatchObject({ status: 403 });
     expect(d.store.items.find((r) => r.id === 'RES-T1')!.balanceCents).toBe(20_000_000);
-    expect((await overview(d.source)).requests).toEqual([]);
+    expect((await overview(d.source)).customers[0].availableCents).toBe(30_000_000);
   });
 });
 
@@ -190,44 +187,17 @@ describe('applyingCreditAsFirstPaymentHoldsTheSeatOrAppliesNothing', () => {
 });
 
 describe('creditNeverExpiresAndEachLineCarriesTheTenant', () => {
-  it('keeps the credit years later, and every application and request carries the session tenant', async () => {
+  it('keeps the credit years later, and every line and application carries the session tenant', async () => {
     const d = demo('TENANT_ADMINISTRATOR', fixtures(), '2031-01-01T10:00:00-05:00');
     expect((await overview(d.source)).customers[0].availableCents).toBe(30_000_000);
-    await firstValueFrom(d.writer.requestRefund('RES-O1', 5_000_000, 'Pedido por correo', 'k-r'));
-    const written = [...d.store.creditBalances, ...d.store.creditApplications, ...d.store.creditRequests];
+    const now = demo(); await firstValueFrom(now.writer.apply('RES-T1', 5_000_000, 'k-a'));
+    const written = [...now.store.creditBalances, ...now.store.creditApplications];
     expect(written.length).toBeGreaterThanOrEqual(2);
     expect(written.every((l) => l.tenant === 'tenant-demo')).toBe(true);
   });
 });
 
-describe('refundRequestSetsTheAmountAsideAndStartsTheTwentyFourHours', () => {
-  it('creates a Pendiente de autorización request due in 24 hours and lowers the available credit', async () => {
-    const d = demo('OPERATIONAL_COLLABORATOR');
-    const out = await firstValueFrom(d.writer.requestRefund('RES-O1', 10_000_000, ' Pedido por correo ', 'k1'));
-    expect(out).toMatchObject({ ok: true, request: { reservationId: 'RES-O1', customer: ANA, amountCents: 10_000_000, state: 'PENDIENTE_DE_AUTORIZACION',
-      reason: 'Pedido por correo', requestedBy: 'Colaborador operativo', decisionDueAt: '2026-10-15T10:00:00-05:00' } });
-    const o = await overview(d.source);
-    expect(o.customers[0].sources[0]).toMatchObject({ balanceCents: 30_000_000, requestedCents: 10_000_000, availableCents: 20_000_000 });
-    expect(o).toMatchObject({ availableCents: 20_000_000, pendingDecisions: 1 });
-    expect(o.requests).toHaveLength(1);
-    await firstValueFrom(d.writer.requestRefund('RES-O1', 10_000_000, 'Pedido por correo', 'k1'));
-    expect((await overview(d.source)).requests).toHaveLength(1);
-  });
-});
-
-describe('refundRequestWithoutReasonOrAboveAvailableIsRefused', () => {
-  it.each([
-    [0, 'Pedido', 'Indica un monto mayor a cero.'],
-    [30_000_100, 'Pedido', 'El monto supera el saldo disponible de la reserva de origen ($300.000).'],
-    [1_000_000, '  ', 'Registra el motivo o la referencia de la solicitud del cliente.'],
-  ])('refuses %i cents with reason "%s"', async (cents, motive, reason) => {
-    const d = demo();
-    expect(await firstValueFrom(d.writer.requestRefund('RES-O1', cents, motive, `k-${cents}`))).toEqual({ ok: false, reason });
-    expect((await overview(d.source)).requests).toEqual([]);
-  });
-});
-
-describe('creditHistoryShowsWhoAppliedAndRequested', () => {
+describe('creditHistoryShowsWhoApplied', () => {
   it('applies from the screen with a typed amount, shows the feedback and the history row with the role', async () => {
     const s = await screen();
     await s.type('[data-credit-amount]', '100000');
@@ -255,28 +225,6 @@ describe('creditHistoryShowsWhoAppliedAndRequested', () => {
     expect(s.host.querySelector(`#${field.getAttribute('aria-describedby')}`)?.textContent?.trim()).toBe('Indica un monto mayor a cero.');
     expect(s.spy.applied).toHaveLength(1);
   });
-
-  it('registers a refund request from the screen and lists it with its due time', async () => {
-    const s = await screen();
-    s.button('Solicitar devolución')!.click(); await s.settle();
-    expect(s.host.querySelector<HTMLInputElement>('[data-credit-refund-amount]')!.value).toBe('300000');
-    await s.type('[data-credit-refund-motive]', 'Pedido por correo');
-    s.button('Registrar solicitud')!.click(); await s.settle();
-    expect(s.host.querySelector('[data-credit-feedback]')?.textContent?.trim()).toBe(
-      `Solicitud registrada por $300.000. El Administrador del tenant decide hasta el ${formatDateTime('2026-10-15T10:00:00-05:00')}; sin decisión se autoriza automáticamente el monto y se notifica a todos los Administradores. Ejecución en máximo 5 días hábiles.`);
-    expect(s.texts('[data-credit-requests] tr')).toEqual([`#RES-O1 ${ANA} $300.000 Pendiente de autorización ${formatDateTime('2026-10-15T10:00:00-05:00')}`]);
-    expect(s.texts('[data-credit-summary] .crp-summary-metric')[2]).toBe('1 Devoluciones por decidir (24 h)');
-  });
-
-  it('refuses a request without reason on the field, with focus', async () => {
-    const s = await screen();
-    s.button('Solicitar devolución')!.click(); await s.settle();
-    s.button('Registrar solicitud')!.click(); await s.settle();
-    const field = s.host.querySelector<HTMLInputElement>('[data-credit-refund-motive]')!;
-    expect(field.getAttribute('aria-invalid')).toBe('true');
-    expect(document.activeElement).toBe(field);
-    expect(s.host.querySelector(`#${field.getAttribute('aria-describedby')}`)?.textContent?.trim()).toBe('Registra el motivo o la referencia de la solicitud del cliente.');
-  });
 });
 
 describe('approvedExcessIsListedWithItsOriginOnTheCreditScreen', () => {
@@ -302,7 +250,7 @@ describe('theCreditScreenIsReachedOnlyThroughTheNavigationLinks', () => {
     expect(area.isAvailable).toBeTypeOf('function');
   });
 
-  it('opens it from the header of 13 and from 10A with the reservation', async () => {
+  it('opens it from the header of 13', async () => {
     const navigation = new PortalNavigation();
     navigation.register([CREDIT_BALANCE_AREA]);
     TestBed.configureTestingModule({ providers: [{ provide: PortalNavigation, useValue: navigation }] });
@@ -311,12 +259,6 @@ describe('theCreditScreenIsReachedOnlyThroughTheNavigationLinks', () => {
     expect(button.textContent?.trim()).toBe('Saldo a favor');
     button.click();
     expect(navigation.selected()).toBe(CREDIT_BALANCE_AREA);
-    const detail = TestBed.createComponent(CreditBalanceDetailLinkComponent);
-    detail.componentRef.setInput('reservation', reservationOf('RES-T1'));
-    detail.detectChanges();
-    (detail.nativeElement.querySelector('button') as HTMLButtonElement).click();
-    expect(detail.nativeElement.textContent).toContain('Ver saldo a favor del cliente');
-    expect(navigation.params()).toEqual({ reservation: 'RES-T1' });
   });
 });
 
