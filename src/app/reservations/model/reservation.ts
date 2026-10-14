@@ -34,8 +34,6 @@ export type Reservation = {
   readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string; readonly origin?: 'customer' | 'not-attributable' | 'non-payment' }; readonly reschedulingPending?: boolean;
   readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION' | 'RESCHEDULING_NOT_ACCEPTED'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
     readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null; readonly origin?: 'HU-COM-018' };
-  /** HU-COM-018 D-02 (PROPUESTO): the rescheduling episode, on the same reservation; fields follow rescheduling_records (G-B). */
-  readonly reschedulingEpisode?: ReschedulingEpisode;
   /** HU-COM-011 D-02 (PROPUESTO): payment_deadlines and payment_followups (ERD-01), kept by the service; ISO with offset. */
   readonly deadline?: { readonly dueAt: string; readonly extendedUntil?: string;
     /** RN-RES-006: the single extension, with who granted it and when (PROPUESTO). */ readonly extension?: { readonly hours: number; readonly actorLabel: string; readonly grantedAt: string } };
@@ -43,7 +41,6 @@ export type Reservation = {
   /** HU-COM-016 D-02 (PROPUESTO): the refund of this reservation's money as facts; RefundsSource resolves its amount and state (DD-1). */
   readonly refund?: { readonly origin: 'NON_PAYMENT' | 'LOWER_VALUE' | 'CUSTOMER_CANCELLATION' | 'NOT_ATTRIBUTABLE' | 'RESCHEDULING'; readonly reason: string;
     readonly amountCents: number; readonly recognizedAt: string; readonly decision?: RefundAct; readonly authorization?: RefundAct & { readonly reason: string };
-    readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string } };
     readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string };
     /** v1.9 (PROPUESTO): the administrative note, the justified rejection, and the 100 % kept as a credit balance (decision or execution without outflow). */
     readonly note?: string; readonly rejection?: RefundAct & { readonly reason: string }; readonly creditBalance?: RefundAct & { readonly reason?: string } };

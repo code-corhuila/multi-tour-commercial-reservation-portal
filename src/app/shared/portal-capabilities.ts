@@ -59,8 +59,6 @@ interface Row {
   readonly refund: 'authorize' | 'execute' | 'never';
   /** HU-COM-018 D-07: propose a new departure or cancel with 100 % refund (story actor line; DP-RP1, DP-RP2 open). */
   readonly proposeRescheduling: boolean;
-  /** HU-COM-016: RBAC row Authorize a refund (the Administrator); executing an authorized one also falls to the Collaborator (AC2, DP-RF5). */
-  readonly refund: 'authorize' | 'execute' | 'never';
   /** RF-018 excludes the Collaborator even when the catalog permits descriptive edits. */
   readonly readEstablishments: boolean;
 }

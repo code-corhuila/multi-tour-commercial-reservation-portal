@@ -23,8 +23,8 @@ import { ReservationChangeBlocksComponent } from './app/reservation-changes/comp
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
 import { PAYMENT_FOLLOWUP_CONTRIBUTIONS } from './app/payments/components/pending-payment-rows.component';
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
-import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
 import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
+import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
 import { RESCHEDULING_CONTRIBUTIONS } from './app/rescheduling/components/rescheduling-contributions.component';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
@@ -88,8 +88,6 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       ...PAYMENT_FOLLOWUP_CONTRIBUTIONS,
       // HU-COM-012: "Modificación de viajeros", after Cancelación, on the screen of HU-COM-013 only (its area needs the cancellation ports).
       provideTravellersModification(),
-      // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
-      RESCHEDULING_ENTRY,
       // HU-COM-014: Continuar pago, Mis pagos and the proof notice of 17, and the economic lines of Mis reservas; each only with its port.
       ...MY_PAYMENTS_CONTRIBUTIONS,
       // HU-COM-016: "Devoluciones monetarias" of 13, only for who authorizes or executes and with the refund ports.
