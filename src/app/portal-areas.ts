@@ -173,8 +173,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-018 propuesta-reprogramacion.html (24A): opened by Responder propuesta of Mis reservas and of 17 with { reservation }; its own top bar.
   { key: PROPOSAL_AREA, label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyProposalsSource, ProposalAnswerWriter) },
-  // profile.html: the Perfil button and the avatar; it reads the session identity, so it needs no port.
-  { key: CLIENT_AREA.profile, label: 'Perfil', component: ProfilePageComponent, audience: 'customer', clientChrome: 'none', menu: false },
+  // profile.html: the Perfil button and the avatar; it reads the session identity and returns to the panel, so it is offered with the panel's port.
+  { key: CLIENT_AREA.profile, label: 'Perfil', component: ProfilePageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
