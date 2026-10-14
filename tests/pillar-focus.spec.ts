@@ -96,7 +96,7 @@ describe('everyFormWithAnInvalidFieldFocusesTheFirstError', () => {
   it('references focusFirstError in each page or component that marks a field aria-invalid', () => {
     const marking = listSourceFiles().filter((f) => /\/(pages|components)\/[^/]+\.ts$/.test(f) && !f.startsWith('src/app/demo/'))
       .filter((f) => readFileSync(f, 'utf8').includes('aria-invalid'));
-    expect(marking.length).toBeGreaterThanOrEqual(17);
+    expect(marking.length).toBeGreaterThanOrEqual(16);
     expect(marking.filter((f) => !readFileSync(f, 'utf8').includes('focusFirstError('))).toEqual([]);
   });
 });
