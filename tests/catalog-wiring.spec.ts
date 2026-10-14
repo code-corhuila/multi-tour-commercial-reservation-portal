@@ -51,6 +51,8 @@ async function openPage(items?: readonly CatalogItem[]) {
     type('Tarifa base', '12.50');
     type('Costo operativo base', '7');
     type('Capacidad configurada', '18');
+    type('Vigencia desde', '2026-09-01');
+    type('Vigencia hasta', '2026-09-30');
   };
   const click = async (element: HTMLElement) => {
     fireEvent.click(element);
@@ -67,7 +69,7 @@ describe('listShowsTheNewValuesWithoutAReload', () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Gamma');
-    await page.click(page.button('Guardar servicio'));
+    await page.click(page.button('Guardar tour'));
     page.writer.calls[0].reply(stored('Gamma'));
     await page.settle();
 
@@ -87,7 +89,7 @@ describe('listShowsTheNewValuesWithoutAReload', () => {
     page.type('Nombre comercial', 'Alpha renamed');
     page.type('Tarifa base', '20');
     page.type('Capacidad configurada', '18'); // a tour needs it, and Alpha had none
-    await page.click(page.button('Guardar servicio'));
+    await page.click(page.button('Guardar tour'));
     expect(page.writer.calls[0]).toMatchObject({
       kind: 'update',
       serviceId: itemNamed('Alpha').serviceId,
@@ -109,7 +111,7 @@ describe('registersItemFromTheTypedValues', () => {
     const page = await openPage([itemNamed('Alpha')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
-    await page.click(page.button('Guardar servicio'));
+    await page.click(page.button('Guardar tour'));
 
     expect(page.writer.calls).toHaveLength(1);
     expect(page.writer.calls[0]).toMatchObject({
@@ -136,7 +138,7 @@ describe('newItemFromTheEmptyState', () => {
     expect(page.host.querySelector('[data-state="empty"]')).not.toBeNull();
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('First one');
-    await page.click(page.button('Guardar servicio'));
+    await page.click(page.button('Guardar tour'));
     page.writer.calls[0].reply(stored('First one'));
     await page.settle();
 
@@ -206,7 +208,7 @@ describe('aRefusedSaveKeepsTheFormAndTheList', () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
-    await page.click(page.button('Guardar servicio'));
+    await page.click(page.button('Guardar tour'));
     page.writer.calls[0].fail(apiError({ userMessage: 'The change was refused.' }));
     await page.settle();
 
@@ -242,7 +244,7 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.button(CATALOG_COPY.newItem));
     page.fillAll('Canyon walk');
-    await page.click(page.button('Guardar servicio'));
+    await page.click(page.button('Guardar tour'));
     expect(page.writer.calls).toHaveLength(1);
     return page;
   }
