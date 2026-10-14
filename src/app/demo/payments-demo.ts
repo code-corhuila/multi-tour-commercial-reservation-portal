@@ -40,10 +40,10 @@ export class DemoPaymentsWriter extends PaymentsWriter {
     if (entry === 'cancelled' || entry === 'settled') return refuse(`reservation-${entry}`, PAYMENTS_TEXT.closedNote[entry]);
     if (!r.paymentMethod) return refuse('no-payment-method', 'No hay una modalidad de pago habilitada para esta reserva. Defínela antes de registrar dinero.');
     const transfer = r.paymentMethod === 'BANK_TRANSFER', departure = this.departures.items.find((d) => d.id === r.departureId);
-    const problem = c.proof ? proofProblem(c.proof) : transfer ? 'Adjunta el soporte de transferencia para enviarlo a validación.' : null;
+    const problem = c.proof ? proofProblem(c.proof) : transfer ? 'Adjunta el comprobante de transferencia para enviarlo a validación.' : null;
     if (problem) return refuse('invalid-proof', problem);
     // RN-PY6 (G-OPS): the demo departure starts at 00:00 of its date, Colombian time.
-    if (departure && demoNow() >= Date.parse(`${departure.date}T00:00:00-05:00`)) return refuse('departure-started', 'La salida ya inició: no se aceptan pagos ni soportes.');
+    if (departure && demoNow() >= Date.parse(`${departure.date}T00:00:00-05:00`)) return refuse('departure-started', 'La salida ya inició: no se aceptan pagos ni comprobantes.');
     if (!transfer && !this.cash.isOpen()) return refuse('cash-session-closed', 'No hay una sesión de caja abierta: el pago en efectivo no se registró.');
     if (!r.seatHeld && !this.seatFree(r, departure?.effectiveCapacity ?? 0)) return refuse('no-availability', 'No hay cupo disponible en la salida: el pago no se registró.');
     const payments = r.payments ?? [];

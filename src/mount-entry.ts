@@ -71,7 +71,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
       { provide: CustomerContext, useValue: customerContextFor(props.session.roles, () => element.dispatchEvent(new CustomEvent(SIGN_IN_REQUESTED_EVENT, { bubbles: true }))) },
       { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
-      // HU-COM-009: Pagos y soportes of 10A and Gestionar pago of 10C, drawn only with the payment ports.
+      // HU-COM-009: Pagos y comprobantes of 10A and Gestionar pago of 10C, drawn only with the payment ports.
       contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK),
       // HU-COM-013: the 10A action and blocks, and the Cancelación type; each only with the cancellation ports of the build.
       contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
@@ -79,7 +79,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
       // HU-COM-009: Método y plazo de pago of 21.
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
-      // HU-COM-010: Validar soporte of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.
+      // HU-COM-010: Validar comprobante of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.
       ...PROOF_REVIEW_CONTRIBUTIONS,
       // HU-COM-011: the Saldo pendiente rows of 13 and the departure start sentence of 21 and 24; only with its ports.
       ...PAYMENT_FOLLOWUP_CONTRIBUTIONS,
