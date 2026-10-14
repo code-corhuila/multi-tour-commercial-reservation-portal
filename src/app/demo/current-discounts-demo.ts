@@ -3,7 +3,9 @@ import { Observable, of } from 'rxjs';
 import { AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../current-discounts/data/current-discounts-source';
 import { AdditionalDiscount, AdditionalDiscountCommand, PricedService } from '../current-discounts/model/current-discounts';
-import { ApplicableRule } from '../current-discounts/model/current-discounts';
+import { ApplicableRule, applyDiscounts } from '../current-discounts/model/current-discounts';
+import { TourValueSource } from '../public-offer/data/public-offer-sources';
+import { PublicTour, TourValue } from '../public-offer/model/public-offer';
 
 // DEMO (DD-1, G-API): invented services and HU-COM-003 rules in memory until the API exists. No real person appears.
 const rule = (_id: string, name: string, priority: number, extra: Partial<ApplicableRule>): ApplicableRule => ({ name, priority,
@@ -35,7 +37,21 @@ export class DemoAdditionalDiscountWriter extends AdditionalDiscountWriter {
   }
 }
 
+/**
+ * DEMO: the value of a tour on a date, from the rules in force of the demo services (the pure function of HU-COM-004).
+ * The production port is asynchronous (CurrentDiscountsSource) and TourValueSource is synchronous, so no production
+ * provider exists yet and the public offer shows the base value there (blocked by contract, declared in the PR).
+ */
+export class DemoTourValueSource extends TourValueSource {
+  override valueOf(tour: PublicTour, date: string): TourValue {
+    const rules = SERVICES.find((service) => service.serviceId === tour.serviceId)?.rules ?? [];
+    const { finalCents } = applyDiscounts(tour.baseRateCents, rules, date);
+    return { baseRateCents: tour.baseRateCents, currentValueCents: finalCents };
+  }
+}
+
 export function currentDiscountsProviders(): Provider[] {
   return [{ provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() },
+    { provide: TourValueSource, useValue: new DemoTourValueSource() },
     { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() }];
 }
