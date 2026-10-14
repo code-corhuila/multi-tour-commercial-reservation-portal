@@ -25,7 +25,7 @@ async function overDemo(people = '2') {
   const create = async () => {
     await view.click('Crear reserva');
     await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);
-    await view.tick('svc-Kayak'); await view.type('people', people);
+    await view.tick('svc-Kayak'); await view.type('people', people); await view.payWith();
     await view.click('Registrar reserva');
   };
   return { ...view, open, create };
@@ -40,10 +40,10 @@ describe('the list is screen 10', () => {
     expect(button('Crear reserva')?.classList).toContain('crp-operator-primary');
     expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')).toContain('Reservas activas');
     expect(texts(element, '.crp-operator-panel h2')).toContain('Seguimiento de reservas');
-    expect(texts(element, 'table.crp-operator-table th')).toEqual(['Reserva', 'Cliente', 'Servicio', 'Estado', 'Saldo', 'Acción']);
+    expect(texts(element, 'table.crp-operator-table th')).toEqual(['Reserva', 'Cliente', 'Servicio y salida', 'Estado', 'Saldo', 'Acción']);
     const cells = texts(element, 'tbody tr td');
     expect(cells[0]).toContain('#RES-1842'); expect(cells[0]).toContain('07 nov 2026 · 2 viajeros');
-    expect(cells.slice(1)).toEqual(['Lead Demo', 'Tour 1', 'Pendiente de pago', '$50', 'Ver detalle']);
+    expect(cells.slice(1)).toEqual(['Lead Demo', 'Tour 1', 'Pendiente de pago', 'Sin comprobante · Sin pago$50', 'Ver detalle · Gestionar pago']);
     expect(element.querySelector('tbody .crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
     noRawCodes(element); noPayments(element);
   });
@@ -85,13 +85,13 @@ describe('the form is screen 10B', () => {
     const view = await screenOf(ReservationFormComponent, reservationProviders({ discounts: Object.assign(new StubDiscounts(), {
       lines: [{ name: 'Temporada baja', base: 'ORIGINAL_VALUE', amountCents: 1500 }] }) }));
     const { element, choose, tick, type, field } = view;
-    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')).toEqual(['02. Servicios y viajeros', '04. Condiciones', 'Valores calculados']);
+    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')).toEqual(['02. Tour, salida y viajeros', '04. Condiciones y pago', 'Valores calculados']);
     expect(texts(element, '.crp-operator-panel h2')).toEqual(['Oferta seleccionada', 'Reglas aplicables', 'Resumen de la reserva']);
-    for (const name of ['leadCustomerId', 'departureId', 'people']) {
+    for (const name of ['leadCustomerId', 'serviceId', 'departureId', 'people', 'paymentType', 'paymentMethod']) {
       const control = field(name), label = element.querySelector(`label[for="${control.id}"]`)!;
       expect(label.parentElement, name).toBe(control.parentElement);
     }
-    expect(texts(element, '[name="departureId"] option')).toContain('Tour 1 · 07 nov 2026');
+    expect(texts(element, '[name="departureId"] option')).toContain('Tour 1 · 07 nov 2026 · 10 cupos disponibles');
     await choose('leadCustomerId', 'cus-1'); await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '3');
     expect(element.querySelector('[data-conditions]')?.textContent).toContain('Changes up to 72 hours before (demo).');
     const values = element.querySelector('.crp-reservation-values')!;
@@ -110,7 +110,7 @@ describe('the result is screen 10C and the detail is screen 10A, both without pa
     const result = element.querySelector('.reservation-result')!;
     expect(result.querySelector('h2')?.textContent).toMatch(/^#RES-\d+$/);
     expect(result.querySelector('.crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
-    for (const label of ['Salida', 'Viajeros', 'Titular', 'Valor final', 'Valor proyectado', 'Descuentos aplicados', 'Saldo pendiente', 'Sin pago']) {
+    for (const label of ['Salida', 'Viajeros', 'Titular', 'Plazo de pago', 'Tipo y medio de pago', 'Pago total · Transferencia', 'Valor final', 'Valor proyectado', 'Descuentos aplicados', 'Saldo pendiente', 'Sin comprobante · Sin pago']) {
       expect(result.textContent, label).toContain(label);
     }
     expect(button('Volver a reservas')).toBeTruthy(); expect(button('Ver detalle')).toBeTruthy();
@@ -122,11 +122,11 @@ describe('the result is screen 10C and the detail is screen 10A, both without pa
     await create(); await click('Ver detalle');
     expect(header(element)).toEqual({ eyebrow: 'Consulta de reserva', title: 'Detalle de reserva' });
     const detail = element.querySelector('.reservation-detail')!;
-    expect(texts(detail, '.crp-operator-eyebrow')).toEqual(expect.arrayContaining(['Titular y viajeros', 'Estado económico', 'Servicios reservados']));
+    expect(texts(detail, '.crp-operator-eyebrow')).toEqual(expect.arrayContaining(['Titular y viajeros', 'Estado económico', 'Salida y plazos', 'Servicios reservados']));
     expect(detail.textContent).toContain('2 personas');
     expect(detail.textContent).toMatch(/\$[\d.]+ pendientes/);
     expect(detail.textContent).toContain('Temporada baja (sobre el valor original)');
-    expect(texts(detail, 'th')).toEqual(['Servicio', 'Fecha', 'Cantidad']);
+    expect(texts(detail, 'th')).toEqual(['Servicio', 'Salida', 'Cantidad', 'Estado de ejecución']);
     noRawCodes(element); noPayments(element);
   });
 
