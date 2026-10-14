@@ -1,5 +1,6 @@
-import { Provider } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Provider, inject } from '@angular/core';
+import { Observable, map, of, throwError } from 'rxjs';
+import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { DiscountContext, LeadCustomersSource, ReservationDiscounts } from '../reservations/data/reservation-integrations';
 import { ReservationsSource } from '../reservations/data/reservations-source';
@@ -114,7 +115,8 @@ export function reservationDemoProviders(): Provider[] {
   return [
     { provide: DeparturesSource, useValue: departures },
     { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
-    { provide: ReservationDiscounts, useFactory: (rules: DiscountRulesSource) => new DemoReservationDiscounts(() => (rules as DemoDiscountRulesStore).rules), deps: [DiscountRulesSource] },
+    // Optional: a module mounted without the discounts story quotes no discount.
+    { provide: ReservationDiscounts, useFactory: () => { const rules = inject(DiscountRulesSource, { optional: true }) as DemoDiscountRulesStore | null; return new DemoReservationDiscounts(() => rules?.rules ?? []); } },
     { provide: ReservationsSource, useValue: store },
     { provide: ReservationsWriter, useValue: new DemoReservationsWriter(store, departures) },
   ];
