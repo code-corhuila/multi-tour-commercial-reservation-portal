@@ -33,11 +33,13 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
           <p id="crp-checkout-deposit-error" class="self-service-field-error">{{ invalid() ? text.depositInvalid : '' }}</p>
           <p class="self-service-note">{{ text.depositHint }}</p>
         }
+        <div class="crp-checkout-deadline">@for (line of text.deadline; track line) { <p class="self-service-note">{{ line }}</p> }
+          @if (chosen(options) === 'PARTIAL') { <p class="self-service-note">{{ text.balanceRule }}</p> }</div>
         @let r = reservation(); @let medium = r?.paymentMethod ?? method();
         @if (medium === 'BANK_TRANSFER') {
           <p class="self-service-note">{{ text.transferHint }}</p>
           @if (r) { <button type="button" class="crp-primary" (click)="pay(r, chosen(options))">{{ text.continue }}</button> }
-        } @else if (medium) { <p class="self-service-note">{{ text.cashOption }}</p><p class="self-service-note">{{ text.cashHint }}</p> }
+        } @else if (medium) { <p class="self-service-note">{{ text.cashHint }}</p> }
       }
     </article>
   `,
