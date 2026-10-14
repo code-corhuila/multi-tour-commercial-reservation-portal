@@ -10,7 +10,7 @@ import { DemoProofReviewWriter, proofReviewDemoProviders } from '../src/app/demo
 import { reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { DemoPaymentMethods } from '../src/app/demo/self-service-reservation-demo';
 import {
-  ProofManagementActionsComponent, ReviewLimitLineComponent,
+  ProofHistoryNoteComponent, ProofManagementActionsComponent, ReviewLimitLineComponent,
 } from '../src/app/payments/components/proof-review-actions.component';
 import { PaymentsWriter } from '../src/app/payments/data/payments-writer';
 import { DecideProofCommand, PendingProofs, PendingProofsSource, ProofReviewWriter } from '../src/app/payments/data/proof-review-ports';
@@ -308,7 +308,7 @@ describe('rejection, retry and excess (T-04)', () => {
     await decide({ decision: 'RECHAZADO', reason: 'imagen ilegible' });
     const again = await firstValueFrom(TestBed.inject(PaymentsWriter).register({ reservationId: EXAMPLE, amountCents: 10_000_000, proof: pdf() }, 'p-1'));
     expect(again.payments!.map((p) => [p.id, p.proofStatus])).toEqual([[`${EXAMPLE}-P1`, 'RECHAZADO'], [`${EXAMPLE}-P2`, 'EN_VALIDACION']]);
-    const fixture = TestBed.createComponent(ProofManagementActionsComponent);
+    const fixture = TestBed.createComponent(ProofHistoryNoteComponent);
     fixture.componentRef.setInput('reservation', again); fixture.detectChanges();
     expect(flat(fixture.nativeElement)).toContain('Historial: En validación → Rechazado: imagen ilegible → En validación.');
   });
