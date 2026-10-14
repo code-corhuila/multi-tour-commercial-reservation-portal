@@ -170,7 +170,7 @@ export class ClientPanelPageComponent {
   protected readonly slots = { quick: CLIENT_QUICK_ACTIONS };
   private readonly injector = inject(Injector);
   protected readonly quickSlots = slotEntries(CLIENT_QUICK_ACTIONS, this.injector).length;
-  protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
+  protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   protected readonly reservations = toSignal(this.requests.pipe(switchMap(() => partOf(this.source.listMine()))), { initialValue: { kind: 'loading' } as Part<CustomerReservation> });

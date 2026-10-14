@@ -30,7 +30,7 @@ export class DemoMyReservations extends MyReservationsSource {
   constructor(private readonly store: ReservationsSource, private readonly leads: LeadCustomersSource, private readonly customer: CustomerContext,
     readonly selections = new Map<string, ReservationSelection>()) { super(); }
   override listMine(): Observable<readonly CustomerReservation[]> {
-    if (this.customer.standing !== 'FINAL_CUSTOMER') return of([]);
+    if (!this.customer.isFinalCustomer) return of([]);
     return forkJoin({ all: this.store.list(), leads: this.leads.list() }).pipe(map(({ all, leads }) => {
       const name = leads.find((l) => l.id === DEMO_FINAL_CUSTOMER)?.fullName;
       return all.filter((r) => r.leadCustomerName === name).map((r) => asCustomer(r, this.selections.get(r.id) ?? {}));

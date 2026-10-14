@@ -189,7 +189,7 @@ export class ConfirmReservationPageComponent {
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
     if (this.missing() || this.unaccepted()) return;
-    if (this.standing === 'NO_SESSION') { this.asked.set(true); this.customer.requestSignIn(); return; }
+    if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
     defer(() => this.requester.request(selection, this.method(), this.key)).pipe(
