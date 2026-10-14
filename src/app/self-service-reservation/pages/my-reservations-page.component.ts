@@ -16,7 +16,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
   imports: [ReadErrorComponent, PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="self-service-panel" aria-labelledby="self-service-panel-title">
+    <section class="crp-self-service-panel" aria-labelledby="self-service-panel-title">
       <header class="crp-page-header"><div class="crp-page-header-main">
         <p class="crp-page-header-eyebrow">{{ text.panelEyebrow }}</p>
         <h1 id="self-service-panel-title" class="crp-page-header-title">{{ text.panelTitle }}</h1>
@@ -31,14 +31,14 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
           @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
           @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
           @case ('data') {
-            <ul data-state="data" class="self-service-list">
+            <ul data-state="data" class="crp-self-service-list">
               @for (r of current.items; track r.reservationId) {
-                <li class="self-service-card">
-                  <div class="self-service-card-copy">
+                <li class="crp-self-service-card">
+                  <div class="crp-self-service-card-copy">
                     <strong>{{ r.reservationId }} · {{ r.tourName }}</strong>
                     <p>{{ text.departure }}: {{ departure(r.departureAt) }} · {{ travelers(r.people) }}</p>
                   </div>
-                  <div class="self-service-card-status">
+                  <div class="crp-self-service-card-status">
                     <span class="crp-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span>
                     <strong>{{ text.value }}: {{ cop(r.finalValueCents) }}</strong>
                   </div>

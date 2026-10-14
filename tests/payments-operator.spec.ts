@@ -387,7 +387,7 @@ describe('payment capabilities and wiring', () => {
       await vi.waitFor(() => expect(host.querySelector('.crp-payments-lines li')?.textContent).toContain('$50.000'));
       press('Volver a la reserva');
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Detalle de reserva'));
-      expect(host.querySelector('.reservation-detail')?.textContent).toContain(`#${CASH}`);
+      expect(host.querySelector('.crp-reservations-detail')?.textContent).toContain(`#${CASH}`);
       await vi.waitFor(() => expect(host.querySelector('.crp-payments-block td:nth-child(3)')?.textContent?.trim()).toBe('Sin comprobante'));
       expect(host.querySelector('.crp-payments-block')?.textContent).toContain('Efectivo');
     } finally { cleanup(); host.remove(); }

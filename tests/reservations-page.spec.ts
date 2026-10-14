@@ -55,22 +55,23 @@ describe('createdReservationIsPendienteDePagoSinPagoWithNoSeatHeld', () => {
     const { element, create, open } = await overDemo();
     await create();
     expect(element.querySelector('form')).toBeNull();
-    const detail = element.querySelector('.reservation-detail')!.textContent!;
-    for (const text of ['Pendiente de pago', 'Sin pago', 'No seat is held yet', open.conditions]) expect(detail).toContain(text);
-    expect(element.querySelectorAll('[data-state="data"] li')).toHaveLength(1);
+    const result = element.querySelector('.crp-reservations-result')!.textContent!;
+    for (const text of ['Pendiente de pago', 'Sin pago', 'sin cupo apartado hasta su primer pago']) expect(result).toContain(text);
+    await click('Volver a reservas');
+    expect(element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(1);
   });
 });
 
 describe('detailShowsTheValuesAndDiscountsFixedAtCreation', () => {
   it('keeps the projected value, the final value and the discount after the discount is inactivated', async () => {
     const { element, create, discounts, click, settle } = await overDemo();
-    await create();
-    const before = element.querySelector('.reservation-detail')!.textContent;
+    await create(); await click('Ver detalle');
+    const before = element.querySelector('.crp-reservations-detail')!.textContent;
     discounts.lines = [];
-    await click('Close');
-    expect(element.querySelector('.reservation-detail')).toBeNull();
-    element.querySelector<HTMLButtonElement>('[data-state="data"] li button')!.click(); await settle();
-    const detail = element.querySelector('.reservation-detail');
+    await click('Volver a reservas');
+    expect(element.querySelector('.crp-reservations-detail')).toBeNull();
+    element.querySelector<HTMLButtonElement>('[data-state="data"] tbody button')!.click(); await settle();
+    const detail = element.querySelector('.crp-reservations-detail');
     expect(detail?.textContent).toBe(before);
     expect(detail?.textContent).toContain('Early bird (on the original value)');
   });

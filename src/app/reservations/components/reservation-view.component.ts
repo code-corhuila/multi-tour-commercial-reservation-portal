@@ -16,51 +16,45 @@ const FROZEN = 'Plazo congelado: la salida fue cancelada o interrumpida por una 
 /** Screen 10C (fresh) or 10A, without the payment parts (cash and payments stories). Renders the snapshot fixed at creation. */
 @Component({
   selector: 'app-reservation-view', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationBreakdownComponent, PortalSlotOutlet],
-  styles: [`.crp-reservation-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
-    .crp-reservation-hero p { margin: 6px 0 0; } .crp-reservation-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
-    dl { display: grid; gap: 10px; margin: 16px 0 0; } dl div { display: flex; justify-content: space-between; gap: 16px; }
-    dt { color: #667579; } dd { margin: 0; font-weight: 700; color: #203234; text-align: right; } .crp-form-actions { margin-top: 22px; }
-    .crp-success-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #e3f4ea; color: #1f7a4a; font-weight: 800; }
-    @media (max-width: 720px) { .crp-reservation-panels { grid-template-columns: 1fr; } }`],
   template: `
     @let r = reservation();
     @if (fresh()) {
-      <div class="reservation-result">
-        <section class="crp-operator-panel crp-reservation-hero">
-          <span class="crp-success-mark" aria-hidden="true">✓</span>
+      <div class="crp-reservations-result">
+        <section class="crp-operator-panel crp-reservations-hero">
+          <span class="crp-reservations-success-mark" aria-hidden="true">✓</span>
           <div><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>#{{ r.id }}</h2>
             <p>La reserva quedó registrada como proyección comercial dentro del operador activo, asociada a una única salida y sin cupo apartado hasta su primer pago.</p></div>
           <span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span>
         </section>
-        <div class="crp-reservation-panels">
+        <div class="crp-reservations-panels">
           <article class="crp-operator-panel"><p class="crp-operator-eyebrow">Resumen</p><h2>{{ r.tourName }}</h2>
-            <dl><div><dt>Salida</dt><dd>{{ line(r.departureDate) }}</dd></div><div><dt>Viajeros</dt><dd>{{ persons(r.people) }}</dd></div>
+            <dl class="crp-reservations-lines"><div><dt>Salida</dt><dd>{{ line(r.departureDate) }}</dd></div><div><dt>Viajeros</dt><dd>{{ persons(r.people) }}</dd></div>
               <div><dt>Titular</dt><dd>{{ r.leadCustomerName }}</dd></div><div><dt>Plazo de pago</dt><dd>{{ r.deadline ? deadline() : 'Se define con la creación de la reserva' }}</dd></div></dl>
           </article>
           <article class="crp-operator-panel"><p class="crp-operator-eyebrow">Estado económico</p><h2>Estado de pago</h2><p><strong>{{ state(r) }}</strong></p>
-            <dl><div><dt>Tipo y medio de pago</dt><dd>{{ pay(r) }}</dd></div><div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div>
+            <dl class="crp-reservations-lines"><div><dt>Tipo y medio de pago</dt><dd>{{ pay(r) }}</dd></div><div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div>
               <div><dt>{{ text.applied }}</dt><dd>{{ money(-r.quote.discountCents) }}</dd></div><div><dt>{{ text.balance }}</dt><dd>{{ money(r.balanceCents) }}</dd></div></dl>
           </article>
         </div>
         <section class="crp-operator-panel crp-next-step"><p class="crp-operator-eyebrow">Siguiente paso</p><h2>Gestiona el pago según el tipo y el medio elegidos.</h2>
           <p class="crp-operator-copy">La reserva se confirmará solo cuando se valide el 100 % del valor final (pago total) o el abono mínimo (abono). La promesa de pago en efectivo no confirma la reserva. El cupo se aparta con el primer pago, previa verificación de disponibilidad en la salida.</p>
-          <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="detail.emit()">{{ text.view }}</button>
+          <div class="crp-form-actions crp-reservations-actions"><button type="button" class="crp-operator-outline" (click)="detail.emit()">{{ text.view }}</button>
             <ng-container *crpSlot="blocks; inputs: { reservation: r, fresh: true }" /></div>
         </section>
       </div>
     } @else {
-      <div class="reservation-detail">
-        <section class="crp-operator-panel crp-reservation-hero">
+      <div class="crp-reservations-detail">
+        <section class="crp-operator-panel crp-reservations-hero">
           <div><p class="crp-operator-eyebrow">#{{ r.id }}</p><h2>{{ r.tourName }}</h2><p>Salida: {{ line(r.departureDate) }} · {{ travelers(r.people) }}</p></div>
           <span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span>
         </section>
         <p class="crp-operator-copy">Consulta disponible únicamente dentro del operador activo.</p>
-        <div class="crp-reservation-panels">
+        <div class="crp-reservations-panels">
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Titular y viajeros</p><h2>{{ r.leadCustomerName }}</h2>
-            <dl><div><dt>Viajeros registrados</dt><dd>{{ persons(r.people) }}</dd></div><div><dt>Acompañantes registrados</dt><dd>{{ companions(r.people) }}</dd></div></dl>
+            <dl class="crp-reservations-lines"><div><dt>Viajeros registrados</dt><dd>{{ persons(r.people) }}</dd></div><div><dt>Acompañantes registrados</dt><dd>{{ companions(r.people) }}</dd></div></dl>
           </section>
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Estado económico</p><h2>{{ money(r.balanceCents) }} {{ r.balanceCents === 0 ? 'sin saldo pendiente' : 'pendientes' }}</h2>
-            <dl><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div><div><dt>{{ text.applied }}</dt><dd>{{ money(-r.quote.discountCents) }}</dd></div>
+            <dl class="crp-reservations-lines"><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div><div><dt>{{ text.applied }}</dt><dd>{{ money(-r.quote.discountCents) }}</dd></div>
               <div><dt>{{ text.final }}</dt><dd>{{ money(r.quote.finalCents) }}</dd></div><div><dt>Valores validados</dt><dd>{{ money(r.validatedCents ?? 0) }}</dd></div>
               <div><dt>Valores devueltos</dt><dd>{{ money(r.refund?.execution ? r.refund?.amountCents ?? 0 : 0) }}</dd></div>
               @if (r.paymentType !== 'PARTIAL') { <div><dt>Abono mínimo</dt><dd>No aplica</dd></div> }</dl>
@@ -69,7 +63,7 @@ const FROZEN = 'Plazo congelado: la salida fue cancelada o interrumpida por una 
         </div>
         <section class="crp-operator-panel"><div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">Salida y plazos</p><h2>Salida asociada</h2></div>
           @if (reschedule) { <button type="button" class="crp-operator-primary" (click)="openRescheduling()">Gestionar la reprogramación</button> }</div>
-          <dl><div><dt>Estado de la salida</dt><dd>{{ departureState() }}</dd></div><div><dt>Plazo de pago</dt><dd>{{ deadline() }}</dd></div>
+          <dl class="crp-reservations-lines"><div><dt>Estado de la salida</dt><dd>{{ departureState() }}</dd></div><div><dt>Plazo de pago</dt><dd>{{ deadline() }}</dd></div>
             <div><dt>Ampliación del plazo</dt><dd>{{ extension() }}</dd></div><div><dt>Causa de cancelación</dt><dd>{{ r.cancellation?.cause ?? 'No registrada' }}</dd></div></dl>
         </section>
         <section class="crp-operator-panel"><p class="crp-operator-eyebrow">Servicios reservados</p><h2>Proyección comercial</h2>

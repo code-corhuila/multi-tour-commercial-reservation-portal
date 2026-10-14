@@ -328,26 +328,28 @@
 }
 
 /* HU-COM-008 as finalizar-reserva.html and mis-reservas.html: phone width first (RNF-RS1). */
-.crp-root .self-service-consent { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 10px; font-size: 0.9rem; }
-.crp-root .self-service-consent input { margin-top: 4px; }
-.crp-root .self-service-field-error { min-height: 1.2em; margin: 0 0 12px; color: #a3312a; font-size: 0.82rem; }
-.crp-root .self-service-summary-copy { display: grid; gap: 4px; margin: 16px 0 0; color: var(--crp-soft); }
-.crp-root .self-service-summary-copy strong { color: #17252b; font-size: 1.05rem; }
-.crp-root .self-service-pricing { display: grid; grid-template-columns: 1fr auto; gap: 14px 16px; margin: 18px 0 0; }
-.crp-root .self-service-pricing dt { color: #5a6b70; }
-.crp-root .self-service-pricing dd { margin: 0; color: #17252b; font-weight: 700; text-align: right; }
-.crp-root .self-service-pricing dt:last-of-type, .crp-root .self-service-total { padding-top: 12px; border-top: 1px solid #e7ece9; color: #17252b; font-weight: 800; }
-.crp-root .self-service-total { font-size: 1.7rem; letter-spacing: -0.03em; }
-.crp-root .self-service-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
-.crp-root .self-service-card { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; padding: 22px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: 20px; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); overflow-wrap: anywhere; }
-.crp-root .self-service-card-copy { display: grid; gap: 6px; }
-.crp-root .self-service-card-copy strong { color: #17252b; font-size: 1.2rem; }
-.crp-root .self-service-card-copy p { margin: 0; color: #5a6b70; }
-.crp-root .self-service-card-status { display: grid; justify-items: end; align-content: start; gap: 8px; }
-.crp-root .self-service-note, .crp-root .self-service-created { margin: 0 0 12px; color: var(--crp-soft); font-size: 0.86rem; }
+.crp-root .crp-self-service-consent { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 10px; font-size: 0.9rem; }
+.crp-root .crp-self-service-consent input { margin-top: 4px; }
+.crp-root .crp-self-service-field-error { min-height: 1.2em; margin: 0 0 12px; color: #a3312a; font-size: 0.82rem; }
+.crp-root .crp-self-service-summary-copy { display: grid; gap: 4px; margin: 16px 0 0; color: var(--crp-soft); }
+.crp-root .crp-self-service-summary-copy strong { color: #17252b; font-size: 1.05rem; }
+.crp-root .crp-self-service-pricing { display: grid; grid-template-columns: 1fr auto; gap: 14px 16px; margin: 18px 0 0; }
+.crp-root .crp-self-service-pricing dt { color: #5a6b70; }
+.crp-root .crp-self-service-pricing dd { margin: 0; color: #17252b; font-weight: 700; text-align: right; }
+.crp-root .crp-self-service-pricing .crp-self-service-breakdown { grid-column: 1 / -1; text-align: left; font-weight: 400; color: var(--crp-soft); font-size: 0.9rem; }
+.crp-root .crp-self-service-breakdown ol { display: grid; gap: 6px; margin: 0; padding-left: 20px; }
+.crp-root .crp-self-service-pricing dt:last-of-type, .crp-root .crp-self-service-total { padding-top: 12px; border-top: 1px solid #e7ece9; color: #17252b; font-weight: 800; }
+.crp-root .crp-self-service-total { font-size: 1.7rem; letter-spacing: -0.03em; }
+.crp-root .crp-self-service-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.crp-root .crp-self-service-card { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; padding: 22px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: 20px; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); overflow-wrap: anywhere; }
+.crp-root .crp-self-service-card-copy { display: grid; gap: 6px; }
+.crp-root .crp-self-service-card-copy strong { color: #17252b; font-size: 1.2rem; }
+.crp-root .crp-self-service-card-copy p { margin: 0; color: #5a6b70; }
+.crp-root .crp-self-service-card-status { display: grid; justify-items: end; align-content: start; gap: 8px; }
+.crp-root .crp-self-service-note, .crp-root .crp-self-service-created { margin: 0 0 12px; color: var(--crp-soft); font-size: 0.86rem; }
 @media (max-width: 760px) {
-  .crp-root .crp-finish-layout, .crp-root .crp-finish-grid, .crp-root .self-service-card { grid-template-columns: 1fr; }
-  .crp-root .self-service-card-status { justify-items: start; }
+  .crp-root .crp-finish-layout, .crp-root .crp-finish-grid, .crp-root .crp-self-service-card { grid-template-columns: 1fr; }
+  .crp-root .crp-self-service-card-status { justify-items: start; }
 }
 /* Client layout of tours.html: header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. Header and footer stay in the portal element (001- HC-3): content centred in 1320px by the padding, no bleed, no sticky. */
 .crp-root .crp-client-shell { display: flex; flex: 1 0 auto; flex-direction: column; background: var(--crp-bg); color: var(--crp-text); }
@@ -497,15 +499,15 @@
 }
 
 /* HU-COM-004: admin-aplicar-descuento.html and the values block of admin-crear-reserva.html. */
-.crp-root .current-discounts-services { list-style: none; padding: 0; display: grid; gap: 16px; }
-.crp-root .current-discounts-services h3 { margin: 0 0 8px; font-size: 1rem; }
-.crp-root .current-discounts-summary { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 18px; }
-.crp-root .current-discounts-summary div { display: grid; gap: 5px; }
-.crp-root .current-discounts-summary span { color: var(--crp-shade-718084); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
-.crp-root .current-discounts-lines { margin: 8px 0; padding-left: 20px; }
-.crp-root .current-discounts-lines li { margin: 4px 0; }
-.crp-root .current-discounts-wide { grid-column: 1 / -1; }
-.crp-root .current-discounts-note { color: var(--crp-soft); font-size: 0.86rem; }
+.crp-root .crp-current-discounts-services { list-style: none; padding: 0; display: grid; gap: 16px; }
+.crp-root .crp-current-discounts-services h3 { margin: 0 0 8px; font-size: 1rem; }
+.crp-root .crp-current-discounts-summary { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 18px; }
+.crp-root .crp-current-discounts-summary div { display: grid; gap: 5px; }
+.crp-root .crp-current-discounts-summary span { color: #718084; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
+.crp-root .crp-current-discounts-lines { margin: 8px 0; padding-left: 20px; }
+.crp-root .crp-current-discounts-lines li { margin: 4px 0; }
+.crp-root .crp-current-discounts-wide { grid-column: 1 / -1; }
+.crp-root .crp-current-discounts-note { color: var(--crp-soft); font-size: 0.86rem; }
 /* Public offer (HU-COM-006) as tours.html, detalle-tour.html, alojamiento.html and gastronomia.html; one column on a 360 px screen. */
 .crp-root .crp-offer-search { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; align-items: center; width: auto; max-width: 100%; align-self: flex-end; }
 .crp-root .crp-offer-search input[type="search"] { flex: 0 1 180px; min-width: 140px; min-height: 54px; padding: 0 18px; border: 1px solid var(--crp-line); border-radius: 14px; }
@@ -597,21 +599,21 @@
   .crp-root .crp-offer-grid, .crp-root .crp-offer-grid.crp-offer-grid-3 { grid-template-columns: 1fr; }
 }
 /* HU-COM-005 · lead customer and companions (prefix customers-) */
-.crp-root .customers-banner { padding: 10px 14px; background: var(--crp-info-soft); color: var(--crp-info); border-radius: var(--crp-radius-control); }
-.crp-root .customers-badge { margin-left: 8px; padding: 2px 10px; font-size: 0.8rem; background: var(--crp-warning-soft); color: var(--crp-warning); border-radius: var(--crp-radius-pill); }
-.crp-root .customers-restricted { font-style: italic; color: var(--crp-soft); }
-.crp-root .customers-copy { margin: 0 0 16px; color: var(--crp-soft-copy); font-size: 0.92rem; line-height: 1.6; }
-.crp-root .customers-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; }
-.crp-root .customers-field { display: grid; gap: 7px; align-content: start; color: var(--crp-shade-334547); font-size: 0.8rem; font-weight: 800; }
-.crp-root .customers-wide { grid-column: 1 / -1; }
-.crp-root .customers-check { display: flex; gap: 10px; align-items: center; font-weight: 600; }
-.crp-root .customers-card, .crp-root .customers-risk-card { display: grid; gap: 14px; margin-top: 16px; padding: 18px; border: 1px solid var(--crp-line-green); border-radius: 12px; background: var(--crp-shade-fbfdfb); }
-.crp-root .customers-details dt { color: var(--crp-shade-748084); font-size: 0.72rem; font-weight: 800; }
-.crp-root .customers-details dd { margin: 4px 0 0; color: var(--crp-ink-slate); }
-.crp-root .customers-form { display: block; margin: 0; }
-.crp-root .customers-form .crp-form-actions { margin-top: 18px; }
-@media (max-width: 720px) { .crp-root .customers-grid { grid-template-columns: 1fr; } }
-.crp-root .customers-error { margin: 0; color: var(--crp-error); }
+.crp-root .crp-customers-banner { padding: 10px 14px; background: var(--crp-info-soft); color: var(--crp-info); border-radius: var(--crp-radius-control); }
+.crp-root .crp-customers-badge { margin-left: 8px; padding: 2px 10px; font-size: 0.8rem; background: var(--crp-warning-soft); color: var(--crp-warning); border-radius: var(--crp-radius-pill); }
+.crp-root .crp-customers-restricted { font-style: italic; color: var(--crp-soft); }
+.crp-root .crp-customers-copy { margin: 0 0 16px; color: #5b696c; font-size: 0.92rem; line-height: 1.6; }
+.crp-root .crp-customers-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.crp-root .crp-customers-field { display: grid; gap: 7px; align-content: start; color: #334547; font-size: 0.8rem; font-weight: 800; }
+.crp-root .crp-customers-wide { grid-column: 1 / -1; }
+.crp-root .crp-customers-check { display: flex; gap: 10px; align-items: center; font-weight: 600; }
+.crp-root .crp-customers-card, .crp-root .crp-customers-risk-card { display: grid; gap: 14px; margin-top: 16px; padding: 18px; border: 1px solid #dce8e1; border-radius: 12px; background: #fbfdfb; }
+.crp-root .crp-customers-details dt { color: #748084; font-size: 0.72rem; font-weight: 800; }
+.crp-root .crp-customers-details dd { margin: 4px 0 0; color: #203234; }
+.crp-root .crp-customers-form { display: block; margin: 0; }
+.crp-root .crp-customers-form .crp-form-actions { margin-top: 18px; }
+@media (max-width: 720px) { .crp-root .crp-customers-grid { grid-template-columns: 1fr; } }
+.crp-root .crp-customers-error { margin: 0; color: var(--crp-error); }
 /* HU-COM-008 panel-cliente.html: greeting, search, reservations summary, quick actions, discounts and featured tours. */
 .crp-root .crp-panel-hero { display: grid; gap: 12px; }
 .crp-root .crp-panel-hero > p { max-width: 640px; margin: 0; color: var(--crp-soft); }
@@ -659,12 +661,12 @@
 .crp-root .crp-panel-card-pill { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; background: var(--crp-shade-fff3e5); color: var(--crp-shade-f08b25); font-size: 0.8rem; font-weight: 800; }
 .crp-root .crp-panel-card-actions .crp-panel-ghost { border-color: transparent; background: transparent; color: var(--crp-accent); font-size: 0.86rem; font-weight: 800; }
 /* HU-COM-008 mis-reservas.html: 48px title over a full-width line, small dark-green eyebrow, a divider inside each card. */
-.crp-root .self-service-panel .crp-page-header { margin: 0 -20px 40px; padding: 0 20px 28px; }
-.crp-root .self-service-panel .crp-page-header-eyebrow { color: var(--crp-accent-strong); font-size: 0.68rem; letter-spacing: 0.08em; }
-.crp-root .self-service-panel .crp-page-header-title { margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
-.crp-root .self-service-panel .crp-page-header-desc { font-size: 1rem; line-height: 1.65; }
-.crp-root .self-service-panel .crp-page-header-desc + .crp-page-header-desc { margin-top: 8px; color: var(--crp-text); }
-.crp-root .self-service-card::after { content: ""; grid-column: 1 / -1; border-top: 1px solid var(--crp-shade-e6e9e7); }
+.crp-root .crp-self-service-panel .crp-page-header { margin: 0 -20px 40px; padding: 0 20px 28px; }
+.crp-root .crp-self-service-panel .crp-page-header-eyebrow { color: #1f4d3d; font-size: 0.68rem; letter-spacing: 0.08em; }
+.crp-root .crp-self-service-panel .crp-page-header-title { margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
+.crp-root .crp-self-service-panel .crp-page-header-desc { font-size: 1rem; line-height: 1.65; }
+.crp-root .crp-self-service-panel .crp-page-header-desc + .crp-page-header-desc { margin-top: 8px; color: #17252b; }
+.crp-root .crp-self-service-card::after { content: ""; grid-column: 1 / -1; border-top: 1px solid #e6e9e7; }
 /* HU-COM-008 reservar-tour.html (20): topbar, tour card with the list of departures, conditions, travelers and the bar at the end of the booking column, in its flow (008- H-D11). */
 .crp-root .crp-booking-topbar { display: grid; grid-template-columns: 220px minmax(0, 1fr) 220px; align-items: center; gap: 16px; margin: -24px -20px 0; padding: 18px 28px; border-bottom: 1px solid var(--crp-shade-e8ece9); }
 .crp-root .crp-booking-topbar h1 { margin: 0; color: var(--crp-text); font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; text-align: center; }
@@ -719,7 +721,7 @@
   .crp-root .crp-booking-content { padding-bottom: 210px; }
 }
 /* HU-COM-008 finalizar-reserva.html (21): pill, main cards, summary aside and the bottom bar of reservar-tour. */
-.crp-root .self-service-confirm { display: block; margin: 0; }
+.crp-root .crp-self-service-confirm { display: block; margin: 0; }
 .crp-root .crp-finish-content { display: grid; gap: 18px; width: min(100%, 1100px); margin: 0 auto; padding: 24px 0 18px; }
 .crp-root .crp-finish-pill { justify-self: center; display: inline-flex; align-items: center; min-height: 38px; margin: 0; padding: 0 16px; border-radius: 999px; background: var(--crp-shade-eef6f1); color: var(--crp-accent); font-size: 0.92rem; font-weight: 800; }
 .crp-root .crp-finish-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 24px; align-items: start; }
@@ -735,11 +737,11 @@
 .crp-root .crp-finish-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--crp-line-faint); }
 .crp-root .crp-finish-media { min-height: 136px; overflow: hidden; border-radius: 18px; background: var(--crp-shade-dfe9e5); }
 .crp-root .crp-finish-media img { display: block; width: 100%; height: 100%; min-height: 136px; object-fit: cover; }
-.crp-root .crp-finish-summary .self-service-summary-copy { margin: 0; }
-.crp-root .crp-finish-summary .self-service-summary-copy strong { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.25; }
-.crp-root .crp-finish-help { background: var(--crp-shade-f8fbfa); }
-.crp-root .crp-finish-help strong { display: block; margin-bottom: 6px; color: var(--crp-text); }
-.crp-root .crp-finish-help span { color: var(--crp-soft); font-size: 0.96rem; line-height: 1.6; }
+.crp-root .crp-finish-summary .crp-self-service-summary-copy { margin: 0; }
+.crp-root .crp-finish-summary .crp-self-service-summary-copy strong { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.25; }
+.crp-root .crp-finish-help { background: #f8fbfa; }
+.crp-root .crp-finish-help strong { display: block; margin-bottom: 6px; color: #17252b; }
+.crp-root .crp-finish-help span { color: #5a6b70; font-size: 0.96rem; line-height: 1.6; }
 /* HU-COM-009 screen 13 (admin-gestion-pago.html): hero, two panels, the payment form in one column. */
 .crp-root .crp-payments-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
 .crp-root .crp-payments-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
@@ -800,7 +802,7 @@
 .crp-root .crp-my-payments-details dt { font-weight: 600; }
 .crp-root .crp-my-payments-details dd { margin: 0; }
 .crp-root .crp-my-payments-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
-.crp-root .self-service-card > crp-my-payments-card-actions { grid-column: 1 / -1; }
+.crp-root .crp-self-service-card > crp-my-payments-card-actions { grid-column: 1 / -1; }
 /* HU-COM-016 refund screens (admin-solicitudes-devolucion.html hero, admin-detalle-devolucion.html list and forms). */
 .crp-root .crp-refunds-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: var(--crp-space-5); margin-bottom: 22px; padding: var(--crp-space-5) 28px;
   border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-hero-gradient); }
@@ -830,24 +832,64 @@
 .crp-root .crp-rescheduling-copy { margin: 8px 0 0; color: var(--crp-soft); line-height: 1.6; }
 .crp-root .crp-rescheduling-copy.crp-is-valid { color: var(--crp-success); }
 /* Mis reservas: the mark is the small status tag of the mockup (operator-status), the status column stays at the top, Responder propuesta crosses the card. */
-.crp-root .self-service-card-copy strong.crp-status { font-size: 0.72rem; }
-.crp-root .self-service-card > crp-rescheduling-card-action { grid-column: 1 / -1; }
+.crp-root .crp-self-service-card-copy strong.crp-status { font-size: 0.72rem; }
+.crp-root .crp-self-service-card > crp-rescheduling-card-action { grid-column: 1 / -1; }
 .crp-root .crp-rescheduling-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 
 /* Client screens refined as the landing (main.css, "Refinamiento a zoom 100 %"): delicate type, soft cards, no heavy shadows. */
-.crp-root .crp-panel-hero h1, .crp-root .self-service-panel .crp-page-header-title { font-size: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
-.crp-root .self-service-panel .crp-page-header-desc, .crp-root .crp-panel-hero > p { font-size: 0.9rem; line-height: 1.55; }
-.crp-root .crp-panel-layout h2, .crp-root .crp-panel-featured h2, .crp-root .crp-my-payments h2, .crp-root .self-service-panel h2 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
-.crp-root .crp-panel-card, .crp-root .self-service-card, .crp-root .crp-my-payments-card { padding: 16px 18px; border-color: var(--crp-line-soft); border-radius: 14px; box-shadow: 0 2px 10px var(--crp-shadow-ink-04); }
-.crp-root .crp-panel-featured li, .crp-root .crp-panel-promo { border-color: var(--crp-line-soft); border-radius: 14px; }
-.crp-root .crp-panel-search { border-color: var(--crp-line-soft); border-radius: 14px; }
-.crp-root .crp-panel-card strong, .crp-root .self-service-card-copy strong { font-size: 1rem; font-weight: 700; }
-.crp-root .self-service-card-copy p, .crp-root .crp-panel-card p { font-size: 0.86rem; }
-.crp-root .crp-my-payments-card-lines small, .crp-root .self-service-card small { font-size: 0.8rem; line-height: 1.45; }
+.crp-root .crp-panel-hero h1, .crp-root .crp-self-service-panel .crp-page-header-title { font-size: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.crp-root .crp-self-service-panel .crp-page-header-desc, .crp-root .crp-panel-hero > p { font-size: 0.9rem; line-height: 1.55; }
+.crp-root .crp-panel-layout h2, .crp-root .crp-panel-featured h2, .crp-root .crp-my-payments h2, .crp-root .crp-self-service-panel h2 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
+.crp-root .crp-panel-card, .crp-root .crp-self-service-card, .crp-root .crp-my-payments-card { padding: 16px 18px; border-color: #e3e7e6; border-radius: 14px; box-shadow: 0 2px 10px rgba(23, 37, 43, 0.04); }
+.crp-root .crp-panel-featured li, .crp-root .crp-panel-promo { border-color: #e3e7e6; border-radius: 14px; }
+.crp-root .crp-panel-search { border-color: #e3e7e6; border-radius: 14px; }
+.crp-root .crp-panel-card strong, .crp-root .crp-self-service-card-copy strong { font-size: 1rem; font-weight: 700; }
+.crp-root .crp-self-service-card-copy p, .crp-root .crp-panel-card p { font-size: 0.86rem; }
+.crp-root .crp-my-payments-card-lines small, .crp-root .crp-self-service-card small { font-size: 0.8rem; line-height: 1.45; }
 .crp-root .crp-panel-featured-meta em { font-size: 1.15rem; font-weight: 700; }
 .crp-root .crp-panel-featured-body strong { font-size: 0.95rem; font-weight: 700; }
 .crp-root .crp-panel-promo-tag, .crp-root .crp-panel-card-pill { font-size: 0.72rem; font-weight: 700; }
-.crp-root .self-service-card::after { content: none; }
+.crp-root .crp-self-service-card::after { content: none; }
 .crp-root .crp-my-payments-card-actions .crp-outline { border-color: transparent; background: transparent; color: var(--crp-accent-strong); font-size: 0.8rem; font-weight: 600; }
 .crp-root .crp-my-payments-card-actions button { min-height: 34px; padding: 0 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
 
+/* Reservations (operator): the rules the four reservation components carried as inline styles, scoped under .crp-root. */
+.crp-root {
+  --crp-shade-667579: #667579;
+  --crp-ink-slate: #203234;
+  --crp-shade-748084: #748084;
+  --crp-line-green: #dce8e1;
+  --crp-shade-e3f4ea: #e3f4ea;
+  --crp-shade-1f7a4a: #1f7a4a;
+}
+.crp-root .crp-reservations-form { display: block; }
+.crp-root .crp-reservations-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.crp-root .crp-reservations-field { display: grid; align-content: start; gap: 4px; }
+.crp-root .crp-reservations-field label { margin: 0; }
+.crp-root .crp-reservations-form fieldset { grid-column: 1 / -1; margin: 0; border: 1px solid var(--crp-line-green); border-radius: 10px; }
+.crp-root .crp-reservations-form fieldset label { font-weight: 500; }
+.crp-root .crp-reservations-error { margin: 0; color: var(--crp-error); font-size: 0.82rem; }
+.crp-root .crp-reservations-conditions p { margin: 6px 0 0; }
+.crp-root .crp-reservations-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.crp-root .crp-reservations-values span { display: block; color: var(--crp-shade-667579); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
+.crp-root .crp-reservations-values strong { font-size: 1.2rem; }
+.crp-root .crp-reservations-actions { margin-top: 22px; }
+.crp-root .crp-reservations-hero-card { margin: 0 0 16px; }
+.crp-root .crp-reservations-hero-card h2 { margin: 4px 0; }
+.crp-root .crp-reservations-hint { grid-column: 1 / -1; margin: 0; }
+.crp-root .crp-reservations-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.crp-root .crp-reservations-hero p { margin: 6px 0 0; }
+.crp-root .crp-reservations-hero-wide p { max-width: 520px; }
+.crp-root .crp-reservations-code { display: block; color: var(--crp-ink-slate); font-weight: 800; }
+.crp-root .crp-reservations-meta { display: block; margin-top: 4px; color: var(--crp-shade-748084); }
+.crp-root .crp-reservations-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
+.crp-root .crp-reservations-lines { display: grid; gap: 10px; margin: 16px 0 0; }
+.crp-root .crp-reservations-lines div { display: flex; justify-content: space-between; gap: 16px; }
+.crp-root .crp-reservations-lines dt, .crp-root .crp-reservations-breakdown dt { color: var(--crp-shade-667579); }
+.crp-root .crp-reservations-lines dd { margin: 0; font-weight: 700; color: var(--crp-ink-slate); text-align: right; }
+.crp-root .crp-reservations-success-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--crp-shade-e3f4ea); color: var(--crp-shade-1f7a4a); font-weight: 800; }
+.crp-root .crp-reservations-breakdown { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 16px 0 0; font-size: 0.86rem; }
+.crp-root .crp-reservations-breakdown dd { margin: 0; text-align: right; font-weight: 700; color: var(--crp-ink-slate); }
+@media (max-width: 720px) {
+  .crp-root .crp-reservations-grid, .crp-root .crp-reservations-values, .crp-root .crp-reservations-panels { grid-template-columns: 1fr; }
+}

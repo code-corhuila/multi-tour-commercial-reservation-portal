@@ -17,25 +17,48 @@ export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready
   selector: 'app-customers-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, CustomerFormComponent],
   template: `
     @if (caps.isDenied) { <p role="alert">{{ text.denied }}</p> } @else {
-      <section class="customers-page">
-        <h1>{{ text.title }}</h1>
-        <p class="customers-banner">{{ text.banner }}</p>
+      <section class="crp-customers-page">
+        <header class="crp-page-header">
+          <div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ text.entry }}</p>
+            <h1 class="crp-page-header-title">{{ text.title }}</h1><p class="crp-page-header-desc">{{ text.description }}</p></div>
+          @if (caps.canRegister && ready()?.group) {
+            <button type="button" class="crp-operator-outline crp-page-header-action" (click)="startingNew.set(!startingNew())">{{ startingNew() ? text.cancel : text.newGroup }}</button>
+          }
+        </header>
+        <p class="crp-customers-banner">{{ text.banner }}</p>
         @if (state().kind === 'loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
         @if (state().kind === 'error') { <div role="alert" data-state="error"><crp-read-error [state]="state()" [fallback]="text.failed" />&ngsp;<button type="button" (click)="reload()">{{ text.retry }}</button></div> }
         @if (ready(); as current) {
           @if (current.group; as group) {
             <div data-state="data">
-              <h2>{{ group.activityName }} @if (group.highRisk) { <span class="customers-badge">{{ text.highRisk }}</span> }</h2>
-              <table class="customers-table">
-                <thead><tr><th></th>@for (f of columns; track f) { <th>{{ labels[f] }}</th> }
-                  @if (group.highRisk) { @for (s of sensitive; track s[0]) { <th>{{ s[1] }}</th> } }</tr></thead>
-                <tbody>@for (person of people(group); track person.personId; let first = $first) {
-                  <tr><td>{{ first ? text.lead : text.companion }}</td>@for (f of columns; track f) { <td>{{ person[f] }}</td> }
-                    @if (group.highRisk) { @for (s of sensitive; track s[0]) {
-                      <td>@if (seeSensitive) { {{ sensitiveValue(person, s[0]) }} } @else { <span class="customers-restricted">{{ text.restricted }}</span> }</td>
-                    } }</tr>
-                }</tbody>
-              </table>
+              <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ text.leadEyebrow }}</p><h2>{{ text.leadTitle }}</h2>
+                <p class="crp-customers-copy">{{ text.activity }}: <strong>{{ group.activityName }}</strong>
+                  @if (group.highRisk) { <span class="crp-customers-badge">{{ text.highRisk }}</span> }</p>
+                <dl class="crp-customers-grid crp-customers-details">@for (f of leadColumns; track f) { <div><dt>{{ labels[f] }}</dt><dd>{{ shown(group.lead, f) }}</dd></div> }</dl>
+              </section>
+              <section class="crp-operator-panel">
+                <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.companionsEyebrow }}</p><h2>{{ text.companionsTitle }}</h2></div>
+                  <span>{{ count(group.companions.length) }}</span></div>
+                <p class="crp-customers-copy">{{ text.companionsCopy }}</p>
+                @for (person of group.companions; track person.personId; let i = $index) {
+                  <article class="crp-customers-card"><strong>{{ text.companion }} {{ i + 1 }}</strong>
+                    <dl class="crp-customers-grid crp-customers-details">@for (f of companionColumns; track f) { <div><dt>{{ labels[f] }}</dt><dd>{{ shown(person, f) }}</dd></div> }</dl></article>
+                }
+                @if (caps.canRegister) {
+                  <app-customer-form kind="companion" [group]="group" [position]="group.companions.length + 1" (saved)="onSaved($event)" />
+                }
+              </section>
+              @if (group.highRisk) {
+                <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ text.riskEyebrow }}</p><h2>{{ text.riskTitle }}</h2>
+                  <p class="crp-customers-copy">{{ text.riskCopy }}</p>
+                  @for (person of people(group); track person.personId; let first = $first; let i = $index) {
+                    <article class="crp-customers-risk-card"><strong>{{ first ? text.lead : text.companion + ' ' + i }}</strong>
+                      <dl class="crp-customers-grid crp-customers-details">@for (s of sensitive; track s[0]) { <div><dt>{{ s[1] }}</dt>
+                        <dd>@if (seeSensitive) { {{ sensitiveValue(person, s[0]) }} } @else { <span class="crp-customers-restricted">{{ text.restricted }}</span> }</dd></div> }</dl>
+                    </article>
+                  }
+                </section>
+              }
             </div>
           } @else { <p role="status" data-state="empty">{{ text.empty }}</p> }
           @if (caps.canRegister) {

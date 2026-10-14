@@ -189,3 +189,44 @@ describe('aRetriedRegistrationReusesItsIdempotencyKey', () => {
     expect(p.writer.calls[1].key).not.toBe(p.writer.calls[0].key);
   });
 });
+
+describe('the screen follows the authorized screen 10B, in Spanish', () => {
+  const texts = (p: { element: HTMLElement }, selector: string) => Array.from(p.element.querySelectorAll(selector), (e) => e.textContent?.trim());
+  it('draws the header and panel 01 with the labels of the mockup', async () => {
+    const p = await openPeople(); await p.answer(null);
+    expect(p.element.querySelector('.crp-page-header-eyebrow')?.textContent?.trim()).toBe('Gestión comercial');
+    expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Titular y acompañantes');
+    expect(texts(p, '.crp-operator-panel .crp-operator-eyebrow')).toContain('01. Cliente titular');
+    expect(texts(p, '.crp-operator-panel h2')).toContain('Datos para asociar la reserva');
+    for (const label of Object.keys(lead)) expect(p.control(label)).not.toBeNull();
+    expect(p.element.textContent).toContain('Aún no hay grupo');
+  });
+  it('refuses a lead without e-mail in Spanish beside the field', async () => {
+    const p = await openPeople(); await p.answer(null);
+    await p.set('Tour', 'svc-ordinary'); await p.click('Registrar titular');
+    expect(p.errorBeside('Correo electrónico')).toBe('Obligatorio.');
+    await p.set('Correo electrónico', 'sin-arroba'); await p.click('Registrar titular');
+    expect(p.errorBeside('Correo electrónico')).toBe('Escribe un correo válido.');
+  });
+  it('draws panel 03 with one card per companion and the next companion form', async () => {
+    const p = await openPeople(); await p.answer(groupWith(false, [personNamed('Acompanante Ficticio', 'DOC 6006', false)]));
+    expect(texts(p, '.crp-operator-panel .crp-operator-eyebrow')).toContain('03. Acompañantes');
+    expect(p.element.textContent).toContain('Los documentos no pueden repetirse dentro de la misma reserva.');
+    expect(texts(p, '.crp-customers-card > strong')).toEqual(['Acompañante 1', 'Acompañante 2']);
+    expect(p.element.querySelector('.crp-customers-grid h2, .crp-customers-grid strong')).toBeNull();
+  });
+  it('shows dates as 01 may 1990 and no English or raw value', async () => {
+    const p = await openPeople(); await p.answer(groupWith(true));
+    const data = p.element.querySelector('[data-state="data"]')!.textContent!;
+    expect(data).toContain('01 may 1990'); expect(data).not.toContain('1990-05-01');
+    for (const english of ['Companion', 'Lead customer', 'Restricted', 'Full name', 'Birth date', 'Given', 'High-risk', 'Demo data'])
+      expect(p.element.textContent).not.toContain(english);
+  });
+  it('draws the high-risk panel per person with its labels', async () => {
+    const p = await openPeople('TENANT_ADMINISTRATOR', true); await p.answer(groupWith(true, [personNamed('Acompanante Ficticio', 'DOC 6006')]));
+    expect(texts(p, '.crp-operator-panel .crp-operator-eyebrow')).toContain('Requisitos de actividad de riesgo');
+    expect(texts(p, '.crp-customers-risk-card > strong')).toEqual(['Titular', 'Acompañante 1']);
+    for (const label of ['Tipo de sangre', 'Contacto de emergencia', 'Restricciones físicas o movilidad reducida', 'Consentimiento informado o exoneración registrado.'])
+      expect(p.element.textContent).toContain(label);
+  });
+});

@@ -5,7 +5,7 @@ import { Quote, RESERVATION_TEXT, money } from '../model/reservation';
 @Component({
   selector: 'app-reservation-breakdown', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <dl class="reservation-breakdown">
+    <dl class="crp-reservations-breakdown">
       @for (line of quote().services; track $index) { <dt>{{ line.name }}</dt><dd>{{ money(line.cents) }}</dd> }
       <dt>{{ text.transport }}</dt><dd>{{ money(quote().transportCents) }}</dd>
       <dt>{{ text.projected }}</dt><dd data-value="projected">{{ money(quote().projectedCents) }}</dd>
