@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRend
 import { formatCop } from '../../shared/format';
 import { focusFirstError } from '../../shared/focus';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
-import { parseMoney } from '../../shared/money';
+import { parseMoney, pesosText } from '../../shared/money';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { CREDIT_BALANCE_COPY, formatDateTime } from '../credit-balance-copy';
 import { CreditBalanceWriter, CreditCustomer } from '../data/credit-balance-ports';
@@ -56,7 +56,7 @@ export class CreditCustomerPanelComponent {
   protected readonly target = signal(''); protected readonly typed = signal<string | null>(null); protected readonly busy = signal(false); protected readonly error = signal<string | null>(null);
   private readonly keys = new Map<string, string>();
   protected readonly chosen = computed(() => (this.customer().targets.some((x) => x.reservationId === this.target()) ? this.target() : this.customer().targets[0]?.reservationId));
-  protected readonly amountText = computed(() => this.typed() ?? pesos(this.customer().suggestedCents));
+  protected readonly amountText = computed(() => this.typed() ?? pesosText(this.customer().suggestedCents));
 
   protected signed = (cents: number) => (cents >= 0 ? `+${formatCop(cents)}` : formatCop(cents));
 
@@ -84,5 +84,3 @@ export class CreditCustomerPanelComponent {
   }
 }
 
-/** Cents to the text a person types (pesos, dot decimals only when there are cents). */
-const pesos = (cents: number) => (cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2));

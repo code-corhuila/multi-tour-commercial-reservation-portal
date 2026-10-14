@@ -1,4 +1,6 @@
 import { NgComponentOutlet } from '@angular/common';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, InjectionToken, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, take } from 'rxjs';
@@ -6,7 +8,7 @@ import { PortalNavigation } from '../../portal-navigation';
 import { Reservation, STATUS_LABEL } from '../../reservations/data/reservations-source';
 import { focusFirstError } from '../../shared/focus';
 import { formatCop, formatDate } from '../../shared/format';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 import { PageState } from '../../shared/page-state';
 import { CancellationOrigin, CancellationQuote, CancellationQuoteResult } from '../data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from '../data/reservation-change-types';
@@ -25,7 +27,7 @@ export const RESERVATION_CHANGE_RETURN_DELAY = new InjectionToken<() => Observab
 
 /** admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Tipo lists RESERVATION_CHANGE_TYPES (plan D-08). */
 @Component({
-  selector: 'app-reservation-change-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [NgComponentOutlet],
+  selector: 'app-reservation-change-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, NgComponentOutlet],
   template: `
     <header class="crp-page-header">
       <div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.title }}</h1></div>
@@ -35,7 +37,7 @@ export const RESERVATION_CHANGE_RETURN_DELAY = new InjectionToken<() => Observab
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ t.notFound }}</p> }
       @case ('data') {
         @let q = s.items[0]; @let r = q.reservation; @let closed = refusal(q); @let locked = !!closed || pending();
@@ -90,15 +92,15 @@ export class ReservationChangePageComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly code = this.navigation?.params()['reservation'] ?? '';
-  /** One key per opening of the screen, reused on every retry (plan D-06). */
-  private readonly key = inject(IdempotencyKeys).generate();
+  /** The key follows the body: reused on every retry of the same data, new when the cause is corrected (plan D-06). */
+  private readonly intention = new IntentionKey(inject(IdempotencyKeys));
   private readonly quotes = inject(CancellationQuote);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly injector = inject(Injector);
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.quotes.quote(this.code).pipe(
     map((q): State => (q ? { kind: 'data', items: [q] } : { kind: 'empty' })),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
 
   protected chosen() { return this.types.find((type) => type.key === this.selected()); }
@@ -118,7 +120,8 @@ export class ReservationChangePageComponent {
     if (!cause) { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
     this.pending.set(true);
     this.failure.set(null);
-    type.submit({ reservationCode: q.reservation.id, cause, origin: this.origin(), idempotencyKey: this.key }).subscribe({
+    const body = { reservationCode: q.reservation.id, cause, origin: this.origin() };
+    type.submit({ ...body, idempotencyKey: this.intention.keyFor(body) }).subscribe({
       next: (outcome) => {
         if (outcome.kind === 'registered') { this.showRegistered(q); return; }
         this.failure.set(outcome.reason); this.pending.set(false);
