@@ -46,3 +46,9 @@ describe('panels keep the spacing of main.css', () => {
     expect(readFileSync('src/styles/portal.css', 'utf8')).toMatch(/\.crp-root \.crp-operator-panel \{[^}]*padding: 25px;/);
   });
 });
+
+describe('theTwoPanelsOfTheRuleFormStack', () => {
+  it('beats the two-column form rule of the operator shell, as the mockup stacks them', () => {
+    expect(readFileSync('src/styles/portal.css', 'utf8')).toMatch(/\.crp-root \.crp-operator-shell \.crp-discount-form \{[^}]*grid-template-columns: 1fr;/);
+  });
+});
