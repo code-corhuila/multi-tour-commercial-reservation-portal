@@ -55,7 +55,9 @@ export type ReservationPayment = {
   readonly id: string; readonly method: string; readonly amountCents: number; readonly proofName: string | null;
   readonly proofStatus: 'EN_VALIDACION' | 'SIN_COMPROBANTE' | 'APROBADO' | 'RECHAZADO'; readonly registeredBy: string;
   readonly presentedAt?: string; readonly review?: { readonly decision: 'APROBADO' | 'RECHAZADO'; readonly verifiedAmountCents: number | null; readonly reason: string;
-    readonly actorLabel: string; readonly decidedAt: string };
+    readonly actorLabel: string; readonly decidedAt: string;
+    /** RN-RES-006A: what the approval did with the verified amount (applied, excess as credit, value of a cancelled reservation left untreated). */
+    readonly appliedCents?: number; readonly surplusCents?: number; readonly pendingTreatmentCents?: number };
 };
 export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCION' | 'FINALIZADA' | 'CANCELADA';
 export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceIds: readonly string[]; people: string };
