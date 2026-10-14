@@ -393,7 +393,9 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(page.host.querySelector('.crp-offer-agreement'))).toBe('Información del convenio Coordina directamente con el establecimiento '
       + 'Multitour no genera reservas de habitación, no administra tarifas, disponibilidad ni inventario. La coordinación se realiza directamente con cada establecimiento.');
     const [hotel, posada] = page.cards('establishments');
-    expect(hotel.querySelector('img')?.getAttribute('src')).toMatch(/^\/assets\//);
+    // The photo follows the TYPE of the establishment (a hotel for every card of Alojamiento), as alojamiento.html.
+    expect(hotel.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
+    expect(posada.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
     expect(hotel.querySelector('img')?.getAttribute('alt')).toBe('Casa Neiva');
     expect(text(hotel.querySelector('strong'))).toBe('Casa Neiva');
     expect(text(hotel.querySelector('.crp-establishment-type'))).toBe('Establecimiento asociado');
@@ -402,17 +404,115 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(page.host.querySelector('input')).toBeNull();
   });
 
-  it('draws Gastronomía with the header of gastronomia.html, the restaurant agreement and its search', async () => {
+  const restaurants = () => [
+    placeNamed('Sabores del Huila', { establishmentType: 'RESTAURANT', contact: { email: 'reservas@sabores.co', phone: '+57 310 555 0220' } }),
+    placeNamed('Fogón', { establishmentType: 'RESTAURANT' }),
+  ];
+  const gastronomy = async () => {
+    const page = await openPage({ page: 'gastronomy', areas: [CLIENT_AREA.panel, CLIENT_AREA.gastronomy] });
+    page.places.requests[0].reply(restaurants());
+    await page.settle();
+    const click = async (name: string | RegExp, scope: HTMLElement = page.host) => { fireEvent.click(within(scope).getByRole('button', { name })); await page.settle(); };
+    return { ...page, click };
+  };
+
+  it('draws Gastronomía as gastronomia.html: informative only, with the agreement and no search, filters or dishes (GAP-04)', async () => {
+    const page = await gastronomy();
+    expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Establecimientos asociados');
+    expect(text(page.host.querySelector('h1'))).toBe('Gastronomía');
+    expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Restaurantes asociados al operador, con sus datos de contacto para que coordines directamente con ellos.');
+    expect(text(page.host.querySelector('.crp-offer-agreement'))).toBe('Información del convenio Coordina directamente con el establecimiento '
+      + 'Multitour no genera reservas de mesa ni administra tarifas, disponibilidad o inventario de alimentación. Las condiciones de reserva, cambio o cancelación se acuerdan directamente entre tú y el restaurante.');
+    expect(page.host.querySelector('input, .crp-offer-filters')).toBeNull();
+    expect(page.host.textContent).not.toMatch(/Platos del día|platos|Todos/);
+    expect(page.part('establishments').getAttribute('aria-label')).toBe('Restaurantes asociados');
+    expect(page.cards('establishments').map((card) => text(card.querySelector('strong')))).toEqual(['Sabores del Huila', 'Fogón']);
+    expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-type'))).toBe('Restaurante asociado');
+    expect(page.cards('establishments').map((card) => card.querySelector('img')?.getAttribute('src'))).toEqual(Array(2).fill('/assets/restaurante-asociado.jpg'));
+    expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');
+    expect(text(page.cards('establishments')[0].querySelector('button.crp-offer-link'))).toBe('Ver contacto');
+  });
+
+  it('says No hay restaurantes asociados activos en este momento when there is none, and the same for hotels', async () => {
     const page = await openPage({ page: 'gastronomy' });
     page.places.requests[0].reply([placeNamed('Sabores del Huila', { establishmentType: 'RESTAURANT' }), placeNamed('Fogón', { establishmentType: 'RESTAURANT' })]);
     await page.settle();
-    expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Sabores locales');
-    expect(text(page.host.querySelector('h1'))).toBe('Gastronomía');
-    expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Datos de contacto para coordinar directamente tu visita.');
-    expect(text(page.host.querySelector('.crp-offer-agreement p:last-child'))).toBe('Multitour no genera reservas de mesa, no administra tarifas, disponibilidad ni inventario de alimentación.');
-    expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-type'))).toBe('Restaurante asociado');
-    await page.search('Buscar restaurantes por nombre', 'fog');
-    expect(page.cards('establishments').map((card) => text(card.querySelector('strong')))).toEqual(['Fogón']);
+    expect(text(page.host.querySelector('[data-state="empty"]'))).toBe('No hay restaurantes asociados activos en este momento.');
+    TestBed.resetTestingModule();
+    const lodging = await openPage({ page: 'lodging' });
+    lodging.places.requests[0].reply([]);
+    await lodging.settle();
+    expect(text(lodging.host.querySelector('[data-state="empty"]'))).toBe('No hay alojamientos asociados activos en este momento.');
+  });
+
+  it('opens detalle-gastronomia.html with Ver contacto: hero, name, category and the Contacto box', async () => {
+    const page = await gastronomy();
+    await page.click('Ver contacto', page.cards('establishments')[0]);
+    const venue = page.host.querySelector('[data-part="venue"]')!;
+    expect(text(venue.querySelector('.crp-offer-back'))).toBe('← Volver a gastronomía');
+    expect(text(venue.querySelector('.crp-page-header-eyebrow'))).toBe('Restaurante asociado');
+    expect(venue.querySelector('img.crp-venue-hero')?.getAttribute('src')).toBe('/assets/restaurante-asociado.jpg');
+    expect(text(venue.querySelector('h1'))).toBe('Sabores del Huila');
+    expect(text(venue.querySelector('.crp-venue-category'))).toBe('Restaurante asociado');
+    expect(text(venue.querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');
+    expect(text(venue.querySelector('.crp-venue-contact'))).toBe('Contacto Coordina directamente con el establecimiento. '
+      + UNIFIED);
+    expect(page.host.querySelector('[data-part="establishments"]')).toBeNull();
+    await page.click(/Volver a gastronomía/);
+    expect(page.cards('establishments')).toHaveLength(2);
+  });
+
+  it('opens the contact of a hotel from Alojamiento and goes back with Volver a alojamiento', async () => {
+    const page = await openPage({ page: 'lodging' });
+    page.places.requests[0].reply([placeNamed('Casa Neiva', { commercialInformation: '' })]);
+    await page.settle();
+    fireEvent.click(within(page.cards('establishments')[0]).getByRole('button', { name: 'Ver contacto' }));
+    await page.settle();
+    const venue = page.host.querySelector('[data-part="venue"]')!;
+    expect(text(venue.querySelector('.crp-venue-category'))).toBe('Alojamiento asociado');
+    expect(text(venue.querySelector('.crp-venue-info'))).toBe('Sin información adicional registrada.');
+    expect(venue.querySelector('.crp-establishment-contact')).toBeNull();
+    expect(text(venue.querySelector('.crp-venue-contact p:last-child'))).toBe(UNIFIED);
+    fireEvent.click(within(page.host).getByRole('button', { name: /Volver a alojamiento/ }));
+    await page.settle();
+    expect(text(page.host.querySelector('h1'))).toBe('Alojamiento');
+  });
+
+  const departureOf = (tourName: string, date: string, effectiveCapacity: number, over: Partial<Departure> = {}): Departure =>
+    ({ id: `dep-${date}`, tourName, date, state: 'PROGRAMADA', openForReservations: true, effectiveCapacity, transportPerPersonCents: 0, conditions: '', ...over });
+  const detailWith = async (departures?: readonly Departure[]) => {
+    const page = await openPage({ departures, areas: [CLIENT_AREA.tours, 'reserve'] });
+    page.tours.requests[0].reply([tourNamed('Canotaje en el Río Suaza')]);
+    await page.settle();
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    return { page, detail: page.host.querySelector('[data-part="detail"]')! };
+  };
+
+  it('lists the Salidas programadas of the tour with the date and the seats left, and enables Elegir salida y reservar', async () => {
+    const { page, detail } = await detailWith([
+      departureOf('Canotaje en el rio Suaza', '2026-11-21', 8), departureOf('Canotaje en el rio Suaza', '2026-12-05', 0),
+      departureOf('Ruta del café en Pitalito', '2026-11-14', 2), departureOf('Canotaje en el rio Suaza', '2026-11-01', 5, { state: 'CANCELADA' }),
+    ]);
+    expect(Array.from(detail.querySelectorAll('h2'), (h) => text(h))).toContain('Salidas programadas');
+    expect(text(detail.querySelector('.crp-offer-departures > p'))).toBe('Cada reserva corresponde a una única salida. El cupo se controla por salida y se aparta con tu primer pago.');
+    expect(Array.from(detail.querySelectorAll('.crp-offer-departures li'), (row) => text(row))).toEqual(['21 nov 2026 8 cupos disponibles', '05 dic 2026 Salida llena: sin cupos disponibles']);
+    expect(within(page.host).getByRole('button', { name: 'Elegir salida y reservar' }).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('disables the button when no departure has seats, and says there are none when the tour has no departures', async () => {
+    const full = await detailWith([departureOf('Canotaje en el Río Suaza', '2026-12-05', 0)]);
+    expect(within(full.page.host).getByRole('button', { name: 'Elegir salida y reservar' }).hasAttribute('disabled')).toBe(true);
+    TestBed.resetTestingModule();
+    const none = await detailWith([]);
+    expect(text(none.detail.querySelector('.crp-offer-departures'))).toContain('No hay salidas programadas disponibles para este tour por ahora.');
+    expect(within(none.page.host).getByRole('button', { name: 'Elegir salida y reservar' }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('draws no departures section where the container provides no departures port', async () => {
+    const { detail } = await detailWith(undefined);
+    expect(detail.querySelector('.crp-offer-departures')).toBeNull();
+    expect(detail.textContent).not.toContain('Salidas programadas');
   });
 
   it('shows no raw code, no ISO date and no booking action of HU-COM-008', async () => {

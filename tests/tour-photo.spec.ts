@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tourPhoto } from '../src/app/shared/tour-photo';
+import { establishmentPhoto, tourPhoto } from '../src/app/shared/tour-photo';
 
 describe('aTourKeepsOnePhotoByItsId', () => {
   it('gives the same tour the same self-hosted photo wherever it is drawn, and no photo without a tour', () => {
@@ -19,5 +19,12 @@ describe('aTourKeepsOnePhotoByItsId', () => {
     let hash = 0;
     for (const char of 'tour-Pitalito') hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
     expect(tourPhoto('tour-Pitalito')).toBe(photos[hash % photos.length]);
+  });
+});
+
+describe('anEstablishmentKeepsThePhotoOfItsType', () => {
+  it('shows a hotel for lodging and a restaurant for gastronomy, as alojamiento.html and gastronomia.html', () => {
+    expect(establishmentPhoto('HOTEL')).toBe('/assets/alojamiento-asociado.jpg');
+    expect(establishmentPhoto('RESTAURANT')).toBe('/assets/restaurante-asociado.jpg');
   });
 });
