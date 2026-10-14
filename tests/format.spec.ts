@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatCop, formatDate, formatDateRange, pctOff } from '../src/app/shared/format';
+import { formatCop, formatDate, formatDateRange } from '../src/app/shared/format';
+import { pctOff } from '../src/app/demo/discount-label-demo';
 
 // Authorized screens, section 3: money `$1.039.200` / `-$259.800`; dates `15 sep 2026`; ranges with " - ".
 describe('formatCop', () => {
