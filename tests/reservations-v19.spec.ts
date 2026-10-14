@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { ReservationFormComponent } from '../src/app/reservations/components/reservation-form.component';
@@ -6,6 +7,11 @@ import { ReservationsPageComponent } from '../src/app/reservations/pages/reserva
 import { Reservation } from '../src/app/reservations/model/reservation';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { ControllableReservations, StubDepartures, departureOf, reservationOf, reservationProviders, screenOf } from './reservations.double';
+
+/** The view has a required input: a host gives it before the first change detection. */
+@Component({ imports: [ReservationViewComponent], template: '<app-reservation-view [reservation]="reservation" [fresh]="fresh" />' })
+class ViewHost { static next: { reservation: Reservation; fresh: boolean }; reservation = ViewHost.next.reservation; fresh = ViewHost.next.fresh; }
+const viewOf = (reservation: Reservation, fresh: boolean, providers: unknown[]) => { ViewHost.next = { reservation, fresh }; return screenOf(ViewHost, providers); };
 
 // HU-COM-007 against the mockup of PDR v1.9: admin-crear-reserva, admin-reservas, admin-detalle-reserva, admin-reserva-registrada.
 const texts = (root: Element, selector: string) => Array.from(root.querySelectorAll(selector)).map((e) => e.textContent?.trim());
@@ -135,9 +141,7 @@ describe('reservation detail (admin-detalle-reserva)', () => {
     paymentMethod: 'BANK_TRANSFER', validatedCents: 0, deadline: { dueAt: '2026-09-16T10:00:00-05:00' } });
   async function detail(reservation: Reservation = full) {
     const departures = new StubDepartures(() => of([departureOf(1), departureOf(2, { state: 'CANCELADA' })]));
-    const view = await screenOf(ReservationViewComponent, reservationProviders({ departures }));
-    view.fixture.componentRef.setInput('reservation', reservation); await view.settle();
-    return view;
+    return viewOf(reservation, false, reservationProviders({ departures }));
   }
 
   it('shows the hero, the access note and the holder block as the mockup writes them', async () => {
@@ -179,17 +183,19 @@ describe('reservation detail (admin-detalle-reserva)', () => {
     const { element } = await detail({ ...full, status: 'CANCELADA', cancellation: { cause: 'Cancelada por falta de pago', by: 'x', at: '2026-09-15T09:00:00-05:00' } });
     expect(valueOf(element, 'Causa de cancelación')).toBe('Cancelada por falta de pago');
     expect(texts(element, 'tbody td')).toContain('No ejecutada');
-    const pending = await detail();
-    expect(texts(pending.element, 'th')).toEqual(['Servicio', 'Salida', 'Cantidad', 'Estado de ejecución']);
+  });
+
+  it('names the columns of the reserved services and the execution state of a pending reservation', async () => {
+    const { element } = await detail();
+    expect(texts(element, 'th')).toEqual(['Servicio', 'Salida', 'Cantidad', 'Estado de ejecución']);
+    expect(texts(element, 'tbody td')).toContain('Pendiente de ejecución');
   });
 });
 
 describe('registered reservation (admin-reserva-registrada)', () => {
   const created = reservationOf('RES-1847', { tourName: 'Ruta Andina', departureDate: '2026-09-18T06:30:00', paymentType: 'PARTIAL', paymentMethod: 'CASH_AT_OFFICE' });
   async function registered(reservation: Reservation = created) {
-    const view = await screenOf(ReservationViewComponent, reservationProviders());
-    view.fixture.componentRef.setInput('reservation', reservation); view.fixture.componentRef.setInput('fresh', true); await view.settle();
-    return view;
+    return viewOf(reservation, true, reservationProviders());
   }
 
   it('confirms the registration, summarises it and states the payment in words', async () => {
