@@ -159,6 +159,10 @@ const SPECIFIED_TREE = [
   'src/app/credit-balance/credit-balance-copy.ts',
   'src/app/credit-balance/data/credit-balance-ports.ts',
   'src/app/credit-balance/components/credit-balance-action.component.ts',
+  'src/app/credit-balance/components/credit-balance-links.component.ts',
+  'src/app/credit-balance/components/credit-customer-panel.component.ts',
+  'src/app/credit-balance/pages/credit-balance-page.component.ts',
+  'src/app/demo/credit-overview-demo.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
