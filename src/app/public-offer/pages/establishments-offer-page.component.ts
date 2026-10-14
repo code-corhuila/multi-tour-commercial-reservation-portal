@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } fro
 import { Subject, map } from 'rxjs';
 import { PublicEstablishmentsSource } from '../data/public-offer-sources';
 import { PublicEstablishment } from '../model/public-offer';
-import { PUBLIC_OFFER_COPY, photoAt } from '../public-offer-copy';
+import { establishmentPhoto } from '../../shared/tour-photo';
+import { PUBLIC_OFFER_COPY } from '../public-offer-copy';
 import { backToPanel, partOf, unavailable } from './public-offer-page.component';
 
 type Shown = PublicEstablishment & { readonly photo: string; readonly lines: readonly string[] };
@@ -88,7 +89,7 @@ export class EstablishmentsOfferComponent implements OnInit {
   protected readonly placesState = partOf(this.requests, () => (this.establishments?.listActive() ?? unavailable()).pipe(
     // RN-PO5: an inactive association never reaches the screen, even if the port returns it.
     map((places) => places.filter((place) => place.active && place.establishmentType === this.kind())
-      .map((place, position): Shown => ({ ...place, photo: photoAt(position + 1), lines: contactLines(place) }))),
+      .map((place): Shown => ({ ...place, photo: establishmentPhoto(place.establishmentType), lines: contactLines(place) }))),
   ), () => this.requests.next());
 
   ngOnInit(): void { this.requests.next(); }
