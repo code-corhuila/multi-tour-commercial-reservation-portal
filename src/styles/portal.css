@@ -522,7 +522,7 @@
 .crp-root .crp-reservation-changes-list div:last-child { padding-bottom: 0; border-bottom: 0; }
 .crp-root .crp-reservation-changes-list dt { color: var(--crp-soft); font-size: 0.77rem; }
 .crp-root .crp-reservation-changes-list dd { margin: 0; color: var(--crp-text); font-size: 0.82rem; font-weight: 700; text-align: right; }
-.crp-root .crp-reservation-changes-feedback { grid-column: 1 / -1; margin: 0; color: var(--crp-success); font-size: 0.8rem; font-weight: 700; line-height: 1.45; }
+.crp-root .crp-reservation-changes-feedback { grid-column: 1 / -1; margin: 0; }
 /* HU-COM-009 screen 21 (Método y plazo de pago) and screen 24 (pago-transferencia.html). */
 .crp-root .crp-checkout-payment fieldset { display: grid; gap: 10px; margin: 0 0 12px; padding: 0; border: 0; }
 .crp-root .crp-checkout-option { display: flex; gap: 12px; padding: 14px 16px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); }
