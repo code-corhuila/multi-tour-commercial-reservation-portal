@@ -6,12 +6,14 @@ import { DISCOUNT_CONTROLS, DISCOUNT_TEXT } from '../discounts-copy';
 export type DiscountValue = { type: 'PERCENTAGE'; percentageBasisPoints: number; amountCents?: never }
   | { type: 'FIXED_AMOUNT'; amountCents: number; percentageBasisPoints?: never };
 /** PROPUESTO (G-B): `tourId`, `tourName`, `capCents` and `stackable` await the published API contract (amendment A.5, pillar 11). */
+/** DP-PD2 (PROPUESTO): the badge pill of screen 11 ("Vigente", "Próximo", "Vencido", "Inactivo"), resolved by the source, never by the screen. */
+export type DiscountValidity = { readonly label: string; readonly tone: string; readonly inForce: boolean };
 export type DiscountRule = {
   readonly id: string; readonly tourId: string; readonly tourName: string; readonly percentageBasisPoints: number; readonly capCents?: number;
   readonly stackable: boolean; readonly startsOn: string; readonly endsOn: string; readonly priority: number;
-  readonly calculationBase: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly status: 'ACTIVE' | 'INACTIVE';
+  readonly calculationBase: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly status: 'ACTIVE' | 'INACTIVE'; readonly validity: DiscountValidity;
 };
-export type DiscountRuleCommand = Omit<DiscountRule, 'id' | 'status' | 'tourName'>;
+export type DiscountRuleCommand = Omit<DiscountRule, 'id' | 'status' | 'tourName' | 'validity'>;
 /** `20% de descuento`, `12,5% de descuento`. */
 export function discountValueText(rule: Pick<DiscountRule, 'percentageBasisPoints'>): string {
   const points = rule.percentageBasisPoints, decimals = String(points % 100).padStart(2, '0').replace(/0$/, '');
@@ -22,11 +24,6 @@ export function discountDetail(rule: DiscountRule): string {
   const t = DISCOUNT_TEXT;
   return `${t.until} ${formatDate(rule.endsOn)}. ${t.base} ${t.baseInline[rule.calculationBase]}. ${t.priority} ${rule.priority}, ${rule.stackable ? t.stackable : t.notStackable}.`
     + (rule.capCents ? ` ${t.cap} ${formatCop(rule.capCents)}.` : '');
-}
-/** DP-PD2 (PROPUESTO): the badge pills of screen 11, in Spanish. */
-export function discountValidity(rule: DiscountRule, today: string): { label: string; tone: string } {
-  return rule.status === 'INACTIVE' ? { label: 'Inactivo', tone: 'pending' } : today < rule.startsOn ? { label: 'Próximo', tone: 'execution' }
-    : today > rule.endsOn ? { label: 'Vencido', tone: 'finalized' } : { label: 'Vigente', tone: 'confirmed' };
 }
 export type DiscountField = 'tourId' | 'percentage' | 'calculationBase' | 'cap' | 'startsOn' | 'endsOn' | 'priority' | 'stackable';
 export type DiscountDraft = Record<DiscountField, string>;

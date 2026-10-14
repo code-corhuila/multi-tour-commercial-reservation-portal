@@ -25,6 +25,8 @@ const SPECIFIED_TREE = [
   'src/app/shared/page-state.ts',
   'src/app/shared/percentage.ts',
   'src/app/shared/portal-capabilities.ts',
+  'src/app/shared/read-error.component.ts',
+  'src/app/shared/read-failure.ts',
   'src/app/shared/session-copy.ts',
   'src/app/shared/session-identity.ts',
   'src/app/shared/tour-photo.ts',

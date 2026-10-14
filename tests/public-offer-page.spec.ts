@@ -150,7 +150,7 @@ describe('theValueComesFromTheValuePort (AC-PO.4, RN-PO4)', () => {
   it('shows the discounted value the port returns for the chosen date, with the base beside it', async () => {
     const asked: Array<readonly [PublicTour, string]> = [];
     const value = new (class extends TourValueSource {
-      override valueOf(tour: PublicTour, date: string): TourValue { asked.push([tour, date]); return { baseRateCents: tour.baseRateCents, currentValueCents: 16_200_000 }; }
+      override valueOf(tour: PublicTour, date: string): TourValue { asked.push([tour, date]); return { baseRateCents: tour.baseRateCents, currentValueCents: 16_200_000, discountLabel: '10% de descuento' }; }
     })();
     const page = await openPage({ value });
     await page.chooseDate('2026-11-22');

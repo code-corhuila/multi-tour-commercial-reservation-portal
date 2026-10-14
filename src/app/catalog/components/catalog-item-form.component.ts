@@ -6,7 +6,7 @@ import { CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescri
 import { formatCop } from '../../shared/format';
 import { focusFirstError } from '../../shared/focus';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
-import { MoneyRejection, formatMoney, parseMoney } from '../../shared/money';
+import { MoneyRejection, formatMoney, parseMoney, pesosText } from '../../shared/money';
 
 // Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
 // DP-01 (what a tour is) and G-H (who owns the operational cost).
@@ -74,17 +74,13 @@ const VALIDITY_ORDER = 'La vigencia termina antes de empezar.';
 const WHOLE_NUMBER = /^[1-9]\d*$/;
 const REQUEST_FAILED = 'La solicitud falló.';
 
-/** Whole pesos as the person would type them (`180000`); two decimals only when there are cents. */
-function moneyText(minorUnits: number): string {
-  return minorUnits % 100 === 0 ? String(minorUnits / 100) : formatMoney(minorUnits);
-}
 
 function toDraft(item: CatalogItem | undefined): Draft {
   return {
     serviceType: item?.serviceType ?? 'TOUR',
     commercialName: item?.commercialName ?? '',
-    baseRate: item ? moneyText(item.baseRateCents) : '',
-    baseOperationalCost: item ? moneyText(item.baseOperationalCostCents) : '',
+    baseRate: item ? pesosText(item.baseRateCents) : '',
+    baseOperationalCost: item ? pesosText(item.baseOperationalCostCents) : '',
     configuredCapacity: item?.configuredCapacity != null ? String(item.configuredCapacity) : '',
     validFrom: item?.validFrom ?? '',
     validTo: item?.validTo ?? '',
