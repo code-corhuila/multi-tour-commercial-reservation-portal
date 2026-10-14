@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, tap } from 'rxjs';
 import { CatalogItem } from '../../catalog/data/catalog-api.service';
@@ -62,6 +63,8 @@ let formSequence = 0;
   `,
 })
 export class CustomerFormComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   readonly kind = input.required<PersonKind>();
   readonly group = input<CustomerGroup | null>(null);
   readonly activities = input<readonly CatalogItem[]>([]);
@@ -117,7 +120,7 @@ export class CustomerFormComponent {
   protected submit(event: Event): void {
     event.preventDefault(); if (this.pending()) return;
     this.submitted.set(true); this.refused.set('');
-    if (Object.keys(validatePerson(this.draft(), this.kind(), this.highRisk(), this.group())).length) return;
+    if (Object.keys(validatePerson(this.draft(), this.kind(), this.highRisk(), this.group())).length) { this.focusFirstErrorOnRender(); return; }
     const command = personCommand(this.draft(), this.kind(), this.highRisk()), fingerprint = JSON.stringify(command);
     if (this.fingerprint !== null && this.fingerprint !== fingerprint) this.key = this.keys.generate();
     this.fingerprint = fingerprint; this.pending.set(true); this.submissions.next(command);

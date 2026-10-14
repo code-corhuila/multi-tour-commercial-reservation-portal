@@ -83,7 +83,7 @@ export const MY_PAYMENTS_CONTRIBUTIONS: Provider[] = [
   contribute(CLIENT_QUICK_ACTIONS, { component: ContinuePaymentActionComponent, order: 0, isAvailable: withPort }),
   contribute(CLIENT_QUICK_ACTIONS, { component: MyPaymentsActionComponent, order: 0.5, isAvailable: withPort }),
   contribute(CLIENT_NOTICES, { component: PaymentNoticesComponent, order: 0,
-    isAvailable: (injector) => withPort(injector) && injector.get(CustomerContext).standing === 'FINAL_CUSTOMER' }),
+    isAvailable: (injector) => withPort(injector) && injector.get(CustomerContext).isFinalCustomer }),
   contribute(RESERVATION_CARD_EXTRAS, { component: ReservationEconomicLinesComponent, order: 10, isAvailable: withPort }),
   contribute(RESERVATION_CARD_ACTIONS, { component: ReservationEconomicActionsComponent, order: 1, isAvailable: withPort }),
 ];
