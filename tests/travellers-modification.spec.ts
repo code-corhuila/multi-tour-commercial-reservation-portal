@@ -136,12 +136,12 @@ describe('travellersEntryIsProvidedThroughTheChangeTypesToken', () => {
     TestBed.configureTestingModule({ providers: [provideTravellersModification(), { provide: ModificationQuote, useValue: demo().quotes }] });
     const types = TestBed.inject(RESERVATION_CHANGE_TYPES) as readonly ReservationChangeType[];
     expect(types).toHaveLength(1);
-    expect(types[0]).toMatchObject({ key: TRAVELLERS_MODIFICATION_KEY, label: 'Modificación de viajeros', submittable: false, form: TravellersModificationFormComponent });
+    expect(types[0]).toMatchObject({ key: TRAVELLERS_MODIFICATION_KEY, label: 'Modificación de servicio, salida o viajeros', submittable: false, form: TravellersModificationFormComponent });
   });
 
   it('lists Tipo as Cancelación then Modificación de viajeros on the screen of HU-COM-013', async () => {
     const s = await render(ReservationChangePageComponent, pageProviders());
-    expect(Array.from(s.host.querySelectorAll('select option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de viajeros']);
+    expect(Array.from(s.host.querySelectorAll('select option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de servicio, salida o viajeros']);
   });
 
   it('is wired in the demo build: from 10A the option answers the tour policy', async () => {
@@ -342,7 +342,7 @@ describe('travellersOptionDrawsNoFieldAndSpanishCopy', () => {
       .map((f) => withoutComments(readFileSync(f, 'utf8'))).join('\n');
     expect(code).not.toMatch(/alojamiento|hospedaje|fecha de salida|Pendiente de parametrización comercial/i);
     const copy = readFileSync('src/app/reservation-changes/travellers-modification/travellers-modification-copy.ts', 'utf8');
-    expect(copy).toContain('Modificación de viajeros');
+    expect(copy).toContain('Modificación de servicio, salida o viajeros');
     expect(copy).toMatch(/política|modificación/);
   });
 });
