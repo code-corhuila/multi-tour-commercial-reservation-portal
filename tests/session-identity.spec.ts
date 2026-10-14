@@ -111,3 +111,39 @@ describe('theDemoOffersASessionWithAName (?demoFixtures=named-session)', () => {
     expect(host.querySelector('.crp-client-avatar')?.textContent?.trim()).toBe('CR');
   });
 });
+
+describe('thePerfilButtonAndTheAvatarOpenTheProfileOfTheIdentityPortal (profile.html belongs to D-01)', () => {
+  let host: HTMLElement;
+  let cleanup: (() => void) | undefined;
+  const mountWith = (navigate?: MountProps['navigate']) => {
+    host = document.createElement('div');
+    document.body.append(host);
+    const props: MountProps = { apiClient: { request: vi.fn() } as never, session: { roles: ['FINAL_CUSTOMER'], displayName: 'Camila Restrepo', ...NO_OP }, ...(navigate ? { navigate } : {}) };
+    cleanup = entry.mountWith(host, props, demoSources);
+    return vi.waitFor(() => expect(host.querySelector('.crp-panel-hero h1')).toBeTruthy());
+  };
+  afterEach(() => { cleanup?.(); host.remove(); });
+
+  it('asks the container to navigate to the profile from the avatar and from the dark Perfil button of the site header', async () => {
+    const navigate = vi.fn();
+    await mountWith(navigate);
+    host.querySelector<HTMLButtonElement>('.crp-client-panel-header button.crp-client-avatar')!.click();
+    expect(navigate).toHaveBeenLastCalledWith({ portal: 'identity-audit-portal', area: 'profile' });
+    Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-client-panel-header button')).find((b) => b.textContent?.trim() === 'Ver catálogo')!.click();
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-actions')).toBeTruthy());
+    const labels = Array.from(host.querySelectorAll('.crp-client-actions button'), (b) => b.textContent?.trim());
+    expect(labels).toEqual(['Mis reservas', 'Perfil']);
+    host.querySelector<HTMLButtonElement>('.crp-client-actions button.crp-client-profile')!.click();
+    expect(navigate).toHaveBeenCalledTimes(2);
+  });
+
+  it('draws neither the Perfil button nor a clickable avatar when the container offers no navigate', async () => {
+    await mountWith();
+    expect(host.querySelector('button.crp-client-avatar')).toBeNull();
+    expect(host.querySelector('.crp-client-avatar')?.getAttribute('role')).toBe('img');
+    Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-client-panel-header button')).find((b) => b.textContent?.trim() === 'Ver catálogo')!.click();
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-actions')).toBeTruthy());
+    expect(host.textContent).not.toMatch(/Perfil(?! del usuario)/);
+    expect(host.querySelector('.crp-client-profile')).toBeNull();
+  });
+});
