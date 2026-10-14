@@ -245,7 +245,7 @@
   .crp-root .self-service-card-status { justify-items: start; }
 }
 /* Client layout of tours.html: header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. Header and footer stay in the portal element (001- HC-3): content centred in 1320px by the padding, no bleed, no sticky. */
-.crp-root .crp-client-shell { display: flex; flex-direction: column; min-height: 100%; background: var(--crp-bg); color: var(--crp-text); }
+.crp-root .crp-client-shell { display: flex; flex-direction: column; min-height: 100%; background: var(--crp-surface); color: var(--crp-text); }
 .crp-root .crp-client-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; padding: 10px 0; padding-inline: max(24px, calc((100% - 1320px) / 2)); background: rgba(255, 255, 255, 0.92); border-bottom: 1px solid #e6ebe9; box-shadow: 0 1px 0 rgba(23, 37, 43, 0.02), 0 6px 18px rgba(23, 37, 43, 0.04); }
 .crp-root .crp-client-header button, .crp-root .crp-client-panel-header button { min-height: 36px; padding: 0 4px; border: 0; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
 .crp-root .crp-client-header button:hover:not(:disabled), .crp-root .crp-client-panel-header button:hover:not(:disabled) { color: var(--crp-accent-strong); }
@@ -312,7 +312,8 @@
 .crp-root .crp-offer-head .crp-offer-search button:hover:not(:disabled) { background: #000000; }
 .crp-root .crp-offer-head .crp-offer-date { min-height: 46px; padding: 0 16px; border: 0; border-left: 1px solid var(--crp-line); border-radius: 0; }
 .crp-root .crp-offer-back { gap: 6px; min-height: 36px; margin-bottom: 18px; padding: 0; border: 0; background: none; color: #4b5a60; font-size: 0.88rem; font-weight: 600; }
-.crp-root .crp-offer-back > span:first-child { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 0; background: transparent; color: inherit; }
+.crp-root .crp-offer-back > span:first-child { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 0; background: transparent; color: transparent; font-size: 0; }
+.crp-root .crp-offer-back > span:first-child::before { content: ""; width: 8px; height: 8px; margin-left: 3px; border-bottom: 1.6px solid #4b5a60; border-left: 1.6px solid #4b5a60; transform: rotate(45deg); }
 .crp-root .crp-offer-head .crp-page-header-main { gap: 24px; }
 .crp-root .crp-offer-head .crp-page-header-eyebrow { color: #17252b; font-size: 1rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .crp-root .crp-offer-head .crp-page-header-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -321,49 +322,55 @@
 .crp-root .crp-offer-date input[type="date"] { width: auto; min-height: 0; padding: 0; border: 0; color: #17252b; font-size: 0.9rem; letter-spacing: 0; text-transform: none; }
 .crp-root .crp-offer-section { margin-top: 22px; }
 .crp-root .crp-offer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
-.crp-root .crp-tour-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #d7e0de; border-radius: 22px; background: #ffffff; box-shadow: 0 18px 34px rgba(28, 35, 38, 0.04); }
-.crp-root .crp-tour-media { position: relative; overflow: hidden; aspect-ratio: 3 / 2; background: #e7eeeb; }
+.crp-root .crp-tour-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e3e7e6; border-radius: 14px; background: #ffffff; box-shadow: 0 2px 10px rgba(23, 37, 43, 0.04); }
+.crp-root .crp-tour-media { position: relative; overflow: hidden; height: 140px; background: #e7eeeb; }
 .crp-root .crp-tour-media img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 .crp-root .crp-tour-media .crp-tour-discount-tag { position: absolute; top: 14px; left: 14px; }
-.crp-root .crp-tour-discount-tag { justify-self: start; display: inline-flex; align-items: center; width: max-content; min-height: 30px; padding: 0 10px; border-radius: 999px; background: #2f6b57; color: #ffffff; font-size: 0.76rem; font-weight: 800; }
-.crp-root .crp-tour-body { display: grid; flex: 1; align-content: start; gap: 10px; padding: 18px 16px; }
-.crp-root .crp-tour-body strong { padding-bottom: 12px; border-bottom: 1px solid #e7ece9; color: #17252b; font-size: 1.05rem; line-height: 1.45; }
+.crp-root .crp-tour-discount-tag { justify-self: start; display: inline-flex; align-items: center; width: max-content; min-height: 28px; padding: 0 10px; border-radius: 999px; background: #2f6b57; color: #ffffff; font-size: 0.76rem; font-weight: 800; }
+.crp-root .crp-tour-body { display: grid; flex: 1; align-content: start; gap: 8px; padding: 12px 14px 14px; }
+.crp-root .crp-tour-body strong { padding-bottom: 10px; border-bottom: 1px solid #eef1f0; color: #17252b; font-size: 0.95rem; line-height: 1.35; }
 .crp-root .crp-tour-card .crp-tour-body strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crp-root .crp-tour-meta { display: flex; flex-wrap: nowrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
-.crp-root .crp-tour-meta button { font-size: 1rem; flex: none; border-color: #d7e0de; border-radius: 14px; background: #ffffff; color: #17252b; }
+.crp-root .crp-tour-meta button { min-height: 32px; padding: 0 12px; font-size: 0.8rem; font-weight: 600; flex: none; border-color: #d7e0de; border-radius: 8px; background: #ffffff; color: #17252b; }
 .crp-root .crp-tour-price { display: grid; gap: 2px; }
-.crp-root .crp-tour-price small { color: #7a8588; }
+.crp-root .crp-tour-price small { color: #7a8588; font-size: 0.74rem; }
 .crp-root .crp-tour-price del { color: #667277; font-weight: 700; }
-.crp-root .crp-tour-price em, .crp-root .crp-offer-from { color: #2f6b57; font-style: normal; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em; }
-.crp-root .crp-establishment-info, .crp-root .crp-establishment-contact { margin: 0; color: #17252b; }
+.crp-root .crp-tour-price em, .crp-root .crp-offer-from { color: #2f6b57; font-style: normal; font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; }
+.crp-root .crp-establishment-info, .crp-root .crp-establishment-contact { margin: 0; color: #17252b; font-size: 0.82rem; line-height: 1.45; }
 .crp-root .crp-establishment-contact span:not(:first-of-type) { display: block; }
-.crp-root .crp-establishment-type { color: #5a6b70; font-size: 0.94rem; }
-.crp-root .crp-offer-agreement { margin: 22px 0 0; padding: 24px; border: 1px solid #ece6d8; border-radius: 16px; background: #fffdf7; color: var(--crp-soft); }
-.crp-root .crp-offer-agreement h2 { margin: 4px 0; color: #17252b; font-size: 1.1rem; }
-.crp-root .crp-offer-agreement p { margin: 0; }
+.crp-root .crp-establishment-type { color: #5a6b70; font-size: 0.8rem; }
+.crp-root .crp-offer-agreement { margin: 14px 0 0; padding: 12px 16px; border: 1px solid #e3e7e6; border-left: 3px solid #17252b; border-radius: 10px; background: #f7f9f8; color: #4b5a60; font-size: 0.82rem; line-height: 1.5; }
+.crp-root .crp-offer-agreement h2 { margin: 0 0 4px; color: #17252b; font-size: 0.95rem; line-height: 1.3; }
+.crp-root .crp-offer-agreement p { margin: 0; max-width: 86ch; }
 .crp-root .crp-offer-agreement-eyebrow, .crp-root .crp-offer-summary-eyebrow, .crp-root .crp-offer-facts dt { color: #5a6b70; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
-.crp-root .crp-offer-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 28px; align-items: start; margin-top: 16px; padding-top: 22px; border-top: 1px solid #d7e0de; }
-.crp-root .crp-offer-detail h1 { margin: 0; font-size: clamp(2rem, 1.6rem + 1.4vw, 2.8rem); letter-spacing: -0.04em; }
-.crp-root .crp-offer-detail h2 { margin: 24px 0 12px; color: #17252b; font-size: 1.35rem; }
+.crp-root .crp-offer-agreement-eyebrow { margin-bottom: 2px; font-size: 0.68rem; letter-spacing: 0.1em; color: #6b7a80; }
+.crp-root .crp-offer-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 28px; align-items: start; margin-top: 12px; padding-top: 22px; border-top: 1px solid #e3e7e6; }
+.crp-root .crp-offer-detail h1 { margin: 0; font-size: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.crp-root .crp-offer-detail h2 { margin: 20px 0 10px; color: #17252b; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
 .crp-root .crp-offer-facts { display: grid; gap: 12px; margin: 0; }
-.crp-root .crp-offer-facts div { padding: 16px 18px; border: 1px solid #d7e0de; border-radius: 14px; background: #fbfcfc; }
-.crp-root .crp-offer-facts dd { margin: 4px 0 0; color: #17252b; font-weight: 800; }
-.crp-root .crp-offer-conditions { margin-top: 22px; padding: 4px 24px 18px; border: 1px solid #cfe3dc; border-radius: 20px; background: #f4faf8; }
+.crp-root .crp-offer-facts div { padding: 10px 14px; border: 1px solid #e3e7e6; border-radius: 10px; background: #fafbfa; }
+.crp-root .crp-offer-facts dd { margin: 2px 0 0; color: #17252b; font-size: 0.95rem; font-weight: 500; }
+.crp-root .crp-offer-conditions { margin-top: 22px; padding: 4px 18px 14px; border: 1px solid #e3e7e6; border-radius: 12px; background: #f7f9f8; }
+.crp-root .crp-offer-conditions h2 { margin: 12px 0 6px; font-size: 0.95rem; }
+.crp-root .crp-offer-conditions ul { margin: 0; padding-left: 18px; color: #4b5a60; font-size: 0.84rem; line-height: 1.6; }
 .crp-root .crp-offer-departures { margin-top: 22px; }
 .crp-root .crp-offer-departures ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
-.crp-root .crp-offer-departures li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid #d7e0de; border-radius: 14px; background: #fbfcfc; }
-.crp-root .crp-offer-summary { display: grid; gap: 10px; padding: 24px; border: 1px solid #d7e0de; border-radius: 20px; background: #ffffff; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.06); }
+.crp-root .crp-offer-departures li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid #e3e7e6; border-radius: 10px; background: #ffffff; font-size: 0.88rem; }
+.crp-root .crp-offer-departures p { margin: 0; color: #4b5a60; font-size: 0.84rem; }
+.crp-root .crp-offer-summary { display: grid; gap: 12px; padding: 18px; border: 1px solid #e3e7e6; border-radius: 14px; background: #ffffff; box-shadow: 0 4px 16px rgba(23, 37, 43, 0.06); }
 .crp-root .crp-offer-summary p { margin: 0; }
 .crp-root .crp-offer-summary-price { display: grid; gap: 4px; }
-.crp-root .crp-offer-summary-price small { color: #667277; font-size: 0.84rem; font-weight: 700; }
-.crp-root .crp-offer-summary .crp-offer-from { font-size: 1.7rem; }
-.crp-root .crp-offer-validity { color: #26363a; font-size: 0.94rem; }
-.crp-root .crp-offer-reserve { font-size: 1rem; min-height: 48px; border-radius: 12px; font-weight: 800; }
+.crp-root .crp-offer-summary-price small { color: #5a6b70; font-size: 0.78rem; font-weight: 600; }
+.crp-root .crp-offer-summary .crp-offer-from { color: #17252b; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+.crp-root .crp-offer-summary .crp-tour-discount-tag { min-height: 22px; padding: 0 9px; font-size: 0.68rem; font-weight: 700; }
+.crp-root .crp-offer-validity { color: #5a6b70; font-size: 0.8rem; }
+.crp-root .crp-offer-reserve { min-height: 42px; padding: 0 20px; border-color: #17252b; border-radius: 8px; background: #17252b; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.01em; }
+.crp-root .crp-offer-reserve:hover:not(:disabled) { background: #000000; }
 .crp-root .crp-offer-grid.crp-offer-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .crp-root .crp-offer-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .crp-root .crp-offer-filters button { min-height: 38px; padding: 0 14px; border: 1px solid #d7e0de; border-radius: 999px; background: #ffffff; color: #45555c; font-size: 0.9rem; font-weight: 700; }
 .crp-root .crp-offer-filters button.crp-is-active { border-color: #17252b; background: #17252b; color: #ffffff; }
-.crp-root .crp-offer-link { justify-self: start; min-height: 0; padding: 0; border: 0; background: none; color: #2f6b57; font-weight: 700; }
+.crp-root .crp-offer-link { justify-self: end; min-height: 32px; margin-top: 4px; padding: 0 12px; border: 1px solid #d7e0de; border-radius: 8px; background: #ffffff; color: #17252b; font-size: 0.8rem; font-weight: 600; }
 .crp-root .crp-venue-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #d7e0de; }
 .crp-root .crp-venue-top .crp-offer-back { margin-bottom: 0; }
 .crp-root .crp-venue-hero { display: block; width: 100%; height: clamp(180px, 26vw, 290px); margin-top: 26px; border-radius: 16px; object-fit: cover; box-shadow: 0 18px 34px rgba(28, 35, 38, 0.06); }
@@ -620,3 +627,20 @@
 .crp-root .self-service-card-copy strong.crp-status { font-size: 0.72rem; }
 .crp-root .self-service-card > crp-rescheduling-card-action { grid-column: 1 / -1; }
 .crp-root .crp-rescheduling-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+
+/* Client screens refined as the landing (main.css, "Refinamiento a zoom 100 %"): delicate type, soft cards, no heavy shadows. */
+.crp-root .crp-panel-hero h1, .crp-root .self-service-panel .crp-page-header-title { font-size: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.crp-root .self-service-panel .crp-page-header-desc, .crp-root .crp-panel-hero > p { font-size: 0.9rem; line-height: 1.55; }
+.crp-root .crp-panel-layout h2, .crp-root .crp-panel-featured h2, .crp-root .crp-my-payments h2, .crp-root .self-service-panel h2 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
+.crp-root .crp-panel-card, .crp-root .self-service-card, .crp-root .crp-my-payments-card { padding: 16px 18px; border-color: #e3e7e6; border-radius: 14px; box-shadow: 0 2px 10px rgba(23, 37, 43, 0.04); }
+.crp-root .crp-panel-featured li, .crp-root .crp-panel-promo { border-color: #e3e7e6; border-radius: 14px; }
+.crp-root .crp-panel-search { border-color: #e3e7e6; border-radius: 14px; }
+.crp-root .crp-panel-card strong, .crp-root .self-service-card-copy strong { font-size: 1rem; font-weight: 700; }
+.crp-root .self-service-card-copy p, .crp-root .crp-panel-card p { font-size: 0.86rem; }
+.crp-root .crp-my-payments-card-lines small, .crp-root .self-service-card small { font-size: 0.8rem; line-height: 1.45; }
+.crp-root .crp-panel-featured-meta em { font-size: 1.15rem; font-weight: 700; }
+.crp-root .crp-panel-featured-body strong { font-size: 0.95rem; font-weight: 700; }
+.crp-root .crp-panel-promo-tag, .crp-root .crp-panel-card-pill { font-size: 0.72rem; font-weight: 700; }
+.crp-root .self-service-card::after { content: none; }
+.crp-root .crp-my-payments-card-actions .crp-outline { border-color: transparent; background: transparent; color: var(--crp-accent-strong); font-size: 0.8rem; font-weight: 600; }
+.crp-root .crp-my-payments-card-actions button { min-height: 34px; padding: 0 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
