@@ -20,11 +20,25 @@ export interface ApiError {
   userMessage: string;
 }
 
+/**
+ * The session of the container; a LOCAL copy of `MountSession` in multi-tour-front `core/client/types.ts` (HU-FRT-001 amendment 003,
+ * D-04: the portal never imports the container). Both name fields are optional: an older container sends only `roles`.
+ */
+export interface MountSession {
+  readonly roles: string[];
+  /** Name to greet the person with. Absent when the container does not know it. */
+  displayName?: string;
+  /** One or two uppercase letters for the avatar; the portal derives them from displayName when absent. */
+  initials?: string;
+  open(answer: unknown): void;
+  close(): void;
+}
+
 /** What the container hands to `mount` (ADR-006 F4); mirrors multi-tour-front `core/client/types.ts`. */
 export interface MountProps {
   identifier?: string;
   apiClient: { request<T>(path: string, init?: unknown): Promise<T> };
-  session: { readonly roles: string[]; open(answer: unknown): void; close(): void };
+  session: MountSession;
   /** PROPUESTO for ADR-007 (008- H-D10): parameters the container keeps across a remount, e.g. a selection in progress. */
   initialParams?: Readonly<Record<string, string>>;
 }

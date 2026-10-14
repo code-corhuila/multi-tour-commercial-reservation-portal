@@ -6,6 +6,8 @@ import { PortalNavigation } from './portal-navigation';
 import { focusHeading } from './shared/focus';
 import { CLIENT_NOTICES, PortalSlotOutlet, slotEntries } from './shared/portal-slots';
 import { PortalCapabilities } from './shared/portal-capabilities';
+import { SESSION_TEXT } from './shared/session-copy';
+import { SESSION_IDENTITY } from './shared/session-identity';
 
 /**
  * Shell of the authorized screens, drawn from PORTAL_AREAS: the operator sidebar for an operator, the client
@@ -52,6 +54,7 @@ import { PortalCapabilities } from './shared/portal-capabilities';
                     </div>
                   </div>
                 }
+                <span class="crp-client-avatar" role="img" [attr.aria-label]="avatarLabel">{{ initials }}</span>
               </div>
             </header>
           }
@@ -109,6 +112,8 @@ export class PortalShellComponent {
   protected readonly screen = computed(() => ({ area: this.current(), visit: this.navigation.visit() }));
   /** The sidebar item marked active: the parent of an open sub-screen, or the open area itself. */
   protected readonly active = computed(() => this.current()?.parent ?? this.current()?.key);
+  protected readonly initials = inject(SESSION_IDENTITY).initials;
+  protected readonly avatarLabel = SESSION_TEXT.avatarLabel;
   protected readonly roleLabel = inject(PortalCapabilities).roleLabel();
   private readonly drawn = (links: readonly ClientLink[]) => links.filter((link) => this.areas.some((area) => area.key === link.key));
   protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);
