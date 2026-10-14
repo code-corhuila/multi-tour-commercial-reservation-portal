@@ -380,3 +380,15 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
     expect(cancelled.textContent).toContain('Cancelada');
   });
 });
+
+describe('aCorrectedCancellationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('changes the key when the cause is corrected', async () => {
+    const writer = new ControllableWriter();
+    const s = await page({ writer });
+    await s.type('Viaje aplazado'); await s.submit();
+    writer.calls[0].fail(); await s.settle();
+    await s.type('El cliente desiste'); await s.submit();
+    const [first, second] = writer.calls.map((c) => c.command.idempotencyKey);
+    expect(second).not.toBe(first);
+  });
+});
