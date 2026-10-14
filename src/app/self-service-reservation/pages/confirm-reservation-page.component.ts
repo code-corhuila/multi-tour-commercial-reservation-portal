@@ -10,6 +10,8 @@ import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injec
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
 import { tourPhoto } from '../../shared/tour-photo';
+import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
+import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
 
@@ -142,8 +144,8 @@ export class ConfirmReservationPageComponent {
   private readonly requester = inject(ReservationRequester);
   private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
-  /** Plan D-05: one key per intention, made when the confirmation opens and kept across retries. */
-  private key = this.keys.generate();
+  /** Plan D-05: the key follows the body: kept across retries of the same data, new when the data is corrected. */
+  private readonly intention = new IntentionKey(this.keys);
   protected readonly method = signal('');
   protected readonly accepted = signal({ conditions: false, terms: false });
   protected readonly missing = signal(false);
@@ -187,7 +189,7 @@ export class ConfirmReservationPageComponent {
     if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
-    defer(() => this.requester.request(selection, this.method(), this.key)).pipe(
+    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method() }))).pipe(
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({

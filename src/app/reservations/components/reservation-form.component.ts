@@ -13,6 +13,7 @@ import {
   Departure, LeadCustomer, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, Reservation, ReservationDraft, ServiceOption,
   capacityMessage, money, openDepartures, peopleOf, seats, validateReservation,
 } from '../model/reservation';
+import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 
 type Options = { departures: readonly Departure[]; customers: readonly LeadCustomer[]; services: readonly ServiceOption[] };
 type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; options: Options };
@@ -126,8 +127,8 @@ export class ReservationFormComponent {
   private readonly departures = inject(DeparturesSource); private readonly customers = inject(LeadCustomersSource);
   private readonly catalog = inject(CatalogItemsSource); private readonly discounts = inject(ReservationDiscounts);
   private readonly writer = inject(ReservationsWriter); private readonly lifetime = inject(DestroyRef);
-  /** One key per opening of the form, reused by every retry of this intention (AC-RC.8). */
-  private readonly key = inject(IdempotencyKeys).generate();
+  /** The key follows the body: reused by every retry of the same data, new when the person corrects it (AC-RC.8). */
+  private readonly intention = new IntentionKey(inject(IdempotencyKeys));
   protected readonly text = RESERVATION_TEXT;
   protected readonly money = money;
   protected readonly date = formatDate;
@@ -201,7 +202,7 @@ export class ReservationFormComponent {
     // 007- H-D8: the command carries no value; the service quotes again and is the authority.
     const command = { leadCustomerId: d.leadCustomerId, departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod };
     this.pending.set(true);
-    defer(() => this.writer.create(command, this.key)).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
+    defer(() => this.writer.create(command, this.intention.keyFor(command))).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
       next: (reservation) => this.created.emit(reservation),
       error: (error: Partial<ApiError> | null) => error?.code === 'insufficient-capacity'
         ? this.refusedForCapacity.set(capacityMessage(departure)) : this.failure.set(error?.userMessage ?? this.text.failed),
