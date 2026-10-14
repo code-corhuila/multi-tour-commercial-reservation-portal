@@ -353,10 +353,13 @@ describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
     try {
       await vi.waitFor(() => press(host, 'CP Continuar pago Continúa el pago pendiente de una de tus reservas.'));
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Pago por transferencia'));
-      expect(flat(host.textContent)).toContain('Código de referencia: #RES-1842');
+      expect(flat(host.textContent)).toContain('Reserva #RES-1842');
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;
       Object.defineProperty(proof, 'files', { value: [pdf()], configurable: true }); proof.dispatchEvent(new Event('change'));
       press(host, 'Enviar comprobante para validación');
+      // The proof closes on 22, Comprobante recibido, which does not confirm the reservation; the panel is one click away.
+      await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Comprobante recibido'));
+      press(host, 'Volver al panel');
       await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-client-bell-panel .crp-client-bell-list p'), (p) => flat(p.textContent)).filter((t) => t.includes('En validación'))).toEqual([
         'Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.',
         'Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.']));

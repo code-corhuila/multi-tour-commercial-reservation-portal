@@ -33,6 +33,8 @@ import { CancellationQuote, CancellationWriter } from './reservation-changes/dat
 import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
 import { TransferPaymentPageComponent } from './payments/pages/transfer-payment-page.component';
+import { PaymentReceivedPageComponent, PaymentRejectedPageComponent } from './payments/pages/payment-result-pages.component';
+import { PAYMENT_RESULT_AREA } from './payments/payment-result-copy';
 import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
 import { PaymentsPageComponent } from './payments/pages/payments-page.component';
 import { ValidateProofPageComponent } from './payments/pages/validate-proof-page.component';
@@ -135,6 +137,12 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-009 pago-transferencia.html (24): opened by Continuar al pago of 21 with { reservation, type, amount }.
   { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource, PaymentsWriter, PaymentMethodsSource) },
+  // HU-COM-009 pago-exitoso.html (22, "Comprobante recibido") and pago-fallido.html (23, "Comprobante rechazado"), PROPUESTO: opened with { reservation };
+  // 22 by the proof sent on 24, 23 by whoever knows a proof was rejected. They read the own reservation through Mis pagos' port.
+  { key: PAYMENT_RESULT_AREA.received, label: 'Comprobante recibido', component: PaymentReceivedPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
+  { key: PAYMENT_RESULT_AREA.rejected, label: 'Comprobante rechazado', component: PaymentRejectedPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
   // HU-COM-010 admin-pagos.html (13), item Pagos of the mockup's sidebar, and admin-validar-soporte.html opened with { reservation, payment }.
   { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
   { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent, menu: false, parent: 'payments',

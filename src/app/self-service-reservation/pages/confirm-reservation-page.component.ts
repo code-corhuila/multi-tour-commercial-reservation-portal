@@ -64,6 +64,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                   @for (m of current.methods; track m.code) { <option [value]="m.code">{{ m.label }}</option> }
                 </select>
                 <p id="self-service-method-error" class="self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
+                @if (text.methodHint[method()]; as hint) { <p class="self-service-note">{{ hint }}</p> }
               </article>
               <ng-container *crpSlot="checkout; inputs: { quote: current.quote, method: method(), reservation: created() }" />
               @if (standing === 'OTHER') { <p role="status">{{ text.notCustomer }}</p> }
@@ -100,7 +101,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
           <div class="crp-booking-bar-selection"><span>{{ text.barSelected }}</span>&ngsp;<strong>{{ date(current.quote.departureAt) }} - {{ travelers(selection!.people) }}</strong></div>
           @if (created()) {
             @if (mine) { <button type="button" class="crp-primary crp-booking-continue" (click)="mine.open(area.reservations)">{{ text.seeMine }}</button> }
-          } @else if (standing !== 'OTHER') { <button type="submit" class="crp-primary crp-booking-continue" [disabled]="pending()">{{ text.confirm }}</button> }
+          } @else if (standing !== 'OTHER') { <button type="submit" class="crp-primary crp-booking-continue" [disabled]="pending()">{{ method() === cash ? text.confirmCash : text.confirm }}</button> }
         </aside>
       }
     </form>
@@ -114,6 +115,7 @@ export class ConfirmReservationPageComponent {
   protected readonly companions = companions;
   protected readonly photo = tourPhoto;
   protected readonly flow = RESERVATION_FLOW;
+  protected readonly cash = 'CASH_AT_OFFICE';
   /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
   protected readonly checkout = CHECKOUT_BLOCKS;
   protected readonly holder = [

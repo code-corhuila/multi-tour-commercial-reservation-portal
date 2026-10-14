@@ -34,21 +34,30 @@ export const PAYMENTS_TEXT = {
   proofStatus: { EN_VALIDACION: 'En validación', SIN_COMPROBANTE: 'Sin comprobante', APROBADO: 'Aprobado', RECHAZADO: 'Rechazado' } as Readonly<Record<string, string>>,
 };
 
+/** `1 viajero`, `2 viajeros` (screens 22, 23 and 24 write it as the mockup does). */
+export const viajeros = (people: number) => `${people} ${people === 1 ? 'viajero' : 'viajeros'}`;
+
 /** Texts of the method block of 21 (finalizar-reserva.html) and of 24 (pago-transferencia.html), as the mockup writes them. */
 export const CUSTOMER_PAYMENT_TEXT = {
-  blockTitle: 'Método y plazo de pago', typeTitle: 'Tipo de pago', deposit: 'Monto a abonar', depositPlaceholder: 'Ej. 500000',
-  typeHint: { TOTAL: 'Completa el valor final de la reserva.', PARTIAL: 'Confirma según el abono mínimo parametrizado y conserva el saldo pendiente.' } as Readonly<Record<string, string>>,
+  blockTitle: 'Tipo de pago y plazo', typeTitle: 'Tipo de pago (la condición económica de la reserva)', deposit: 'Monto a abonar', depositPlaceholder: 'Ej. 500000',
+  typeHint: { TOTAL: 'Se confirma cuando se valida el 100 % del valor final, en uno o varios pagos.', PARTIAL: 'Se confirma cuando se valida como mínimo el abono mínimo del servicio; el saldo queda pendiente con plazo propio.' } as Readonly<Record<string, string>>,
   depositHint: 'El abono mínimo se calcula sobre el valor final después de aplicar descuentos. El saldo pendiente se calcula con base en el valor efectivamente abonado.',
   depositInvalid: 'Ingresa un monto de abono válido (mayor a cero y hasta el valor final).',
-  cashOption: 'El pago en efectivo será registrado por el equipo del operador.',
-  cashHint: 'El pago en efectivo no confirma la reserva hasta que el dinero sea recibido y registrado por el equipo del operador.',
-  transferHint: 'La transferencia queda pendiente de revisión mediante comprobante.', continue: 'Continuar al pago',
+  cashHint: 'Elegir efectivo registra solo una promesa de pago: no es un pago validado, no confirma la reserva y no aparta cupo. La reserva queda Pendiente de pago y únicamente cuenta cuando el equipo del operador reciba y registre el dinero dentro del plazo.',
+  transferHint: 'La reserva sigue Pendiente de pago hasta que un usuario autorizado valide tu pago. El comprobante (PDF, JPG, JPEG o PNG, máximo 5 MB) queda En validación únicamente cuando lo envías.', continue: 'Continuar al pago',
+  /** Rules of pago-transferencia.html with no date: the plazo itself is the service's (blocked by contract: no deadline port at creation). */
+  deadline: ['Límite absoluto: ningún plazo supera la hora de inicio de la salida; desde esa hora no se admiten pagos ni comprobantes. Si no se cumple el pago en el plazo, la reserva se cancela automáticamente y el cupo se libera.',
+    'Si presentas un comprobante dentro del plazo, la reserva no se cancela mientras esté En validación. El cupo se aparta con tu primer pago, no al crear la reserva.'],
+  balanceRule: 'Saldo del abono: una vez Confirmada, debes completarlo y que sea validado antes del plazo configurado por el operador; nunca después de la hora de inicio de la salida.',
   title: 'Pago por transferencia', reservation: 'Reserva',
-  alert: 'Realiza la transferencia y sube obligatoriamente la imagen del comprobante. El archivo queda En validación y no es ingreso de caja hasta que el Administrador lo apruebe.',
+  alert: 'Realiza la transferencia y sube el comprobante. El comprobante queda En validación solo cuando lo envías; no es ingreso de caja ni confirma la reserva hasta que un usuario del operador con el permiso Validar comprobantes lo valide, en un plazo máximo de 24 horas corridas.',
+  typeName: { TOTAL: 'Pago total', PARTIAL: 'Abono' } as Readonly<Record<string, string>>, transferMethod: ' · Transferencia',
+  yourReservation: 'Tu reserva', tour: 'Tour', departure: 'Salida', travelers: 'Viajeros', typeAndMethod: 'Tipo y medio de pago', toTransfer: 'Valor a transferir',
+  seatNote: 'Si es tu primer pago, el cupo se verifica y se aparta al recibir el comprobante, antes de aceptarlo. Si ya no hay cupo, te lo informaremos y no se recibirá el comprobante.',
   bankTitle: 'Datos bancarios', bank: 'Banco', accountType: 'Tipo de cuenta', accountNumber: 'Número de cuenta', holder: 'Titular',
-  proofTitle: 'Comprobante obligatorio', reference: 'Código de referencia:', proof: 'Imagen del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)',
-  proofState: 'Estado del comprobante:', financial: 'Situación financiera:', send: 'Enviar comprobante para validación', panel: 'Volver al panel',
-  chooseProof: 'Selecciona un comprobante para continuar.', validProof: 'Archivo válido. El comprobante quedará En validación hasta su revisión.',
+  proofTitle: 'Comprobante de pago', proof: 'Archivo del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)',
+  proofState: 'Estado del comprobante:', financial: 'Situación financiera:', send: 'Enviar comprobante para validación', panel: 'Volver a mis reservas',
+  chooseProof: 'Selecciona un comprobante para continuar.', validProof: 'Archivo válido. El comprobante quedará En validación solo cuando lo envíes.',
   none: 'No hay una reserva pendiente de transferencia. Vuelve a Explorar para crear una reserva.',
 };
 

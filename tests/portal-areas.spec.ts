@@ -28,6 +28,7 @@ import { MyReservationsPageComponent } from '../src/app/self-service-reservation
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { PaymentManagementPageComponent } from '../src/app/payments/pages/payment-management-page.component';
 import { TransferPaymentPageComponent } from '../src/app/payments/pages/transfer-payment-page.component';
+import { PaymentReceivedPageComponent, PaymentRejectedPageComponent } from '../src/app/payments/pages/payment-result-pages.component';
 import { ReschedulingPageComponent } from '../src/app/rescheduling/pages/rescheduling-page.component';
 import { ReschedulingProposalPageComponent } from '../src/app/rescheduling/pages/rescheduling-proposal-page.component';
 import { actorAs } from './actor-context.double';
@@ -109,6 +110,8 @@ describe('portalAreasRegistry', () => {
       { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
       { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
       { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
+      { key: 'payment-received', label: 'Comprobante recibido', component: PaymentReceivedPageComponent },
+      { key: 'payment-rejected', label: 'Comprobante rechazado', component: PaymentRejectedPageComponent },
       { key: 'payments', label: 'Pagos', component: PaymentsPageComponent },
       { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent },
       { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent },
