@@ -1,25 +1,26 @@
-import { CatalogItem, CatalogServiceType } from './model/catalog-item';
+import { CatalogItem } from './model/catalog-item';
 
-/** Interface texts of the catalog list, in one place; the wording follows screen 11 (`admin-gestionar-catalogo.html`). */
+/** Interface texts of the tour list and form, in one place; the wording is that of `admin-gestionar-catalogo.html` and `admin-configurar-catalogo.html` (mockup PDR v1.9). */
 export const CATALOG_COPY = {
   eyebrow: 'Catálogos',
-  title: { all: 'Gestionar catálogo', TOUR: 'Gestionar tours', TRANSPORTATION: 'Gestionar transporte' },
+  title: 'Gestionar catálogo de tours',
   panelEyebrow: 'Tours y atractivos',
-  // The screen says "Oferta, salidas y tarifas base"; departures belong to another story and stay out.
-  panelTitle: 'Oferta y tarifas base',
-  panelCopy: 'Desactivar evita nuevas reservas; el historial existente se conserva.',
+  panelTitle: 'Oferta, salidas y tarifas base',
+  panelCopy: 'Inactivar evita nuevas reservas; el historial existente se conserva y un tour inactivo puede reactivarse. Solo el Administrador del tenant crea, actualiza, inactiva y reactiva tours.',
   denied: 'No tienes acceso al catálogo.',
-  // The screen's "Vigencia" column has no field in the catalog record, so it is not drawn.
-  columns: { service: 'Servicio', rate: 'Tarifa base', status: 'Estado', actions: 'Acción' },
-  newItem: 'Nuevo servicio',
-  editItem: 'Editar servicio',
+  // The list shows tours only: transport capacity and departures belong to operations-cost (spec A.2 row 2).
+  columns: { service: 'Tour', rate: 'Tarifa base', validity: 'Vigencia', status: 'Estado', actions: 'Acción' },
+  newItem: 'Crear tour',
+  editItem: 'Configurar tour',
+  backToCatalogs: 'Volver a catálogos',
+  // A record the contract returns without validity (gap G-B) is shown as a dash, never with invented dates.
+  noValidity: '—',
   edit: 'Gestionar',
-  inactivate: 'Desactivar',
-  reactivate: 'Activar',
+  inactivate: 'Inactivar',
+  reactivate: 'Reactivar',
   loading: 'Cargando',
   empty: 'Sin resultados',
   requestFailed: 'La solicitud falló.',
   retry: 'Reintentar',
-  types: { TOUR: 'Tour', TRANSPORTATION: 'Transporte' } satisfies Record<CatalogServiceType, string>,
   statuses: { ACTIVE: 'Activo', INACTIVE: 'Inactivo' } satisfies Record<CatalogItem['catalogStatus'], string>,
 } as const;

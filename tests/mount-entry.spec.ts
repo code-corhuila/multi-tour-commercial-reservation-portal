@@ -5,7 +5,7 @@ import type { MountProps } from '../src/app/shell-contract';
 import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 import { ESTABLISHMENTS_COPY } from '../src/app/establishments/establishments-copy';
 
-const rows = (key: string) => [1, 2, 3, 4].map((n) => ({ [key]: 'id' + n, commercialName: 'Row ' + n, catalogStatus: 'ACTIVE', associationStatus: 'ACTIVE', establishmentType: 'HOTEL', commercialInformation: 'info' }));
+const rows = (key: string) => [1, 2, 3, 4].map((n) => ({ [key]: 'id' + n, commercialName: 'Row ' + n, serviceType: 'TOUR', catalogStatus: 'ACTIVE', associationStatus: 'ACTIVE', establishmentType: 'HOTEL', commercialInformation: 'info' }));
 // The container client, faked: the portal reads whatever this answers, so it must go through apiClient.
 const request = vi.fn(async (path: string) => ({ data: rows(path.includes('associated') ? 'associationId' : 'serviceId'), meta: { page: 1, limit: 100, total: 4, totalPages: 1 } }));
 const propsFor = (roles: string[]): MountProps => ({
@@ -21,9 +21,12 @@ const mountAs = (roles: string[]) => {
   cleanup = entry.mount(host, propsFor(roles));
 };
 const text = () => host.textContent ?? '';
-const goToEstablishments = async () => {
-  await vi.waitFor(() => expect(host.querySelector('[data-state="data"]')).toBeTruthy());
-  Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Establecimientos'))!.click();
+/** The operator lands on Reservas (AC-P1.17): a list of Catálogos is reached through the hub card. */
+const goToCard = async (card: string) => {
+  await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
+  Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Catálogos')!.click();
+  await vi.waitFor(() => expect(host.querySelector('.crp-catalog-grid')).toBeTruthy());
+  Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-catalog-grid button')).find((b) => b.textContent?.trim() === card)!.click();
 };
 
 afterEach(() => {
@@ -44,10 +47,11 @@ describe('mountEntryContract', () => {
 
   it('shows the demo catalog and establishments with their actions to the administrator', async () => {
     mountAs(['TENANT_ADMINISTRATOR']);
+    await goToCard('Ver tours');
     await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(3));
     expect(text()).toContain(CATALOG_COPY.newItem);
     expect(text()).toMatch(new RegExp(`${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}`));
-    await goToEstablishments();
+    await goToCard('Gestionar establecimientos');
     await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(ESTABLISHMENTS_COPY.title.all));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(3));
     expect(text()).toContain(ESTABLISHMENTS_COPY.newEstablishment);
