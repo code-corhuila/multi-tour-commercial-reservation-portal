@@ -55,7 +55,7 @@ export class DemoProofReviewWriter extends ProofReviewWriter {
     let next: Reservation = { ...r, payments: r.payments!.map((x) => (x.id === p.id ? { ...x, proofStatus: c.decision, review } : x)) };
     if (approved && !cancelled) {
       const validatedCents = (r.validatedCents ?? 0) + applied, balanceCents = r.balanceCents - applied;
-      if (surplus > 0) { this.handedExcess.push({ reservationId: r.id, amountCents: surplus }); this.credit?.recordExcess(r, c.verifiedAmountCents, `excess-${key}`).subscribe(); }
+      if (surplus > 0) this.handedExcess.push({ reservationId: r.id, amountCents: surplus });
       const reached = r.paymentType === 'PARTIAL' ? validatedCents >= minimumPartial(r) : balanceCents === 0;
       const status = r.status === 'PENDIENTE_DE_PAGO' && reached ? 'CONFIRMADA' : r.status;
       next = { ...next, status, validatedCents, balanceCents, financialStatus: situation({ ...r, status }, validatedCents, balanceCents) };

@@ -121,7 +121,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource, PaymentsWriter, PaymentMethodsSource) },
   // HU-COM-010 admin-pagos.html (13), item Pagos of the mockup's sidebar, and admin-validar-soporte.html opened with { reservation, payment }.
   { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
-  { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent, menu: false, parent: 'payments',
+  { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent, menu: false, parent: 'payments',
     isAvailable: (injector) => has(injector, ReservationsSource, ProofReviewWriter, PaymentMethodsSource) },
   // HU-COM-011 admin-registrar-seguimiento.html, opened by Registrar seguimiento of 13 with { reservation }; Pagos stays active.
   { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent, menu: false, parent: 'payments',

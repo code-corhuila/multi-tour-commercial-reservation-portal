@@ -34,9 +34,10 @@ type State = PageState<PendingProofs & { labels: PaymentLabels }>;
           <div data-state="data">@if (d.overdueCount && canDecide) { <p class="crp-access-note">{{ t.overdue(d.overdueCount) }}</p> }
             <div class="crp-table-wrap"><table class="crp-operator-table"><thead><tr>@for (column of t.columns; track column) { <th>{{ column }}</th> }</tr></thead>
               <tbody>@for (row of d.rows; track row.payment.id) { @let r = row.reservation;
-                <tr><td><strong>#{{ r.id }}</strong></td><td>{{ r.leadCustomerName }}</td><td>{{ modality(r, d.labels) }}</td><td>{{ money(r.balanceCents) }}</td>
-                  <td><span class="crp-operator-status crp-is-pending">{{ common.proofStatus[row.payment.proofStatus] }}{{ row.overdue ? ' · ' + t.overdueMark : '' }}</span></td>
-                  <td><button type="button" (click)="open(row)">{{ canDecide ? t.validate : t.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" /></td></tr>
+                <tr><td><strong>#{{ r.id }}</strong></td><td>{{ r.leadCustomerName }}</td><td>{{ modality(r, d.labels) }}</td><td>{{ money(row.payment.amountCents) }}</td>
+                  <td><span class="crp-operator-status" [class]="statusClass[row.payment.proofStatus]">{{ common.proofStatus[row.payment.proofStatus] }}{{ row.overdue ? ' · ' + t.overdueMark : '' }}</span></td>
+                  <td>@if (row.payment.proofStatus === 'EN_VALIDACION') { <button type="button" (click)="open(row)">{{ canDecide ? t.validate : t.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" /> }
+                    @else { {{ t.noAction }} }</td></tr>
               }</tbody><ng-container *crpSlot="tableBodies; inputs: { proofs: d.rows.length }" /></table></div></div>
         }
       }
@@ -55,7 +56,7 @@ export class PaymentsPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => forkJoin({ proofs: this.source.list(), labels: paymentLabels(this.methods) })).pipe(
     map(({ proofs, labels }): State => (proofs.rows.length || this.bodies ? { kind: 'data', items: [{ ...proofs, labels }] } : { kind: 'empty' })),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   protected readonly statusClass: Readonly<Record<string, string>> = { EN_VALIDACION: 'crp-is-pending', SIN_COMPROBANTE: 'crp-is-pending', APROBADO: 'crp-is-confirmed', RECHAZADO: 'crp-is-cancelled' };
   protected waiting(rows: readonly PendingProof[]): number { return rows.filter((row) => row.payment.proofStatus === 'EN_VALIDACION').length; }
   protected open(row: PendingProof): void { this.navigation?.open('payments-validate', { reservation: row.reservation.id, payment: row.payment.id }); }
