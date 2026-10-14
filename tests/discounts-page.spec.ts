@@ -10,6 +10,12 @@ import { DISCOUNT_ROUTES } from '../src/app/discounts/discounts.routes';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { actorAs } from './actor-context.double';
 import { ControllableDiscountRulesSource, discountNamed } from './discount-rules-source.double';
+import { ControllableDiscountRulesWriter } from './discount-rules-writer.double';
+import { validityOn } from '../src/app/demo/discounts-demo';
+import { ActorRole } from '../src/app/shared/portal-capabilities';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { DISCOUNTS_PAGE_PANELS, contribute } from '../src/app/shared/portal-slots';
+const RAW_CODES = /\b(ACTIVE|INACTIVE|IN_FORCE|UPCOMING|EXPIRED|PERCENTAGE|FIXED_AMOUNT|ORIGINAL_VALUE|PREVIOUS_SUBTOTAL)\b/;
 
 export async function openDiscounts(role: ActorRole = 'TENANT_ADMINISTRATOR', providers: any[] = []) {
   const source = new ControllableDiscountRulesSource();
@@ -31,7 +37,45 @@ describe('discount list states and newest request', () => {
     await p.settle(); expect(p.state()).toBe('data');
     const rows = Array.from(p.element.querySelectorAll('li'), r => r.textContent);
     expect(rows[0]).toContain('First'); expect(rows[1]).toContain('Second');
-    for (const text of ['2026-01-01', '2026-12-31', '12.50', 'INACTIVE']) expect(rows[0]).toContain(text);
+    for (const text of ['First', 'Vigente hasta el 31 dic 2026.', 'Prioridad 1, no acumulable.', '12,5% de descuento', 'Inactivo']) expect(rows[0]).toContain(text);
+    expect(rows[0]).not.toMatch(/2026-01-01|12\.50/); expect(p.element.textContent).not.toMatch(RAW_CODES);
+  });
+  it('draws screen 12: header, hero, numbered panel, promotions and Spanish badges', async () => {
+    const p = await openDiscounts('TENANT_ADMINISTRATOR', [{ provide: DiscountRulesWriter, useValue: new ControllableDiscountRulesWriter() }]);
+    const rule = (name: string, startsOn: string, endsOn: string, priority: number, status: 'ACTIVE' | 'INACTIVE' = 'ACTIVE') => ({ ...discountNamed(name, priority), startsOn, endsOn, status, validity: validityOn({ status, startsOn, endsOn }, '2026-10-14') });
+    const capped = { ...rule('Tope', '2000-01-01', '2999-12-31', 5), capCents: 8_000_000, stackable: true, calculationBase: 'PREVIOUS_SUBTOTAL' as const };
+    p.source.requests[0].reply([rule('En curso', '2000-01-01', '2999-12-31', 1), rule('Futuro', '2999-01-01', '2999-12-31', 2),
+      rule('Pasado', '2000-01-01', '2000-12-31', 3), rule('Apagado', '2000-01-01', '2999-12-31', 4, 'INACTIVE'),
+      capped]);
+    await p.settle(); const e = p.element;
+    expect(e.querySelector('.crp-page-header-eyebrow')?.textContent).toBe('Reglas comerciales');
+    expect(e.querySelector('h1')?.textContent).toBe('Descuentos');
+    expect(e.querySelector('.crp-page-header .crp-primary')?.textContent?.trim()).toBe('Crear descuento');
+    expect(e.querySelector('.crp-discount-hero')?.textContent).toContain('Descuentos visibles y trazables.');
+    expect(e.querySelector('.crp-discount-hero')?.textContent).toContain('Define vigencia, prioridad, acumulación, topes y base de cálculo para los tours. Un descuento general se fija en el contexto comercial de cada reserva al crearla: los cambios posteriores no afectan reservas ya creadas.');
+    expect(e.querySelector('.crp-operator-panel .crp-operator-eyebrow')?.textContent).toBe('Vigentes');
+    expect(e.querySelector('.crp-operator-panel h2')?.textContent).toBe('Promociones activas');
+    expect(e.querySelector('.crp-operator-panel .crp-operator-panel-head .crp-operator-status')?.textContent).toBe('2 activas');
+    const items = Array.from(e.querySelectorAll('li.crp-discount-promo'));
+    expect(items.map(i => i.querySelector('.crp-operator-status')?.textContent)).toEqual(['Vigente', 'Próximo', 'Vencido', 'Inactivo', 'Vigente']);
+    expect(items[0].querySelector('.crp-operator-status')?.classList).toContain('crp-is-confirmed');
+    expect(items[3].querySelector('.crp-operator-status')?.classList).toContain('crp-is-pending');
+    expect(items[0].querySelector('strong')?.textContent).toBe('12,5% de descuento');
+    expect(items[4].querySelector('strong')?.textContent).toBe('12,5% de descuento');
+    expect(items[0].querySelector('span')?.textContent).toBe('En curso'); expect(items[0].textContent).toContain('Base de cálculo: valor original.');
+    expect(items[4].querySelector('p')?.textContent).toBe('Vigente hasta el 31 dic 2999. Base de cálculo: subtotal resultante del descuento anterior. Prioridad 5, acumulable. Tope: $80.000.');
+    expect(items[0].querySelector('p')?.textContent).not.toContain('Tope');
+    expect(Array.from(items[0].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros', 'Inactivar']);
+    expect(Array.from(items[3].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros']);
+    expect(e.textContent).not.toMatch(RAW_CODES); expect(e.textContent).not.toMatch(/Discount|Retry|Loading|No results/);
+  });
+  it('writes the loading, empty, error and denied states in Spanish', async () => {
+    const p = await openDiscounts(); expect(p.element.textContent).toContain('Cargando descuentos');
+    p.source.requests[0].fail(); await p.settle(); expect(p.element.textContent).toContain('No se pudieron cargar los descuentos.');
+    p.fixture.componentInstance.reload(); p.source.requests[1].reply([]); await p.settle();
+    expect(p.element.textContent).toContain('Aún no hay descuentos configurados.');
+    TestBed.resetTestingModule(); const denied = await openDiscounts('OPERATIONAL_COLLABORATOR');
+    expect(denied.element.textContent).toContain('No tienes acceso a los descuentos.');
   });
   it('unsubscribes the previous request and ignores its slower response', async () => {
     const p = await openDiscounts(); p.fixture.componentInstance.reload();
