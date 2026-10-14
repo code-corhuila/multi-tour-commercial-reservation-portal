@@ -63,7 +63,8 @@ async function screen(role = 'TENANT_ADMINISTRATOR', withCredit = true) {
   await settle();
   const host: HTMLElement = fixture.nativeElement;
   const button = (text: string) => Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
-  const texts = (selector: string) => Array.from(host.querySelectorAll(selector), (e) => e.textContent?.replace(/\s+/g, ' ').trim());
+  const flat = (e: Element) => e.textContent?.replace(/\s+/g, ' ').trim();
+  const texts = (selector: string) => Array.from(host.querySelectorAll(selector), (e) => (e.children.length ? Array.from(e.children, flat).join(' ') : flat(e)));
   const type = async (selector: string, value: string) => { const i = host.querySelector<HTMLInputElement>(selector)!; i.value = value; i.dispatchEvent(new Event('input')); await settle(); };
   return { ...d, spy, navigation, host, settle, button, texts, type };
 }
@@ -79,11 +80,11 @@ describe('creditScreenDrawsSummaryCustomersAndRequestsAsTheMockup', () => {
     const panel = s.host.querySelector('[data-credit-customer]')!;
     expect(panel.querySelector('h2')?.textContent?.trim()).toBe(ANA);
     expect(panel.querySelector('.crp-operator-status')?.textContent?.trim()).toBe('Disponible $300.000');
-    expect(Array.from(panel.querySelectorAll('thead th'), (h) => h.textContent?.trim())).toEqual(['Reserva de origen', 'Saldo neto', 'En devolución', 'Disponible', '']);
+    expect(Array.from(panel.querySelector('thead')!.querySelectorAll('th'), (h) => h.textContent?.trim())).toEqual(['Reserva de origen', 'Saldo neto', 'En devolución', 'Disponible', '']);
     expect(Array.from(panel.querySelectorAll('tbody td'), (c) => c.textContent?.trim()).slice(0, 4)).toEqual(['#RES-O1', '$300.000', '$0', '$300.000']);
     expect(panel.querySelector('summary')?.textContent?.trim()).toBe('Historial de aplicaciones y devoluciones (1)');
     expect(s.texts('[data-credit-requests] tr')).toEqual(['Sin solicitudes de devolución de saldo a favor.']);
-    expect(s.host.querySelector('h2:last-of-type, section:last-of-type h2')?.textContent?.trim()).toBe('Solicitudes de devolución de saldo a favor');
+    expect(s.texts('h2').at(-1)).toBe('Solicitudes de devolución de saldo a favor');
   });
 
   it('writes the empty text when no customer has credit', async () => {
@@ -146,7 +147,7 @@ describe('applyingCreditCountsAsAValidatedPaymentWithoutProof', () => {
     expect(t1.payments ?? []).toEqual([]);
     const ana = (await overview(d.source)).customers[0];
     expect(ana.availableCents).toBe(20_000_000);
-    expect(ana.history[0]).toMatchObject({ kind: 'APLICACION', reservationId: 'RES-T1', amountCents: -10_000_000, actor: 'Administrador del tenant' });
+    expect(ana.history[0]).toMatchObject({ kind: 'APLICACION', reservationId: 'RES-O1', amountCents: -10_000_000, actor: 'Administrador del tenant' });
   });
 
   it('answers the same for the same Idempotency-Key and applies once', async () => {
@@ -235,7 +236,7 @@ describe('creditHistoryShowsWhoAppliedAndRequested', () => {
     expect(s.spy.applied[0].slice(0, 2)).toEqual(['RES-T1', 10_000_000]);
     expect(s.host.querySelector('[data-credit-feedback]')?.textContent?.trim()).toBe('Saldo a favor aplicado: $100.000 como pago validado de RES-T1; el cupo quedó apartado en la misma operación. Queda en auditoría.');
     expect(s.host.querySelector('[data-credit-feedback]')?.getAttribute('aria-live')).toBe('polite');
-    expect(s.texts('[data-credit-customer] details tbody tr')[0]).toBe(`${formatDateTime(NOW)} Aplicación Aplicado a la reserva RES-T1 #RES-T1 -$100.000 Administrador del tenant`);
+    expect(s.texts('[data-credit-customer] details tbody tr')[0]).toBe(`${formatDateTime(NOW)} Aplicación Aplicado a la reserva RES-T1 #RES-O1 -$100.000 Administrador del tenant`);
     expect(s.host.querySelector('[data-credit-customer] .crp-operator-status')?.textContent?.trim()).toBe('Disponible $200.000');
   });
 
@@ -316,5 +317,15 @@ describe('theCreditScreenIsReachedOnlyThroughTheNavigationLinks', () => {
     (detail.nativeElement.querySelector('button') as HTMLButtonElement).click();
     expect(detail.nativeElement.textContent).toContain('Ver saldo a favor del cliente');
     expect(navigation.params()).toEqual({ reservation: 'RES-T1' });
+  });
+});
+
+describe('aCreditBalanceDecidedOnTheTreatmentPageOfHuCom016IsListed', () => {
+  it('lists the 100 % that the treatment page kept as a credit balance, with its person and date', async () => {
+    const store = new DemoReservationsStore([reservationOf('RES-C1', { leadCustomerName: 'Camila Prueba (demo)', status: 'CANCELADA', validatedCents: 12_000_000, refund: { origin: 'NON_PAYMENT',
+      reason: 'Cancelada por falta de pago', amountCents: 12_000_000, recognizedAt: '2026-10-14T08:00:00-05:00', creditBalance: { by: 'Administrador del tenant (demo)', at: '2026-10-14T09:00:00-05:00', reason: 'Ok' } } })]);
+    const [camila] = (await overview(demo('TENANT_ADMINISTRATOR', store).source)).customers;
+    expect(camila).toMatchObject({ name: 'Camila Prueba (demo)', availableCents: 12_000_000 });
+    expect(camila.history[0]).toMatchObject({ kind: 'ORIGEN', actor: 'Administrador del tenant (demo)', detail: 'Tratamiento pendiente registrado como saldo a favor del 100 %' });
   });
 });

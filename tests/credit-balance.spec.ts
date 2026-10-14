@@ -127,10 +127,9 @@ describe('recordingACreditBalanceCreatesNoRefund', () => {
     expect(JSON.stringify(d.store.creditBalances)).not.toMatch(/Ejecutada|refund/i);
   });
 
-  it('offers no no-outflow operation and no application until DP-CB2 and DP-CB1 (T-03)', () => {
+  it('offers no no-outflow operation until DP-CB2 (T-03; applying entered with the amendment of 2026-10-14)', () => {
     const d = demo();
     expect('recordFromNoOutflow' in d.writer).toBe(false);
-    expect('apply' in d.writer).toBe(false);
   });
 });
 
@@ -250,30 +249,25 @@ describe('everyCreditBalanceCarriesTheSessionTenant', () => {
   });
 });
 
+// CONFLICTO 016 v1.9 - 017: the treatment page of HU-COM-016 now draws its own "Registrar saldo a favor del 100 %" (RefundsWriter.keepAsCreditBalance, with its motive),
+// so the REFUND_TREATMENT_ACTIONS contribution of this story would be a second button for one decision. It stays unregistered; the credit screen reads that decision instead.
 describe('contributesToTheTreatmentPageOfHuCom016', () => {
-  it('draws the button on the treatment page of RES-1821 ($1.200.000) and, once recorded, closes both buttons', async () => {
+  it('draws one "Registrar saldo a favor del 100 %" on the treatment page of RES-1821 ($1.200.000): the page own, not a second one', async () => {
     const navigation = new PortalNavigation();
     navigation.register([REFUND_SCREENS.requests, REFUND_SCREENS.treatment, REFUND_SCREENS.detail]);
     navigation.params.set({ refund: 'RES-1821' });
-    TestBed.configureTestingModule({ providers: [...demoSources({} as never), { provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') },
-      { provide: PortalNavigation, useValue: navigation }, contribute(REFUND_TREATMENT_ACTIONS, CREDIT_BALANCE_TREATMENT_ACTION)] });
+    TestBed.configureTestingModule({ providers: [...demoSources({} as never), { provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') }, { provide: PortalNavigation, useValue: navigation }] });
     const fixture = TestBed.createComponent(RefundTreatmentPageComponent);
-    const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
-    await settle();
+    await fixture.whenStable(); fixture.detectChanges();
     const host: HTMLElement = fixture.nativeElement;
-    const buttons = () => Array.from(host.querySelectorAll('.crp-form-actions button'), (b) => b.textContent?.trim());
     expect(host.textContent).toContain('Valores abonados: $1.200.000');
-    expect(buttons()).toEqual(['Registrar devolución del 100 %', RECORD]);
-    Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === RECORD)!.click(); await settle();
-    expect(buttons()).toEqual([]);
-    expect(host.querySelector('app-credit-balance-action [data-state="data"]')?.textContent).toContain('$1.200.000');
+    expect(Array.from(host.querySelectorAll('.crp-form-actions button'), (b) => b.textContent?.trim())).toEqual(['Registrar devolución del 100 %', RECORD, 'Ver detalle']);
     expect(await firstValueFrom(TestBed.inject(CreditBalanceSource).treatmentOf('RES-1820'))).toMatchObject({ open: false });
-    expect((await firstValueFrom(TestBed.inject(RefundsSource).list())).map((r) => r.id)).not.toContain('RES-1821');
   });
 
-  it('is contributed in mount-entry.ts only when the credit balance ports exist', () => {
+  it('is not contributed in mount-entry.ts; the component stays available only when the credit balance ports exist', () => {
     const entry = withoutComments(readFileSync('src/mount-entry.ts', 'utf8'));
-    expect(entry).toContain('contribute(REFUND_TREATMENT_ACTIONS, CREDIT_BALANCE_TREATMENT_ACTION)');
+    expect(entry).not.toContain('contribute(REFUND_TREATMENT_ACTIONS, CREDIT_BALANCE_TREATMENT_ACTION)');
     const available = CREDIT_BALANCE_TREATMENT_ACTION.isAvailable!;
     expect(available(Injector.create({ providers: [] }))).toBe(false);
     expect(available(Injector.create({ providers: [{ provide: CreditBalanceSource, useValue: demo().source }] }))).toBe(true);
