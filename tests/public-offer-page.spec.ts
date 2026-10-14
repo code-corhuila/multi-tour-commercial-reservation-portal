@@ -371,8 +371,8 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*height: 140px;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-meta \{[^}]*flex-wrap: nowrap;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-card \.crp-tour-body strong \{[^}]*white-space: nowrap;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 1rem; font-weight: 400;[^}]*text-transform: none;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 2rem; font-weight: 700;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 0.92rem; [^}]*font-weight: 400;[^}]*text-transform: none;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 1.84rem; font-weight: 700;/);
   });
 
   it('shows Volver al panel cliente only when the shell can open the panel, and opens it', async () => {

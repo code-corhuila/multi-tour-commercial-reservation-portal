@@ -17,7 +17,7 @@ import { PROFILE_TEXT } from '../profile-copy';
       <p class="crp-profile-intro">{{ text.intro }}</p>
       <article class="crp-profile-card">
         <aside class="crp-profile-identity">
-          <span class="crp-profile-avatar" role="img" [attr.aria-label]="text.avatarLabel">{{ identity.initials }}</span>
+          <span class="crp-profile-avatar-wrap"><span class="crp-profile-avatar" role="img" [attr.aria-label]="text.avatarLabel">{{ identity.initials }}</span><span class="crp-profile-dot" aria-hidden="true"></span></span>
           <strong>{{ identity.name ?? text.notRegistered }}</strong>
           <p>{{ text.notRegistered }}</p>
         </aside>
