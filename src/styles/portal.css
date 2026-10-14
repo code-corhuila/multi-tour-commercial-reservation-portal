@@ -592,3 +592,12 @@
 .crp-root .crp-credit-balance-list dt { color: var(--crp-soft); font-size: 0.77rem; }
 .crp-root .crp-credit-balance-list dd { margin: 0; color: var(--crp-text); font-size: 0.82rem; font-weight: 700; text-align: right; }
 .crp-root .crp-credit-balance-note, .crp-root .crp-credit-balance-error { margin: 0; color: var(--crp-soft); } .crp-root .crp-credit-balance-error { color: var(--crp-error); }
+/* HU-COM-017 amendment: admin-saldo-favor.html (mt-stat-row, mt-inline-form and mt-details of the mockup). */
+.crp-root .crp-operator-access-note { margin: 0 0 18px; padding: 12px 14px; border: 1px solid var(--crp-line); border-radius: 10px; background: var(--crp-muted); color: var(--crp-soft); font-size: 0.78rem; line-height: 1.45; }
+.crp-root .crp-credit-balance-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--crp-space-3); margin: 14px 0; }
+.crp-root .crp-summary-metric { display: grid; gap: 2px; padding: 10px 14px; border: 1px solid var(--crp-line); border-radius: 12px; background: var(--crp-surface); }
+.crp-root .crp-summary-metric-value { color: var(--crp-text); font-size: 1.2rem; font-weight: 700; } .crp-root .crp-summary-metric-label { color: var(--crp-soft); font-size: 0.72rem; }
+.crp-root .crp-credit-balance-panel { margin-top: 14px; padding: 16px 18px; } .crp-root .crp-credit-balance-panel h2 { margin: 2px 0 10px; font-size: 0.95rem; }
+.crp-root .crp-credit-balance-form { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; margin: 12px 0 4px; }
+.crp-root .crp-credit-balance-form > div { display: grid; gap: 4px; font-size: 0.8rem; } .crp-root .crp-credit-balance-form input, .crp-root .crp-credit-balance-form select { padding: 6px 8px; font-size: 0.82rem; }
+.crp-root .crp-credit-balance-details { margin-top: 10px; font-size: 0.82rem; } .crp-root .crp-credit-balance-details summary { cursor: pointer; color: var(--crp-text); font-weight: 600; }

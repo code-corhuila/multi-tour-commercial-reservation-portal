@@ -50,6 +50,8 @@ import { ReschedulingProposalPageComponent } from './rescheduling/pages/reschedu
 import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
+import { CREDIT_BALANCE_AREA, CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
+import { CreditBalancePageComponent } from './credit-balance/pages/credit-balance-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
@@ -160,6 +162,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: REFUND_SCREENS.manage, label: 'Gestionar devolución', component: RefundManagePageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
   { key: REFUND_SCREENS.treatment, label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent, menu: false, parent: 'payments',
     isAvailable: (injector) => injector.get(PortalCapabilities).canAuthorizeRefund() && refundsAvailable(injector) },
+  // HU-COM-017 admin-saldo-favor.html (amendment 2026-10-14, plan D-07): sub-screen of 13 reached by the links of 13 and 10A; every operator reads it, the forms ask the capabilities.
+  { key: CREDIT_BALANCE_AREA, label: 'Saldo a favor', component: CreditBalancePageComponent, menu: false, parent: 'payments', isAvailable: (injector) => has(injector, CreditBalanceSource, CreditBalanceWriter) },
   // HU-COM-016 admin-notificaciones.html: "Notificaciones" is a sidebar item only of screen 9 (admin-operador.html:25, between Operación and Reportes);
   // here it follows Pagos, since Operación belongs to another portal (position PROPUESTO, spec 016- section 5), while some alert is offered (DP-RF6).
   { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent, isAvailable: hasNotifications },

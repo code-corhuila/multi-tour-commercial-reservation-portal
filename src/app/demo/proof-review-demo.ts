@@ -1,5 +1,6 @@
-import { Provider } from '@angular/core';
+import { Optional, Provider } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
+import { CreditBalanceWriter } from '../credit-balance/data/credit-balance-ports';
 import { RegisteringUser } from '../payments/data/payments-writer';
 import { DecideProofCommand, PendingProofs, PendingProofsSource, ProofReviewWriter } from '../payments/data/proof-review-ports';
 import { ReservationsSource } from '../reservations/data/reservations-source';
@@ -35,7 +36,7 @@ export class DemoProofReviewWriter extends ProofReviewWriter {
   /** RN-PV7: the excess handed to the store; the credit balance it becomes is HU-COM-017's (DP-CB5, nothing drawn). */
   readonly handedExcess: { reservationId: string; amountCents: number }[] = [];
   constructor(private readonly store: DemoReservationsStore, private readonly capabilities: PortalCapabilities, private readonly user: RegisteringUser,
-    private readonly clock: Clock, private readonly answered: Map<string, Reservation>) { super(); }
+    private readonly clock: Clock, private readonly answered: Map<string, Reservation>, private readonly credit?: CreditBalanceWriter) { super(); }
 
   override decide(c: DecideProofCommand, key: string): Observable<Reservation> {
     const known = this.answered.get(key), r = this.store.items.find((x) => x.id === c.reservationId), p = r?.payments?.find((x) => x.id === c.paymentId);
@@ -54,7 +55,7 @@ export class DemoProofReviewWriter extends ProofReviewWriter {
     let next: Reservation = { ...r, payments: r.payments!.map((x) => (x.id === p.id ? { ...x, proofStatus: c.decision, review } : x)) };
     if (approved && !cancelled) {
       const validatedCents = (r.validatedCents ?? 0) + applied, balanceCents = r.balanceCents - applied;
-      if (surplus > 0) this.handedExcess.push({ reservationId: r.id, amountCents: surplus });
+      if (surplus > 0) { this.handedExcess.push({ reservationId: r.id, amountCents: surplus }); this.credit?.recordExcess(r, c.verifiedAmountCents, `excess-${key}`).subscribe(); }
       const reached = r.paymentType === 'PARTIAL' ? validatedCents >= minimumPartial(r) : balanceCents === 0;
       const status = r.status === 'PENDIENTE_DE_PAGO' && reached ? 'CONFIRMADA' : r.status;
       next = { ...next, status, validatedCents, balanceCents, financialStatus: situation({ ...r, status }, validatedCents, balanceCents) };
@@ -71,7 +72,7 @@ export function proofReviewDemoProviders(): Provider[] {
   return [
     { provide: Clock, useValue: clock },
     { provide: PendingProofsSource, useFactory: (s: ReservationsSource, c: Clock) => new DemoPendingProofs(s as DemoReservationsStore, c), deps: [ReservationsSource, Clock] },
-    { provide: ProofReviewWriter, useFactory: (s: ReservationsSource, k: PortalCapabilities, u: RegisteringUser, c: Clock) =>
-      new DemoProofReviewWriter(s as DemoReservationsStore, k, u, c, answered), deps: [ReservationsSource, PortalCapabilities, RegisteringUser, Clock] },
+    { provide: ProofReviewWriter, useFactory: (s: ReservationsSource, k: PortalCapabilities, u: RegisteringUser, c: Clock, credit: CreditBalanceWriter | null) =>
+      new DemoProofReviewWriter(s as DemoReservationsStore, k, u, c, answered, credit ?? undefined), deps: [ReservationsSource, PortalCapabilities, RegisteringUser, Clock, [new Optional(), CreditBalanceWriter]] },
   ];
 }
