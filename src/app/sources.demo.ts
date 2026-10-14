@@ -18,6 +18,7 @@ import { reservationChangesDemoProviders } from './demo/reservation-changes-demo
 import { refundsDemoProviders } from './demo/refunds-demo';
 import { proofReviewDemoProviders } from './demo/proof-review-demo';
 import { reservationModificationDemoProviders } from './demo/reservation-modification-demo';
+import { myPaymentsDemoProviders } from './demo/my-payments-demo';
 import { reschedulingDemoProviders } from './demo/rescheduling-demo';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
@@ -47,6 +48,7 @@ function demoStores(): Provider[] {
     ...reservationChangesDemoProviders(),
     ...proofReviewDemoProviders(),
     ...reservationModificationDemoProviders(),
+    ...myPaymentsDemoProviders(),
     ...refundsDemoProviders(),
     ...reschedulingDemoProviders(),
   ];

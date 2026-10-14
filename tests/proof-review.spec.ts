@@ -40,6 +40,8 @@ const EXAMPLE = 'RES-1833';
 const TOTAL = 'RES-1842';
 const AT = (iso: string) => Date.parse(iso);
 const NOW = AT('2026-10-13T09:00:00-05:00');
+/** The reservations whose proof waits in the demo store; other stories may seed more of them (HU-COM-014 seeds RES-1840). */
+const waitingIds = async () => (await firstValueFrom(TestBed.inject(PendingProofsSource).list())).rows.map((row) => row.reservation.id);
 
 class FixedClock extends Clock {
   constructor(public at = NOW) { super(); }
@@ -122,7 +124,9 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     // The mockup always draws the badge of Pagos pendientes, also when no proof waits.
     expect(empty.element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('0 pendientes');
     TestBed.resetTestingModule();
-    expect((await screenOf(PaymentsPageComponent, providers())).element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(3); // HU-COM-018 seeds RES-1827 with a proof En validación (AC-RP.4).
+    // HU-COM-018 seeds RES-1827 with a proof En validación (AC-RP.4).
+    const seeded = await screenOf(PaymentsPageComponent, providers());
+    expect(seeded.element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength((await waitingIds()).length);
     TestBed.resetTestingModule();
     const unknown = await validating('RES-1999-P1');
     expect(unknown.element.querySelector('[data-state="empty"]')?.textContent)
@@ -136,7 +140,8 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     expect(text).toContain('Pagos y devoluciones');
     expect(text).toContain('Confirma pagos sin perder trazabilidad.');
     expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Modalidad', 'Valor pendiente', 'Estado', 'Acción']);
-    const row = Array.from(element.querySelectorAll('tbody tr:first-child td')).map((td) => td.textContent?.trim()).join(' ');
+    const ofExample = Array.from(element.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes(`#${EXAMPLE}`));
+    const row = Array.from(ofExample?.querySelectorAll('td') ?? []).map((td) => td.textContent?.trim()).join(' ');
     expect(row).toMatch(/#RES-183[34] .+ \(demo\) Abono · Transferencia \$[23]00\.000 En validación/);
     expect(text).not.toMatch(/EN_VALIDACION|BANK_TRANSFER|PARTIAL|PENDIENTE_DE_PAGO|undefined|null|NaN/);
     TestBed.resetTestingModule();
@@ -333,7 +338,7 @@ describe('the 24-hour mark (T-05)', () => {
 
   it('paymentsTableShowsTheOverdueNotice', async () => {
     const { element } = await screenOf(PaymentsPageComponent, providers());
-    expect(element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('3 pendientes');
+    expect(element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe(`${(await waitingIds()).length} pendientes`);
     expect(element.querySelector('.crp-access-note')?.textContent?.trim()).toBe('Hay 1 soporte(s) con revisión vencida. La marca no cambia el estado ni libera cupos.');
     const rows = Array.from(element.querySelectorAll('tbody tr')).map((tr) => flat(tr as HTMLElement));
     expect(rows.find((row) => row.includes(`#${VALIDATED}`))).toContain('En validación · Revisión vencida');
@@ -418,7 +423,8 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [
       contribute(PAYMENTS_ROW_ACTIONS, { component: RowDouble, order: 1 }), contribute(PAYMENTS_PAGE_PANELS, { component: PanelDouble, order: 1 })] }));
     const cells = Array.from(element.querySelectorAll('tbody tr td:last-child button + crp-test-row')).map((cell) => cell.textContent?.trim());
-    expect(cells.sort()).toEqual(['Fila RES-1827', `Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]);
+    expect(cells.sort()).toEqual((await waitingIds()).map((id) => `Fila ${id}`).sort());
+    expect(cells).toEqual(expect.arrayContaining(['Fila RES-1827', `Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]));
     expect(element.querySelector('section.crp-operator-panel:has(table) + crp-test-panel')).not.toBeNull();
   });
 
@@ -429,7 +435,7 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [body] }));
     const bodies = Array.from(element.querySelectorAll('table tbody'));
     expect(bodies).toHaveLength(2);
-    expect(bodies[0].querySelectorAll('tr')).toHaveLength(3);
+    expect(bodies[0].querySelectorAll('tr')).toHaveLength((await waitingIds()).length);
     expect(bodies[1].textContent?.trim()).toBe('Fila de seguimiento');
     TestBed.resetTestingModule();
     const none = new (class extends PendingProofsSource { override list() { return of({ rows: [], overdueCount: 0 }); } })();

@@ -1,4 +1,4 @@
-import { formatDate } from '../../shared/format';
+import { SIGN_IN_AS_CUSTOMER_NOTICE } from '../data/customer-context';
 
 /** What the customer chose in the public offer (HU-COM-006). DP-RS1: it travels in the URL, never in storage. */
 export interface ReservationSelection {
@@ -53,11 +53,8 @@ export function reservationState(code: string): readonly [label: string, cssClas
   return RESERVATION_STATES[code] ?? ['Por definir', ''];
 }
 
-/** `2026-09-18T06:30:00` to `18 sep 2026 · 06:30`. */
-export function departureLine(isoDateTime: string): string {
-  const time = /T(\d{2}:\d{2})/.exec(isoDateTime)?.[1];
-  return time ? `${formatDate(isoDateTime)} · ${time}` : formatDate(isoDateTime);
-}
+/** `2026-09-18T06:30:00` to `18 sep 2026 · 06:30`; in shared/format.ts, since Mis pagos (HU-COM-014) writes it too. */
+export { departureLine } from '../../shared/format';
 
 /** The companions the holder brings: `No requiere acompañantes`, `1 acompañante requerido`. */
 export function companions(people: number): string {
@@ -130,7 +127,7 @@ export const SELF_SERVICE_TEXT = {
   departure: 'Salida',
   value: 'Valor',
   empty: 'Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.',
-  panelNotCustomer: 'Inicia sesión como cliente para ver tus reservas.',
+  panelNotCustomer: SIGN_IN_AS_CUSTOMER_NOTICE,
 } as const;
 
 /** The keys of the client areas of this story that a page opens with parameters (PortalNavigation.open). */
