@@ -167,16 +167,23 @@ describe('pago-exitoso.html and pago-fallido.html (screens 22 and 23, PROPUESTO 
   });
 
   it('Comprobante rechazado shows the reason and the balance, and Presentar nuevo comprobante returns to screen 24', async () => {
-    const rejected = summary({ proofStatus: 'RECHAZADO', receipts: [{ support: 'a.pdf', amountCents: 1, status: 'RECHAZADO', rejectionReason: 'El monto no coincide.' }] });
+    const rejected = summary({ proofStatus: 'RECHAZADO', deadlineAt: '2099-01-01T10:00:00', receipts: [{ support: 'a.pdf', amountCents: 1, status: 'RECHAZADO', rejectionReason: 'El monto no coincide.' }] });
     const p = await page(PaymentRejectedPageComponent, of([rejected]));
     expect(p.text('h1')).toBe('Comprobante rechazado');
     expect(p.text('.crp-result-copy')).toBe('Tu comprobante fue rechazado por el operador. Tu reserva conserva sus pagos ya validados y, mientras el plazo de pago original siga vigente, puedes presentar un nuevo comprobante sobre esta misma reserva.');
     expect(Array.from(p.element.querySelectorAll('.crp-result-ref'), (r) => flat(r.textContent))).toEqual([
       'Reserva: #RES-1842', 'Estado: Comprobante Rechazado · Reserva Pendiente de pago', 'Motivo del rechazo: El monto no coincide.', 'Saldo pendiente: $850.000']);
+    expect(p.text('.crp-result-deadline')).toBe('El plazo de pago original sigue vigente hasta 01 ene 2099 · 10:00. El rechazo no genera un plazo adicional: presenta un nuevo comprobante sobre esta misma reserva dentro del tiempo restante.');
     await p.press('Presentar nuevo comprobante');
     const nav = TestBed.inject(PortalNavigation);
     expect(nav.selected()).toBe('transfer-payment');
     expect(nav.params()).toEqual({ reservation: 'RES-1842', type: 'TOTAL', amount: '85000000' });
+  });
+
+  it('Comprobante rechazado past its deadline offers no new proof: the reservation is cancelled automatically', async () => {
+    const p = await page(PaymentRejectedPageComponent, of([summary({ proofStatus: 'RECHAZADO' })]));
+    expect(p.text('.crp-result-deadline')).toBe('El plazo de pago original ya venció: la reserva se cancela automáticamente y el cupo se libera. Ningún usuario puede reactivarla.');
+    expect(Array.from(p.element.querySelectorAll('button'), (b) => flat(b.textContent))).toEqual(['Ver mis reservas']);
   });
 
   it('Comprobante rechazado without a rejected proof sends the customer to Mis pagos', async () => {

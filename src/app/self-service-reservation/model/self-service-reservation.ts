@@ -81,8 +81,8 @@ export function selectionFromQuery(query: string): ReservationSelection | null {
 export const SELF_SERVICE_TEXT = {
   nav: 'Mis reservas',
   confirmTitle: 'Finalizar reserva de tour',
-  backToReserve: 'Volver a fecha y viajeros',
-  pill: 'Selecciona el medio de pago habilitado para esta reserva.',
+  backToReserve: 'Volver a salida y viajeros',
+  pill: 'Tu reserva se crea Pendiente de pago. Elige por separado el tipo de pago y el medio de pago habilitados.',
   holderTitle: 'Cliente titular',
   holderPending: 'Pendiente de definición: estos datos aún no se registran (DP-RS5).',
   travelersTitle: 'Viajeros',
@@ -90,7 +90,7 @@ export const SELF_SERVICE_TEXT = {
   conditionLines: ['La modificación o cancelación depende de las condiciones vigentes del tour.', 'La disponibilidad y los valores se validan antes de registrar la reserva.'],
   helpTitle: '¿Necesitas ayuda?',
   helpLead: 'Asistencia comercial',
-  helpCopy: 'El equipo del operador puede ayudarte a continuar el proceso.',
+  helpCopy: 'El equipo del operador puede ayudarte a continuar el proceso de reserva y pago; no es un medio de pago.',
   barReservation: 'Reserva',
   draft: 'Borrador',
   barTotal: 'Total',
@@ -100,14 +100,16 @@ export const SELF_SERVICE_TEXT = {
   discounts: 'Descuentos aplicables',
   final: 'Valor final',
   conditionsTitle: 'Condiciones de reserva',
-  conditionsCopy: 'Reserva únicamente el tour y la salida seleccionada. La alimentación indicada forma parte del paquete cuando corresponda; hospedaje y alimentación no son servicios reservables.',
+  conditionsCopy: 'Reservas únicamente el tour y la salida seleccionada. La alimentación indicada forma parte del paquete cuando corresponda; el hospedaje y los restaurantes asociados no se reservan en Multitour.',
   acceptConditions: 'Confirmo que acepto las condiciones aplicables a esta reserva.',
   acceptTerms: 'Acepto los términos y condiciones.',
   mustAccept: 'Acepta las condiciones y los términos para confirmar.',
   method: 'Medio de pago',
+  methodHint: { BANK_TRANSFER: 'Subes el comprobante; queda En validación hasta que un usuario autorizado lo revise (hasta 24 horas).', CASH_AT_OFFICE: 'Se registra cuando el equipo del operador recibe el dinero. La promesa de pago no confirma la reserva.' } as Readonly<Record<string, string>>,
   chooseMethod: 'Selecciona uno',
   methodMissing: 'Selecciona un medio de pago.',
   confirm: 'Confirmar reserva',
+  confirmCash: 'Crear reserva Pendiente de pago',
   loading: 'Cargando…',
   failed: 'No pudimos cargar esta información.',
   retry: 'Reintentar',
@@ -144,23 +146,18 @@ export function sameTour(a: string, b: string): boolean {
   return plain(a) === plain(b);
 }
 
-/** `2026-11` to `Noviembre de 2026`. */
-export function monthLabel(yearMonth: string): string {
-  const names = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-  const [year, month] = yearMonth.split('-').map(Number);
-  const name = names[month - 1] ?? '';
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)} de ${year}`;
-}
+const seatsText = (n: number) => `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`;
 
 /** The texts of reservar-tour.html (authorized screen 20). */
 export const RESERVE_TEXT = {
   back: 'Volver al tour',
   title: 'Seleccionar salida y viajeros',
   from: 'Desde',
-  departures: 'Salidas disponibles',
-  previous: 'Mes anterior',
-  next: 'Mes siguiente',
-  weekdays: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
+  category: 'Elige una de las salidas programadas.',
+  listTitle: 'Salidas programadas',
+  listCopy: 'Cada salida tiene fecha, hora de inicio, hora de finalización estimada y cupos propios. Cada reserva corresponde a una única salida; si quieres viajar en otra salida, crea otra reserva.',
+  full: 'Salida llena',
+  seats: seatsText,
   conditionsTitle: 'Condiciones de reserva',
   conditionsCopy: 'Consulta las condiciones aplicables a este tour antes de continuar.',
   seeConditions: 'Ver condiciones',
@@ -170,21 +167,18 @@ export const RESERVE_TEXT = {
   travelersCopy: 'Incluye al titular y sus acompañantes.',
   fewer: 'Quitar un viajero',
   more: 'Agregar un viajero',
-  capacityOk: 'Disponibilidad validada para la cantidad de viajeros seleccionada.',
-  chooseDeparture: 'Selecciona una salida disponible.',
-  selected: 'Salida seleccionada:',
-  singleDeparture: 'Cada reserva corresponde a una única salida.',
+  capacityOk: (seats: number) => `Hay ${seatsText(seats)} en la salida seleccionada. El cupo no se garantiza hasta tu primer pago (comprobante presentado o efectivo registrado).`,
+  capacityShort: (seats: number, people: number) => `Cupo no disponible: esta salida solo tiene ${seatsText(seats)} y seleccionaste ${people} viajeros.`,
+  capacityFull: 'Esta salida está llena: no hay cupos disponibles y no se crea la reserva. Elige otra salida.',
+  package: 'la alimentación indicada en el tour forma parte del paquete. Multitour no reserva habitaciones ni mesas: hoteles y restaurantes asociados se consultan solo como información de contacto.',
+  packageLead: 'Incluido en el paquete:',
   projected: 'Valor proyectado',
   discount: 'Descuento vigente',
   final: 'Valor final',
   selection: 'Seleccionado',
-  noDate: 'Sin fecha seleccionada',
+  noDate: 'Sin salida seleccionada',
   continue: 'Continuar reserva',
   noTour: 'Tour no disponible',
   noTourCopy: 'Este tour ya no está activo o no existe. Vuelve a Explorar para elegir otro.',
   noDepartures: 'Este tour no tiene salidas abiertas para reservas en este momento.',
 } as const;
-
-export function overCapacity(seats: number): string {
-  return `La cantidad seleccionada supera la capacidad disponible (${seats} ${seats === 1 ? 'viajero' : 'viajeros'}).`;
-}
