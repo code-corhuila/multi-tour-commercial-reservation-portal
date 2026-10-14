@@ -353,7 +353,7 @@ describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
     try {
       await vi.waitFor(() => press(host, 'CP Continuar pago Continúa el pago pendiente de una de tus reservas.'));
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Pago por transferencia'));
-      expect(flat(host.textContent)).toContain('Código de referencia: #RES-1842');
+      expect(flat(host.textContent)).toContain('Reserva #RES-1842');
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;
       Object.defineProperty(proof, 'files', { value: [pdf()], configurable: true }); proof.dispatchEvent(new Event('change'));
       press(host, 'Enviar comprobante para validación');
