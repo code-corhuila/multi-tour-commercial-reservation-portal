@@ -154,3 +154,13 @@ describe('currentDiscountsAreWiredInTheMountEntry', () => {
     expect(host.querySelector('form')).not.toBeNull();
   });
 });
+
+describe('aRefusedSubmitMovesTheFocusToTheFirstFieldInError', () => {
+  it('focuses the percentage when both fields are refused, and the reason when only it is', async () => {
+    const page = await withData(); document.body.append(page.element);
+    await submit(page);
+    expect(document.activeElement).toBe(page.field('value'));
+    await fillAdditional(page, '5', '   '); (document.activeElement as HTMLElement).blur(); await submit(page);
+    expect(document.activeElement).toBe(page.field('reason')); page.element.remove();
+  });
+});
