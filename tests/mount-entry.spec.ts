@@ -49,10 +49,11 @@ describe('mountEntryContract', () => {
 
   it('shows the demo catalog and establishments with their actions to the administrator', async () => {
     mountAs(['TENANT_ADMINISTRATOR']);
+    await goToCard('Ver tours');
     await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(3));
     expect(text()).toContain(CATALOG_COPY.newItem);
     expect(text()).toMatch(new RegExp(`${CATALOG_COPY.inactivate}|${CATALOG_COPY.reactivate}`));
-    await goToEstablishments();
+    await goToCard('Gestionar establecimientos');
     await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain(ESTABLISHMENTS_COPY.title.all));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-state="data"] tbody tr').length).toBeGreaterThan(3));
     expect(text()).toContain(ESTABLISHMENTS_COPY.newEstablishment);

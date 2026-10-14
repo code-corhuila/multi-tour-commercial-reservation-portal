@@ -80,6 +80,11 @@ describe('portalAreasRegistry', () => {
       { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
+      { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
+      { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
+      { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
+      { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
+      { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
       { key: 'client-panel', label: 'Mis reservas', component: ClientPanelPageComponent },
       { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
@@ -118,7 +123,7 @@ describe('operatorShellSidebar', () => {
     expect(host.querySelector('.crp-operator-shell > main.crp-operator-content')).not.toBeNull();
     expect(host.querySelector('.crp-operator-brand')?.textContent?.trim()).toBe('MULTITOUR');
     expect(host.querySelector('.crp-operator-role')?.textContent?.trim()).toBe('Administrador del tenant');
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Descuentos']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Descuentos']);
     expect(items()[0].classList.contains('crp-is-active')).toBe(true);
     expect(items()[0].getAttribute('aria-current')).toBe('page');
     expect(host.querySelector('app-catalog-hub-page')).not.toBeNull();
@@ -137,7 +142,7 @@ describe('operatorShellSidebar', () => {
   it('hides Descuentos from a role that cannot manage discounts', async () => {
     const { host, items } = await openShell('OPERATIONAL_COLLABORATOR');
     expect(host.querySelector('.crp-operator-role')?.textContent?.trim()).toBe('Colaborador operativo');
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos']);
   });
 
   // HU-COM-002 plan D-06, AC-PE.7: no route and no menu entry for a role that cannot read establishments.
@@ -151,7 +156,7 @@ describe('operatorShellSidebar', () => {
 
   it('hides Descuentos when the build supplies no discount source', async () => {
     const { items } = await openShell('TENANT_ADMINISTRATOR', false);
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos']);
   });
 
   it('shows the operator no customer area', async () => {

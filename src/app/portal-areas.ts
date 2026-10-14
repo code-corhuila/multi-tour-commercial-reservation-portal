@@ -88,12 +88,26 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => has(injector, CatalogItemsSource) },
   // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
   { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
-    // 002 plan D-06, AC-PE.7: no route for a role that cannot read establishments (the Colaborador operativo).
-    isAvailable: (injector) => injector.get(PortalCapabilities).canReadEstablishments() && has(injector, AssociatedEstablishmentsSource) },
+    isAvailable: (injector) => has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
+  },
+  // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
+  { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
+    isAvailable: (injector) => has(injector, CurrentDiscountsSource) },
+  // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
+  { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicOfferSource) },
+  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
+  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
+  {
+    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
+    // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
+    isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
   },
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {

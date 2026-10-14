@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
-import { CatalogItemsWriter, IdempotencyKeys } from '../data/catalog-api.service';
-import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
-import { MoneyRejection, formatMoney, parseMoney } from '../model/money';
-import { CATALOG_COPY } from '../catalog-copy';
+import { CatalogItemsWriter } from '../data/catalog-api.service';
+import { CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
 import { formatCop } from '../../shared/format';
 
 // Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
@@ -38,11 +36,13 @@ const CHECK_FIELDS: ReadonlyArray<{ readonly name: CheckField; readonly label: s
   { name: 'highRisk', label: 'Alto riesgo' },
 ];
 
-const TEXT_FIELDS: ReadonlyArray<{ readonly name: TextField; readonly label: string }> = [
-  { name: 'commercialName', label: 'Nombre comercial' },
-  { name: 'baseRate', label: 'Tarifa base' },
-  { name: 'baseOperationalCost', label: 'Costo operativo base' },
-  { name: 'configuredCapacity', label: 'Capacidad configurada' },
+const TEXT_FIELDS: ReadonlyArray<{ readonly name: TextField; readonly label: string; readonly type: 'text' | 'date' }> = [
+  { name: 'commercialName', label: 'Nombre comercial', type: 'text' },
+  { name: 'baseRate', label: 'Tarifa base', type: 'text' },
+  { name: 'validFrom', label: 'Vigencia desde', type: 'date' },
+  { name: 'validTo', label: 'Vigencia hasta', type: 'date' },
+  { name: 'baseOperationalCost', label: 'Costo operativo base', type: 'text' },
+  { name: 'configuredCapacity', label: 'Capacidad configurada', type: 'text' },
 ];
 
 /** The service may name a field by its wire name (cents) or by the form name; both land on one control. */
@@ -163,27 +163,8 @@ let nextFormId = 0;
   template: `
     <form novalidate (submit)="submit($event)">
       <section class="crp-form-panel">
-      <p class="crp-operator-eyebrow">01. Datos del servicio</p>
+      <p class="crp-operator-eyebrow">01. Datos del tour</p>
       <div class="crp-form-grid">
-      @if (scope() === 'all') {
-      <div>
-        <label [for]="id('serviceType')">Tipo de servicio</label>
-        <select
-          [id]="id('serviceType')"
-          [disabled]="item() !== undefined"
-          [attr.aria-invalid]="messages().serviceType ? 'true' : null"
-          [attr.aria-describedby]="describedBy('serviceType')"
-          (change)="onType($event)"
-        >
-          @for (type of serviceTypes; track type) {
-            <option [value]="type" [selected]="draft().serviceType === type">{{ typeLabels[type] }}</option>
-          }
-        </select>
-        @if (messages().serviceType; as text) {
-          <p role="alert" [id]="id('serviceType') + '-error'">{{ text }}</p>
-        }
-      </div>
-      }
       @for (field of shownTextFields(); track field.name) {
         <div>
           <label [for]="id(field.name)">{{ field.label }}</label>
@@ -231,7 +212,7 @@ let nextFormId = 0;
       <div class="crp-form-actions">
       <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
       <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancelar</button>
-      <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar servicio</button>
+      <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar tour</button>
       </div>
       @for (text of formMessages(); track $index) {
         <p role="alert">{{ text }}</p>
@@ -269,7 +250,6 @@ export class CatalogItemFormComponent implements OnInit {
 
   protected readonly shownTextFields = computed(() => (this.scope() === 'all' ? TEXT_FIELDS : TEXT_FIELDS.filter((field) => field.name === 'commercialName')));
   protected readonly checkFields = CHECK_FIELDS;
-  protected readonly typeLabels = CATALOG_COPY.types;
   /** What a valid typed amount reads as on the screens (`$1.299.000`); the amount sent is still parsed by money.ts. */
   protected readonly moneyPreview = computed<Partial<Record<TextField, string>>>(() => {
     const preview: Partial<Record<TextField, string>> = {};

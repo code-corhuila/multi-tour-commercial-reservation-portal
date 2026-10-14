@@ -126,9 +126,10 @@ export class EstablishmentsPageComponent {
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly statuses = ASSOCIATION_STATUSES;
   /** The hub opens the area with { type } (admin-catalogos.html cards); anything else shows both types. */
-  protected readonly navigation = inject(PortalNavigation, { optional: true });
-  protected readonly fixedType = ESTABLISHMENT_TYPES.find((type) => type === this.navigation?.params()['type']);
-  protected readonly filters = signal<EstablishmentFilters>(this.fixedType ? { establishmentType: this.fixedType } : {});
+  private readonly openedType = inject(PortalNavigation, { optional: true })?.params()['type'];
+  protected readonly filters = signal<EstablishmentFilters>(
+    ESTABLISHMENT_TYPES.find((type) => type === this.openedType) ? { establishmentType: this.openedType as EstablishmentType } : {},
+  );
   private readonly requests = new Subject<EstablishmentFilters>();
   private readonly listed = toSignal(this.requests.pipe(
     // RN-PE3: only the most recent request may supply the screen's next state.

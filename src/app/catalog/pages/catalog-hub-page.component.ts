@@ -1,6 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { AssociatedEstablishmentsSource } from '../../establishments/data/associated-establishments-source';
@@ -25,7 +23,7 @@ interface HubCard {
  * (PortalNavigation.has), never by importing their pages (pillar 10); "Salidas" and "Transporte" belong
  * to operations-cost, so their cards appear only once that area registers (DP-001-V19-1).
  */
-@Component({ imports: [ReadErrorComponent],
+@Component({
   selector: 'app-catalog-hub-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -46,7 +44,7 @@ interface HubCard {
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loading }}</p> }
         @case ('error') {
-          <div role="alert" data-state="error"><p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p><button class="crp-operator-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button></div>
+          <div role="alert" data-state="error"><p>{{ copy.requestFailed }}</p><button class="crp-operator-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button></div>
         }
         @case ('empty') { <p role="status" data-state="empty">{{ copy.empty }}</p> }
         @case ('data') {
@@ -92,7 +90,7 @@ export class CatalogHubPageComponent {
           const shown = cards.filter((each) => (!each.admin || this.canSeeEstablishments) && (this.navigation?.has(each.area) ?? false));
           return shown.length === 0 ? { kind: 'empty' } : { kind: 'data', items: shown };
         }),
-        catchError((error) => of<PageState<HubCard>>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })),
+        catchError(() => of<PageState<HubCard>>({ kind: 'error', retry: () => this.requests.next() })),
         startWith<PageState<HubCard>>({ kind: 'loading' }),
       )),
       takeUntilDestroyed(),
