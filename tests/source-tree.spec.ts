@@ -24,6 +24,8 @@ const SPECIFIED_TREE = [
   'src/app/shared/page-state.ts',
   'src/app/shared/percentage.ts',
   'src/app/shared/portal-capabilities.ts',
+  'src/app/shared/session-copy.ts',
+  'src/app/shared/session-identity.ts',
   'src/app/shared/tour-photo.ts',
   'src/app/http/api-paths.ts',
   'src/app/http/catalog-api-sources.ts',
