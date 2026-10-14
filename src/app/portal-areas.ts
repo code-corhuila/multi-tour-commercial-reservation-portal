@@ -95,7 +95,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => has(injector, CatalogItemsSource) },
   // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
   { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
-    isAvailable: (injector) => has(injector, AssociatedEstablishmentsSource) },
+    // 002 plan D-06, AC-PE.7: no route for a role that cannot read establishments (the Colaborador operativo).
+    isAvailable: (injector) => injector.get(PortalCapabilities).canReadEstablishments() && has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
