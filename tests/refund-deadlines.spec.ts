@@ -274,6 +274,9 @@ describe('wiresTheDeadlinesInTheDemoBuild', () => {
     expect(host.querySelector('app-notifications-page')?.textContent).toContain('#RES-1820 · Diego Castro (demo) · $1.200.000 · Cancelada por falta de pago');
     click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
+    // v1.9 mockup: Cancelada rows stay hidden until "Ver todas las reservas".
+    click('app-reservations-page button', 'Ver todas las reservas');
+    await vi.waitFor(() => expect(host.textContent).toContain('#RES-1821'));
     Array.from(host.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes('#RES-1821'))!.querySelector('button')!.click();
     await vi.waitFor(() => expect(host.querySelector('app-refund-link button')).toBeTruthy());
     click('app-refund-link button', 'Gestionar devolución');
