@@ -93,3 +93,18 @@ describe('theMountedPortalGreetsAndDrawsTheAvatar (panel-cliente.html)', () => {
     expect(JSON.stringify({ ...localStorage, ...sessionStorage })).not.toContain('Camila');
   });
 });
+
+describe('theDemoOffersASessionWithAName (?demoFixtures=named-session)', () => {
+  let host: HTMLElement;
+  let cleanup: (() => void) | undefined;
+  afterEach(() => { cleanup?.(); host.remove(); history.replaceState(null, '', '/'); });
+
+  it('greets Camila Restrepo only when the fixture is asked for', async () => {
+    history.replaceState(null, '', '/?demoFixtures=named-session');
+    host = document.createElement('div');
+    document.body.append(host);
+    cleanup = entry.mountWith(host, { apiClient: { request: vi.fn() } as never, session: { roles: ['FINAL_CUSTOMER'], ...NO_OP } }, demoSources);
+    await vi.waitFor(() => expect(host.querySelector('.crp-panel-hero h1')?.textContent).toBe('Hola, Camila Restrepo'));
+    expect(host.querySelector('.crp-client-avatar')?.textContent?.trim()).toBe('CR');
+  });
+});
