@@ -44,6 +44,10 @@ export interface PortalArea {
   /** Client chrome: 'site' (tours.html header and footer, the default), 'panel' (compact header of panel-cliente.html, no footer)
    *  or 'none' (a flow screen that draws its own top bar). */
   readonly clientChrome?: 'site' | 'panel' | 'none';
+  /** false: a sub-screen opened with PortalNavigation.open from another area, with no sidebar item of its own. */
+  readonly menu?: false;
+  /** The key of the sidebar item that stays active while this sub-screen is open (Reservas on screen 13). */
+  readonly parent?: string;
 }
 
 /** 001- HC-1: an area is offered only when the build supplies its ports (an adapter, or a store of the demo build). */

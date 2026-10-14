@@ -1,6 +1,6 @@
 import { Provider } from '@angular/core';
 import { CatalogItemsSource, CatalogItemsWriter } from './catalog/data/catalog-api.service';
-import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from './demo/demo-sources';
+import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter, oncePerPage } from './demo/demo-sources';
 import { DemoDiscountRulesStore, DemoDiscountRulesWriter } from './demo/discounts-demo';
 import { DiscountRulesWriter } from './discounts/data/discount-rules-writer';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
@@ -16,6 +16,10 @@ import { selfServiceDemoProviders } from './demo/self-service-reservation-demo';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
 export function sourceProviders(_client: PortalApiClient): Provider[] {
+  return oncePerPage(demoStores);
+}
+
+function demoStores(): Provider[] {
   const catalog = new DemoCatalogStore();
   const establishments = new DemoEstablishmentsStore();
   const discounts = new DemoDiscountRulesStore();
