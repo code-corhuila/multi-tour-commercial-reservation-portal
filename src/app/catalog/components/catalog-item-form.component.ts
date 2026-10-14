@@ -1,0 +1,371 @@
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ApiError } from '../../shell-contract';
+import { CatalogItemsWriter } from '../data/catalog-api.service';
+import { CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
+import { formatCop } from '../../shared/format';
+import { focusFirstError } from '../../shared/focus';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { MoneyRejection, formatMoney, parseMoney, pesosText } from '../../shared/money';
+
+// Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
+// DP-01 (what a tour is) and G-H (who owns the operational cost).
+// Declared debt (spec.md DD-14): the per-person transport rate has no column (G-E), so the form
+// cannot offer it yet.
+
+type TextField = 'commercialName' | 'baseRate' | 'validFrom' | 'validTo' | 'baseOperationalCost' | 'configuredCapacity';
+type CheckField = 'transportRequired' | 'highRisk';
+type FieldName = TextField | CheckField;
+
+interface Draft {
+  readonly serviceType: CatalogServiceType;
+  readonly commercialName: string;
+  /** Money stays as typed until it is parsed, so a refusal never rewrites what the person wrote. */
+  readonly baseRate: string;
+  readonly baseOperationalCost: string;
+  readonly configuredCapacity: string;
+  /** The validity dates (yyyy-mm-dd) as the date controls give them. */
+  readonly validFrom: string;
+  readonly validTo: string;
+  readonly transportRequired: boolean;
+  /** Explicit, never defaulted behind the person: it starts unchecked and visible. */
+  readonly highRisk: boolean;
+}
+
+type FieldMessages = Partial<Record<FieldName, string>>;
+
+const CHECK_FIELDS: ReadonlyArray<{ readonly name: CheckField; readonly label: string }> = [
+  { name: 'transportRequired', label: 'Transporte obligatorio' },
+  { name: 'highRisk', label: 'Alto riesgo' },
+];
+
+const TEXT_FIELDS: ReadonlyArray<{ readonly name: TextField; readonly label: string; readonly type: 'text' | 'date' }> = [
+  { name: 'commercialName', label: 'Nombre comercial', type: 'text' },
+  { name: 'baseRate', label: 'Tarifa base', type: 'text' },
+  { name: 'validFrom', label: 'Vigencia desde', type: 'date' },
+  { name: 'validTo', label: 'Vigencia hasta', type: 'date' },
+  { name: 'baseOperationalCost', label: 'Costo operativo base', type: 'text' },
+  { name: 'configuredCapacity', label: 'Capacidad configurada', type: 'text' },
+];
+
+/** The service may name a field by its wire name (cents) or by the form name; both land on one control. */
+const FIELD_OF_WIRE_NAME: Readonly<Record<string, FieldName>> = {
+  commercialName: 'commercialName',
+  baseRate: 'baseRate',
+  baseRateCents: 'baseRate',
+  baseOperationalCost: 'baseOperationalCost',
+  baseOperationalCostCents: 'baseOperationalCost',
+  configuredCapacity: 'configuredCapacity',
+  transportRequired: 'transportRequired',
+  highRisk: 'highRisk',
+};
+
+const MONEY_MESSAGES: Readonly<Record<MoneyRejection, string>> = {
+  empty: 'Obligatorio.',
+  format: 'Usa solo dígitos y punto decimal, por ejemplo 180000 o 180000.50.',
+  'too-many-decimals': 'Usa máximo dos decimales.',
+  negative: 'No puede ser negativo.',
+  'out-of-range': 'El valor es demasiado grande.',
+};
+
+/** A tour needs its capacity for the departures; a transportation item may go without (draft contract). */
+const CAPACITY_REQUIRED_FOR: CatalogServiceType = 'TOUR';
+const VALIDITY_ORDER = 'La vigencia termina antes de empezar.';
+const WHOLE_NUMBER = /^[1-9]\d*$/;
+const REQUEST_FAILED = 'La solicitud falló.';
+
+
+function toDraft(item: CatalogItem | undefined): Draft {
+  return {
+    serviceType: item?.serviceType ?? 'TOUR',
+    commercialName: item?.commercialName ?? '',
+    baseRate: item ? pesosText(item.baseRateCents) : '',
+    baseOperationalCost: item ? pesosText(item.baseOperationalCostCents) : '',
+    configuredCapacity: item?.configuredCapacity != null ? String(item.configuredCapacity) : '',
+    validFrom: item?.validFrom ?? '',
+    validTo: item?.validTo ?? '',
+    transportRequired: item?.transportRequired ?? false,
+    highRisk: item?.highRisk ?? false,
+  };
+}
+
+/** The end of the validity may not come before its start (ISO dates compare as text); shown as soon as both are typed. */
+function validityOrder(draft: Draft): string | undefined {
+  return draft.validFrom !== '' && draft.validTo !== '' && draft.validTo < draft.validFrom ? VALIDITY_ORDER : undefined;
+}
+
+/** The command if every field is valid, otherwise the message of each field that is not. */
+/** The fields shared by registering and changing; the type is added only when registering. */
+function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; messages: FieldMessages } {
+  const messages: FieldMessages = {};
+  if (draft.commercialName.trim() === '') {
+    messages.commercialName = 'Obligatorio.';
+  }
+  const rate = parseMoney(draft.baseRate);
+  if (rate.kind === 'invalid') {
+    messages.baseRate = MONEY_MESSAGES[rate.reason];
+  }
+  const cost = parseMoney(draft.baseOperationalCost);
+  if (cost.kind === 'invalid') {
+    messages.baseOperationalCost = MONEY_MESSAGES[cost.reason];
+  }
+  for (const name of ['validFrom', 'validTo'] as const) {
+    if (draft[name] === '') {
+      messages[name] = 'Obligatoria.';
+    }
+  }
+  const order = validityOrder(draft);
+  if (order) {
+    messages.validTo = order;
+  }
+  const capacityText = draft.configuredCapacity.trim();
+  if (capacityText === '' && draft.serviceType === CAPACITY_REQUIRED_FOR) {
+    messages.configuredCapacity = 'Obligatoria para un tour';
+  } else if (capacityText !== '' && !WHOLE_NUMBER.test(capacityText)) {
+    messages.configuredCapacity = 'Usa un número entero de 1 o más.';
+  }
+  if (rate.kind === 'invalid' || cost.kind === 'invalid' || Object.keys(messages).length > 0) {
+    return { command: null, messages };
+  }
+  return {
+    messages,
+    command: {
+      commercialName: draft.commercialName.trim(),
+      baseRateCents: rate.minorUnits,
+      baseOperationalCostCents: cost.minorUnits,
+      configuredCapacity: capacityText === '' ? null : Number(capacityText),
+      transportRequired: draft.transportRequired,
+      highRisk: draft.highRisk,
+      validFrom: draft.validFrom,
+      validTo: draft.validTo,
+    },
+  };
+}
+
+/** What a Collaborator may change (AC-P1.6): only the commercial name, so only it is validated and sent. */
+function validateDescription(draft: Draft): { command: UpdateDescriptionCommand | null; messages: FieldMessages } {
+  if (draft.commercialName.trim() === '') {
+    return { command: null, messages: { commercialName: 'Obligatorio.' } };
+  }
+  return { command: { commercialName: draft.commercialName.trim() }, messages: {} };
+}
+
+function isApiError(value: unknown): value is ApiError {
+  return typeof value === 'object' && value !== null && typeof (value as ApiError).userMessage === 'string';
+}
+
+let nextFormId = 0;
+
+@Component({
+  selector: 'app-catalog-item-form',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <form novalidate (submit)="submit($event)">
+      <section class="crp-form-panel">
+      <p class="crp-operator-eyebrow">01. Datos del tour</p>
+      <div class="crp-form-grid">
+      @for (field of shownTextFields(); track field.name) {
+        <div>
+          <label [for]="id(field.name)">{{ field.label }}</label>
+          <input
+            [type]="field.type"
+            [id]="id(field.name)"
+            [value]="draft()[field.name]"
+            [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
+            [attr.aria-describedby]="describedBy(field.name)"
+            (input)="onText(field.name, $event)"
+          />
+          @if (moneyPreview()[field.name]; as pesos) {
+            <small [attr.data-money-preview]="field.name">{{ pesos }}</small>
+          }
+          @if (messages()[field.name]; as text) {
+            <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p>
+          }
+        </div>
+      }
+      </div>
+      </section>
+      @if (scope() === 'all') {
+      <section class="crp-form-panel">
+      <p class="crp-operator-eyebrow">02. Condiciones</p>
+      <div class="crp-form-grid">
+      @for (field of checkFields; track field.name) {
+        <div>
+          <input
+            type="checkbox"
+            [id]="id(field.name)"
+            [checked]="draft()[field.name]"
+            [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
+            [attr.aria-describedby]="describedBy(field.name)"
+            (change)="onCheck(field.name, $event)"
+          />
+          <label [for]="id(field.name)">{{ field.label }}</label>
+          @if (messages()[field.name]; as text) {
+            <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p>
+          }
+        </div>
+      }
+      </div>
+      </section>
+      }
+      <div class="crp-form-actions">
+      <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
+      <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancelar</button>
+      <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar tour</button>
+      </div>
+      @for (text of formMessages(); track $index) {
+        <p role="alert">{{ text }}</p>
+      }
+    </form>
+  `,
+})
+export class CatalogItemFormComponent implements OnInit {
+  private readonly writer = inject(CatalogItemsWriter);
+  private readonly keys = inject(IdempotencyKeys);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly injector = inject(Injector);
+  /**
+   * One per registration intention, born when the form opens and not when it is submitted (D-07):
+   * a key made at submit would give a double click two keys, which is the duplicate it prevents.
+   * A refusal keeps it so the retry is the same intention; only a saved item makes a new one.
+   */
+  private idempotencyKey: string | null = null;
+  private readonly formId = `catalog-item-form-${nextFormId++}`;
+
+  /** Present to edit an item; absent to register a new one. */
+  readonly item = input<CatalogItem | undefined>(undefined);
+  /** The item as the service stored it, so the list can refresh without reloading the page. */
+  readonly saved = output<CatalogItem>();
+  /** The person gave up without saving; the host decides to close the form. */
+  /**
+   * What the actor may change: everything, or only the descriptive information (AC-P1.6). The other
+   * fields are not rendered, not just disabled, and the command carries only the name.
+   */
+  readonly scope = input<'all' | 'description'>('all');
+  readonly cancelled = output<void>();
+  /** True when a save starts and false when it ends, so the host never replaces the form mid-flight. */
+  readonly saving = output<boolean>();
+
+  protected readonly shownTextFields = computed(() => (this.scope() === 'all' ? TEXT_FIELDS : TEXT_FIELDS.filter((field) => field.name === 'commercialName')));
+  protected readonly checkFields = CHECK_FIELDS;
+  /** What a valid typed amount reads as on the screens (`$1.299.000`); the amount sent is still parsed by money.ts. */
+  protected readonly moneyPreview = computed<Partial<Record<TextField, string>>>(() => {
+    const preview: Partial<Record<TextField, string>> = {};
+    for (const name of ['baseRate', 'baseOperationalCost'] as const) {
+      const parsed = parseMoney(this.draft()[name]);
+      if (parsed.kind === 'valid') { preview[name] = formatCop(parsed.minorUnits); }
+    }
+    return preview;
+  });
+  protected readonly draft = linkedSignal(() => toDraft(this.item()));
+  protected readonly pending = signal(false);
+
+  private readonly attempted = signal(false);
+  private readonly refusedFields = signal<FieldMessages>({});
+  protected readonly formMessages = signal<readonly string[]>([]);
+
+  /** Local errors appear once the person tried to save; the service's own refusal always shows. */
+  protected readonly messages = computed<FieldMessages>(() => ({
+    ...this.refusedFields(),
+    ...(this.scope() === 'all' && validityOrder(this.draft()) ? { validTo: VALIDITY_ORDER } : {}),
+    ...(this.attempted() ? this.check().messages : {}),
+  }));
+
+  private check(): { command: UpdateCatalogItemCommand | UpdateDescriptionCommand | null; messages: FieldMessages } {
+    return this.scope() === 'all' ? validate(this.draft()) : validateDescription(this.draft());
+  }
+
+  ngOnInit(): void {
+    if (this.item() === undefined) {
+      this.idempotencyKey = this.keys.generate();
+    }
+  }
+
+  protected id(name: FieldName): string {
+    return `${this.formId}-${name}`;
+  }
+
+  protected describedBy(name: FieldName): string | null {
+    return this.messages()[name] ? `${this.id(name)}-error` : null;
+  }
+
+  protected onText(name: TextField, event: Event): void {
+    this.edit(name, (event.target as HTMLInputElement).value);
+  }
+
+  protected onCheck(name: CheckField, event: Event): void {
+    this.edit(name, (event.target as HTMLInputElement).checked);
+  }
+
+  private edit<K extends FieldName>(name: K, value: Draft[K]): void {
+    this.draft.update((current) => ({ ...current, [name]: value }));
+    this.refusedFields.update(({ [name]: _cleared, ...rest }) => rest);
+  }
+
+  protected submit(event: Event): void {
+    event.preventDefault();
+    // Checked before anything else: a second click arrives before the button is rendered disabled.
+    if (this.pending()) {
+      return;
+    }
+    this.attempted.set(true);
+    const { command } = this.check();
+    if (command === null) {
+      this.focusFirstErrorOnRender();
+      return;
+    }
+    this.pending.set(true);
+    this.saving.emit(true);
+    this.refusedFields.set({});
+    this.formMessages.set([]);
+    const current = this.item();
+    // Editing sends no serviceType: the contract refuses it, the type is fixed at creation.
+    const request = current
+      ? this.writer.update(current.serviceId, command)
+      : this.writer.create({ serviceType: this.draft().serviceType, ...(command as UpdateCatalogItemCommand) }, (this.idempotencyKey ??= this.keys.generate()));
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (stored) => {
+        this.pending.set(false);
+        this.saving.emit(false);
+        if (!current) {
+          this.draft.set(toDraft(undefined));
+          this.idempotencyKey = this.keys.generate();
+          this.attempted.set(false);
+        }
+        this.saved.emit(stored);
+      },
+      // The draft is left as it is: a refusal must keep what the person typed (RN-P10).
+      error: (error: unknown) => {
+        this.pending.set(false);
+        this.saving.emit(false);
+        this.showRefusal(error);
+      },
+    });
+  }
+
+  private showRefusal(error: unknown): void {
+    if (!isApiError(error)) {
+      this.formMessages.set([REQUEST_FAILED]);
+      return;
+    }
+    const fields: FieldMessages = {};
+    const unplaced: string[] = [];
+    for (const detail of Array.isArray(error.details) ? error.details : []) {
+      const field = FIELD_OF_WIRE_NAME[detail.field];
+      if (field) {
+        fields[field] = detail.message;
+      } else {
+        unplaced.push(detail.message);
+      }
+    }
+    this.refusedFields.set(fields);
+    this.formMessages.set([error.userMessage, ...unplaced]);
+    this.focusFirstErrorOnRender();
+  }
+
+  /** HC-4: once the refusal is drawn, the focus goes to the first field in error. */
+  private focusFirstErrorOnRender(): void {
+    afterNextRender(() => focusFirstError(this.host.nativeElement), { injector: this.injector });
+  }
+}

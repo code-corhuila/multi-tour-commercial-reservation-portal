@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./out-tsc/module", "types": [] },
+  "files": ["src/mount-entry.ts"]
+}
