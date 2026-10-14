@@ -3,6 +3,8 @@ import { Injectable, signal } from '@angular/core';
 /** Keys of the client areas the client header and footer open; a story registers its client area under one of them. */
 export const CLIENT_AREA = Object.freeze({
   panel: 'client-panel', tours: 'tours', lodging: 'lodging', gastronomy: 'gastronomy', reservations: 'my-reservations',
+  /** HU-COM-014 mis-pagos.html, opened from 17. */
+  payments: 'my-payments',
 } as const);
 
 /**

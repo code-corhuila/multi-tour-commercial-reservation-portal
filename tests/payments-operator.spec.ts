@@ -112,7 +112,7 @@ describe('cashWithoutAnOpenCashSessionIsRejected (AC-PY.4, RN-PY4)', () => {
   it('registers nothing and says why when the demo asks for a closed cash session', async () => {
     demoQuery('?demoFixtures=closed-cash-session');
     const { element, type, click } = await managementOf('TENANT_ADMINISTRATOR', CASH);
-    await type('amount', '50000'); await click('Registrar abono');
+    await type('amount', '50000'); await click('Registrar pago recibido');
     expect(element.querySelector('[role="alert"]')?.textContent).toContain('No hay una sesión de caja abierta');
     expect((await stored(CASH)).payments ?? []).toHaveLength(0);
   });
@@ -128,7 +128,7 @@ describe('the seat is taken with the first payment (AC-PY.5, AC-PY.6, RN-PY5)', 
     store.items = [...store.items, onPitalito('RES-A'), onPitalito('RES-B')];
     await register(CASH, 100, null, 'k-1');
     await register('RES-A', 100, null, 'k-2');
-    expect(await refusal(register('RES-B', 100, null, 'k-3'))).toContain('No hay cupo disponible');
+    expect(await refusal(register('RES-B', 100, null, 'k-3'))).toContain('no tiene cupo suficiente');
     expect((await stored('RES-B')).payments ?? []).toHaveLength(0);
     expect((await stored('RES-B')).seatHeld).toBe(false);
   });
@@ -138,14 +138,14 @@ describe('the seat is taken with the first payment (AC-PY.5, AC-PY.6, RN-PY5)', 
     const store = TestBed.inject(ReservationsSource) as DemoReservationsStore;
     store.items = [...store.items, onPitalito('RES-A', 2)];
     await register(CASH, 100, null, 'k-1');
-    expect(await refusal(register('RES-A', 100, null, 'k-2'))).toContain('No hay cupo disponible');
+    expect(await refusal(register('RES-A', 100, null, 'k-2'))).toContain('no tiene cupo suficiente');
     expect((await register(CASH, 100, null, 'k-3')).payments).toHaveLength(2);
   });
 
   it('refuses the first payment when the demo asks for a full departure', async () => {
     demoQuery('?demoFixtures=full-departure');
     TestBed.configureTestingModule({ providers: demoProviders() });
-    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toContain('No hay cupo disponible');
+    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toContain('no tiene cupo suficiente');
   });
 });
 
@@ -153,7 +153,7 @@ describe('noPaymentOrProofFromTheScheduledStart (AC-PY.7, RN-PY6)', () => {
   it('refuses a payment and a proof once the departure started, by the demo clock, and accepts them the day before', async () => {
     demoQuery('?demoNow=2026-11-07T08:00:00-05:00');
     TestBed.configureTestingModule({ providers: demoProviders() });
-    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toBe('La salida ya inició: no se aceptan pagos ni soportes.');
+    expect(await refusal(register(TRANSFER, 100, pdf(), 'k-1'))).toBe('Se alcanzó la hora programada de inicio de la salida: ya no se aceptan pagos ni comprobantes.');
     expect((await stored(TRANSFER)).payments ?? []).toHaveLength(0);
     demoQuery('?demoNow=2026-11-06T20:00:00-05:00');
     expect((await register(TRANSFER, 100, pdf(), 'k-2')).payments).toHaveLength(1);
@@ -162,8 +162,8 @@ describe('noPaymentOrProofFromTheScheduledStart (AC-PY.7, RN-PY6)', () => {
   it('says why on screen 13', async () => {
     demoQuery('?demoNow=2026-11-20T08:00:00-05:00');
     const { element, type, click } = await managementOf('TENANT_ADMINISTRATOR', CASH);
-    await type('amount', '50000'); await click('Registrar abono');
-    expect(element.querySelector('[role="alert"]')?.textContent).toContain('La salida ya inició');
+    await type('amount', '50000'); await click('Registrar pago recibido');
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Se alcanzó la hora programada de inicio');
   });
 });
 
@@ -186,19 +186,19 @@ describe('screen 13, Gestión de pago', () => {
     const text = element.textContent!;
     for (const label of ['Seguimiento de reserva', 'Información de pago', 'Pago total · Transferencia', 'Estado del comprobante', 'Sin comprobante',
       'Situación financiera', 'Sin pago', 'Estado económico', 'Valor final', 'Saldo pendiente', '$850.000', 'Acción de pago', 'Laura Gómez (demo)',
-      'Registra el pago de esta reserva', 'El comprobante no es ingreso de caja hasta su validación.']) {
+      'Registra el pago de esta reserva', 'El comprobante no es ingreso de caja hasta su validación y la reserva permanece Pendiente de pago']) {
       expect(text, label).toContain(label);
     }
     expect(element.querySelector('select')).toBeNull();
-    expect(element.querySelector('label[for="crp-payments-proof"]')?.textContent).toContain('Soporte de transferencia');
+    expect(element.querySelector('label[for="crp-payments-proof"]')?.textContent).toContain('Comprobante de transferencia (PDF, JPG, JPEG o PNG, máximo 5 MB)');
     expect(element.querySelector('label[for="crp-payments-amount"]')?.textContent).toContain('Monto recibido');
   });
 
-  it('names the action by the modality: Registrar soporte, Registrar abono or Registrar pago', async () => {
-    expect((await managementOf()).submit()?.textContent?.trim()).toBe('Registrar soporte');
+  it('names the action by the modality: Registrar comprobante or Registrar pago recibido', async () => {
+    expect((await managementOf()).submit()?.textContent?.trim()).toBe('Registrar comprobante');
     TestBed.resetTestingModule();
     const cash = await managementOf('TENANT_ADMINISTRATOR', CASH);
-    expect(cash.submit()?.textContent?.trim()).toBe('Registrar abono');
+    expect(cash.submit()?.textContent?.trim()).toBe('Registrar pago recibido');
     expect(cash.element.querySelector('input[type="file"]')).toBeNull();
     expect(cash.element.textContent).toContain('Abono · Efectivo');
   });
@@ -208,14 +208,14 @@ describe('screen 13, Gestión de pago', () => {
     expect(element.textContent).not.toMatch(/actualizar el estado de pago|Confirmada con pago completo/);
     await type('amount', '300000'); await attach(pdf()); submit()!.click(); await settle();
     expect(element.querySelector('[role="status"].crp-payments-feedback')?.textContent)
-      .toBe('Soporte registrado. El pago queda en validación y la reserva permanece pendiente de pago.');
+      .toBe('Comprobante registrado en nombre del cliente. Queda En validación y la reserva sigue Pendiente de pago hasta su aprobación.');
   });
 
   it('refuses to register on a reservation without a modality, with the message of the mockup', async () => {
     const reservations = new DemoReservationsStore([reservationOf('RES-77', { departureId: 'demo-dep-1' })]);
     const { element, submit } = await managementOf('TENANT_ADMINISTRATOR', 'RES-77', [{ provide: ReservationsSource, useValue: reservations }]);
     expect(element.textContent).toContain('Sin modalidad definida');
-    expect(element.textContent).toContain('No hay una modalidad de pago habilitada para esta reserva. Defínela antes de registrar dinero.');
+    expect(element.textContent).toContain('No hay un medio de pago definido para esta reserva. Defínelo antes de registrar dinero.');
     expect(submit()?.disabled).toBe(true);
     expect(element.querySelector<HTMLInputElement>('[name="amount"]')?.disabled).toBe(true);
   });
@@ -223,7 +223,7 @@ describe('screen 13, Gestión de pago', () => {
   it('missingAmountOrProofIsShownBesideItsFieldAndNothingIsSent (AC-PY.10)', async () => {
     const { element, submit, settle } = await managementOf();
     submit()!.click(); await settle();
-    const messages: Record<string, string> = { amount: 'Registra un monto mayor a $0.', proof: 'Adjunta el soporte de transferencia para enviarlo a validación.' };
+    const messages: Record<string, string> = { amount: 'Registra un monto mayor a $0.', proof: 'Adjunta el comprobante de transferencia para enviarlo a validación.' };
     for (const name of ['amount', 'proof']) {
       const field = element.querySelector(`[name="${name}"]`)!;
       expect(field.getAttribute('aria-invalid'), name).toBe('true');
@@ -254,7 +254,7 @@ describe('screen 13, Gestión de pago', () => {
 
   it('paymentLineShowsTheUserWhoRegisteredIt (AC-PY.8)', async () => {
     const { element, type, click } = await managementOf('OPERATIONAL_COLLABORATOR', CASH);
-    await type('amount', '300000'); await click('Registrar abono');
+    await type('amount', '300000'); await click('Registrar pago recibido');
     const line = element.querySelector('.crp-payments-lines li')?.textContent;
     expect(line).toContain('$300.000');
     expect(line).toContain('Registrado por Colaborador operativo (demo)');
@@ -262,7 +262,7 @@ describe('screen 13, Gestión de pago', () => {
 
   it('paymentManagementDrawsNoValidateOrRejectAction, and offers PAYMENT_MANAGEMENT_ACTIONS in Acción de pago', async () => {
     const plain = await managementOf();
-    expect(plain.element.textContent).not.toMatch(/Validar soporte|Rechazar soporte|24 horas|Historial/);
+    expect(plain.element.textContent).not.toMatch(/Validar comprobante|Rechazar comprobante|Historial/);
     TestBed.resetTestingModule();
     @Component({ selector: 'crp-test-action', template: '<button type="button">Acción {{ reservation()?.id }}</button>' })
     class ActionDouble { readonly reservation = input<Reservation>(); }
@@ -287,7 +287,7 @@ describe('screen 13, Gestión de pago', () => {
   });
 });
 
-describe('the Pagos y soportes block of 10A and the Gestionar pago action of 10C', () => {
+describe('the Pagos y comprobantes block of 10A and the Gestionar pago action of 10C', () => {
   async function viewOf(role: string, fresh: boolean, reservation: Reservation, methods: PaymentMethodsSource = new DemoPaymentMethods()) {
     TestBed.configureTestingModule({ providers: [...demoProviders(role), { provide: PaymentMethodsSource, useValue: methods },
       contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK)] });
@@ -305,7 +305,7 @@ describe('the Pagos y soportes block of 10A and the Gestionar pago action of 10C
   it('draws Tipo, Medio, Estado del comprobante, Situación financiera, Valores validados and Saldo pendiente on 10A', async () => {
     const { element, manage } = await viewOf('TENANT_ADMINISTRATOR', false, paid);
     const block = element.querySelector('.crp-payments-block')!;
-    expect(block.textContent).toContain('Pagos y soportes');
+    expect(block.textContent).toContain('Pagos y comprobantes');
     expect(block.textContent).toContain('Seguimiento económico');
     expect(Array.from(block.querySelectorAll('th'), (th) => th.textContent?.trim()))
       .toEqual(['Tipo', 'Medio', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente']);
@@ -383,7 +383,7 @@ describe('payment capabilities and wiring', () => {
       expect(host.querySelector('nav .crp-is-active')?.textContent?.trim()).toBe('Reservas');
       const amount = host.querySelector<HTMLInputElement>('[name="amount"]')!;
       amount.value = '50000'; amount.dispatchEvent(new Event('input'));
-      press('Registrar abono');
+      press('Registrar pago recibido');
       await vi.waitFor(() => expect(host.querySelector('.crp-payments-lines li')?.textContent).toContain('$50.000'));
       press('Volver a la reserva');
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Detalle de reserva'));
@@ -395,7 +395,7 @@ describe('payment capabilities and wiring', () => {
 });
 
 describe('screen 13 registers money only for a payable reservation (mockup app.js 6700-6744, spec 009- section 5)', () => {
-  const CANCELLED_NOTE = 'Esta reserva está cancelada: no se pueden registrar nuevos pagos ni soportes. Se conserva la trazabilidad existente.';
+  const CANCELLED_NOTE = 'Esta reserva está cancelada: no se pueden registrar nuevos pagos ni comprobantes. Se conserva la trazabilidad existente.';
   const closedNote = (status: string) => `Esta reserva está en estado "${status}" y ya no admite modificaciones.`;
   const inValidation = (over: Partial<Reservation> = {}) => new DemoReservationsStore([reservationOf('RES-78', { departureId: 'demo-dep-1', paymentType: 'TOTAL',
     paymentMethod: 'BANK_TRANSFER', payments: [{ id: 'p-1', method: 'BANK_TRANSFER', amountCents: 100, proofName: 'a.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Demo' }], ...over })]);

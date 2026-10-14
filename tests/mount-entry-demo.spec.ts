@@ -32,8 +32,11 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     mountAs(['FINAL_CUSTOMER']);
     await openSelfService();
     await vi.waitFor(() => expect(host.querySelectorAll('.self-service-panel [data-state="data"] li').length).toBeGreaterThan(0));
-    // No action on a reservation, and no back link in the body: Volver al panel is in the compact header.
-    expect(host.querySelectorAll('.self-service-panel button')).toHaveLength(0);
+    // No action on a reservation but the ones of the mockup card that only open screens: Responder propuesta of HU-COM-018 (24A), Continuar pago and
+    // Ver pagos y comprobantes of HU-COM-014 (24 and Mis pagos); and no back link in the body.
+    const labels = Array.from(host.querySelectorAll('.self-service-panel button'), (b) => b.textContent?.trim());
+    expect(new Set(labels)).toEqual(new Set(['Responder propuesta', 'Continuar pago', 'Ver pagos y comprobantes']));
+    expect(labels.filter((l) => l === 'Responder propuesta')).toEqual(['Responder propuesta']);
     expect(host.querySelector('.crp-client-panel-header')?.textContent).toContain('Volver al panel');
     expect(host.querySelector('.self-service-panel')?.textContent).toContain('Pendiente de pago');
     for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', 'demo-dep-1', 'demo-res']) expect(host.textContent).not.toContain(raw);

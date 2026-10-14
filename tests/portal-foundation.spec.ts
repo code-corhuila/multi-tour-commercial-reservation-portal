@@ -8,9 +8,11 @@ import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { ReservationViewComponent } from '../src/app/reservations/components/reservation-view.component';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
+import { MyPaymentsSource } from '../src/app/my-payments/data/my-payments-source';
+import { MyProposalsSource } from '../src/app/rescheduling/data/rescheduling-ports';
 import { ActorContext } from '../src/app/shared/actor-context';
 import {
-  CHECKOUT_BLOCKS, CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENT_MANAGEMENT_ACTIONS,
+  CHECKOUT_BLOCKS, CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENT_MANAGEMENT_ACTIONS, PAYMENT_MANAGEMENT_NOTES,
   PortalSlot, PortalSlotOutlet, PAYMENTS_TABLE_BODIES, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS, RESERVATION_DETAIL_ACTIONS, RESERVATION_DETAIL_BLOCKS, RESERVATION_ROW_ACTIONS, TRANSFER_PAYMENT_LINES, contribute,
 } from '../src/app/shared/portal-slots';
 import { actorAs } from './actor-context.double';
@@ -91,11 +93,11 @@ describe('portalSlots', () => {
   it('declares the canonical tokens of the cut 3 stories, empty until a story contributes', () => {
     const tokens = [RESERVATION_DETAIL_BLOCKS, RESERVATION_ROW_ACTIONS, CHECKOUT_BLOCKS, TRANSFER_PAYMENT_LINES, PAYMENT_MANAGEMENT_ACTIONS,
       PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, CLIENT_QUICK_ACTIONS, CLIENT_NOTICES, RESERVATION_CARD_EXTRAS, RESERVATION_DETAIL_ACTIONS,
-      RESERVATION_CARD_ACTIONS, PAYMENTS_TABLE_BODIES];
+      RESERVATION_CARD_ACTIONS, PAYMENTS_TABLE_BODIES, PAYMENT_MANAGEMENT_NOTES];
     expect(tokens.map((token) => token.toString())).toEqual([
       'RESERVATION_DETAIL_BLOCKS', 'RESERVATION_ROW_ACTIONS', 'CHECKOUT_BLOCKS', 'TRANSFER_PAYMENT_LINES', 'PAYMENT_MANAGEMENT_ACTIONS',
       'PAYMENTS_PAGE_PANELS', 'PAYMENTS_ROW_ACTIONS', 'CLIENT_QUICK_ACTIONS', 'CLIENT_NOTICES', 'RESERVATION_CARD_EXTRAS', 'RESERVATION_DETAIL_ACTIONS',
-      'RESERVATION_CARD_ACTIONS', 'PAYMENTS_TABLE_BODIES',
+      'RESERVATION_CARD_ACTIONS', 'PAYMENTS_TABLE_BODIES', 'PAYMENT_MANAGEMENT_NOTES',
     ].map((name) => `InjectionToken ${name}`));
   });
 
@@ -163,19 +165,23 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     expect(methodCard.nextElementSibling?.tagName).toBe('CRP-TEST-SECOND');
   });
 
-  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES under Notificaciones of 17, which is absent without notices', async () => {
-    mountAs([], ['FINAL_CUSTOMER']);
+  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES in the Notificaciones bell of 17', async () => {
+    // HU-COM-014 and HU-COM-018 register CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with their ports: without those ports 17 is as the base left it.
+    mountAs([{ provide: MyPaymentsSource, useValue: null }, { provide: MyProposalsSource, useValue: null }], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
-    expect(host.textContent).not.toContain('Notificaciones');
+    expect(host.querySelector('.crp-client-bell-panel')?.textContent).toContain('No tienes notificaciones nuevas.');
+    expect(host.querySelector('app-client-panel-page .crp-panel-notices')).toBeNull();
     cleanup?.(); host.remove();
 
     mountAs([contribute(CLIENT_QUICK_ACTIONS, { component: QuickDouble, order: 1 }), contribute(CLIENT_NOTICES, { component: SecondDouble, order: 1 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     expect(host.querySelector('.crp-panel-quick ul > li:last-child')?.matches('[crpTestQuick]')).toBe(true);
-    const notices = host.querySelector('.crp-panel-layout + .crp-panel-notices');
+    // The notices live in the bell of the panel header (panel-cliente.html), not in a central block.
+    const notices = host.querySelector('.crp-client-bell-panel');
     expect(notices?.querySelector('h2')?.textContent).toBe('Notificaciones');
     expect(notices?.querySelector('crp-test-second')).toBeTruthy();
-    expect(notices?.nextElementSibling?.classList).toContain('crp-panel-featured');
+    expect(notices?.textContent).not.toContain('No tienes notificaciones nuevas.');
+    expect(host.querySelector('app-client-panel-page .crp-panel-notices')).toBeNull();
   });
 
   it('draws RESERVATION_CARD_EXTRAS in each card of Mis reservas, under the departure line', async () => {
@@ -204,7 +210,7 @@ describe('theOutletsOfTheScreensInDevelop', () => {
 
   // Mis reservas: "Responder propuesta" (018) closes the card (app.js:2694).
   it('draws RESERVATION_CARD_ACTIONS at the end of each card of Mis reservas', async () => {
-    mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 1 })], ['FINAL_CUSTOMER']);
+    mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 99 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     click('.crp-panel-card button', 'Ver mis reservas');
     await vi.waitFor(() => expect(host.querySelector('.self-service-panel [data-state="data"] li')).toBeTruthy());

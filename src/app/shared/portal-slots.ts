@@ -23,12 +23,16 @@ export const CHECKOUT_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_BLO
 export const TRANSFER_PAYMENT_LINES: PortalSlotToken = new InjectionToken('TRANSFER_PAYMENT_LINES');
 /** 13 sub-screen (admin-gestion-pago): actions of the payment management page; the outlet comes with that page. */
 export const PAYMENT_MANAGEMENT_ACTIONS: PortalSlotToken = new InjectionToken('PAYMENT_MANAGEMENT_ACTIONS');
+/** 13 sub-screen (admin-gestion-pago): notes under the Acción de pago copy, before the form; the outlet comes with that page. Input: reservation. */
+export const PAYMENT_MANAGEMENT_NOTES: PortalSlotToken = new InjectionToken('PAYMENT_MANAGEMENT_NOTES');
 /** 13 (admin-pagos): page panels, such as "Devoluciones monetarias"; the outlet comes with that page. */
 export const PAYMENTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('PAYMENTS_PAGE_PANELS');
 /** 13 (admin-pagos): actions of each payments row; the outlet comes with that page. */
 export const PAYMENTS_ROW_ACTIONS: PortalSlotToken = new InjectionToken('PAYMENTS_ROW_ACTIONS');
 /** 13 (admin-pagos): row groups of "Pagos pendientes" after the page's own, each a tbody of its story; the outlet comes with that page. */
 export const PAYMENTS_TABLE_BODIES: PortalSlotToken = new InjectionToken('PAYMENTS_TABLE_BODIES');
+/** admin-notificaciones.html, frame of HU-COM-016 (DP-RF6): the items of "Alertas del tenant"; the area exists only while one is available. */
+export const OPERATOR_NOTIFICATIONS: PortalSlotToken = new InjectionToken('OPERATOR_NOTIFICATIONS');
 /** 17 (panel-cliente): items of "Acciones rápidas" after its own; a contribution's selector names an li. */
 export const CLIENT_QUICK_ACTIONS: PortalSlotToken = new InjectionToken('CLIENT_QUICK_ACTIONS');
 /** 17 (panel-cliente): the "Notificaciones" section, drawn only when a notice is available. */
@@ -39,6 +43,12 @@ export const RESERVATION_CARD_EXTRAS: PortalSlotToken = new InjectionToken('RESE
 export const RESERVATION_DETAIL_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_DETAIL_ACTIONS');
 /** Mis reservas: actions closing each reservation card, such as "Responder propuesta". Input: reservationId. */
 export const RESERVATION_CARD_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_CARD_ACTIONS');
+/** Treatment sub-screen of 13 (admin-tratamiento-pendiente-devolucion), owned by HU-COM-016: actions after "Registrar devolución del 100 %".
+ * Inputs: reservationId, decided (the refund or its default closed it), changed (called after a contribution records a decision). */
+export const REFUND_TREATMENT_ACTIONS: PortalSlotToken = new InjectionToken('REFUND_TREATMENT_ACTIONS');
+
+/** 12 (admin-descuentos): panels after the list of promotions, such as "Decisiones excepcionales"; empty until another story contributes. */
+export const DISCOUNTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('DISCOUNTS_PAGE_PANELS');
 
 /** The available contributions of a slot, by order. */
 export function slotEntries(slot: PortalSlotToken, injector: Injector): readonly Type<unknown>[] {

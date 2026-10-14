@@ -34,7 +34,7 @@ const navigationWith = (params: Record<string, string>) => { const nav = new Por
 
 afterEach(() => { TestBed.resetTestingModule(); demoQuery(); });
 
-describe('the Método y plazo de pago block of 21', () => {
+describe('the Tipo de pago y plazo block of 21', () => {
   async function blockOf(reservation: CustomerReservation | null, methods: PaymentMethodsSource = new DemoPaymentMethods(), method = '') {
     const navigation = new PortalNavigation(), open = vi.spyOn(navigation, 'open').mockReturnValue(true);
     TestBed.configureTestingModule({ providers: [{ provide: PaymentMethodsSource, useValue: methods }, { provide: PortalNavigation, useValue: navigation }] });
@@ -52,10 +52,10 @@ describe('the Método y plazo de pago block of 21', () => {
 
   it('methodBlockOffersOnlyEnabledTypesAndMethods: the enabled types with the texts of the mockup, the first one chosen', async () => {
     const { element } = await blockOf(null);
-    expect(element.querySelector('h2')?.textContent).toBe('Método y plazo de pago');
+    expect(element.querySelector('h2')?.textContent).toBe('Tipo de pago y plazo');
     const options = Array.from(element.querySelectorAll('label.crp-checkout-option'), (l) => l.textContent?.replace(/\s+/g, ' ').trim());
-    expect(options).toEqual(['Pago total Completa el valor final de la reserva.',
-      'Abono Confirma según el abono mínimo parametrizado y conserva el saldo pendiente.']);
+    expect(options).toEqual(['Pago total Se confirma cuando se valida el 100 % del valor final, en uno o varios pagos.',
+      'Abono Se confirma cuando se valida como mínimo el abono mínimo del servicio; el saldo queda pendiente con plazo propio.']);
     expect(element.querySelector<HTMLInputElement>('input[value="TOTAL"]')?.checked).toBe(true);
     expect(element.querySelector('[name="deposit"]')).toBeNull();
     expect(element.textContent).not.toMatch(/Continuar al pago|plazo máximo/i);
@@ -70,30 +70,28 @@ describe('the Método y plazo de pago block of 21', () => {
 
   it('cashChosenByTheCustomerSaysTheOfficeRegistersIt, with no proof and no payment step (DP-PY6)', async () => {
     const { element, button } = await blockOf(created('CASH_AT_OFFICE'));
-    expect(element.textContent).toContain('El pago en efectivo será registrado por el equipo del operador.');
-    expect(element.textContent).toContain('El pago en efectivo no confirma la reserva hasta que el dinero sea recibido y registrado por el equipo del operador.');
+    expect(element.textContent).toContain('Elegir efectivo registra solo una promesa de pago');
     expect(button('Continuar al pago')).toBeUndefined();
     expect(element.querySelector('input[type="file"]')).toBeNull();
   });
 
   it('showsTheMediumNotesAsSoonAsTheMediumIsChosen, before the reservation exists (AC-PY.2, mockup app.js 1953-1956)', async () => {
     const none = await blockOf(null);
-    expect(none.element.textContent).not.toMatch(/El pago en efectivo|La transferencia queda pendiente/);
+    expect(none.element.textContent).not.toMatch(/Elegir efectivo|queda En validación únicamente/);
     TestBed.resetTestingModule();
     const cash = await blockOf(null, new DemoPaymentMethods(), 'CASH_AT_OFFICE');
-    expect(cash.element.textContent).toContain('El pago en efectivo será registrado por el equipo del operador.');
-    expect(cash.element.textContent).toContain('El pago en efectivo no confirma la reserva hasta que el dinero sea recibido y registrado por el equipo del operador.');
-    expect(cash.element.textContent).not.toContain('La transferencia queda pendiente de revisión mediante comprobante.');
+    expect(cash.element.textContent).toContain('Elegir efectivo registra solo una promesa de pago');
+    expect(cash.element.textContent).not.toContain('queda En validación únicamente cuando lo envías.');
     TestBed.resetTestingModule();
     const transfer = await blockOf(null, new DemoPaymentMethods(), 'BANK_TRANSFER');
-    expect(transfer.element.textContent).toContain('La transferencia queda pendiente de revisión mediante comprobante.');
-    expect(transfer.element.textContent).not.toContain('El pago en efectivo');
+    expect(transfer.element.textContent).toContain('queda En validación únicamente cuando lo envías.');
+    expect(transfer.element.textContent).not.toContain('Elegir efectivo');
     expect(transfer.button('Continuar al pago')).toBeUndefined();
   });
 
   it('opens screen 24 for a created transfer reservation, with the type and the final value for a Pago total', async () => {
     const { element, button, open, settle } = await blockOf(created('BANK_TRANSFER'));
-    expect(element.textContent).toContain('La transferencia queda pendiente de revisión mediante comprobante.');
+    expect(element.textContent).toContain('queda En validación únicamente cuando lo envías.');
     button('Continuar al pago')!.click(); await settle();
     expect(open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1843', type: 'TOTAL', amount: String(QUOTE.finalValueCents) });
   });
@@ -164,14 +162,14 @@ describe('screen 24, Pago por transferencia', () => {
     const { element } = await transferOf();
     expect(element.querySelector('h1')?.textContent).toBe('Pago por transferencia');
     const text = element.textContent!.replace(/\s+/g, ' ');
-    for (const piece of ['Reserva Pendiente de pago', 'Realiza la transferencia y sube obligatoriamente la imagen del comprobante.',
+    for (const piece of ['Reserva Pendiente de pago', 'Realiza la transferencia y sube el comprobante.',
       'Datos bancarios', 'Banco', 'Banco de ejemplo', 'Tipo de cuenta', 'Ahorros', 'Número de cuenta', '000-000-000', 'Titular', 'Travesía Natural',
-      'Comprobante obligatorio', 'Código de referencia: #RES-1842', 'Estado del comprobante: Sin comprobante', 'Situación financiera: Sin pago',
-      'Enviar comprobante para validación', 'Volver al panel']) {
+      'Comprobante de pago', 'Reserva #RES-1842', 'Estado del comprobante: Sin comprobante', 'Situación financiera: Sin pago',
+      'Enviar comprobante para validación', 'Volver a mis reservas']) {
       expect(text, piece).toContain(piece);
     }
-    expect(element.querySelector('label[for="crp-transfer-proof"]')?.textContent).toBe('Imagen del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)');
-    expect(text).not.toMatch(/24 horas|plazo de pago|PENDING_PAYMENT|SIN_PAGO|undefined/);
+    expect(element.querySelector('label[for="crp-transfer-proof"]')?.textContent).toBe('Archivo del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)');
+    expect(text).not.toMatch(/PENDING_PAYMENT|SIN_PAGO|undefined/);
   });
 
   it('a customer reaches only their own reservations: another one gets the empty state (AC-PY.9)', async () => {
@@ -190,10 +188,10 @@ describe('screen 24, Pago por transferencia', () => {
     await click('Enviar comprobante para validación');
     expect((await stored()).payments ?? []).toHaveLength(0);
     await attach(pdf());
-    expect(feedback()).toBe('Archivo válido. El comprobante quedará En validación hasta su revisión.');
+    expect(feedback()).toBe('Archivo válido. El comprobante quedará En validación solo cuando lo envíes.');
   });
 
-  it('customerTransferLeavesThePaymentPendingAndTheReservationUnchanged, shows the customer as who registered it and goes to the panel', async () => {
+  it('customerTransferLeavesThePaymentPendingAndTheReservationUnchanged, shows the customer as who registered it and opens Comprobante recibido or the panel', async () => {
     const { attach, click, stored } = await transferOf({ reservation: 'RES-1842', type: 'PARTIAL', amount: '30000000' });
     const before = await stored(), open = vi.spyOn(TestBed.inject(PortalNavigation), 'open');
     await attach(pdf()); await click('Enviar comprobante para validación');
@@ -201,6 +199,7 @@ describe('screen 24, Pago por transferencia', () => {
     expect(after.payments).toEqual([expect.objectContaining({ amountCents: 30_000_000, method: 'BANK_TRANSFER', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)' })]);
     expect(after).toMatchObject({ status: before.status, financialStatus: before.financialStatus, balanceCents: before.balanceCents, paymentType: 'TOTAL' });
     expect(open).toHaveBeenCalledWith(CLIENT_AREA.panel);
+    expect(open.mock.calls[0]).toEqual(['payment-received', { reservation: 'RES-1842' }]);
   });
 
   it('a double click sends one proof under one key', async () => {
@@ -215,11 +214,11 @@ describe('screen 24, Pago por transferencia', () => {
     demoQuery('?demoNow=2026-11-07T09:00:00-05:00');
     const { element, attach, click, stored } = await transferOf();
     await attach(pdf()); await click('Enviar comprobante para validación');
-    expect(element.querySelector('[role="alert"]')?.textContent).toContain('La salida ya inició');
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Se alcanzó la hora programada de inicio');
     expect((await stored()).payments ?? []).toHaveLength(0);
   });
 
-  it('offers TRANSFER_PAYMENT_LINES in Comprobante obligatorio', async () => {
+  it('offers TRANSFER_PAYMENT_LINES in Comprobante de pago', async () => {
     @Component({ selector: 'crp-test-line', template: '<p>Línea {{ reservationId() }}</p>' })
     class LineDouble { readonly reservationId = input<string>(); }
     const { element } = await transferOf(TOTAL, [contribute(TRANSFER_PAYMENT_LINES, { component: LineDouble, order: 1 })]);
@@ -257,7 +256,7 @@ describe('customer payment wiring', () => {
       const method = host.querySelector<HTMLSelectElement>('#self-service-method')!;
       method.value = 'CASH_AT_OFFICE'; method.dispatchEvent(new Event('change'));
       await vi.waitFor(() => expect(host.querySelector('.crp-checkout-payment')?.textContent)
-        .toContain('El pago en efectivo no confirma la reserva hasta que el dinero sea recibido y registrado por el equipo del operador.'));
+        .toContain('Elegir efectivo registra solo una promesa de pago'));
       expect(host.querySelector('.self-service-created')).toBeNull();
     } finally { cleanup(); host.remove(); }
   });

@@ -14,6 +14,7 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { EstablishmentsPageComponent } from '../src/app/establishments/pages/establishments-page.component';
+import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
 import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea } from '../src/app/portal-areas';
@@ -27,10 +28,19 @@ import { MyReservationsPageComponent } from '../src/app/self-service-reservation
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 import { PaymentManagementPageComponent } from '../src/app/payments/pages/payment-management-page.component';
 import { TransferPaymentPageComponent } from '../src/app/payments/pages/transfer-payment-page.component';
+import { PaymentReceivedPageComponent, PaymentRejectedPageComponent } from '../src/app/payments/pages/payment-result-pages.component';
+import { ReschedulingPageComponent } from '../src/app/rescheduling/pages/rescheduling-page.component';
+import { ReschedulingProposalPageComponent } from '../src/app/rescheduling/pages/rescheduling-proposal-page.component';
 import { actorAs } from './actor-context.double';
 import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
 import { ValidateProofPageComponent } from '../src/app/payments/pages/validate-proof-page.component';
+import { PaymentFollowupPageComponent } from '../src/app/payments/pages/payment-followup-page.component';
+import { RefundDetailPageComponent } from '../src/app/refunds/pages/refund-detail-page.component';
+import { RefundManagePageComponent } from '../src/app/refunds/pages/refund-manage-page.component';
+import { RefundTreatmentPageComponent } from '../src/app/refunds/pages/refund-treatment-page.component';
+import { NotificationsPageComponent } from '../src/app/refunds/pages/notifications-page.component';
+import { RefundRequestsPageComponent } from '../src/app/refunds/pages/refund-requests-page.component';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
 
@@ -100,8 +110,19 @@ describe('portalAreasRegistry', () => {
       { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
       { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
       { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
+      { key: 'payment-received', label: 'Comprobante recibido', component: PaymentReceivedPageComponent },
+      { key: 'payment-rejected', label: 'Comprobante rechazado', component: PaymentRejectedPageComponent },
       { key: 'payments', label: 'Pagos', component: PaymentsPageComponent },
-      { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent },
+      { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent },
+      { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent },
+      { key: 'my-payments', label: 'Mis pagos', component: MyPaymentsPageComponent },
+      { key: 'refund-requests', label: 'Solicitudes de devolución', component: RefundRequestsPageComponent },
+      { key: 'refund-detail', label: 'Detalle de devolución', component: RefundDetailPageComponent },
+      { key: 'refund-manage', label: 'Gestionar devolución', component: RefundManagePageComponent },
+      { key: 'refund-treatment', label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent },
+      { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent },
+      { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
+      { key: 'rescheduling-proposal', label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
@@ -218,16 +239,15 @@ describe('customerShellHeader', () => {
     expect(navigation().params()).toEqual({});
   });
 
-  it('draws the dark footer of tours.html, its Explorar column opening the areas and Cuenta as text', async () => {
+  it('draws the dark footer of tours.html, its Explorar column opening the areas and no Cuenta column (the session is open)', async () => {
     const { host, settle } = await openShell('READ_ONLY', true, SITE_CLIENT_AREAS);
     const footer = host.querySelector('.crp-client-shell > footer.crp-client-footer')!;
     expect(footer.querySelector('.crp-client-footer-brand')?.textContent?.trim()).toBe('MULTITOUR');
     expect(footer.textContent).toContain('Plataforma para descubrir, reservar y gestionar experiencias de turismo con operadores locales.');
-    expect(texts(host, '.crp-client-footer-col strong')).toEqual(['Explorar', 'Cuenta']);
+    expect(texts(host, '.crp-client-footer-col strong')).toEqual(['Explorar']);
     expect(texts(host, '.crp-client-footer-col[aria-label="Explorar"] button')).toEqual(['Tours', 'Alojamiento', 'Gastronomía']);
-    expect(texts(host, '.crp-client-footer-col[aria-label="Cuenta"] span')).toEqual(['Ingresar', 'Crear cuenta']);
-    expect(footer.querySelector('.crp-client-footer-col[aria-label="Cuenta"] button, .crp-client-footer-col[aria-label="Cuenta"] a')).toBeNull();
-    expect(footer.querySelector('.crp-client-footer-bottom')?.textContent?.trim()).toBe('© 2026 Multi Tour. Plataforma para operadores de turismo.');
+    expect(footer.textContent).not.toMatch(/Ingresar|Crear cuenta|Cuenta/);
+    expect(footer.querySelector('.crp-client-footer-bottom')?.textContent?.trim()).toBe('© 2026 Multitour. Plataforma para operadores de turismo.');
     button(host, '.crp-client-footer-col button', 'Alojamiento').click();
     await settle();
     expect(host.querySelector('crp-test-lodging-page')).not.toBeNull();
@@ -253,15 +273,31 @@ describe('customerShellHeader', () => {
 
 describe('customerPanelChrome', () => {
   const texts = (host: HTMLElement, selector: string) => Array.from(host.querySelectorAll(selector)).map((e) => e.textContent?.trim());
-  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand)';
+  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button)';
 
   it('draws the compact header of panel-cliente.html inside the canvas, with Ver catálogo, no avatar and no footer', async () => {
     const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
     expect(host.querySelector('.crp-client-header')).toBeNull();
     expect(host.querySelector('.crp-client-footer')).toBeNull();
     const header = host.querySelector('.crp-client-content > header.crp-client-panel-header')!;
-    expect(header.querySelector('.crp-client-panel-brand')?.textContent?.trim()).toBe('Multi Tour');
+    // panel-cliente.html draws no brand in its header: Ver catálogo and the bell of Notificaciones.
+    expect(header.querySelector('.crp-client-panel-brand')).toBeNull();
     expect(texts(host, link)).toEqual(['Ver catálogo']);
+    const bell = header.querySelector<HTMLButtonElement>('.crp-client-bell-button')!;
+    expect(header.querySelector('.crp-client-panel-actions > button + .crp-client-bell')).not.toBeNull();
+    expect(bell.getAttribute('aria-label')).toBe('Notificaciones');
+    expect(bell.getAttribute('aria-expanded')).toBe('false');
+    const panel = header.querySelector<HTMLElement>('.crp-client-bell-panel')!;
+    expect(panel.hidden).toBe(true);
+    expect(panel.querySelector('h2')?.textContent?.trim()).toBe('Notificaciones');
+    expect(panel.textContent).toContain('No tienes notificaciones nuevas.');
+    bell.click();
+    await settle();
+    expect(panel.hidden).toBe(false);
+    expect(bell.getAttribute('aria-expanded')).toBe('true');
+    bell.click();
+    await settle();
+    expect(panel.hidden).toBe(true);
     expect(host.textContent).not.toMatch(/Perfil/);
     host.querySelector<HTMLButtonElement>(link)!.click();
     await settle();
@@ -276,6 +312,8 @@ describe('customerPanelChrome', () => {
     host.querySelector<HTMLButtonElement>('crp-test-panel-page .go')!.click();
     await settle();
     expect(texts(host, link)).toEqual(['Volver al panel']);
+    expect(host.querySelector('.crp-client-panel-brand')?.textContent?.trim()).toBe('Multitour');
+    expect(host.querySelector('.crp-client-bell')).toBeNull();
     host.querySelector<HTMLButtonElement>(link)!.click();
     await settle();
     expect(host.querySelector('crp-test-panel-page')).not.toBeNull();

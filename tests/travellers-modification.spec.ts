@@ -136,12 +136,12 @@ describe('travellersEntryIsProvidedThroughTheChangeTypesToken', () => {
     TestBed.configureTestingModule({ providers: [provideTravellersModification(), { provide: ModificationQuote, useValue: demo().quotes }] });
     const types = TestBed.inject(RESERVATION_CHANGE_TYPES) as readonly ReservationChangeType[];
     expect(types).toHaveLength(1);
-    expect(types[0]).toMatchObject({ key: TRAVELLERS_MODIFICATION_KEY, label: 'Modificación de viajeros', submittable: false, form: TravellersModificationFormComponent });
+    expect(types[0]).toMatchObject({ key: TRAVELLERS_MODIFICATION_KEY, label: 'Modificación de servicio, salida o viajeros', submittable: false, form: TravellersModificationFormComponent });
   });
 
   it('lists Tipo as Cancelación then Modificación de viajeros on the screen of HU-COM-013', async () => {
     const s = await render(ReservationChangePageComponent, pageProviders());
-    expect(Array.from(s.host.querySelectorAll('select option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de viajeros']);
+    expect(Array.from(s.host.querySelectorAll('#crp-rc-type option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de servicio, salida o viajeros']);
   });
 
   it('is wired in the demo build: from 10A the option answers the tour policy', async () => {
@@ -324,17 +324,15 @@ describe('travellersOptionDrawsNoFieldAndSpanishCopy', () => {
     expect(s.button('Registrar novedad')!.disabled).toBe(true);
   });
 
-  it('keeps Devolución as the mockup draws it: title and note, no cancellation refund row (admin-cancelar-modificar-reserva.html)', async () => {
+  it('draws Origen and Tratamiento económico only for the cancellation (admin-cancelar-modificar-reserva.html)', async () => {
     const s = await render(ReservationChangePageComponent, pageProviders());
-    const refund = () => Array.from(s.host.querySelectorAll('section')).find((p) => p.querySelector('h2')?.textContent?.trim() === 'Devolución')!;
-    expect(refund().textContent).toContain('Valor potencial a devolver');
-    const select = s.host.querySelector('select')!;
+    const drawn = () => [s.host.querySelector('#crp-rc-origin'), s.host.querySelector('#crp-rc-treatment')].map((e) => e !== null);
+    expect(drawn()).toEqual([true, true]);
+    const select = s.host.querySelector<HTMLSelectElement>('#crp-rc-type')!;
     select.value = TRAVELLERS_MODIFICATION_KEY; select.dispatchEvent(new Event('change')); await s.settle();
-    expect(refund().textContent).toContain('El tratamiento económico queda pendiente según la causa.');
-    expect(refund().textContent).not.toContain('Valor potencial a devolver');
-    expect(refund().querySelector('dl')).toBeNull();
+    expect(drawn()).toEqual([false, false]);
     select.value = 'cancellation'; select.dispatchEvent(new Event('change')); await s.settle();
-    expect(refund().textContent).toContain('Valor potencial a devolver');
+    expect(drawn()).toEqual([true, true]);
   });
 
   it('keeps the copy in Spanish without raw codes, and the code free of the mockup script fields', () => {
@@ -342,7 +340,7 @@ describe('travellersOptionDrawsNoFieldAndSpanishCopy', () => {
       .map((f) => withoutComments(readFileSync(f, 'utf8'))).join('\n');
     expect(code).not.toMatch(/alojamiento|hospedaje|fecha de salida|Pendiente de parametrización comercial/i);
     const copy = readFileSync('src/app/reservation-changes/travellers-modification/travellers-modification-copy.ts', 'utf8');
-    expect(copy).toContain('Modificación de viajeros');
+    expect(copy).toContain('Modificación de servicio, salida o viajeros');
     expect(copy).toMatch(/política|modificación/);
   });
 });

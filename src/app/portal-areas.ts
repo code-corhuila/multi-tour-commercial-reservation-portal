@@ -33,9 +33,24 @@ import { CancellationQuote, CancellationWriter } from './reservation-changes/dat
 import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
 import { TransferPaymentPageComponent } from './payments/pages/transfer-payment-page.component';
+import { PaymentReceivedPageComponent, PaymentRejectedPageComponent } from './payments/pages/payment-result-pages.component';
+import { PAYMENT_RESULT_AREA } from './payments/payment-result-copy';
 import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
 import { PaymentsPageComponent } from './payments/pages/payments-page.component';
 import { ValidateProofPageComponent } from './payments/pages/validate-proof-page.component';
+import { PaymentDeadlineReader, PaymentFollowupsWriter } from './payments/data/payment-followup-ports';
+import { PaymentFollowupPageComponent } from './payments/pages/payment-followup-page.component';
+import { MyPaymentsSource } from './my-payments/data/my-payments-source';
+import { MyPaymentsPageComponent } from './my-payments/pages/my-payments-page.component';
+import { REFUND_SCREENS, refundsAvailable } from './refunds/data/refunds-ports';
+import { RefundDetailPageComponent } from './refunds/pages/refund-detail-page.component';
+import { RefundRequestsPageComponent } from './refunds/pages/refund-requests-page.component';
+import { MyProposalsSource, PROPOSAL_AREA, ProposalAnswerWriter, RESCHEDULING_AREA, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
+import { ReschedulingProposalPageComponent } from './rescheduling/pages/rescheduling-proposal-page.component';
+import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
+import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
+import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
+import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
 export { CLIENT_AREA };
@@ -122,10 +137,38 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-009 pago-transferencia.html (24): opened by Continuar al pago of 21 with { reservation, type, amount }.
   { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource, PaymentsWriter, PaymentMethodsSource) },
+  // HU-COM-009 pago-exitoso.html (22, "Comprobante recibido") and pago-fallido.html (23, "Comprobante rechazado"), PROPUESTO: opened with { reservation };
+  // 22 by the proof sent on 24, 23 by whoever knows a proof was rejected. They read the own reservation through Mis pagos' port.
+  { key: PAYMENT_RESULT_AREA.received, label: 'Comprobante recibido', component: PaymentReceivedPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
+  { key: PAYMENT_RESULT_AREA.rejected, label: 'Comprobante rechazado', component: PaymentRejectedPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
   // HU-COM-010 admin-pagos.html (13), item Pagos of the mockup's sidebar, and admin-validar-soporte.html opened with { reservation, payment }.
   { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
-  { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent, menu: false, parent: 'payments',
+  { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent, menu: false, parent: 'payments',
     isAvailable: (injector) => has(injector, ReservationsSource, ProofReviewWriter, PaymentMethodsSource) },
+  // HU-COM-011 admin-registrar-seguimiento.html, opened by Registrar seguimiento of 13 with { reservation }; Pagos stays active.
+  { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent, menu: false, parent: 'payments',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canFollowUp() && has(injector, ReservationsSource, PaymentFollowupsWriter, PaymentDeadlineReader, PaymentMethodsSource) },
+  // HU-COM-014 mis-pagos.html, opened by Mis pagos of 17; read only, under the compact header of the panel (Volver al panel).
+  { key: CLIENT_AREA.payments, label: 'Mis pagos', component: MyPaymentsPageComponent, audience: 'customer', clientChrome: 'panel', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
+  // HU-COM-016 admin-solicitudes-devolucion.html and admin-detalle-devolucion.html with { refund }, sub-screens of 13; Pagos stays active.
+  { key: REFUND_SCREENS.requests, label: 'Solicitudes de devolución', component: RefundRequestsPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
+  { key: REFUND_SCREENS.detail, label: 'Detalle de devolución', component: RefundDetailPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
+  // HU-COM-016 admin-gestionar-devolucion.html (from 10A) and admin-tratamiento-pendiente-devolucion.html, whose decision is the Administrator's.
+  { key: REFUND_SCREENS.manage, label: 'Gestionar devolución', component: RefundManagePageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
+  { key: REFUND_SCREENS.treatment, label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent, menu: false, parent: 'payments',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canAuthorizeRefund() && refundsAvailable(injector) },
+  // HU-COM-016 admin-notificaciones.html: "Notificaciones" is a sidebar item only of screen 9 (admin-operador.html:25, between Operación and Reportes);
+  // here it follows Pagos, since Operación belongs to another portal (position PROPUESTO, spec 016- section 5), while some alert is offered (DP-RF6).
+  { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent, isAvailable: hasNotifications },
+  // HU-COM-018 admin-reprogramar-reserva.html: opened from the 10A header with { reservation } (DP-RP4); every operator reads it, Reservas stays active.
+  { key: RESCHEDULING_AREA, label: 'Propuesta de reprogramación', component: ReschedulingPageComponent, menu: false, parent: 'reservations',
+    isAvailable: (injector) => has(injector, ReschedulingSource, ReschedulingWriter) },
+  // HU-COM-018 propuesta-reprogramacion.html (24A): opened by Responder propuesta of Mis reservas and of 17 with { reservation }; its own top bar.
+  { key: PROPOSAL_AREA, label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyProposalsSource, ProposalAnswerWriter) },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
