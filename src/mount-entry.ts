@@ -1,7 +1,7 @@
 import { ApplicationRef, Injector, Provider, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
-import { MountProps, PortalApiClient } from './app/shell-contract';
+import { CONTAINER_NAVIGATION, MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
 import { SensitiveDataAccess, sensitiveDataAccessFor } from './app/customers/data/customers-source';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
@@ -16,6 +16,7 @@ import { REFUND_DETAIL_LINK } from './app/refunds/components/refund-link.compone
 import { REFUND_ALERTS } from './app/refunds/components/refund-alerts.component';
 import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
+import { CREDIT_BALANCE_PAYMENTS_LINK } from './app/credit-balance/components/credit-balance-links.component';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
@@ -69,6 +70,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       // Adapters over the container client; the demo build swaps in every in-memory store (001- HC-1).
       // HU-FRT-001 amendment 003: the name and the initials of the session, before the sources so a demo fixture may stand in.
       { provide: SESSION_IDENTITY, useValue: sessionIdentityOf(props.session) },
+      ...(props.navigate ? [{ provide: CONTAINER_NAVIGATION, useValue: props.navigate }] : []),
       ...sources(props.apiClient),
       { provide: SensitiveDataAccess, useValue: sensitiveDataAccessFor(props.session.roles) },
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
@@ -98,6 +100,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       RESCHEDULING_ENTRY,
       // HU-COM-018: Salida propuesta, the mark and Responder propuesta of Mis reservas, and the notice of 17; only with the proposals port.
       ...RESCHEDULING_CONTRIBUTIONS,
+      // HU-COM-017 amendment: the link to admin-saldo-favor.html from 13 (the one from 10A is pending, second branch).
+      contribute(PAYMENTS_PAGE_PANELS, CREDIT_BALANCE_PAYMENTS_LINK),
     ],
   }).then((created) => {
     app = created;

@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -15,7 +17,7 @@ type State = PageState<ReschedulingEpisodeView>;
 type Status = keyof typeof STATUS_LABEL;
 
 /** admin-reprogramar-reserva.html, opened from the 10A header with { reservation } (DP-RP4). Actions only with canProposeRescheduling (D-07). */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-rescheduling-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-page-header">
@@ -25,7 +27,7 @@ type Status = keyof typeof STATUS_LABEL;
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ t.none }}</p> }
       @case ('data') {
         @let e = s.items[0]; @let open = e.answer === null;
@@ -75,7 +77,7 @@ export class ReschedulingPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.episode(this.code).pipe(
     map((e): State => (e ? { kind: 'data', items: [e] } : { kind: 'empty' })),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
   protected statusLabel(code: string): string { return STATUS_LABEL[code as Status] ?? ''; }
   protected statusClass(code: string): string { return STATUS_CLASS[code as Status] ?? ''; }

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, throwError } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
@@ -80,6 +80,17 @@ describe('ampliación única del plazo', () => {
     expect(element.querySelector<HTMLInputElement>('[name="extensionHours"]')?.disabled).toBe(true);
     const stored = (await firstValueFrom(TestBed.inject(ReservationsSource).list())).find((r) => r.id === 'RES-1842')!;
     expect(stored.deadline).toMatchObject({ dueAt: '2026-10-16T09:00:00-05:00', extendedUntil: '2026-10-16T21:00:00-05:00', extension: { hours: 12 } });
+  });
+
+  it('aRetriedExtensionReusesItsKeyUntilTheHoursChange', async () => {
+    const keys = new ControllableIdempotencyKeys(), calls: [number, string][] = [];
+    const extender = new (class extends PaymentDeadlineExtender {
+      override extend(c: { reservationId: string; hours: number }, key: string) { calls.push([c.hours, key]); return throwError(() => ({ status: 503 })); }
+    })();
+    const { type, click, settle } = await screenOf(PaymentFollowupPageComponent, [...providers('RES-1842'), { provide: IdempotencyKeys, useValue: keys }, { provide: PaymentDeadlineExtender, useValue: extender }]);
+    await click('Conceder ampliación'); await settle(); await click('Conceder ampliación'); await settle();
+    await type('extensionHours', '12'); await click('Conceder ampliación'); await settle();
+    expect(calls.map(([, key]) => key)).toEqual([keys.generated[0], keys.generated[0], keys.generated[1]]);
   });
 
   it('refuses a second extension, hours above the parameter, and an expired deadline', async () => {

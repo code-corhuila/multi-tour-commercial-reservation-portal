@@ -76,7 +76,7 @@ describe('eachDiscountLineNamesItsBaseInTheOrderApplied', () => {
     const { element, fill, discounts, settle } = await openForm();
     discounts.lines = [{ name: 'Early bird', base: 'ORIGINAL_VALUE', amountCents: 1000 }, { name: 'Group', base: 'PREVIOUS_SUBTOTAL', amountCents: 500 }];
     await fill(); await settle();
-    const breakdown = element.querySelector('.reservation-breakdown')!;
+    const breakdown = element.querySelector('.crp-reservations-breakdown')!;
     expect(breakdown.textContent).toContain('Kayak'); expect(breakdown.textContent).toContain('$60');
     expect(breakdown.textContent).toContain('Transporte por persona'); expect(breakdown.textContent).toContain('$15');
     expect(Array.from(breakdown.querySelectorAll('[data-discount]')).map((d) => d.textContent?.trim()))
@@ -132,5 +132,19 @@ describe('everyScreenShowsOneOfTheFourStates (form)', () => {
     TestBed.resetTestingModule();
     const failing = await openForm({ departures: new StubDepartures(() => throwError(() => new Error('x'))) });
     expect(failing.element.querySelector('[data-state="error"] button')).not.toBeNull();
+  });
+});
+
+describe('aCorrectedCreationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('keeps the key for the same data and changes it when the person corrects the people', async () => {
+    const { fill, submit, writer, settle, type } = await openForm();
+    await fill('3'); await submit();
+    writer.calls[0].fail(apiError()); await settle();
+    await type('people', '2'); await submit();
+    expect(writer.calls[1].command).toMatchObject({ people: 2 });
+    expect(writer.calls[1].key).not.toBe(writer.calls[0].key);
+    writer.calls[1].fail(apiError()); await settle();
+    await submit();
+    expect(writer.calls[2].key).toBe(writer.calls[1].key);
   });
 });

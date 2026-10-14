@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { listSourceFiles } from './source-files';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, render, screen } from '@testing-library/angular';
@@ -17,7 +19,7 @@ describe('aRefusedFormFocusesItsFirstFieldInError', () => {
     const view = await render(CatalogItemFormComponent, { providers: [{ provide: CatalogItemsWriter, useValue: writer }] });
     const type = (label: string, value: string) => fireEvent.input(screen.getByLabelText(label), { target: { value } });
     const settle = async () => { await view.fixture.whenStable(); view.fixture.detectChanges(); await view.fixture.whenStable(); };
-    const save = async () => { fireEvent.click(screen.getByRole('button', { name: 'Guardar servicio' })); await settle(); };
+    const save = async () => { fireEvent.click(screen.getByRole('button', { name: 'Guardar tour' })); await settle(); };
     return { writer, type, save, settle };
   }
 
@@ -27,6 +29,8 @@ describe('aRefusedFormFocusesItsFirstFieldInError', () => {
     type('Tarifa base', '');
     type('Costo operativo base', 'abc');
     type('Capacidad configurada', '18');
+    type('Vigencia desde', '2026-09-01');
+    type('Vigencia hasta', '2026-09-30');
     await save();
     expect(writer.calls).toHaveLength(0);
     expect(document.activeElement).toBe(screen.getByLabelText('Tarifa base'));
@@ -38,6 +42,8 @@ describe('aRefusedFormFocusesItsFirstFieldInError', () => {
     type('Tarifa base', '12');
     type('Costo operativo base', '7');
     type('Capacidad configurada', '18');
+    type('Vigencia desde', '2026-09-01');
+    type('Vigencia hasta', '2026-09-30');
     await save();
     (document.activeElement as HTMLElement | null)?.blur();
     writer.calls[0].fail(apiError({ details: [{ field: 'configuredCapacity', message: 'Below the booked seats.' }] }));
@@ -83,5 +89,14 @@ describe('openingAnAreaFocusesItsHeading', () => {
     const { host } = await openShell();
     expect(host.querySelector('crp-test-first-area h1')).not.toBeNull();
     expect(host.contains(document.activeElement)).toBe(false);
+  });
+});
+
+describe('everyFormWithAnInvalidFieldFocusesTheFirstError', () => {
+  it('references focusFirstError in each page or component that marks a field aria-invalid', () => {
+    const marking = listSourceFiles().filter((f) => /\/(pages|components)\/[^/]+\.ts$/.test(f) && !f.startsWith('src/app/demo/'))
+      .filter((f) => readFileSync(f, 'utf8').includes('aria-invalid'));
+    expect(marking.length).toBeGreaterThanOrEqual(16);
+    expect(marking.filter((f) => !readFileSync(f, 'utf8').includes('focusFirstError('))).toEqual([]);
   });
 });

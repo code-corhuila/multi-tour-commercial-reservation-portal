@@ -374,7 +374,7 @@ describe('payment capabilities and wiring', () => {
       };
       await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
       expect(Array.from(host.querySelectorAll('nav button'), (b) => b.textContent?.trim())).not.toContain('Gestión de pago');
-      press('Reservas', host.querySelector('nav')!);
+      // Reservas is the landing of the operator since the mockup v1.9 (AC-P1.17): no click needed.
       await vi.waitFor(() => expect(host.querySelector('[data-state="data"]')?.textContent).toContain(`#${CASH}`));
       press('Ver detalle', Array.from(host.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes(`#${CASH}`))!);
       await vi.waitFor(() => expect(host.querySelector('.crp-payments-block')).toBeTruthy());
@@ -387,7 +387,7 @@ describe('payment capabilities and wiring', () => {
       await vi.waitFor(() => expect(host.querySelector('.crp-payments-lines li')?.textContent).toContain('$50.000'));
       press('Volver a la reserva');
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Detalle de reserva'));
-      expect(host.querySelector('.reservation-detail')?.textContent).toContain(`#${CASH}`);
+      expect(host.querySelector('.crp-reservations-detail')?.textContent).toContain(`#${CASH}`);
       await vi.waitFor(() => expect(host.querySelector('.crp-payments-block td:nth-child(3)')?.textContent?.trim()).toBe('Sin comprobante'));
       expect(host.querySelector('.crp-payments-block')?.textContent).toContain('Efectivo');
     } finally { cleanup(); host.remove(); }

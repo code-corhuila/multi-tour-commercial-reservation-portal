@@ -9,11 +9,14 @@ import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-o
 import { CLIENT_AREA } from '../src/app/portal-areas';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PUBLIC_OFFER_COPY } from '../src/app/public-offer/public-offer-copy';
-import { tourPhoto } from '../src/app/shared/tour-photo';
+import { TourImages } from '../src/app/shared/tour-photo';
+import { DemoTourImages, demoTourPhoto as tourPhoto } from '../src/app/demo/tour-photo-demo';
 import { actorAs } from './actor-context.double';
 import { ControllablePublicEstablishmentsSource, ControllablePublicOfferSource, placeNamed, tourNamed } from './public-offer-sources.double';
 import { listSourceFiles, withoutComments } from './source-files';
 import { ActorContext } from '../src/app/shared/actor-context';
+import { DepartureCapacity } from '../src/app/reservations/data/departure-capacity';
+import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
 import { DeparturesSource } from '../src/app/reservations/data/departures-source';
 import type { Departure } from '../src/app/reservations/data/departures-source';
 import { of } from 'rxjs';
@@ -34,11 +37,12 @@ async function openPage(options: Options = {}) {
   const places = new ControllablePublicEstablishmentsSource();
   TestBed.configureTestingModule({
     providers: [
+    { provide: TourImages, useValue: new DemoTourImages() },
       ...(options.withoutPorts ? [] : [
         { provide: PublicOfferSource, useValue: tours },
         { provide: PublicEstablishmentsSource, useValue: places },
       ]),
-      ...(options.departures ? [{ provide: DeparturesSource, useValue: Object.assign(Object.create(DeparturesSource.prototype), { list: () => of(options.departures) }) }] : []),
+      ...(options.departures ? [{ provide: DepartureCapacity, useValue: new DemoDepartureCapacity() }, { provide: DeparturesSource, useValue: Object.assign(Object.create(DeparturesSource.prototype), { list: () => of(options.departures) }) }] : []),
       ...(options.value ? [{ provide: TourValueSource, useValue: options.value }] : []),
       ...(options.role ? [{ provide: ActorContext, useValue: actorAs(options.role) }] : []),
       ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
@@ -146,7 +150,7 @@ describe('theValueComesFromTheValuePort (AC-PO.4, RN-PO4)', () => {
   it('shows the discounted value the port returns for the chosen date, with the base beside it', async () => {
     const asked: Array<readonly [PublicTour, string]> = [];
     const value = new (class extends TourValueSource {
-      override valueOf(tour: PublicTour, date: string): TourValue { asked.push([tour, date]); return { baseRateCents: tour.baseRateCents, currentValueCents: 16_200_000 }; }
+      override valueOf(tour: PublicTour, date: string): TourValue { asked.push([tour, date]); return { baseRateCents: tour.baseRateCents, currentValueCents: 16_200_000, discountLabel: '10% de descuento' }; }
     })();
     const page = await openPage({ value });
     await page.chooseDate('2026-11-22');
@@ -282,9 +286,12 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(within(page.host).getByLabelText('Buscar tours por nombre o destino').getAttribute('placeholder')).toBe('Buscar tours por nombre o destino...');
     const header = page.host.querySelector('header.crp-offer-head')!;
     const action = header.querySelector('.crp-page-header-action.crp-offer-search')!;
-    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON', 'LABEL']);
-    expect(text(action.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
-    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBe(action);
+    // The pill of tours.html: magnifier, field and the dark Buscar on the right; the date filter is a separate, discreet control.
+    expect(Array.from(action.children, (child) => child.tagName.toLowerCase())).toEqual(['svg', 'input', 'button']);
+    expect(action.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(text(header.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
+    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBeNull();
+    expect(within(page.host).getByLabelText('Fecha').closest('header.crp-offer-head')).toBe(header);
     expect(page.host.querySelector('.crp-offer-when, [data-date]')).toBeNull();
     expect(page.host.textContent).not.toMatch(/Disponibles el|Fecha de consulta/);
     expect(page.part('tours').getAttribute('aria-label')).toBe('Listado de tours disponibles');
@@ -299,15 +306,15 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(page.host.textContent).not.toContain('2026-11-22');
   });
 
-  it('keeps the photo of a card at 3:2 and the search row narrow, with the buttons at the size of the mockup', () => {
+  it('keeps the photo of a card at 140px (main.css refinement) and the search row narrow, with the buttons at the size of the mockup', () => {
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
-    expect(rule('.crp-root .crp-tour-media')).toMatch(/position:\s*relative;\s*overflow:\s*hidden;\s*aspect-ratio:\s*3 \/ 2;/);
+    expect(rule('.crp-root .crp-tour-media')).toMatch(/position:\s*relative;\s*overflow:\s*hidden;\s*height:\s*140px;/);
     expect(rule('.crp-root .crp-tour-media img')).toMatch(/position:\s*absolute;\s*inset:\s*0;.*width:\s*100%;\s*height:\s*100%;\s*object-fit:\s*cover;/);
     expect(rule('.crp-root .crp-offer-search')).toMatch(/display:\s*flex;.*width:\s*auto;\s*max-width:\s*100%;\s*align-self:\s*flex-end;/);
     expect(rule('.crp-root .crp-offer-search input[type="search"]')).toMatch(/flex:\s*0 1 180px;/);
-    expect(rule('.crp-root .crp-tour-meta button')).toMatch(/font-size:\s*1rem;/);
-    expect(rule('.crp-root .crp-offer-reserve')).toMatch(/font-size:\s*1rem;/);
+    expect(rule('.crp-root .crp-tour-meta button')).toMatch(/font-size:\s*0\.8rem;/);
+    expect(rule('.crp-root .crp-offer-reserve')).toMatch(/font-size:\s*0\.88rem;/);
   });
 
   it('draws a tour card as tours.html: photo, tag of the value port, struck base, from-value in green and Ver detalle', async () => {
@@ -334,11 +341,11 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(pitalito.querySelector('.crp-tour-media img')?.getAttribute('src')).not.toBe(photo?.getAttribute('src'));
   });
 
-  it('writes N% de descuento from the base and current values when the value port gives no label, as tours.html does', async () => {
+  it('draws no discount tag when the value port gives no label: the view derives nothing', async () => {
     const page = await openPage({ value: discounted() });
     page.tours.requests[0].reply([tourNamed('Suaza', { baseRateCents: 129_900_000 })]);
     await page.settle();
-    expect(text(page.cards('tours')[0].querySelector('.crp-tour-discount-tag'))).toBe('20% de descuento');
+    expect(page.cards('tours')[0].querySelector('.crp-tour-discount-tag')).toBeNull();
   });
 
   it('filters the tours by name with Buscar, without asking the port again', async () => {
@@ -402,14 +409,14 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(TestBed.inject(PortalNavigation).params()).toEqual({ tour: 'tour-Suaza' });
   });
 
-  it('lays the cards of tours.html out in four columns with 3:2 photos and the price beside Ver detalle', () => {
+  it('lays the cards of tours.html out in four columns with 140px photos and the price beside Ver detalle', () => {
     const css = readFileSync('src/styles/portal.css', 'utf8').replace(/\s+/g, ' ');
     expect(css).toContain('.crp-root .crp-offer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));');
-    expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*aspect-ratio: 3 \/ 2;/);
+    expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*height: 140px;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-meta \{[^}]*flex-wrap: nowrap;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-card \.crp-tour-body strong \{[^}]*white-space: nowrap;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 1rem; font-weight: 400;[^}]*text-transform: none;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 2rem; font-weight: 700;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 0.92rem; [^}]*font-weight: 400;[^}]*text-transform: none;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 1.84rem; font-weight: 700;/);
   });
 
   it('shows Volver al panel cliente only when the shell can open the panel, and opens it', async () => {
@@ -433,7 +440,9 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(page.host.querySelector('.crp-offer-agreement'))).toBe('Información del convenio Coordina directamente con el establecimiento '
       + 'Multitour no genera reservas de habitación ni administra tarifas, disponibilidad o inventario. Las condiciones de reserva, cambio o cancelación se acuerdan directamente entre tú y el hotel.');
     const [hotel, posada] = page.cards('establishments');
-    expect(hotel.querySelector('img')?.getAttribute('src')).toMatch(/^\/assets\//);
+    // The photo follows the TYPE of the establishment (a hotel for every card of Alojamiento), as alojamiento.html.
+    expect(hotel.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
+    expect(posada.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
     expect(hotel.querySelector('img')?.getAttribute('alt')).toBe('Casa Neiva');
     expect(text(hotel.querySelector('strong'))).toBe('Casa Neiva');
     expect(text(hotel.querySelector('.crp-establishment-type'))).toBe('Alojamiento asociado · Región Andina');
@@ -470,6 +479,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(page.part('establishments').getAttribute('aria-label')).toBe('Restaurantes asociados');
     expect(page.cards('establishments').map((card) => text(card.querySelector('strong')))).toEqual(['Sabores del Huila', 'Fogón']);
     expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-type'))).toBe('Restaurante asociado');
+    expect(page.cards('establishments').map((card) => card.querySelector('img')?.getAttribute('src'))).toEqual(Array(2).fill('/assets/restaurante-asociado.jpg'));
     expect(text(page.cards('establishments')[0].querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');
     expect(text(page.cards('establishments')[0].querySelector('button.crp-offer-link'))).toBe('Ver contacto');
   });
@@ -492,7 +502,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     const venue = page.host.querySelector('[data-part="venue"]')!;
     expect(text(venue.querySelector('.crp-offer-back'))).toBe('← Volver a gastronomía');
     expect(text(venue.querySelector('.crp-page-header-eyebrow'))).toBe('Restaurante asociado');
-    expect(venue.querySelector('img.crp-venue-hero')?.getAttribute('src')).toMatch(/^\/assets\//);
+    expect(venue.querySelector('img.crp-venue-hero')?.getAttribute('src')).toBe('/assets/restaurante-asociado.jpg');
     expect(text(venue.querySelector('h1'))).toBe('Sabores del Huila');
     expect(text(venue.querySelector('.crp-venue-category'))).toBe('Restaurante asociado');
     expect(text(venue.querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@sabores.co +57 310 555 0220');

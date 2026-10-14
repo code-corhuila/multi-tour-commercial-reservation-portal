@@ -202,6 +202,13 @@ describe('screen 24, Pago por transferencia', () => {
     expect(open.mock.calls[0]).toEqual(['payment-received', { reservation: 'RES-1842' }]);
   });
 
+  it.each(['abc', '-5', '0', '1.5', '', '9007199254740993', '1e3'])('refuses to send an amount that is not a positive safe integer (%j) and says so beside the field', async (amount) => {
+    const { element, attach, click, stored } = await transferOf({ reservation: 'RES-1842', type: 'TOTAL', amount });
+    await attach(pdf()); await click('Enviar comprobante para validación');
+    expect((await stored()).payments ?? []).toHaveLength(0);
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Registra un monto mayor a $0.');
+  });
+
   it('a double click sends one proof under one key', async () => {
     const { element, attach, settle, stored } = await transferOf();
     await attach(pdf());
@@ -257,7 +264,7 @@ describe('customer payment wiring', () => {
       method.value = 'CASH_AT_OFFICE'; method.dispatchEvent(new Event('change'));
       await vi.waitFor(() => expect(host.querySelector('.crp-checkout-payment')?.textContent)
         .toContain('Elegir efectivo registra solo una promesa de pago'));
-      expect(host.querySelector('.self-service-created')).toBeNull();
+      expect(host.querySelector('.crp-self-service-created')).toBeNull();
     } finally { cleanup(); host.remove(); }
   });
 
@@ -279,7 +286,7 @@ describe('customer payment wiring', () => {
       method.value = 'BANK_TRANSFER'; method.dispatchEvent(new Event('change'));
       host.querySelector<HTMLInputElement>('[name="conditions"]')!.click(); host.querySelector<HTMLInputElement>('[name="terms"]')!.click();
       press('Confirmar reserva');
-      await vi.waitFor(() => expect(host.querySelector('.self-service-created')?.textContent).toContain('RES-1843'));
+      await vi.waitFor(() => expect(host.querySelector('.crp-self-service-created')?.textContent).toContain('RES-1843'));
       await vi.waitFor(() => press('Continuar al pago'));
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Pago por transferencia'));
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;

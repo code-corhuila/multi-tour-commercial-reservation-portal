@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -17,7 +19,7 @@ import { PAYMENTS_TEXT, departureText } from '../payments-copy';
 type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadline: PaymentDeadline | null; departure?: string }>;
 
 /** admin-registrar-seguimiento.html (sub-screen of 13), opened with { reservation }; a paid reservation shows only its history (AC-PP.9). */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-payment-followup-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.title }}</h1></div>
@@ -25,7 +27,7 @@ type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadli
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ common.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ common.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="common.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></div> }
       @default { @let d = s.kind === 'data' ? s.items[0] : null; @let r = d?.reservation; @let missing = !r; @let settled = r?.balanceCents === 0 || r?.status === 'CANCELADA';
         <!-- A missing reservation draws the form disabled, the message in the feedback line (app.js 3357-3360). -->
         <form novalidate [attr.data-state]="missing ? null : 'data'" [attr.aria-busy]="pending()" (submit)="$event.preventDefault(); r && save(r)">
@@ -79,12 +81,13 @@ export class PaymentFollowupPageComponent {
   protected readonly hours = signal(String(PAYMENT_FOLLOWUP_TEXT.extension.suggested)); protected readonly extensionFeedback = signal('');
   /** One key per intention: a retry of the same note reuses it; another note, or the next one after a success, takes a new key. */
   private key = ''; private keyFor: string | null = null; private readonly requests = new Subject<void>();
+  private extendKey = ''; private extendKeyFor: string | null = null;
   private readonly loaded = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => this.reader.deadlineOf(this.params['reservation'] ?? '').pipe(switchMap((deadline) => forkJoin({ all: this.source.list(), labels: paymentLabels(this.methods),
       departures: this.departures?.list().pipe(catchError(() => of([]))) ?? of([]) }).pipe(
     map(({ all, labels, departures }): State => { const reservation = all.find((r) => r.id === this.params['reservation']);
       const departure = departures.find((d) => d.id === reservation?.departureId)?.state;
       return reservation ? { kind: 'data', items: [{ reservation, labels, deadline, departure }] } : { kind: 'empty' }; }))))).pipe(
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   /** The reservation as the writer answered it; the newest answer wins over the list. */
   private readonly saved = signal<Reservation | null>(null);
   protected readonly state = computed((): State => {
@@ -117,8 +120,10 @@ export class PaymentFollowupPageComponent {
   protected extend(r: Reservation): void {
     if (this.pending()) return;
     this.pending.set(true);
-    this.extender!.extend({ reservationId: r.id, hours: Number(this.hours()) }, this.keys.generate()).subscribe({
-      next: () => { this.extensionFeedback.set(this.t.extension.done); this.saved.set(null); this.requests.next(); this.pending.set(false); },
+    const hours = Number(this.hours()), fingerprint = `${r.id}|${hours}`;
+    if (this.extendKeyFor !== fingerprint) { this.extendKey = this.keys.generate(); this.extendKeyFor = fingerprint; }
+    this.extender!.extend({ reservationId: r.id, hours }, this.extendKey).subscribe({
+      next: () => { this.extendKeyFor = null; this.extensionFeedback.set(this.t.extension.done); this.saved.set(null); this.requests.next(); this.pending.set(false); },
       error: (e: { userMessage?: string }) => { this.extensionFeedback.set(e?.userMessage || this.common.failed); this.pending.set(false); },
     });
   }

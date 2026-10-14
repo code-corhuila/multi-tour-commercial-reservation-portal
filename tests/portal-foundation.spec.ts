@@ -128,10 +128,10 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     fixture.componentRef.setInput('reservation', reservationOf('RES-7'));
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     const host: HTMLElement = fixture.nativeElement;
-    expect(host.querySelector('.reservation-detail > .crp-operator-panel:last-of-type + crp-test-block')?.textContent?.trim()).toBe('Bloque RES-7');
+    expect(host.querySelector('.crp-reservations-detail > .crp-operator-panel:last-of-type + crp-test-block')?.textContent?.trim()).toBe('Bloque RES-7');
     fixture.componentRef.setInput('fresh', true);
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
-    expect(host.querySelector('.reservation-result .crp-form-actions crp-test-block')?.textContent?.trim()).toBe('Bloque RES-7');
+    expect(host.querySelector('.crp-reservations-result .crp-form-actions crp-test-block')?.textContent?.trim()).toBe('Bloque RES-7');
   });
 
   const propsFor = (roles: string[], initialParams?: Record<string, string>): MountProps => ({
@@ -154,7 +154,7 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const cell = host.querySelector('app-reservations-page [data-state="data"] tbody tr td:last-child')!;
-    expect(cell.querySelector('button + crp-test-block')?.textContent?.trim()).toBe(`Bloque ${host.querySelector('.crp-reservation-code')?.textContent?.slice(1)}`);
+    expect(cell.querySelector('button + crp-test-block')?.textContent?.trim()).toBe(`Bloque ${host.querySelector('.crp-reservations-code')?.textContent?.slice(1)}`);
   });
 
   it('draws CHECKOUT_BLOCKS in the main column of 21, after the payment method card', async () => {
@@ -188,9 +188,9 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     mountAs([contribute(RESERVATION_CARD_EXTRAS, { component: BlockDouble, order: 1 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     click('.crp-panel-card button', 'Ver mis reservas');
-    await vi.waitFor(() => expect(host.querySelector('.self-service-panel [data-state="data"] li')).toBeTruthy());
-    const card = host.querySelector('.self-service-card')!;
-    expect(card.querySelector('.self-service-card-copy > p + crp-test-block')?.textContent?.trim())
+    await vi.waitFor(() => expect(host.querySelector('.crp-self-service-panel [data-state="data"] li')).toBeTruthy());
+    const card = host.querySelector('.crp-self-service-card')!;
+    expect(card.querySelector('.crp-self-service-card-copy > p + crp-test-block')?.textContent?.trim())
       .toBe(`Bloque ${card.querySelector('strong')?.textContent?.split(' · ')[0]}`);
   });
 
@@ -198,9 +198,8 @@ describe('theOutletsOfTheScreensInDevelop', () => {
   it('draws RESERVATION_DETAIL_ACTIONS in the header of 10A, before Volver a reservas', async () => {
     mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 1 })], ['TENANT_ADMINISTRATOR']);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-    click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
-    const id = host.querySelector('.crp-reservation-code')?.textContent?.slice(1);
+    const id = host.querySelector('.crp-reservations-code')?.textContent?.slice(1);
     click('app-reservations-page [data-state="data"] tbody tr td:last-child button', 'Ver detalle');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page .crp-page-header crp-test-block')).toBeTruthy());
     const block = host.querySelector('app-reservations-page .crp-page-header crp-test-block')!;
@@ -213,8 +212,8 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 99 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     click('.crp-panel-card button', 'Ver mis reservas');
-    await vi.waitFor(() => expect(host.querySelector('.self-service-panel [data-state="data"] li')).toBeTruthy());
-    const card = host.querySelector('.self-service-card')!;
+    await vi.waitFor(() => expect(host.querySelector('.crp-self-service-panel [data-state="data"] li')).toBeTruthy());
+    const card = host.querySelector('.crp-self-service-card')!;
     expect(card.lastElementChild?.tagName.toLowerCase()).toBe('crp-test-block');
     expect(card.lastElementChild?.textContent?.trim()).toBe(`Bloque ${card.querySelector('strong')?.textContent?.split(' · ')[0]}`);
   });
@@ -231,7 +230,7 @@ describe('reservationsReopenTheDetailAReturnNames', () => {
     const { element, settle } = await screenOf(ReservationsPageComponent, [...reservationProviders({ reservations: listed() }), { provide: PortalNavigation, useValue: navigation }]);
     await settle();
     expect(element.querySelector('.crp-page-header-title')?.textContent?.trim()).toBe('Detalle de reserva');
-    expect(element.querySelector('.crp-reservation-hero')?.textContent).toContain('#RES-7');
+    expect(element.querySelector('.crp-reservations-hero')?.textContent).toContain('#RES-7');
   });
 
   it('shows the list when no reservation is named or the named one is not listed', async () => {

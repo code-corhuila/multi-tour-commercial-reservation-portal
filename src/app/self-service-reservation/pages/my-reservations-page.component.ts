@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop } from '../../shared/format';
@@ -12,10 +14,10 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
 /** AC3 / RN-RS7 as mis-reservas.html, without payment lines: the customer's panel shows and never changes (plan D-06). */
 @Component({
   selector: 'app-my-reservations-page',
-  imports: [PortalSlotOutlet],
+  imports: [ReadErrorComponent, PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="self-service-panel" aria-labelledby="self-service-panel-title">
+    <section class="crp-self-service-panel" aria-labelledby="self-service-panel-title">
       <header class="crp-page-header"><div class="crp-page-header-main">
         <p class="crp-page-header-eyebrow">{{ text.panelEyebrow }}</p>
         <h1 id="self-service-panel-title" class="crp-page-header-title">{{ text.panelTitle }}</h1>
@@ -27,18 +29,18 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
         @let current = state();
         @switch (current.kind) {
           @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-          @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
+          @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
           @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
           @case ('data') {
-            <ul data-state="data" class="self-service-list">
+            <ul data-state="data" class="crp-self-service-list">
               @for (r of current.items; track r.reservationId) {
-                <li class="self-service-card">
-                  <div class="self-service-card-copy">
+                <li class="crp-self-service-card">
+                  <div class="crp-self-service-card-copy">
                     <strong>{{ r.reservationId }} · {{ r.tourName }}</strong>
                     <p>{{ text.departure }}: {{ departure(r.departureAt) }} · {{ travelers(r.people) }}</p>
                     <ng-container *crpSlot="cardExtras; inputs: { reservationId: r.reservationId }" />
                   </div>
-                  <div class="self-service-card-status">
+                  <div class="crp-self-service-card-status">
                     <span class="crp-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span>
                     <strong>{{ text.value }}: {{ cop(r.finalValueCents) }}</strong>
                   </div>
@@ -60,12 +62,12 @@ export class MyReservationsPageComponent {
   /** HU-COM-001 portal foundation of 2026-10-13: the lines other stories add to each card, under the departure line. */
   protected readonly cardExtras = RESERVATION_CARD_EXTRAS;
   protected readonly cardActions = RESERVATION_CARD_ACTIONS;
-  protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
+  protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => this.source.listMine().pipe(
     map((items): PanelState => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError(() => of<PanelState>({ kind: 'error' })),
+    catchError((error) => of<PanelState>({ kind: 'error', ...readFailure(error) })),
     startWith<PanelState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PanelState });
 

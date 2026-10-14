@@ -1,11 +1,15 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { formatDate } from '../../shared/format';
 import { AdditionalDiscountFormComponent } from '../components/additional-discount-form.component';
 import { CurrentDiscountsValueComponent } from '../components/current-discounts-value.component';
 import { CurrentDiscountsSource } from '../data/current-discounts-source';
-import { AdditionalDiscount, CURRENT_DISCOUNTS_TEXT, PricedService, applyDiscounts } from '../model/current-discounts';
+import { DiscountBreakdowns } from '../data/discount-breakdowns';
+import { AdditionalDiscount, CURRENT_DISCOUNTS_TEXT, PricedService } from '../model/current-discounts';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; items: readonly PricedService[] };
 
@@ -15,7 +19,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
  */
 @Component({
   selector: 'app-current-discounts-page', changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AdditionalDiscountFormComponent, CurrentDiscountsValueComponent],
+  imports: [ReadErrorComponent, AdditionalDiscountFormComponent, CurrentDiscountsValueComponent],
   template: `
     <header class="crp-page-header">
       <div class="crp-page-header-main">
@@ -26,7 +30,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
     <section class="crp-operator-panel">
       <p class="crp-operator-eyebrow">{{ text.valuesStep }}</p>
       <h2>{{ text.valuesTitle }}</h2>
-      <div class="current-discounts-date">
+      <div class="crp-current-discounts-date">
         <label for="current-discounts-date">{{ text.date }}</label>
         <input id="current-discounts-date" type="date" [value]="date()" (change)="pick($event)">
         <p>{{ text.validOn }} {{ formatDate(date()) }}</p>
@@ -35,12 +39,12 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
         @case ('error') {
-          <div role="alert" data-state="error">{{ text.failed }}
+          <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" />
             <button class="crp-operator-outline" type="button" (click)="reload()">{{ text.retry }}</button></div>
         }
         @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
         @case ('data') {
-          <ul data-state="data" class="current-discounts-services">
+          <ul data-state="data" class="crp-current-discounts-services">
             @for (row of rows(); track row.service.serviceId) {
               <li><h3>{{ row.service.serviceName }}</h3><app-current-discounts-value [breakdown]="row.breakdown" /></li>
             }
@@ -64,21 +68,22 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
 export class CurrentDiscountsPageComponent {
   protected readonly mayAuthorize = inject(PortalCapabilities).canAuthorizeAdditionalDiscount();
   private readonly source = inject(CurrentDiscountsSource);
+  private readonly breakdowns = inject(DiscountBreakdowns);
   protected readonly text = CURRENT_DISCOUNTS_TEXT;
   protected readonly formatDate = formatDate;
   /** DP-CD1 open: the demo checks validity against the date the person picks. */
-  protected readonly date = signal(new Date().toLocaleDateString('en-CA'));
+  protected readonly date = signal(tenantDay(inject(Clock).now()));
   private readonly additional = signal<Readonly<Record<string, AdditionalDiscount>>>({});
   private readonly chosen = signal('');
   private readonly requests = new Subject<string>();
   readonly state = toSignal(this.requests.pipe(switchMap((date) => this.source.list(date).pipe(
     map((items): CurrentDiscountsState => items.length ? { kind: 'data', items } : { kind: 'empty' }),
-    catchError(() => of<CurrentDiscountsState>({ kind: 'error' })), startWith<CurrentDiscountsState>({ kind: 'loading' }),
+    catchError((error) => of<CurrentDiscountsState>({ kind: 'error', ...readFailure(error) })), startWith<CurrentDiscountsState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as CurrentDiscountsState });
   protected readonly rows = computed(() => {
     const current = this.state();
     return current.kind !== 'data' ? [] : current.items.map((service) => ({
-      service, breakdown: applyDiscounts(service.baseCents, service.rules, this.date(), this.additional()[service.serviceId]) }));
+      service, breakdown: this.breakdowns.of(service.baseCents, service.rules, this.date(), this.additional()[service.serviceId]) }));
   });
   /** The chosen service while it is listed, otherwise the first one. */
   protected readonly selectedId = computed(() => {

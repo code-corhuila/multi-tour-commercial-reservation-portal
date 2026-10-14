@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
+import { resolvedPortalCss } from './css-tokens';
 import { of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
@@ -13,14 +14,17 @@ import { MyReservationsSource } from '../src/app/self-service-reservation/data/m
 import { ReservationSelectionSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
-import { tourPhoto } from '../src/app/shared/tour-photo';
+import { TourImages } from '../src/app/shared/tour-photo';
+import { DemoTourImages, demoTourPhoto as tourPhoto } from '../src/app/demo/tour-photo-demo';
 import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION, selectionAt } from './self-service-reservation.double';
 import { CustomerStanding } from '../src/app/shared/portal-capabilities';
 
 const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
+import { validityOn } from '../src/app/demo/discounts-demo';
 const rule = (overrides: Partial<DiscountRule>): DiscountRule => ({
   id: 'r1', tourId: 'svc-1', tourName: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
   percentageBasisPoints: 2000, stackable: false, status: 'ACTIVE', ...overrides,
+  validity: validityOn({ status: 'ACTIVE', startsOn: '2000-01-01', endsOn: '2999-12-31', ...overrides }, '2026-10-14'),
 } as DiscountRule);
 const tour = (n: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
   serviceId: `svc-${n}`, serviceType: 'TOUR', commercialName: `Tour ${n}`, catalogStatus: 'ACTIVE', baseRateCents: 18_000_000 + n * 100_000,
@@ -39,6 +43,7 @@ async function openPanel(options: Options = {}) {
   navigation.register(options.areas ?? ALL_AREAS);
   const catalog = options.catalog ?? [tour(1)];
   TestBed.configureTestingModule({ providers: [
+    { provide: TourImages, useValue: new DemoTourImages() },
     { provide: CustomerContext, useValue: new CustomerAs(options.standing ?? 'FINAL_CUSTOMER') },
     { provide: MyReservationsSource, useValue: reservations },
     { provide: ReservationSelectionSource, useValue: selectionAt(options.selection ?? null) },
@@ -112,7 +117,7 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   });
 
   it('sizes the panel as panel-cliente.html: big greeting, full-width search, two wide featured cards, grey quick texts', () => {
-    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const css = resolvedPortalCss();
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .crp-panel-hero h1')).toMatch(/font-size:\s*3\.1rem/);
     expect(rule('.crp-root .crp-panel-hero h1')).toMatch(/font-weight:\s*800/);

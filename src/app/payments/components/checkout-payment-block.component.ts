@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -30,21 +31,23 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
           <label for="crp-checkout-deposit">{{ text.deposit }}</label>
           <input id="crp-checkout-deposit" name="deposit" type="text" inputmode="decimal" autocomplete="off" [placeholder]="text.depositPlaceholder" [value]="deposit()"
             (input)="deposit.set($any($event.target).value)" [attr.aria-invalid]="invalid() ? 'true' : null" aria-describedby="crp-checkout-deposit-error" />
-          <p id="crp-checkout-deposit-error" class="self-service-field-error">{{ invalid() ? text.depositInvalid : '' }}</p>
-          <p class="self-service-note">{{ text.depositHint }}</p>
+          <p id="crp-checkout-deposit-error" class="crp-self-service-field-error">{{ invalid() ? text.depositInvalid : '' }}</p>
+          <p class="crp-self-service-note">{{ text.depositHint }}</p>
         }
-        <div class="crp-checkout-deadline">@for (line of text.deadline; track line) { <p class="self-service-note">{{ line }}</p> }
-          @if (chosen(options) === 'PARTIAL') { <p class="self-service-note">{{ text.balanceRule }}</p> }</div>
+        <div class="crp-checkout-deadline">@for (line of text.deadline; track line) { <p class="crp-self-service-note">{{ line }}</p> }
+          @if (chosen(options) === 'PARTIAL') { <p class="crp-self-service-note">{{ text.balanceRule }}</p> }</div>
         @let r = reservation(); @let medium = r?.paymentMethod ?? method();
         @if (medium === 'BANK_TRANSFER') {
-          <p class="self-service-note">{{ text.transferHint }}</p>
+          <p class="crp-self-service-note">{{ text.transferHint }}</p>
           @if (r) { <button type="button" class="crp-primary" (click)="pay(r, chosen(options))">{{ text.continue }}</button> }
-        } @else if (medium) { <p class="self-service-note">{{ text.cashHint }}</p> }
+        } @else if (medium) { <p class="crp-self-service-note">{{ text.cashHint }}</p> }
       }
     </article>
   `,
 })
 export class CheckoutPaymentBlockComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   readonly quote = input.required<SelectionQuote>();
   readonly reservation = input<CustomerReservation | null>(null);
   /** The medium chosen on 21 before the reservation exists. */
@@ -66,7 +69,8 @@ export class CheckoutPaymentBlockComponent {
     const parsed = parseMoney(this.deposit()), cents = parsed.kind === 'valid' ? parsed.minorUnits : 0;
     const final = this.quote().finalValueCents, amount = type === 'PARTIAL' ? cents : final;
     this.invalid.set(amount <= 0 || amount > final);
-    if (!this.invalid()) this.navigation?.open('transfer-payment', { reservation: r.reservationId, type, amount: String(amount) });
+    if (this.invalid()) this.focusFirstErrorOnRender();
+    else this.navigation?.open('transfer-payment', { reservation: r.reservationId, type, amount: String(amount) });
   }
 }
 

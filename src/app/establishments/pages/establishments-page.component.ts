@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
@@ -12,6 +14,7 @@ import {
   AssociationStatus, EstablishmentFilters, EstablishmentType,
 } from '../model/associated-establishment';
 import { PageState } from '../../shared/page-state';
+import { PortalNavigation } from '../../portal-navigation';
 
 /** The shared four states, carrying establishment records. */
 export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
@@ -19,18 +22,21 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
 @Component({
   selector: 'app-establishments-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EstablishmentFormComponent],
+  imports: [ReadErrorComponent, EstablishmentFormComponent],
   template: `
     @if (!canRead) {
       <p role="alert" data-state="denied">{{ copy.denied }}</p>
     } @else {
       <header class="crp-page-header">
       <div class="crp-page-header-main">
-        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
-        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
+        <p class="crp-page-header-eyebrow">{{ fixedType ? copy.eyebrowOf[fixedType] : copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title[fixedType ?? 'all'] }}</h1>
       </div>
+      @if (navigation?.has('catalog')) {
+        <button class="crp-operator-outline crp-page-header-action" type="button" (click)="navigation?.open('catalog')">{{ copy.backToCatalogs }}</button>
+      }
       </header>
-      <p class="crp-access-note">{{ copy.accessNote }}</p>
+      <p class="crp-access-note">{{ fixedType ? copy.noteOf[fixedType] : copy.accessNote }}</p>
       <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
       <div class="crp-operator-panel-head">
         <div><p class="crp-operator-eyebrow">{{ copy.panelEyebrow }}</p><h2>{{ copy.panelTitle }}</h2></div>
@@ -50,6 +56,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
       <label for="establishment-type">{{ copy.filters.type }}</label>
       <select id="establishment-type" [attr.aria-label]="copy.filters.type" [disabled]="saving()"
         [value]="filters().establishmentType ?? ''" (change)="chooseType($event)">
+        <option value="">{{ copy.filters.allTypes }}</option>
         @for (type of types; track type) { <option [value]="type">{{ copy.types[type] }}</option> }
       </select>
       </div>
@@ -70,7 +77,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loading }}</p> }
         @case ('error') {
           <div role="alert" data-state="error">
-            <p>{{ copy.requestFailed }}</p>
+            <p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p>
             <button class="crp-operator-outline" type="button" [disabled]="saving()" (click)="current.retry()">{{ copy.retry }}</button>
           </div>
         }
@@ -78,21 +85,21 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
         @case ('data') {
           <div class="crp-table-wrap">
           <table class="crp-operator-table" data-state="data" [attr.aria-label]="copy.panelTitle">
-            <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.info }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+            <thead><tr><th scope="col">{{ copy.columns.name }}</th><th scope="col">{{ copy.columns.info }}</th><th scope="col">{{ copy.columns.status }}</th>@if (canWrite) { <th scope="col">{{ copy.columns.actions }}</th> }</tr></thead>
             <tbody>
             @for (item of current.items; track item.associationId) {
               <tr>
                 <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.establishmentType] }}</small></td>
                 <td>{{ item.commercialInformation }}</td>
                 <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ copy.statuses[item.associationStatus] }}</span></td>
-                <td class="crp-row-actions">
                 @if (canWrite) {
+                <td class="crp-row-actions">
                   <button class="crp-row-toggle" type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="changeStatus(item)">
                     {{ item.associationStatus === 'ACTIVE' ? copy.inactivate : copy.reactivate }}
                   </button>
-                }
                 @if (rowErrors()[item.associationId]; as reason) { <p role="alert">{{ reason }}</p> }
                 </td>
+                }
               </tr>
             }
             </tbody>
@@ -120,13 +127,16 @@ export class EstablishmentsPageComponent {
   protected readonly canRead = this.capabilities.canReadEstablishments();
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly statuses = ASSOCIATION_STATUSES;
-  protected readonly filters = signal<EstablishmentFilters>({});
+  /** The hub opens the area with { type } (admin-catalogos.html cards); anything else shows both types. */
+  protected readonly navigation = inject(PortalNavigation, { optional: true });
+  protected readonly fixedType = ESTABLISHMENT_TYPES.find((type) => type === this.navigation?.params()['type']);
+  protected readonly filters = signal<EstablishmentFilters>(this.fixedType ? { establishmentType: this.fixedType } : {});
   private readonly requests = new Subject<EstablishmentFilters>();
   private readonly listed = toSignal(this.requests.pipe(
     // RN-PE3: only the most recent request may supply the screen's next state.
     switchMap((filters) => this.source.list(filters).pipe(
       map((items): EstablishmentsPageState => items.length ? { kind: 'data', items } : { kind: 'empty' }),
-      catchError(() => of<EstablishmentsPageState>({ kind: 'error', retry: () => this.reload() })),
+      catchError((error) => of<EstablishmentsPageState>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
       startWith<EstablishmentsPageState>({ kind: 'loading' }),
     )),
   ), { initialValue: { kind: 'loading' } as EstablishmentsPageState });
@@ -154,8 +164,9 @@ export class EstablishmentsPageComponent {
   protected chooseType(event: Event): void {
     if (this.saving()) { return; }
     const value = (event.target as HTMLSelectElement).value;
-    if (!this.types.includes(value as EstablishmentType)) { return; }
-    this.filters.update((filters) => ({ ...filters, establishmentType: value as EstablishmentType }));
+    if (value !== '' && !this.types.includes(value as EstablishmentType)) { return; }
+    const { establishmentType: _previous, ...rest } = this.filters();
+    this.filters.set(value === '' ? rest : { ...rest, establishmentType: value as EstablishmentType });
     this.reload();
   }
 

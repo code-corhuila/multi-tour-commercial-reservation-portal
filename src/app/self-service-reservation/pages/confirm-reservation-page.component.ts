@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
+import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop, formatDate } from '../../shared/format';
@@ -7,8 +10,8 @@ import { CustomerContext } from '../data/customer-context';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
-import { tourPhoto } from '../../shared/tour-photo';
-import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { TourImages } from '../../shared/tour-photo';
+import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
@@ -19,11 +22,11 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
  */
 @Component({
   selector: 'app-confirm-reservation-page',
-  imports: [PortalSlotOutlet],
+  imports: [ReadErrorComponent, PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let current = state();
-    <form class="self-service-confirm" aria-labelledby="self-service-confirm-title" (submit)="$event.preventDefault(); confirm()" novalidate>
+    <form class="crp-self-service-confirm" aria-labelledby="self-service-confirm-title" (submit)="$event.preventDefault(); confirm()" novalidate>
       <header class="crp-booking-topbar">
         @if (back && selection) {
           <button type="button" class="crp-booking-back" (click)="back.open(flow.reserve, { tour: selection.serviceIds[0] })"><span aria-hidden="true">←</span>&ngsp;<span>{{ text.backToReserve }}</span></button>
@@ -33,7 +36,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
       <div class="crp-finish-content">
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ selection ? text.noMethods : text.noSelection }}</p> }
         @case ('data') {
           <p class="crp-finish-pill">{{ text.pill }}</p>
@@ -43,19 +46,19 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                 <div class="crp-finish-grid">@for (field of holder; track field.id) {
                   <div><label [for]="field.id">{{ field.label }}</label><input [id]="field.id" [name]="field.id" [type]="field.type" [placeholder]="field.placeholder" disabled aria-describedby="crp-holder-pending" /></div>
                 }</div>
-                <p id="crp-holder-pending" class="self-service-note">{{ text.holderPending }}</p>
+                <p id="crp-holder-pending" class="crp-self-service-note">{{ text.holderPending }}</p>
               </article>
               <article class="crp-booking-card crp-finish-travelers"><h2>{{ text.travelersTitle }}</h2>&ngsp;<span>{{ companions(selection!.people) }}</span>
-                <p class="self-service-note">{{ text.travelersCopy }}</p></article>
+                <p class="crp-self-service-note">{{ text.travelersCopy }}</p></article>
               <article class="crp-booking-card crp-finish-conditions"><h2>{{ text.conditionsTitle }}</h2>
-                <p class="self-service-note">{{ text.conditionsCopy }}</p>
+                <p class="crp-self-service-note">{{ text.conditionsCopy }}</p>
                 <ul>@for (line of text.conditionLines; track line) { <li>{{ line }}</li> }</ul>
                 @for (consent of consents; track consent.key) {
-                  <label class="self-service-consent"><input type="checkbox" [name]="consent.key" [checked]="accepted()[consent.key]"
+                  <label class="crp-self-service-consent"><input type="checkbox" [name]="consent.key" [checked]="accepted()[consent.key]"
                     (change)="accept(consent.key, $event)" [attr.aria-invalid]="unaccepted() && !accepted()[consent.key] ? 'true' : null"
                     aria-describedby="self-service-consent-error" /> {{ consent.label }}</label>
                 }
-                <p id="self-service-consent-error" class="self-service-field-error">{{ unaccepted() ? text.mustAccept : '' }}</p>
+                <p id="self-service-consent-error" class="crp-self-service-field-error">{{ unaccepted() ? text.mustAccept : '' }}</p>
               </article>
               <article class="crp-booking-card"><h2><label for="self-service-method">{{ text.method }}</label></h2>
                 <select id="self-service-method" name="paymentMethod" [value]="method()" (change)="choose($event)"
@@ -63,27 +66,31 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                   <option value="">{{ text.chooseMethod }}</option>
                   @for (m of current.methods; track m.code) { <option [value]="m.code">{{ m.label }}</option> }
                 </select>
-                <p id="self-service-method-error" class="self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
-                @if (text.methodHint[method()]; as hint) { <p class="self-service-note">{{ hint }}</p> }
+                <p id="self-service-method-error" class="crp-self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
+                @if (text.methodHint[method()]; as hint) { <p class="crp-self-service-note">{{ hint }}</p> }
               </article>
               <ng-container *crpSlot="checkout; inputs: { quote: current.quote, method: method(), reservation: created() }" />
               @if (standing === 'OTHER') { <p role="status">{{ text.notCustomer }}</p> }
               @if (asked()) { <p role="status">{{ text.signIn }}</p> }
               @if (refusal()) { <p role="alert">{{ refusal() }}</p> }
               @if (created(); as r) {
-                <p role="status" class="self-service-created">{{ text.created }}: <strong>{{ r.reservationId }}</strong> · {{ text.final }}
+                <p role="status" class="crp-self-service-created">{{ text.created }}: <strong>{{ r.reservationId }}</strong> · {{ text.final }}
                   {{ cop(r.finalValueCents) }} <span class="crp-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span></p>
               }
             </div>
             <aside class="crp-finish-aside">
-              <article class="crp-booking-card self-service-summary" aria-labelledby="self-service-summary-title">
+              <article class="crp-booking-card crp-self-service-summary" aria-labelledby="self-service-summary-title">
                 <h2 id="self-service-summary-title">{{ text.summaryTitle }}</h2>
                 <div class="crp-finish-summary"><div class="crp-finish-media" aria-hidden="true">@if (photo(selection!.serviceIds[0]); as src) { <img [src]="src" alt="" /> }</div>
-                  <p class="self-service-summary-copy"><strong>{{ current.quote.tourName }}</strong>&ngsp;<span>{{ date(current.quote.departureAt) }}</span>&ngsp;<span>{{ travelers(selection!.people) }}</span></p></div>
-                <dl class="self-service-pricing">
+                  <p class="crp-self-service-summary-copy"><strong>{{ current.quote.tourName }}</strong>&ngsp;<span>{{ date(current.quote.departureAt) }}</span>&ngsp;<span>{{ travelers(selection!.people) }}</span></p></div>
+                <dl class="crp-self-service-pricing">
                   <dt>{{ text.basePrice }}</dt><dd>{{ cop(current.quote.baseValueCents) }}</dd>
-                  @if (current.quote.discountCents) { <dt>{{ text.discounts }}</dt><dd>{{ cop(-current.quote.discountCents) }}</dd> }
-                  <dt>{{ text.final }}</dt><dd class="self-service-total">{{ cop(current.quote.finalValueCents) }}</dd>
+                  @if (current.quote.discountCents) { <dt>{{ text.discounts }}</dt><dd>{{ cop(-current.quote.discountCents) }}</dd>
+                    @if (current.quote.discountLines?.length) {
+                      <dd class="crp-self-service-breakdown"><ol>@for (line of current.quote.discountLines; track line.order) {
+                        <li>{{ line.order }}. {{ line.name }} · {{ text.bases[line.base] }} · {{ cop(-line.amountCents) }} · {{ text.subtotal }} {{ cop(line.subtotalCents) }}</li> }</ol></dd>
+                    } }
+                  <dt>{{ text.final }}</dt><dd class="crp-self-service-total">{{ cop(current.quote.finalValueCents) }}</dd>
                 </dl>
               </article>
               <article class="crp-booking-card crp-finish-help"><h2>{{ text.helpTitle }}</h2>&ngsp;<strong>{{ text.helpLead }}</strong>&ngsp;<span>{{ text.helpCopy }}</span></article>
@@ -108,12 +115,15 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
   `,
 })
 export class ConfirmReservationPageComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   protected readonly text = SELF_SERVICE_TEXT;
   protected readonly cop = formatCop;
   protected readonly date = formatDate;
   protected readonly travelers = travelers;
   protected readonly companions = companions;
-  protected readonly photo = tourPhoto;
+  private readonly images = inject(TourImages);
+  protected photo(serviceId: string | undefined): string | null { return this.images.urlOf(serviceId); }
   protected readonly flow = RESERVATION_FLOW;
   protected readonly cash = 'CASH_AT_OFFICE';
   /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
@@ -143,8 +153,8 @@ export class ConfirmReservationPageComponent {
   private readonly requester = inject(ReservationRequester);
   private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
-  /** Plan D-05: one key per intention, made when the confirmation opens and kept across retries. */
-  private readonly key = this.keys.generate();
+  /** Plan D-05: the key follows the body: kept across retries of the same data, new when the data is corrected. */
+  private readonly intention = new IntentionKey(this.keys);
   protected readonly method = signal('');
   protected readonly accepted = signal({ conditions: false, terms: false });
   protected readonly missing = signal(false);
@@ -158,7 +168,7 @@ export class ConfirmReservationPageComponent {
     methods: this.methods.listEnabled(), quote: this.quotes.quote(this.selection!),
   }).pipe(
     map(({ methods, quote }): ConfirmState => (methods.length ? { kind: 'data', methods, quote } : { kind: 'empty' })),
-    catchError(() => of<ConfirmState>({ kind: 'error' })),
+    catchError((error) => of<ConfirmState>({ kind: 'error', ...readFailure(error) })),
     startWith<ConfirmState>({ kind: 'loading' }),
   ))), { initialValue: (this.selection ? { kind: 'loading' } : { kind: 'empty' }) as ConfirmState });
 
@@ -184,11 +194,11 @@ export class ConfirmReservationPageComponent {
     const { conditions, terms } = this.accepted();
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
-    if (this.missing() || this.unaccepted()) return;
-    if (this.standing === 'NO_SESSION') { this.asked.set(true); this.customer.requestSignIn(); return; }
+    if (this.missing() || this.unaccepted()) { this.focusFirstErrorOnRender(); return; }
+    if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
-    defer(() => this.requester.request(selection, this.method(), this.key)).pipe(
+    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method() }))).pipe(
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({

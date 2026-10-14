@@ -1,4 +1,5 @@
 import { AbstractType, InjectionToken, Injector, Type } from '@angular/core';
+import { CatalogHubPageComponent } from './catalog/pages/catalog-hub-page.component';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
 import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
@@ -50,6 +51,8 @@ import { ReschedulingProposalPageComponent } from './rescheduling/pages/reschedu
 import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
+import { CREDIT_BALANCE_AREA, CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
+import { CreditBalancePageComponent } from './credit-balance/pages/credit-balance-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
@@ -83,9 +86,17 @@ export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTA
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
-  { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
-  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent,
-    isAvailable: (injector) => has(injector, AssociatedEstablishmentsSource) },
+  // HU-COM-001 (mockup PDR v1.9, AC-P1.17): the operator lands on Reservas, and this story owns the order of the sidebar.
+  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
+  // HU-COM-001 admin-catalogos.html (the hub), whose cards open the tour list and, for the Administrator, the establishments.
+  { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
+  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
+    // 002 plan D-06, AC-PE.7: no route for a role that cannot read establishments (the Colaborador operativo).
+    isAvailable: (injector) => injector.get(PortalCapabilities).canReadEstablishments() && has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
@@ -106,8 +117,6 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
     isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
   },
-  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
-  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {
     key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
@@ -160,6 +169,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: REFUND_SCREENS.manage, label: 'Gestionar devolución', component: RefundManagePageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
   { key: REFUND_SCREENS.treatment, label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent, menu: false, parent: 'payments',
     isAvailable: (injector) => injector.get(PortalCapabilities).canAuthorizeRefund() && refundsAvailable(injector) },
+  // HU-COM-017 admin-saldo-favor.html (amendment 2026-10-14, plan D-07): sub-screen of 13 reached by the links of 13 and 10A; every operator reads it, the forms ask the capabilities.
+  { key: CREDIT_BALANCE_AREA, label: 'Saldo a favor', component: CreditBalancePageComponent, menu: false, parent: 'payments', isAvailable: (injector) => has(injector, CreditBalanceSource, CreditBalanceWriter) },
   // HU-COM-016 admin-notificaciones.html: "Notificaciones" is a sidebar item only of screen 9 (admin-operador.html:25, between Operación and Reportes);
   // here it follows Pagos, since Operación belongs to another portal (position PROPUESTO, spec 016- section 5), while some alert is offered (DP-RF6).
   { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent, isAvailable: hasNotifications },
@@ -173,7 +184,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
 
 export interface ClientLink { readonly key: string; readonly label: string }
 
-/** Links of tours.html (header center, header right without 'Perfil', footer Explorar) and of the compact header: panel, other panel areas. */
+/** Links of tours.html (header center, header right Mis reservas (Perfil is the container's, see PROFILE_TARGET), footer Explorar) and of the compact header: panel, other panel areas. */
 export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer' | 'panel', readonly ClientLink[]>> = Object.freeze({
   nav: [{ key: CLIENT_AREA.tours, label: 'Explorar' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
   account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }],

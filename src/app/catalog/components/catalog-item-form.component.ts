@@ -2,21 +2,20 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, O
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemsWriter } from '../data/catalog-api.service';
-import { CATALOG_SERVICE_TYPES, CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
-import { CATALOG_COPY } from '../catalog-copy';
+import { CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
 import { formatCop } from '../../shared/format';
 import { focusFirstError } from '../../shared/focus';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
-import { MoneyRejection, formatMoney, parseMoney } from '../../shared/money';
+import { MoneyRejection, formatMoney, parseMoney, pesosText } from '../../shared/money';
 
 // Declared debt (spec.md DD-11): these fields are the columns of catalog_services, which wait for
 // DP-01 (what a tour is) and G-H (who owns the operational cost).
 // Declared debt (spec.md DD-14): the per-person transport rate has no column (G-E), so the form
 // cannot offer it yet.
 
-type TextField = 'commercialName' | 'baseRate' | 'baseOperationalCost' | 'configuredCapacity';
+type TextField = 'commercialName' | 'baseRate' | 'validFrom' | 'validTo' | 'baseOperationalCost' | 'configuredCapacity';
 type CheckField = 'transportRequired' | 'highRisk';
-type FieldName = TextField | CheckField | 'serviceType';
+type FieldName = TextField | CheckField;
 
 interface Draft {
   readonly serviceType: CatalogServiceType;
@@ -25,6 +24,9 @@ interface Draft {
   readonly baseRate: string;
   readonly baseOperationalCost: string;
   readonly configuredCapacity: string;
+  /** The validity dates (yyyy-mm-dd) as the date controls give them. */
+  readonly validFrom: string;
+  readonly validTo: string;
   readonly transportRequired: boolean;
   /** Explicit, never defaulted behind the person: it starts unchecked and visible. */
   readonly highRisk: boolean;
@@ -37,16 +39,17 @@ const CHECK_FIELDS: ReadonlyArray<{ readonly name: CheckField; readonly label: s
   { name: 'highRisk', label: 'Alto riesgo' },
 ];
 
-const TEXT_FIELDS: ReadonlyArray<{ readonly name: TextField; readonly label: string }> = [
-  { name: 'commercialName', label: 'Nombre comercial' },
-  { name: 'baseRate', label: 'Tarifa base' },
-  { name: 'baseOperationalCost', label: 'Costo operativo base' },
-  { name: 'configuredCapacity', label: 'Capacidad configurada' },
+const TEXT_FIELDS: ReadonlyArray<{ readonly name: TextField; readonly label: string; readonly type: 'text' | 'date' }> = [
+  { name: 'commercialName', label: 'Nombre comercial', type: 'text' },
+  { name: 'baseRate', label: 'Tarifa base', type: 'text' },
+  { name: 'validFrom', label: 'Vigencia desde', type: 'date' },
+  { name: 'validTo', label: 'Vigencia hasta', type: 'date' },
+  { name: 'baseOperationalCost', label: 'Costo operativo base', type: 'text' },
+  { name: 'configuredCapacity', label: 'Capacidad configurada', type: 'text' },
 ];
 
 /** The service may name a field by its wire name (cents) or by the form name; both land on one control. */
 const FIELD_OF_WIRE_NAME: Readonly<Record<string, FieldName>> = {
-  serviceType: 'serviceType',
   commercialName: 'commercialName',
   baseRate: 'baseRate',
   baseRateCents: 'baseRate',
@@ -67,24 +70,28 @@ const MONEY_MESSAGES: Readonly<Record<MoneyRejection, string>> = {
 
 /** A tour needs its capacity for the departures; a transportation item may go without (draft contract). */
 const CAPACITY_REQUIRED_FOR: CatalogServiceType = 'TOUR';
+const VALIDITY_ORDER = 'La vigencia termina antes de empezar.';
 const WHOLE_NUMBER = /^[1-9]\d*$/;
 const REQUEST_FAILED = 'La solicitud falló.';
 
-/** Whole pesos as the person would type them (`180000`); two decimals only when there are cents. */
-function moneyText(minorUnits: number): string {
-  return minorUnits % 100 === 0 ? String(minorUnits / 100) : formatMoney(minorUnits);
-}
 
 function toDraft(item: CatalogItem | undefined): Draft {
   return {
-    serviceType: item?.serviceType ?? CATALOG_SERVICE_TYPES[0],
+    serviceType: item?.serviceType ?? 'TOUR',
     commercialName: item?.commercialName ?? '',
-    baseRate: item ? moneyText(item.baseRateCents) : '',
-    baseOperationalCost: item ? moneyText(item.baseOperationalCostCents) : '',
+    baseRate: item ? pesosText(item.baseRateCents) : '',
+    baseOperationalCost: item ? pesosText(item.baseOperationalCostCents) : '',
     configuredCapacity: item?.configuredCapacity != null ? String(item.configuredCapacity) : '',
+    validFrom: item?.validFrom ?? '',
+    validTo: item?.validTo ?? '',
     transportRequired: item?.transportRequired ?? false,
     highRisk: item?.highRisk ?? false,
   };
+}
+
+/** The end of the validity may not come before its start (ISO dates compare as text); shown as soon as both are typed. */
+function validityOrder(draft: Draft): string | undefined {
+  return draft.validFrom !== '' && draft.validTo !== '' && draft.validTo < draft.validFrom ? VALIDITY_ORDER : undefined;
 }
 
 /** The command if every field is valid, otherwise the message of each field that is not. */
@@ -101,6 +108,15 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
   const cost = parseMoney(draft.baseOperationalCost);
   if (cost.kind === 'invalid') {
     messages.baseOperationalCost = MONEY_MESSAGES[cost.reason];
+  }
+  for (const name of ['validFrom', 'validTo'] as const) {
+    if (draft[name] === '') {
+      messages[name] = 'Obligatoria.';
+    }
+  }
+  const order = validityOrder(draft);
+  if (order) {
+    messages.validTo = order;
   }
   const capacityText = draft.configuredCapacity.trim();
   if (capacityText === '' && draft.serviceType === CAPACITY_REQUIRED_FOR) {
@@ -120,6 +136,8 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
       configuredCapacity: capacityText === '' ? null : Number(capacityText),
       transportRequired: draft.transportRequired,
       highRisk: draft.highRisk,
+      validFrom: draft.validFrom,
+      validTo: draft.validTo,
     },
   };
 }
@@ -144,32 +162,13 @@ let nextFormId = 0;
   template: `
     <form novalidate (submit)="submit($event)">
       <section class="crp-form-panel">
-      <p class="crp-operator-eyebrow">01. Datos del servicio</p>
+      <p class="crp-operator-eyebrow">01. Datos del tour</p>
       <div class="crp-form-grid">
-      @if (scope() === 'all') {
-      <div>
-        <label [for]="id('serviceType')">Tipo de servicio</label>
-        <select
-          [id]="id('serviceType')"
-          [disabled]="item() !== undefined"
-          [attr.aria-invalid]="messages().serviceType ? 'true' : null"
-          [attr.aria-describedby]="describedBy('serviceType')"
-          (change)="onType($event)"
-        >
-          @for (type of serviceTypes; track type) {
-            <option [value]="type" [selected]="draft().serviceType === type">{{ typeLabels[type] }}</option>
-          }
-        </select>
-        @if (messages().serviceType; as text) {
-          <p role="alert" [id]="id('serviceType') + '-error'">{{ text }}</p>
-        }
-      </div>
-      }
       @for (field of shownTextFields(); track field.name) {
         <div>
           <label [for]="id(field.name)">{{ field.label }}</label>
           <input
-            type="text"
+            [type]="field.type"
             [id]="id(field.name)"
             [value]="draft()[field.name]"
             [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
@@ -212,7 +211,7 @@ let nextFormId = 0;
       <div class="crp-form-actions">
       <!-- Disabled while saving: closing the form then would drop the answer of a save in flight. -->
       <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancelled.emit()">Cancelar</button>
-      <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar servicio</button>
+      <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar tour</button>
       </div>
       @for (text of formMessages(); track $index) {
         <p role="alert">{{ text }}</p>
@@ -248,10 +247,8 @@ export class CatalogItemFormComponent implements OnInit {
   /** True when a save starts and false when it ends, so the host never replaces the form mid-flight. */
   readonly saving = output<boolean>();
 
-  protected readonly serviceTypes = CATALOG_SERVICE_TYPES;
   protected readonly shownTextFields = computed(() => (this.scope() === 'all' ? TEXT_FIELDS : TEXT_FIELDS.filter((field) => field.name === 'commercialName')));
   protected readonly checkFields = CHECK_FIELDS;
-  protected readonly typeLabels = CATALOG_COPY.types;
   /** What a valid typed amount reads as on the screens (`$1.299.000`); the amount sent is still parsed by money.ts. */
   protected readonly moneyPreview = computed<Partial<Record<TextField, string>>>(() => {
     const preview: Partial<Record<TextField, string>> = {};
@@ -271,6 +268,7 @@ export class CatalogItemFormComponent implements OnInit {
   /** Local errors appear once the person tried to save; the service's own refusal always shows. */
   protected readonly messages = computed<FieldMessages>(() => ({
     ...this.refusedFields(),
+    ...(this.scope() === 'all' && validityOrder(this.draft()) ? { validTo: VALIDITY_ORDER } : {}),
     ...(this.attempted() ? this.check().messages : {}),
   }));
 
@@ -294,10 +292,6 @@ export class CatalogItemFormComponent implements OnInit {
 
   protected onText(name: TextField, event: Event): void {
     this.edit(name, (event.target as HTMLInputElement).value);
-  }
-
-  protected onType(event: Event): void {
-    this.edit('serviceType', (event.target as HTMLSelectElement).value as CatalogServiceType);
   }
 
   protected onCheck(name: CheckField, event: Event): void {

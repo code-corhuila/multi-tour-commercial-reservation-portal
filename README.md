@@ -41,6 +41,14 @@ npm test       # Vitest (Angular unit-test builder) with Testing Library
 `portalTreeMatchesTheSpecifiedTree` (`src/` holds exactly the specified files). Without local Node:
 `docker run --rm -v "$PWD":/w -w /w node:22 sh -c "npm ci && npm run build && npm test"`.
 
+## Images and the content security policy
+
+The portal draws every image from the same origin as the container: the CSP of the container allows `img-src 'self'` and nothing
+else, so a `blob:` or `data:` URL, or an image on another host, is blocked and must never be produced by the portal. The image of a tour
+comes from the `TourImages` port (`src/app/shared/tour-photo.ts`): production answers one self-hosted resource of the container
+(`/assets/mountain-hero.jpg`) until the catalog API publishes the image of each tour, and then the adapter returns that URL, which must
+stay under the same origin. Only the demo build (`src/app/demo/tour-photo-demo.ts`) assigns a different photo to each demo tour.
+
 ## What is missing
 
 Done: the money model (T-03), the four states with the newest request winning (T-04) and the test that no screen offers a delete action (T-08). `catalog-item-form.component.ts` is still an empty stub and `catalog.routes.ts` declares no route. The tasks still open, from `tasks.md` of the story:

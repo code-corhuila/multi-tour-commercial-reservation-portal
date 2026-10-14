@@ -425,7 +425,6 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
     document.body.append(host);
     cleanup = entry.mountWith(host, { apiClient: { request: vi.fn() } as never, session: { roles: ['OPERATIONAL_COLLABORATOR'], open: () => undefined, close: () => undefined } }, demoSources);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-    click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const row = Array.from(host.querySelectorAll('tbody tr')).find((tr) => tr.textContent?.includes('#RES-1839'))!;
     row.querySelector('button')!.click();
@@ -437,11 +436,11 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
     cause.value = 'El cliente desiste del viaje'; cause.dispatchEvent(new Event('input'));
     host.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
     await vi.waitFor(() => expect(host.querySelector('.crp-reservation-changes-feedback[role="status"]')?.textContent).toContain('Cancelación registrada.'));
-    await vi.waitFor(() => expect(host.querySelector('app-reservations-page .reservation-detail')).toBeTruthy(), { timeout: 4000 });
+    await vi.waitFor(() => expect(host.querySelector('app-reservations-page .crp-reservations-detail')).toBeTruthy(), { timeout: 4000 });
     const detail = host.querySelector('app-reservations-page')!;
     expect(detail.querySelector('h1')?.textContent).toBe('Detalle de reserva');
-    expect(detail.querySelector('.crp-reservation-hero')?.textContent).toContain('#RES-1839');
-    expect(detail.querySelector('.crp-reservation-hero .crp-operator-status')?.textContent?.trim()).toBe('Cancelada');
+    expect(detail.querySelector('.crp-reservations-hero')?.textContent).toContain('#RES-1839');
+    expect(detail.querySelector('.crp-reservations-hero .crp-operator-status')?.textContent?.trim()).toBe('Cancelada');
     expect(detail.textContent).toContain('Devolución pendiente de gestionar');
     expect(detail.querySelector('header')?.textContent).not.toContain('Cancelar o modificar reserva');
   });
@@ -548,5 +547,17 @@ describe('registeredCancellationMessageFollowsTheDeterminedValue', () => {
     select.value = 'not-attributable'; select.dispatchEvent(new Event('change')); await s.settle();
     await s.type('Salida suspendida por lluvias'); await s.submit();
     expect(status(s.host)).toBe('Cancelación registrada. Valor a devolver: $300.000 (100 %, causa no atribuible al cliente), determinado y autorizado automáticamente; se ejecuta en máximo 5 días hábiles desde Solicitudes de devolución.');
+  });
+});
+
+describe('aCorrectedCancellationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('changes the key when the cause is corrected', async () => {
+    const writer = new ControllableWriter();
+    const s = await page({ writer });
+    await s.type('Viaje aplazado'); await s.submit();
+    writer.calls[0].fail(); await s.settle();
+    await s.type('El cliente desiste'); await s.submit();
+    const [first, second] = writer.calls.map((c) => c.command.idempotencyKey);
+    expect(second).not.toBe(first);
   });
 });

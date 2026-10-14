@@ -43,7 +43,7 @@ describe('theFormShowsTheQuoteItsSourceReturnedAndComputesNothing', () => {
     await fill();
     expect(quotes.requests.at(-1)!.request).toEqual({ departureId: 'dep-1', serviceIds: ['svc-Kayak'], people: 3 });
     quotes.requests.at(-1)!.reply(SERVICE_QUOTE); await settle();
-    const breakdown = element.querySelector('.reservation-breakdown')!;
+    const breakdown = element.querySelector('.crp-reservations-breakdown')!;
     expect(breakdown.querySelector('[data-value="projected"]')!.textContent).toContain('$123.456');
     expect(breakdown.querySelector('[data-value="final"]')!.textContent).toContain('$100.000');
     expect(element.textContent).toContain('-$23.456');

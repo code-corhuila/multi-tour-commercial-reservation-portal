@@ -84,7 +84,7 @@ describe('anUnknownRoleGetsReadOnlyCapabilities', () => {
 });
 
 describe('noRoleNameOutsideThePortalCapabilities', () => {
-  const ROLE_NAME = /\b(TENANT_ADMINISTRATOR|OPERATIONAL_COLLABORATOR|MANAGER|ANALYST|ACCOUNTANT|READ_ONLY)\b|FINAL_CUSTOMER_ROLE|includes\(\s*['"`]FINAL_CUSTOMER/;
+  const ROLE_NAME = /\b(TENANT_ADMINISTRATOR|OPERATIONAL_COLLABORATOR|MANAGER|ANALYST|ACCOUNTANT|READ_ONLY)\b|FINAL_CUSTOMER_ROLE|includes\(\s*['"`]FINAL_CUSTOMER|[=!]==?\s*['"`](FINAL_CUSTOMER|NO_SESSION)['"`]|['"`](FINAL_CUSTOMER|NO_SESSION)['"`]\s*[=!]==?/;
 
   it('finds a role name only in src/app/shared/portal-capabilities.ts', () => {
     const files = listSourceFiles().filter((file) => file.endsWith('.ts'));
