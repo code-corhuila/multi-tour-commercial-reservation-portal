@@ -24,6 +24,7 @@ import { PAYMENT_FOLLOWUP_CONTRIBUTIONS } from './app/payments/components/pendin
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
 import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
+import { RESCHEDULING_CONTRIBUTIONS } from './app/rescheduling/components/rescheduling-contributions.component';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -92,6 +93,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(RESERVATION_DETAIL_BLOCKS, REFUND_DETAIL_LINK), contribute(OPERATOR_NOTIFICATIONS, REFUND_ALERTS),
       // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
       RESCHEDULING_ENTRY,
+      // HU-COM-018: Salida propuesta, the mark and Responder propuesta of Mis reservas, and the notice of 17; only with the proposals port.
+      ...RESCHEDULING_CONTRIBUTIONS,
     ],
   }).then((created) => {
     app = created;

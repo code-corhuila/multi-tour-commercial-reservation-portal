@@ -150,6 +150,8 @@ const SPECIFIED_TREE = [
   'src/app/rescheduling/data/rescheduling-ports.ts',
   'src/app/rescheduling/pages/rescheduling-page.component.ts',
   'src/app/rescheduling/components/rescheduling-entry.component.ts',
+  'src/app/rescheduling/pages/rescheduling-proposal-page.component.ts',
+  'src/app/rescheduling/components/rescheduling-contributions.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {

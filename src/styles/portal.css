@@ -223,7 +223,7 @@
 .crp-root .self-service-card-copy { display: grid; gap: 6px; }
 .crp-root .self-service-card-copy strong { color: #17252b; font-size: 1.2rem; }
 .crp-root .self-service-card-copy p { margin: 0; color: #5a6b70; }
-.crp-root .self-service-card-status { display: grid; justify-items: end; gap: 8px; }
+.crp-root .self-service-card-status { display: grid; justify-items: end; align-content: start; gap: 8px; }
 .crp-root .self-service-note, .crp-root .self-service-created { margin: 0 0 12px; color: var(--crp-soft); font-size: 0.86rem; }
 @media (max-width: 760px) {
   .crp-root .crp-finish-layout, .crp-root .crp-finish-grid, .crp-root .self-service-card { grid-template-columns: 1fr; }
@@ -556,3 +556,14 @@
 .crp-root .crp-rescheduling-hero h2 { margin: 4px 0 0; color: var(--crp-text); font-size: clamp(1.25rem, 1.1rem + 0.45vw, 1.58rem); line-height: 1.25; letter-spacing: -0.045em; }
 .crp-root .crp-rescheduling-hero .crp-status { justify-self: end; }
 @media (max-width: 620px) { .crp-root .crp-rescheduling-hero { grid-template-columns: 1fr; } .crp-root .crp-rescheduling-hero .crp-status { justify-self: start; } }
+/* HU-COM-018 24A (propuesta-reprogramacion.html): operator-detail-list and travel-transfer-reference-copy; the actions closing a Mis reservas card. */
+.crp-root .crp-rescheduling-details { display: grid; gap: 11px; margin: 16px 0 0; }
+.crp-root .crp-rescheduling-details div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--crp-line); }
+.crp-root .crp-rescheduling-details dt { color: var(--crp-soft); font-size: 0.77rem; }
+.crp-root .crp-rescheduling-details dd { margin: 0; color: var(--crp-text); font-size: 0.82rem; font-weight: 700; text-align: right; }
+.crp-root .crp-rescheduling-copy { margin: 8px 0 0; color: var(--crp-soft); line-height: 1.6; }
+.crp-root .crp-rescheduling-copy.crp-is-valid { color: var(--crp-success); }
+/* Mis reservas: the mark is the small status tag of the mockup (operator-status), the status column stays at the top, Responder propuesta crosses the card. */
+.crp-root .self-service-card-copy strong.crp-status { font-size: 0.72rem; }
+.crp-root .self-service-card > crp-rescheduling-card-action { grid-column: 1 / -1; }
+.crp-root .crp-rescheduling-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
