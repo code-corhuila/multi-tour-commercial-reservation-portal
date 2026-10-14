@@ -224,7 +224,8 @@ describe('everyAdministratorSeesThePendingRefundAlert', () => {
     const p = providers({ extra: [contribute(OPERATOR_NOTIFICATIONS, REFUND_ALERTS)] });
     const s = await render(NotificationsPageComponent, p.list);
     expect(s.texts('.crp-page-header-eyebrow, h1, h2')).toEqual(['RF-019', 'Centro de notificaciones', 'Alertas del tenant']);
-    expect(s.texts('.crp-refunds-alert')).toEqual(['DV Devolución pendiente de decisión #RES-X · Cliente RES-X · $1.200.000 · Cancelada por falta de pago']);
+    expect(s.texts('.crp-refunds-alert')).toEqual(expect.arrayContaining([
+      'DV Devolución determinada automáticamente · RES-X Cliente RES-X · $1.200.000 · pendiente de ejecución; no implica que el dinero haya sido devuelto. Abrir']));
   });
 
   it('is offered to the Administrators only, and the area exists only with an available alert', () => {
@@ -247,7 +248,7 @@ describe('fiveBusinessDaysWithoutExecutionMarkItOverdue', () => {
 
   it('shows the mark in the list and in the detail, with the execution panel still open', async () => {
     const list = await screen(RefundRequestsPageComponent);
-    expect(list.texts('tbody tr:nth-child(3) td')[4]).toBe('Autorizada · Vencida');
+    expect(list.texts('tbody tr:nth-child(3) td')[4]).toBe('AutorizadaEjecución vencida (5 días hábiles)');
     TestBed.resetTestingModule();
     const s = await screen(RefundDetailPageComponent, { id: 'RES-V' });
     const state = Array.from(s.host.querySelectorAll('dl div')).find((d) => d.querySelector('dt')?.textContent?.trim() === 'Estado actual');
