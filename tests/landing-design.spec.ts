@@ -87,7 +87,8 @@ describe('landingComposition', () => {
     for (const show of [async () => undefined, establishmentsPage]) {
       await show();
       expect(host.querySelector('.crp-page-header h1')).not.toBeNull();
-      expect(host.querySelector('.crp-page-header-action, .crp-operator-panel-head button')).toBeNull();
+      // "Volver a catálogos" is navigation (admin-gestionar-hospedaje.html), not a creation action.
+      expect(host.querySelector('.crp-page-header-action.crp-operator-primary, .crp-operator-panel-head button')).toBeNull();
       expect(host.querySelector('.crp-operator-table tbody button')).toBeNull();
       expect(host.querySelectorAll('.crp-operator-table tbody tr').length).toBeGreaterThan(0);
     }
