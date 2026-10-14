@@ -41,7 +41,7 @@ function demoStores(): Provider[] {
     { provide: AssociatedEstablishmentsSource, useValue: establishments },
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
     { provide: DiscountRulesSource, useValue: discounts },
-    { provide: DiscountRulesWriter, useValue: new DemoDiscountRulesWriter(discounts) },
+    { provide: DiscountRulesWriter, useValue: new DemoDiscountRulesWriter(discounts, catalog) },
     { provide: PublicOfferSource, useValue: new DemoPublicOfferSource(catalog) },
     { provide: PublicEstablishmentsSource, useValue: new DemoPublicEstablishmentsSource(establishments) },
     ...currentDiscountsProviders(),
