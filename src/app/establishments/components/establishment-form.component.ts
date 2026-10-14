@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, exhaustMap, tap } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
@@ -63,6 +64,8 @@ let nextFormId = 0;
   `,
 })
 export class EstablishmentFormComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   private readonly writer = inject(AssociatedEstablishmentsWriter);
   private readonly keys = inject(IdempotencyKeys);
   protected readonly canRegister = inject(PortalCapabilities).canRegisterEstablishments();
@@ -101,7 +104,7 @@ export class EstablishmentFormComponent {
         this.draft.set({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '' });
         this.image.set(null); this.submittedForm?.reset(); this.finish(); this.saved.emit(stored);
       }),
-      catchError((error: unknown) => { this.showRefusal(error); this.finish(); return EMPTY; }),
+      catchError((error: unknown) => { this.showRefusal(error); this.finish(); this.focusFirstErrorOnRender(); return EMPTY; }),
     ),
   )));
 
@@ -123,7 +126,7 @@ export class EstablishmentFormComponent {
     event.preventDefault(); if (this.pending() || !this.canRegister) { return; }
     this.attempted.set(true);
     // Service messages must not block retrying an otherwise valid intention.
-    this.refused.set({}); if (Object.keys(this.messages()).length) { return; }
+    this.refused.set({}); if (Object.keys(this.messages()).length) { this.focusFirstErrorOnRender(); return; }
     this.pending.set(true); this.saving.emit(true);
     this.submittedForm = event.target as HTMLFormElement;
     const draft = this.draft();
