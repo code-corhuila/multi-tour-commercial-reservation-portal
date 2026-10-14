@@ -246,7 +246,7 @@
 .crp-root .crp-client-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: -24px -20px 24px; padding: 22px 20px 16px; border-bottom: 1px solid #d7e0de; }
 .crp-root .crp-client-panel-header .crp-client-panel-brand { color: #111111; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
 .crp-root .crp-client-panel-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
-.crp-root .crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button) { color: #5a6b70; }
+.crp-root .crp-client-panel-header .crp-client-panel-actions > button:not(.crp-client-bell-button) { color: #5a6b70; }
 .crp-root .crp-client-bell { position: relative; }
 .crp-root .crp-client-panel-header .crp-client-bell-button { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid #d7e0de; border-radius: 50%; background: #ffffff; color: #17252b; }
 .crp-root .crp-client-panel-header .crp-client-bell-button:hover:not(:disabled) { background: #eef4f2; color: #17252b; }
