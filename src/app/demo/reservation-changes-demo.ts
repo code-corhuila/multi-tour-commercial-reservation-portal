@@ -41,17 +41,17 @@ export class DemoCancellationQuote extends CancellationQuote {
 export class DemoCancellationWriter extends CancellationWriter {
   constructor(private readonly store: DemoReservationsStore, private readonly quotes: DemoCancellationQuote, private readonly clock: Clock,
     private readonly by: string, private readonly byKey = new Map<string, CancellationOutcome>()) { super(); }
-  override cancel({ code, cause, idempotencyKey }: CancelCommand): Observable<CancellationOutcome> {
+  override cancel({ code, cause, origin, idempotencyKey }: CancelCommand): Observable<CancellationOutcome> {
     const known = this.byKey.get(idempotencyKey);
     if (known) return of(known);
     const current = this.store.items.find((r) => r.id === code)!, eligibility = eligibilityOf(current);
     if (eligibility !== 'allowed') return of({ kind: 'refused', eligibility, reservation: current });
     const at = this.clock.now(), refundable = this.quotes.refundable(current);
-    const decision = refundable.kind === 'pending-policy' || (refundable.kind === 'amount' && refundable.cents > 0) ? {
+    const decision = origin === 'customer' && (refundable.kind === 'pending-policy' || (refundable.kind === 'amount' && refundable.cents > 0)) ? {
       kind: 'CUSTOMER_CANCELLATION' as const, baseAmountCents: current.validatedCents ?? 0, penaltyAmountCents: refundable.kind === 'amount' ? refundable.penaltyCents : null,
       refundableCents: refundable.kind === 'amount' ? refundable.cents : null, recognizedAt: at, outcome: null,
     } : undefined;
-    const cancelled: Reservation = { ...current, status: 'CANCELADA', seatHeld: false, cancellation: { cause, by: this.by, at }, ...(decision && { financialDecision: decision }) };
+    const cancelled: Reservation = { ...current, status: 'CANCELADA', seatHeld: false, cancellation: { cause, by: this.by, at, origin }, ...(decision && { financialDecision: decision }) };
     this.store.items = this.store.items.map((r) => (r.id === code ? cancelled : r));
     const outcome: CancellationOutcome = { kind: 'registered', reservation: cancelled };
     this.byKey.set(idempotencyKey, outcome);
