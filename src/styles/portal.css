@@ -474,9 +474,9 @@
 .crp-root .crp-client-panel-header .crp-client-panel-actions > button:not(.crp-client-bell-button) { color: var(--crp-soft); }
 .crp-root .crp-client-avatar { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid var(--crp-line); border-radius: 999px; background: var(--crp-shade-f2f5f3); color: var(--crp-text); font-size: 0.82rem; font-weight: 800; }
 .crp-root .crp-client-bell { position: relative; }
-.crp-root .crp-client-panel-header .crp-client-bell-button { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--crp-line); border-radius: 50%; background: var(--crp-surface); color: var(--crp-text); }
-.crp-root .crp-client-panel-header .crp-client-bell-button:hover:not(:disabled) { background: var(--crp-shade-eef4f2); color: var(--crp-text); }
-.crp-root .crp-client-bell-panel { position: absolute; top: calc(100% + 10px); right: 0; width: min(380px, 80vmin); max-height: 70vh; overflow-y: auto; padding: 16px; border: 1px solid var(--crp-line); border-radius: 14px; background: var(--crp-surface); box-shadow: 0 16px 40px var(--crp-shadow-ink-18); }
+.crp-root .crp-client-panel-header .crp-client-bell-button { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid #d7e0de; border-radius: 50%; background: #ffffff; color: #17252b; }
+.crp-root .crp-client-panel-header .crp-client-bell-button:hover:not(:disabled) { background: #eef4f2; color: #17252b; }
+.crp-root .crp-client-bell-panel { position: absolute; top: calc(100% + 10px); right: 0; width: min(380px, 80vmin); max-height: 26rem; overflow-y: auto; padding: 16px; border: 1px solid #d7e0de; border-radius: 14px; background: #ffffff; box-shadow: 0 16px 40px rgba(23, 37, 43, 0.18); }
 .crp-root .crp-client-bell-panel[hidden] { display: none; }
 .crp-root .crp-client-bell-panel h2 { margin: 0 0 10px; font-size: 1rem; font-weight: 800; }
 .crp-root .crp-client-bell-list > p { margin: 0; padding: 10px 0; border-top: 1px solid var(--crp-shade-e6edeb); font-size: 0.88rem; line-height: 1.45; }
