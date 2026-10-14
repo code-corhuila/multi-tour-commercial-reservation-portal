@@ -299,15 +299,15 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(page.host.textContent).not.toContain('2026-11-22');
   });
 
-  it('keeps the photo of a card at 3:2 and the search row narrow, with the buttons at the size of the mockup', () => {
+  it('keeps the photo of a card at 140px (main.css refinement) and the search row narrow, with the buttons at the size of the mockup', () => {
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
-    expect(rule('.crp-root .crp-tour-media')).toMatch(/position:\s*relative;\s*overflow:\s*hidden;\s*aspect-ratio:\s*3 \/ 2;/);
+    expect(rule('.crp-root .crp-tour-media')).toMatch(/position:\s*relative;\s*overflow:\s*hidden;\s*height:\s*140px;/);
     expect(rule('.crp-root .crp-tour-media img')).toMatch(/position:\s*absolute;\s*inset:\s*0;.*width:\s*100%;\s*height:\s*100%;\s*object-fit:\s*cover;/);
     expect(rule('.crp-root .crp-offer-search')).toMatch(/display:\s*flex;.*width:\s*auto;\s*max-width:\s*100%;\s*align-self:\s*flex-end;/);
     expect(rule('.crp-root .crp-offer-search input[type="search"]')).toMatch(/flex:\s*0 1 180px;/);
-    expect(rule('.crp-root .crp-tour-meta button')).toMatch(/font-size:\s*1rem;/);
-    expect(rule('.crp-root .crp-offer-reserve')).toMatch(/font-size:\s*1rem;/);
+    expect(rule('.crp-root .crp-tour-meta button')).toMatch(/font-size:\s*0\.8rem;/);
+    expect(rule('.crp-root .crp-offer-reserve')).toMatch(/font-size:\s*0\.88rem;/);
   });
 
   it('draws a tour card as tours.html: photo, tag of the value port, struck base, from-value in green and Ver detalle', async () => {
@@ -402,10 +402,10 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(TestBed.inject(PortalNavigation).params()).toEqual({ tour: 'tour-Suaza' });
   });
 
-  it('lays the cards of tours.html out in four columns with 3:2 photos and the price beside Ver detalle', () => {
+  it('lays the cards of tours.html out in four columns with 140px photos and the price beside Ver detalle', () => {
     const css = readFileSync('src/styles/portal.css', 'utf8').replace(/\s+/g, ' ');
     expect(css).toContain('.crp-root .crp-offer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));');
-    expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*aspect-ratio: 3 \/ 2;/);
+    expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*height: 140px;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-meta \{[^}]*flex-wrap: nowrap;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-card \.crp-tour-body strong \{[^}]*white-space: nowrap;/);
     expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 1rem; font-weight: 400;[^}]*text-transform: none;/);

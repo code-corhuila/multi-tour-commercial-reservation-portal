@@ -22,10 +22,13 @@ import { reservationModificationDemoProviders } from './demo/reservation-modific
 import { myPaymentsDemoProviders } from './demo/my-payments-demo';
 import { reschedulingDemoProviders } from './demo/rescheduling-demo';
 import { creditBalanceDemoProviders } from './demo/credit-balance-demo';
+import { demoSessionProviders } from './demo/demo-fixtures';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
 export function sourceProviders(_client: PortalApiClient): Provider[] {
-  return oncePerPage(demoStores);
+  const stores = oncePerPage(demoStores);
+  const named = demoSessionProviders();
+  return named.length ? [...stores, ...named] : stores;
 }
 
 function demoStores(): Provider[] {
@@ -39,7 +42,7 @@ function demoStores(): Provider[] {
     { provide: AssociatedEstablishmentsSource, useValue: establishments },
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
     { provide: DiscountRulesSource, useValue: discounts },
-    { provide: DiscountRulesWriter, useValue: new DemoDiscountRulesWriter(discounts) },
+    { provide: DiscountRulesWriter, useValue: new DemoDiscountRulesWriter(discounts, catalog) },
     { provide: PublicOfferSource, useValue: new DemoPublicOfferSource(catalog) },
     { provide: PublicEstablishmentsSource, useValue: new DemoPublicEstablishmentsSource(establishments) },
     ...currentDiscountsProviders(),

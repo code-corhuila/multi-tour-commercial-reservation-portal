@@ -8,6 +8,7 @@ import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './
 import { ReservationSelectionSource, selectionSourceFor } from './app/self-service-reservation/data/reservation-confirmation-ports';
 import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
+import { SESSION_IDENTITY, sessionIdentityOf } from './app/shared/session-identity';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
 import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
 import { CHECKOUT_BLOCKS, OPERATOR_NOTIFICATIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
@@ -67,6 +68,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       provideZonelessChangeDetection(),
       { provide: ActorContext, useValue: actor },
       // Adapters over the container client; the demo build swaps in every in-memory store (001- HC-1).
+      // HU-FRT-001 amendment 003: the name and the initials of the session, before the sources so a demo fixture may stand in.
+      { provide: SESSION_IDENTITY, useValue: sessionIdentityOf(props.session) },
       ...sources(props.apiClient),
       { provide: SensitiveDataAccess, useValue: sensitiveDataAccessFor(props.session.roles) },
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
