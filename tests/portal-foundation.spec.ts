@@ -165,20 +165,23 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     expect(methodCard.nextElementSibling?.tagName).toBe('CRP-TEST-SECOND');
   });
 
-  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES under Notificaciones of 17, which is absent without notices', async () => {
+  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES in the Notificaciones bell of 17', async () => {
     // HU-COM-014 and HU-COM-018 register CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with their ports: without those ports 17 is as the base left it.
     mountAs([{ provide: MyPaymentsSource, useValue: null }, { provide: MyProposalsSource, useValue: null }], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
-    expect(host.textContent).not.toContain('Notificaciones');
+    expect(host.querySelector('.crp-client-bell-panel')?.textContent).toContain('No tienes notificaciones nuevas.');
+    expect(host.querySelector('app-client-panel-page .crp-panel-notices')).toBeNull();
     cleanup?.(); host.remove();
 
     mountAs([contribute(CLIENT_QUICK_ACTIONS, { component: QuickDouble, order: 1 }), contribute(CLIENT_NOTICES, { component: SecondDouble, order: 1 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     expect(host.querySelector('.crp-panel-quick ul > li:last-child')?.matches('[crpTestQuick]')).toBe(true);
-    const notices = host.querySelector('.crp-panel-layout + .crp-panel-notices');
+    // The notices live in the bell of the panel header (panel-cliente.html), not in a central block.
+    const notices = host.querySelector('.crp-client-bell-panel');
     expect(notices?.querySelector('h2')?.textContent).toBe('Notificaciones');
     expect(notices?.querySelector('crp-test-second')).toBeTruthy();
-    expect(notices?.nextElementSibling?.classList).toContain('crp-panel-featured');
+    expect(notices?.textContent).not.toContain('No tienes notificaciones nuevas.');
+    expect(host.querySelector('app-client-panel-page .crp-panel-notices')).toBeNull();
   });
 
   it('draws RESERVATION_CARD_EXTRAS in each card of Mis reservas, under the departure line', async () => {
