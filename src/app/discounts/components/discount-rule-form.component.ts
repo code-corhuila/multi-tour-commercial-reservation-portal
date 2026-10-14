@@ -1,33 +1,38 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, tap } from 'rxjs';
+import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, map, of, tap } from 'rxjs';
+import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { DiscountRulesWriter } from '../data/discount-rules-writer';
-import { DISCOUNT_FIELDS, DISCOUNT_SECTIONS, DISCOUNT_SELECTS, DISCOUNT_TEXT,DiscountField, DiscountMessages, DiscountRule,
-  DiscountRuleCommand, discountCommand, discountDraft, validateDiscount } from '../model/discount-rule';
+import { DISCOUNT_CONTROLS, DISCOUNT_SECTIONS, DISCOUNT_TEXT } from '../discounts-copy';
+import { DiscountField, DiscountMessages, DiscountRule, DiscountRuleCommand, discountCommand, discountDraft, validateDiscount } from '../model/discount-rule';
+import { focusFirstError } from '../../shared/focus';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
-type DiscountControl = { label: string; kind?: string; options?: readonly { value: string; label: string; explanation: string }[] };
+type DiscountControl = (typeof DISCOUNT_CONTROLS)[number];
+type Option = { value: string; label: string; explanation: string };
 @Component({
   selector: 'app-discount-rule-form', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (allowed) {
-      <form class="crp-discount-form" novalidate [attr.data-state]="state()" [attr.aria-busy]="pending()" (submit)="submit($event)">
+      <form #form class="crp-discount-form" novalidate [attr.data-state]="state()" [attr.aria-busy]="pending()" (submit)="submit($event, form)">
         @for (section of sections; track section.eyebrow; let order = $index) {
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ section.eyebrow }}</p>
             <h2>{{ order ? text.orderLead : rule() ? text.editLead : text.newLead }}</h2>
+            @if (!order) { <p class="crp-operator-copy">{{ text.toursOnly }}</p> }
             <div class="crp-discount-grid">@for (name of section.fields; track name) { @let field = control(name);
-              <div><label [for]="id(name)">{{ label(name) }}</label>
+              <div><label [for]="id(name)">{{ field.label }}</label>
                 @if (field.options) {
-                  <select [name]="name" [id]="id(name)" [disabled]="pending()" [value]="draft()[name]"
+                  <select [name]="name" [id]="id(name)" [disabled]="pending()"
                     [attr.aria-invalid]="messages()[name] ? 'true' : null" [attr.aria-describedby]="errorId(name)"
                     (change)="edit(name, $event)" (blur)="touch(name)">
-                    @for (option of field.options; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
+                    @if (name === 'tourId') { <option value="" [selected]="!draft()[name]">{{ text.pickTour }}</option> }
+                    @for (option of options(name); track option.value) { <option [value]="option.value" [selected]="option.value === draft()[name]">{{ option.label }}</option> }
                   </select>
-                  @for (option of field.options; track option.value) { @if (option.explanation) { <small>{{ option.label }}: {{ option.explanation }}</small> } }
+                  @for (option of options(name); track option.value) { @if (option.explanation) { <small>{{ option.label }}: {{ option.explanation }}</small> } }
                 } @else {
-                  <input [name]="name" [id]="id(name)" [type]="field.kind" [value]="draft()[name]" [disabled]="pending()"
+                  <input [name]="name" [id]="id(name)" [type]="field.kind ?? 'text'" [attr.placeholder]="field.placeholder ?? null" [value]="draft()[name]" [disabled]="pending()"
                     [attr.aria-invalid]="messages()[name] ? 'true' : null" [attr.aria-describedby]="errorId(name)"
                     (input)="edit(name, $event)" (blur)="touch(name)">
                 }
@@ -50,18 +55,24 @@ export class DiscountRuleFormComponent {
   readonly rule = input<DiscountRule | null>(null);
   readonly saved = output<DiscountRule>(); readonly cancelled = output<void>(); readonly saving = output<boolean>();
   protected readonly allowed = inject(PortalCapabilities).canManageDiscounts();
-  private readonly writer = inject(DiscountRulesWriter); private readonly keys = inject(IdempotencyKeys);
+  private readonly injector = inject(Injector); private readonly writer = inject(DiscountRulesWriter); private readonly keys = inject(IdempotencyKeys);
   private key = this.keys.generate(); private fingerprint: string | null = null;
   private readonly prefix = `discount-form-${formSequence++}`;
   protected readonly sections = DISCOUNT_SECTIONS; protected readonly text = DISCOUNT_TEXT;
-  private readonly controls = new Map<string, DiscountControl>([...DISCOUNT_FIELDS, ...DISCOUNT_SELECTS].map(c => [c.name, c]));
+  private readonly controls = new Map<string, DiscountControl>(DISCOUNT_CONTROLS.map(c => [c.name, c]));
   protected control(name: DiscountField): DiscountControl { return this.controls.get(name)!; }
-  protected label(name: DiscountField): string {
-    return name === 'value' && this.draft().type === 'FIXED_AMOUNT' ? 'Monto del descuento' : this.control(name).label;
+  /** The active tours of the catalog (HU-COM-001 port); the tour the rule already has stays choosable while it is edited. */
+  private readonly tours = toSignal((inject(CatalogItemsSource, { optional: true })?.list() ?? of([])).pipe(
+    map(items => items.filter(i => i.serviceType === 'TOUR' && i.catalogStatus === 'ACTIVE').map(i => ({ value: i.serviceId, label: i.commercialName, explanation: '' }))),
+    catchError(() => of<Option[]>([]))), { initialValue: [] as Option[] });
+  protected options(name: DiscountField): readonly Option[] {
+    const own = this.rule();
+    return name !== 'tourId' ? this.control(name).options! : own && !this.tours().some(t => t.value === own.tourId)
+      ? [{ value: own.tourId, label: own.tourName, explanation: '' }, ...this.tours()] : this.tours();
   }
   protected readonly draft = signal(discountDraft(null)); protected readonly pending = signal(false);
   private readonly touched = signal<Partial<Record<DiscountField, boolean>>>({}); private readonly refused = signal<DiscountMessages>({});
-  protected readonly state = computed(() => this.pending() ? 'loading' : Object.keys(this.refused()).length ? 'error' : this.draft().name ? 'data' : 'empty');
+  protected readonly state = computed(() => this.pending() ? 'loading' : Object.keys(this.refused()).length ? 'error' : this.draft().tourId ? 'data' : 'empty');
   protected readonly messages = computed(() => ({ ...this.refused(), ...Object.fromEntries(
     Object.entries(validateDiscount(this.draft())).filter(([field]) => this.touched()[field as DiscountField]),
   ) }));
@@ -72,10 +83,10 @@ export class DiscountRuleFormComponent {
     catchError((error: Partial<ApiError> | null) => {
       const messages: DiscountMessages = {}, reason = error?.userMessage ?? this.text.failed;
       for (const detail of error?.details ?? []) {
-        const field = detail.field in this.draft() ? detail.field as DiscountField : 'value';
+        const field = detail.field in this.draft() ? detail.field as DiscountField : 'percentage';
         messages[field] = `${messages[field] ?? reason} ${detail.message}`;
       }
-      this.refused.set(Object.keys(messages).length ? messages : { value: reason }); return EMPTY;
+      this.refused.set(Object.keys(messages).length ? messages : { percentage: reason }); return EMPTY;
     }), finalize(() => { this.pending.set(false); this.saving.emit(false); }),
   ))));
   constructor() { effect(() => { const rule = this.rule(); untracked(() => this.draft.set(discountDraft(rule))); }); }
@@ -86,10 +97,10 @@ export class DiscountRuleFormComponent {
     if (this.pending()) return;
     this.draft.update(d => ({ ...d, [field]: (event.target as HTMLInputElement).value })); this.refused.set({});
   }
-  protected submit(event: Event): void {
+  protected submit(event: Event, form: HTMLFormElement): void {
     event.preventDefault(); if (!this.allowed || this.pending()) return;
     this.touched.set(Object.fromEntries(Object.keys(this.draft()).map(f => [f, true]))); this.refused.set({});
-    if (Object.keys(validateDiscount(this.draft())).length) return;
+    if (Object.keys(validateDiscount(this.draft())).length) { afterNextRender(() => { focusFirstError(form); }, { injector: this.injector }); return; }
     const command = discountCommand(this.draft()), fingerprint = JSON.stringify(command);
     if (this.fingerprint !== null && this.fingerprint !== fingerprint) this.key = this.keys.generate();
     this.fingerprint = fingerprint; this.pending.set(true); this.saving.emit(true); this.submissions.next(command);

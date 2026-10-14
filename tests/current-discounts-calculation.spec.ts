@@ -16,10 +16,11 @@ describe('aRuleInForceReducesTheValueAndKeepsTheBaseVisible', () => {
     expect(result.finalCents).toBe(8_750_000);
   });
 
-  it('accepts the DiscountRule of HU-COM-003 as it is, with no second model', () => {
-    const rule: DiscountRule = { id: 'r-1', name: 'Model', startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 1,
-      calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', type: 'FIXED_AMOUNT', amountCents: 500_000 };
-    expect(applyDiscounts(ONE_HUNDRED_THOUSAND, [rule], DATE).finalCents).toBe(9_500_000);
+  it('reads the DiscountRule of HU-COM-003 as a percentage of its tour', () => {
+    const rule: DiscountRule = { id: 'r-1', tourId: 't-1', tourName: 'Model', startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 1,
+      calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', percentageBasisPoints: 500, stackable: false };
+    const applicable = { ...rule, name: rule.tourName, type: 'PERCENTAGE' as const };
+    expect(applyDiscounts(ONE_HUNDRED_THOUSAND, [applicable], DATE).finalCents).toBe(9_500_000);
   });
 });
 

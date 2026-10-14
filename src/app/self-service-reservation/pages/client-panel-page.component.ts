@@ -67,10 +67,9 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
   };
 }
 
-/** "20% de descuento" or "$50.000 de descuento", from the rule of HU-COM-003. */
+/** "20% de descuento", from the percentage of the rule of HU-COM-003. */
 function discountTag(rule: DiscountRule): string {
-  const value = rule.type === 'PERCENTAGE' ? `${String(rule.percentageBasisPoints / 100).replace('.', ',')}%` : formatCop(rule.amountCents);
-  return `${value} de descuento`;
+  return `${String(rule.percentageBasisPoints / 100).replace('.', ',')}% de descuento`;
 }
 
 /** panel-cliente.html: the landing of the final customer and the Mis reservas link of the client header. It changes nothing. */
@@ -129,7 +128,7 @@ function discountTag(rule: DiscountRule): string {
         @let promos = discounts();
         @if (promos.length) {
           <ul>@for (rule of promos; track rule.id) {
-            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.name }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
+            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.tourName }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
           }</ul>
         } @else { <p>{{ t.noDiscounts }}</p> }
       </aside>

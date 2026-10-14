@@ -181,7 +181,7 @@
 .crp-root .crp-discount-promo .crp-discount-toggle { border-color: #e4c6ba; background: #fff8f4; color: #a94f35; }
 .crp-root .crp-discount-dialog { margin-bottom: 16px; padding: 16px; border: 1px solid #e4c6ba; border-radius: 14px; background: #fff8f4; }
 .crp-root .crp-discount-dialog button + button { margin-left: 12px; }
-.crp-root .crp-discount-form { display: grid; grid-template-columns: 1fr; gap: 22px; }
+.crp-root .crp-operator-shell .crp-discount-form { display: grid; grid-template-columns: 1fr; gap: 22px; margin: 0; }
 .crp-root .crp-discount-form .crp-operator-panel { margin-top: 0; }
 .crp-root .crp-discount-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 .crp-root .crp-discount-grid small { display: block; margin-top: 4px; color: var(--crp-soft); font-size: 0.78rem; }
