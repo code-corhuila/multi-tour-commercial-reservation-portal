@@ -66,9 +66,9 @@ export class DemoSelectionQuotes extends SelectionQuoteSource {
     return forkJoin({ all: this.departures.list(), items: this.catalog.list() }).pipe(map(({ all, items }) => {
       const departure = all.find((d) => d.id === selection.departureId);
       if (!departure) throw new Error('Unknown departure');
-      const services = items.filter((i) => selection.serviceIds.includes(i.serviceId)).map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents }));
-      const q = quote(services, selection.people, departure, () => []);
-      return { tourName: departure.tourName, departureAt: departure.date, baseValueCents: q.projectedCents, discountCents: q.projectedCents - q.finalCents, finalValueCents: q.finalCents };
+      return { tourName: departure.tourName, departureAt: departure.date, baseValueCents: q.projectedCents, discountCents: q.discountCents, finalValueCents: q.finalCents,
+        discountLines: q.discounts.map((d, i) => ({ order: i + 1, name: d.name, base: d.base, amountCents: d.amountCents,
+          subtotalCents: q.projectedCents - q.discounts.slice(0, i + 1).reduce((sum, x) => sum + x.amountCents, 0) })) };
     }));
   }
 }
