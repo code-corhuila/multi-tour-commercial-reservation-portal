@@ -120,6 +120,7 @@ const SPECIFIED_TREE = [
   'src/app/payments/pages/transfer-payment-page.component.ts',
   'src/app/payments/pages/payment-result-pages.component.ts',
   'src/app/shared/clock.ts',
+  'src/app/shared/file-picker.component.ts',
   'src/app/demo/proof-review-demo.ts',
   'src/app/payments/proof-review-copy.ts',
   'src/app/payments/data/proof-review-ports.ts',

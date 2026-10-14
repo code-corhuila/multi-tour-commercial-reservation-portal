@@ -69,7 +69,8 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
       expect(element.querySelector('table')!.textContent).toContain(text);
     }
     expect(element.querySelector('table')!.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);
-    expect(Array.from(element.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado', 'Acción']);
+    // Read only (no writer): the Acción column is not drawn.
+    expect(Array.from(element.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado']);
     expect(element.querySelector('img, form, button')).toBeNull();
   });
   });
@@ -98,11 +99,11 @@ describe('theNewestRequestReplacesThePreviousOne', () => {
 });
 
 describe('theTypeSelectorOffersExactlyHotelAndRestaurant', () => {
-  it('RN-PE10 offers exactly HOTEL and RESTAURANT and sends both filters to the source', async () => {
+  it('RN-PE10 offers every type, HOTEL and RESTAURANT and sends both filters to the source', async () => {
     const { element, select, source } = await openPage();
     expect(ESTABLISHMENT_TYPES).toEqual(['HOTEL', 'RESTAURANT']);
     expect(Array.from(element.querySelectorAll<HTMLOptionElement>('select[aria-label="Tipo de establecimiento"] option'), (option) => option.value))
-      .toEqual(['HOTEL', 'RESTAURANT']);
+      .toEqual(['', 'HOTEL', 'RESTAURANT']);
     await select('Tipo de establecimiento', 'HOTEL');
     await select('Estado de la asociación', 'INACTIVE');
     expect(source.requests.at(-1)!.filters).toEqual({ establishmentType: 'HOTEL', associationStatus: 'INACTIVE' });
@@ -159,7 +160,7 @@ describe('theFiltersSpeakSpanish', () => {
     const { element, select } = await openPage();
     const options = (label: string) => Array.from(element.querySelectorAll<HTMLOptionElement>(`select[aria-label="${label}"] option`), (option) => option.textContent?.trim());
     expect(Array.from(element.querySelectorAll('.crp-filters label'), (label) => label.textContent)).toEqual(['Tipo de establecimiento', 'Estado de la asociación']);
-    expect(options('Tipo de establecimiento')).toEqual(['Alojamiento', 'Restaurante']);
+    expect(options('Tipo de establecimiento')).toEqual(['Todos los tipos', 'Alojamiento', 'Restaurante']);
     expect(options('Estado de la asociación')).toEqual(['Todos los estados', 'Activo', 'Inactivo']);
     await select('Estado de la asociación', 'ACTIVE');
     expect(element.querySelector('.crp-filters button')?.textContent?.trim()).toBe('Limpiar filtros');
