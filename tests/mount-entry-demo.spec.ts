@@ -31,10 +31,10 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
   it('shows the demo reservations of a final customer, read-only', async () => {
     mountAs(['FINAL_CUSTOMER']);
     await openSelfService();
-    await vi.waitFor(() => expect(host.querySelectorAll('.self-service-panel [data-state="data"] li').length).toBeGreaterThan(0));
+    await vi.waitFor(() => expect(host.querySelectorAll('.crp-self-service-panel [data-state="data"] li').length).toBeGreaterThan(0));
     // No action on a reservation but the ones of the mockup card that only open screens: Responder propuesta of HU-COM-018 (24A), Continuar pago and
     // Ver pagos y comprobantes of HU-COM-014 (24 and Mis pagos); and no back link in the body.
-    const labels = Array.from(host.querySelectorAll('.self-service-panel button'), (b) => b.textContent?.trim());
+    const labels = Array.from(host.querySelectorAll('.crp-self-service-panel button'), (b) => b.textContent?.trim());
     expect(new Set(labels)).toEqual(new Set(['Responder propuesta', 'Continuar pago', 'Ver pagos y comprobantes']));
     expect(labels.filter((l) => l === 'Responder propuesta')).toEqual(['Responder propuesta']);
     expect(host.querySelector('.crp-client-panel-header')?.textContent).toContain('Volver al panel');

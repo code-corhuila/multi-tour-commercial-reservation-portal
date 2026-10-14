@@ -10,15 +10,15 @@ import { Breakdown, CURRENT_DISCOUNTS_TEXT } from '../model/current-discounts';
   selector: 'app-current-discounts-value', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let value = breakdown();
-    <div class="current-discounts-summary">
+    <div class="crp-current-discounts-summary">
       <div><span>{{ text.base }}</span><strong>{{ money(value.baseCents) }}</strong></div>
       @if (value.lines.length) {
         <div><span>{{ text.discounts }}</span><strong>{{ money(-discounted()) }}</strong></div>
-        <div class="current-discounts-final"><span>{{ text.final }}</span><strong>{{ money(value.finalCents) }}</strong></div>
+        <div class="crp-current-discounts-final"><span>{{ text.final }}</span><strong>{{ money(value.finalCents) }}</strong></div>
       }
     </div>
     @if (value.lines.length) {
-      <ol class="current-discounts-lines">
+      <ol class="crp-current-discounts-lines">
         @for (line of value.lines; track line.order) {
           <li data-line>{{ line.name }} · {{ text.bases[line.base] }} {{ money(line.baseCents) }} · {{ money(-line.amountCents) }}
             · {{ text.subtotal }} {{ money(line.subtotalCents) }}

@@ -22,9 +22,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
 };
 
 @Component({
-  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
-  styles: [`.crp-reservation-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; } .crp-reservation-hero p { margin: 6px 0 0; max-width: 520px; }
-    .crp-reservation-code { display: block; color: #203234; font-weight: 800; } small { display: block; margin-top: 4px; color: #748084; }`],
+  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
   template: `
     @let v = view();
     <header class="crp-page-header">
@@ -38,7 +36,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
       @case ('created') { <app-reservation-view [reservation]="v.reservation" [fresh]="true" (detail)="view.set({ kind: 'detail', reservation: v.reservation })" /> }
       @case ('detail') { <app-reservation-view [reservation]="v.reservation" /> }
       @default {
-        <section class="crp-operator-panel crp-reservation-hero"><div><p class="crp-operator-eyebrow">{{ text.followEyebrow }}</p><h2>{{ text.followTitle }}</h2></div><p>{{ text.followNote }}</p></section>
+        <section class="crp-operator-panel crp-reservations-hero crp-reservations-hero-wide"><div><p class="crp-operator-eyebrow">{{ text.followEyebrow }}</p><h2>{{ text.followTitle }}</h2></div><p>{{ text.followNote }}</p></section>
         <section class="crp-operator-panel">
           <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.listEyebrow }}</p><h2>{{ text.listTitle }}</h2></div>
             @if (hasArchived()) { <button type="button" class="crp-operator-outline" [attr.aria-expanded]="showAll()" (click)="showAll.set(!showAll())">{{ showAll() ? text.active : text.all }}</button> }</div>
@@ -51,9 +49,9 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
               <div class="crp-table-wrap" data-state="data"><table class="crp-operator-table">
                 <thead><tr>@for (column of text.columns; track column) { <th>{{ column }}</th> }</tr></thead>
                 <tbody>@for (r of shown(current.items); track r.id) {
-                  <tr><td><span class="crp-reservation-code">#{{ r.id }}</span><small>{{ date(r.departureDate) }} · {{ travelers(r.people) }}</small></td>
+                  <tr><td><span class="crp-reservations-code">#{{ r.id }}</span><small class="crp-reservations-meta">{{ date(r.departureDate) }} · {{ travelers(r.people) }}</small></td>
                     <td>{{ r.leadCustomerName }}</td><td>{{ r.tourName }}</td>
-                    <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td><small>{{ paymentState(r) }}</small><br><strong>{{ money(r.balanceCents) }}</strong></td>
+                    <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td><small class="crp-reservations-meta">{{ paymentState(r) }}</small><br><strong>{{ money(r.balanceCents) }}</strong></td>
                     <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" />
                     @if (payLabel(r); as label) { <span> · </span><button type="button" (click)="open('payment-management', r)">{{ label }}</button> }
                     @if (reschedulable(r)) { <span> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> }</td></tr>
