@@ -1,4 +1,3 @@
-import { SITE_PHOTOS } from '../shared/tour-photo';
 /** Interface texts of the public offer, in one place; the wording follows tours.html, detalle-tour.html, alojamiento.html, gastronomia.html and restaurantes.html. */
 export const PUBLIC_OFFER_COPY = {
   back: 'Volver al panel cliente',
@@ -64,9 +63,6 @@ export const PUBLIC_OFFER_COPY = {
     },
   },
 } as const;
-
-/** An establishment card takes a self-hosted photo by its position; a tour takes the one of its id (tourPhoto). */
-export function photoAt(position: number): string { return SITE_PHOTOS[position % SITE_PHOTOS.length]; }
 
 /** The search of a client page: a name contains the words typed, ignoring case and accents. */
 const plain = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();

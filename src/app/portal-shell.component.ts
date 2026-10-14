@@ -30,7 +30,7 @@ import { SESSION_IDENTITY } from './shared/session-identity';
                 (click)="open(link.key)">{{ link.label }}</button> }
           </nav>
           <div class="crp-client-actions">
-            @for (link of headerAccount; track link.key) { <button type="button" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
+            @for (link of headerAccount; track link.key) { <button type="button" [class.crp-client-profile]="link.key === profileKey" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
                 (click)="open(link.key)">{{ link.label }}</button> }
           </div>
         </header>
@@ -54,7 +54,7 @@ import { SESSION_IDENTITY } from './shared/session-identity';
                     </div>
                   </div>
                 }
-                <span class="crp-client-avatar" role="img" [attr.aria-label]="avatarLabel">{{ initials }}</span>
+                <button type="button" class="crp-client-avatar" [attr.aria-label]="avatarLabel" (click)="open(profileKey)">{{ initials }}</button>
               </div>
             </header>
           }
@@ -114,6 +114,7 @@ export class PortalShellComponent {
   protected readonly active = computed(() => this.current()?.parent ?? this.current()?.key);
   protected readonly initials = inject(SESSION_IDENTITY).initials;
   protected readonly avatarLabel = SESSION_TEXT.avatarLabel;
+  protected readonly profileKey = CLIENT_AREA.profile;
   protected readonly roleLabel = inject(PortalCapabilities).roleLabel();
   private readonly drawn = (links: readonly ClientLink[]) => links.filter((link) => this.areas.some((area) => area.key === link.key));
   protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);

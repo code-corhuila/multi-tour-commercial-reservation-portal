@@ -51,6 +51,7 @@ import { ReschedulingProposalPageComponent } from './rescheduling/pages/reschedu
 import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
+import { ProfilePageComponent } from './profile/pages/profile-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
@@ -175,14 +176,16 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-018 propuesta-reprogramacion.html (24A): opened by Responder propuesta of Mis reservas and of 17 with { reservation }; its own top bar.
   { key: PROPOSAL_AREA, label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyProposalsSource, ProposalAnswerWriter) },
+  // profile.html: the Perfil button and the avatar; it reads the session identity, so it needs no port.
+  { key: CLIENT_AREA.profile, label: 'Perfil', component: ProfilePageComponent, audience: 'customer', clientChrome: 'none', menu: false },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
 
-/** Links of tours.html (header center, header right without 'Perfil', footer Explorar) and of the compact header: panel, other panel areas. */
+/** Links of tours.html (header center, header right Mis reservas and Perfil, footer Explorar) and of the compact header: panel, other panel areas. */
 export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer' | 'panel', readonly ClientLink[]>> = Object.freeze({
   nav: [{ key: CLIENT_AREA.tours, label: 'Explorar' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
-  account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }],
+  account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }, { key: CLIENT_AREA.profile, label: 'Perfil' }],
   panel: [{ key: CLIENT_AREA.tours, label: 'Ver catálogo' }, { key: CLIENT_AREA.panel, label: 'Volver al panel' }],
   footer: [{ key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
 });

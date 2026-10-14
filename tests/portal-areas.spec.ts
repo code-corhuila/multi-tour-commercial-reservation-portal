@@ -129,6 +129,7 @@ describe('portalAreasRegistry', () => {
       { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent },
       { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
       { key: 'rescheduling-proposal', label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent },
+      { key: 'profile', label: 'Perfil', component: ProfilePageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
@@ -305,7 +306,7 @@ describe('customerShellHeader', () => {
 
 describe('customerPanelChrome', () => {
   const texts = (host: HTMLElement, selector: string) => Array.from(host.querySelectorAll(selector)).map((e) => e.textContent?.trim());
-  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button)';
+  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button):not(.crp-client-avatar)';
 
   it('draws the compact header of panel-cliente.html inside the canvas, with Ver catálogo, no avatar and no footer', async () => {
     const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
