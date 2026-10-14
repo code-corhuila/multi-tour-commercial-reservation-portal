@@ -184,7 +184,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
 
 export interface ClientLink { readonly key: string; readonly label: string }
 
-/** Links of tours.html (header center, header right without 'Perfil', footer Explorar) and of the compact header: panel, other panel areas. */
+/** Links of tours.html (header center, header right Mis reservas (Perfil is the container's, see PROFILE_TARGET), footer Explorar) and of the compact header: panel, other panel areas. */
 export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer' | 'panel', readonly ClientLink[]>> = Object.freeze({
   nav: [{ key: CLIENT_AREA.tours, label: CLIENT_LINK_LABEL.navClientTours }, { key: CLIENT_AREA.lodging, label: CLIENT_LINK_LABEL.navClientLodging }, { key: CLIENT_AREA.gastronomy, label: CLIENT_LINK_LABEL.navClientGastronomy }],
   account: [{ key: CLIENT_AREA.reservations, label: CLIENT_LINK_LABEL.accountClientReservations }],
