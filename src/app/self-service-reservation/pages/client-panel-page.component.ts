@@ -1,3 +1,4 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, Injector, afterNextRender, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
@@ -174,7 +175,7 @@ export class ClientPanelPageComponent {
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   protected readonly reservations = toSignal(this.requests.pipe(switchMap(() => partOf(this.source.listMine()))), { initialValue: { kind: 'loading' } as Part<CustomerReservation> });
-  private readonly today = new Date().toLocaleDateString('en-CA');
+  private readonly today = tenantDay(inject(Clock).now());
   // Read-only: the rules of HU-COM-003 in force today. Without the port, or if it fails, there is nothing in force to show.
   protected readonly discounts = toSignal((inject(DiscountRulesSource, { optional: true })?.list() ?? of<readonly DiscountRule[]>([])).pipe(
     map((rules) => rules.filter((rule) => rule.status === 'ACTIVE' && rule.startsOn <= this.today && this.today <= rule.endsOn)),
