@@ -36,6 +36,9 @@ describe('theSessionIdentityIsReadFromTheSession (RN-FRT-16, RN-FRT-18)', () => 
     expect(sessionIdentityOf({ displayName: 'ana maría pérez' }).initials).toBe('AM');
     expect(sessionIdentityOf({ displayName: 'Ana' }).initials).toBe('A');
     expect(sessionIdentityOf({ displayName: 'Ana', initials: '   ' }).initials).toBe('A');
+    // Only letters and digits count: punctuation never becomes an initial.
+    expect(sessionIdentityOf({ displayName: '"Álvaro" (Pérez)' }).initials).toBe('ÁP');
+    expect(sessionIdentityOf({ displayName: '- . *' }).initials).toBe(SESSION_TEXT.neutralInitials);
   });
 
   it.each([undefined, '', '   ', 7, null])('has no name and the neutral avatar for %j', (displayName) => {
