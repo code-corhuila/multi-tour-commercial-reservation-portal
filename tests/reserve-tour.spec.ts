@@ -85,7 +85,7 @@ describe('reservarTourIsItsOwnCustomerArea (reservar-tour.html, screen 20)', () 
 });
 
 describe('theDepartureListOffersOnlyTheOpenDeparturesOfTheTour (reservar-tour.html v1.9, DeparturesSource of HU-COM-007)', () => {
-  const options = (p: { host: HTMLElement }) => Array.from(p.host.querySelectorAll('.crp-departure-option'), (o) => o.textContent?.replace(/s+/g, ' ').trim());
+  const options = (p: { host: HTMLElement }) => Array.from(p.host.querySelectorAll('.crp-departure-option'), (o) => o.textContent?.replace(/\s+/g, ' ').trim());
 
   it('lists the open departures by date as radios, with their seats, the first one chosen, and no calendar', async () => {
     const p = await openReserve();
