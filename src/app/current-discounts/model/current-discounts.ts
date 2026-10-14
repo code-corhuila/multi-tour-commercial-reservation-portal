@@ -3,7 +3,7 @@ import { parseMoney } from '../../shared/money';
 import { parsePercentage } from '../../shared/percentage';
 
 /** Only the fields of HU-COM-003's DiscountRule the calculation reads (tasks T-02); no second rule model. */
-export type ApplicableRule = DiscountValue & Pick<DiscountRule, 'name' | 'startsOn' | 'endsOn' | 'priority' | 'calculationBase' | 'status'>;
+export type ApplicableRule = DiscountValue & { readonly name: string } & Pick<DiscountRule, 'startsOn' | 'endsOn' | 'priority' | 'calculationBase' | 'status'>;
 /** PROPUESTO (G-API): the base value of a service and its rules on the date consulted. */
 export type PricedService = { readonly serviceId: string; readonly serviceName: string; readonly baseCents: number; readonly rules: readonly ApplicableRule[] };
 /** The authorizer is not typed by the person: the service answers it from the session (plan D-06). */

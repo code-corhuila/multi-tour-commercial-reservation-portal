@@ -5,6 +5,7 @@ import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
 import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { DiscountRulesSource } from '../../discounts/data/discount-rules-source';
 import { DiscountRule } from '../../discounts/data/discount-rules-source';
+import { discountValueText } from '../../discounts/model/discount-rule';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
@@ -69,8 +70,7 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
 
 /** "20% de descuento" or "$50.000 de descuento", from the rule of HU-COM-003. */
 function discountTag(rule: DiscountRule): string {
-  const value = rule.type === 'PERCENTAGE' ? `${String(rule.percentageBasisPoints / 100).replace('.', ',')}%` : formatCop(rule.amountCents);
-  return `${value} de descuento`;
+  return discountValueText(rule);
 }
 
 /** panel-cliente.html: the landing of the final customer and the Mis reservas link of the client header. It changes nothing. */
@@ -129,7 +129,7 @@ function discountTag(rule: DiscountRule): string {
         @let promos = discounts();
         @if (promos.length) {
           <ul>@for (rule of promos; track rule.id) {
-            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.name }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
+            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.tourName }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
           }</ul>
         } @else { <p>{{ t.noDiscounts }}</p> }
       </aside>

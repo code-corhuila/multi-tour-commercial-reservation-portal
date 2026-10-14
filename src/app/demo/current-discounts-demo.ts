@@ -3,12 +3,12 @@ import { Observable, of } from 'rxjs';
 import { AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../current-discounts/data/current-discounts-source';
 import { AdditionalDiscount, AdditionalDiscountCommand, PricedService } from '../current-discounts/model/current-discounts';
-import { DiscountRule } from '../discounts/model/discount-rule';
+import { ApplicableRule } from '../current-discounts/model/current-discounts';
 
 // DEMO (DD-1, G-API): invented services and HU-COM-003 rules in memory until the API exists. No real person appears.
-const rule = (id: string, name: string, priority: number, extra: Partial<DiscountRule>): DiscountRule => ({ id, name, priority,
+const rule = (_id: string, name: string, priority: number, extra: Partial<ApplicableRule>): ApplicableRule => ({ name, priority,
   startsOn: '2026-01-01', endsOn: '2026-12-31', calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', type: 'PERCENTAGE', percentageBasisPoints: 1000,
-  ...extra } as DiscountRule);
+  ...extra } as ApplicableRule);
 const SERVICES: readonly PricedService[] = [
   { serviceId: 'demo-svc-1', serviceName: 'Desierto de la Tatacoa al atardecer', baseCents: 18_000_000, rules: [
     rule('demo-rule-1', 'Temporada de vacaciones', 1, { percentageBasisPoints: 1250 }),
