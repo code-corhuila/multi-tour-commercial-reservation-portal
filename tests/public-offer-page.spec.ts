@@ -10,9 +10,17 @@ import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-o
 import { CLIENT_AREA } from '../src/app/portal-areas';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PUBLIC_OFFER_COPY } from '../src/app/public-offer/public-offer-copy';
+import { TourImages } from '../src/app/shared/tour-photo';
+import { DemoTourImages, demoTourPhoto as tourPhoto } from '../src/app/demo/tour-photo-demo';
 import { actorAs } from './actor-context.double';
 import { ControllablePublicEstablishmentsSource, ControllablePublicOfferSource, placeNamed, tourNamed } from './public-offer-sources.double';
 import { listSourceFiles, withoutComments } from './source-files';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { DepartureCapacity } from '../src/app/reservations/data/departure-capacity';
+import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
+import { DeparturesSource } from '../src/app/reservations/data/departures-source';
+import type { Departure } from '../src/app/reservations/data/departures-source';
+import { of } from 'rxjs';
 
 interface Options {
   readonly value?: TourValueSource; readonly withoutPorts?: boolean; readonly role?: Parameters<typeof actorAs>[0];
@@ -28,10 +36,12 @@ async function openPage(options: Options = {}) {
   const places = new ControllablePublicEstablishmentsSource();
   TestBed.configureTestingModule({
     providers: [
+    { provide: TourImages, useValue: new DemoTourImages() },
       ...(options.withoutPorts ? [] : [
         { provide: PublicOfferSource, useValue: tours },
         { provide: PublicEstablishmentsSource, useValue: places },
       ]),
+      ...(options.departures ? [{ provide: DepartureCapacity, useValue: new DemoDepartureCapacity() }, { provide: DeparturesSource, useValue: Object.assign(Object.create(DeparturesSource.prototype), { list: () => of(options.departures) }) }] : []),
       ...(options.value ? [{ provide: TourValueSource, useValue: options.value }] : []),
       ...(options.role ? [{ provide: ActorContext, useValue: actorAs(options.role) }] : []),
       ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
@@ -301,7 +311,12 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(pitalito.querySelector('.crp-tour-media img')?.getAttribute('src')).not.toBe(photo?.getAttribute('src'));
   });
 
-it('draws no discount tag when the value port gives no label: the view derives nothing', async () => {    const page = await openPage({ value: discounted() });    page.tours.requests[0].reply([tourNamed('Suaza', { baseRateCents: 129_900_000 })]);    await page.settle();    expect(page.cards('tours')[0].querySelector('.crp-tour-discount-tag')).toBeNull();  });
+  it('draws no discount tag when the value port gives no label: the view derives nothing', async () => {
+    const page = await openPage({ value: discounted() });
+    page.tours.requests[0].reply([tourNamed('Suaza', { baseRateCents: 129_900_000 })]);
+    await page.settle();
+    expect(page.cards('tours')[0].querySelector('.crp-tour-discount-tag')).toBeNull();
+  });
 
   it('filters the tours by name with Buscar, without asking the port again', async () => {
     const page = await withTours();

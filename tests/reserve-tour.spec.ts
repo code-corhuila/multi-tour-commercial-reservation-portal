@@ -5,6 +5,8 @@ import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service'
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
+import { DepartureCapacity } from '../src/app/reservations/data/departure-capacity';
+import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
 import { DeparturesSource } from '../src/app/reservations/data/departures-source';
 import { Departure } from '../src/app/reservations/model/reservation';
 import { SelectionQuoteSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
@@ -49,6 +51,7 @@ async function openReserve(options: Options = {}) {
   TestBed.configureTestingModule({ providers: [
     { provide: PortalNavigation, useValue: navigation },
     { provide: CatalogItemsSource, useValue: { list: () => of(options.catalog ?? [TOUR]) } },
+    { provide: DepartureCapacity, useValue: new DemoDepartureCapacity() },
     { provide: DeparturesSource, useValue: { list: () => options.departures ?? of(DEPARTURES) } },
     { provide: SelectionQuoteSource, useValue: quotes },
   ] });

@@ -7,6 +7,10 @@ import { DeparturesSource } from '../src/app/reservations/data/departures-source
 import { LeadCustomersSource, ReservationDiscounts } from '../src/app/reservations/data/reservation-integrations';
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
 import { ReservationsWriter } from '../src/app/reservations/data/reservations-writer';
+import { ReservationQuoteSource } from '../src/app/reservations/data/reservation-quote-source';
+import { DepartureCapacity } from '../src/app/reservations/data/departure-capacity';
+import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
+import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation } from '../src/app/reservations/model/reservation';
 import { actorAs } from './actor-context.double';
 import { itemNamed } from './catalog-items-source.double';
@@ -72,6 +76,7 @@ export function reservationProviders(over: { role?: string; departures?: Departu
   reservations?: ReservationsSource; discounts?: ReservationDiscounts; keys?: IdempotencyKeys } = {}) {
   return [
     { provide: ActorContext, useValue: actorAs((over.role ?? 'OPERATIONAL_COLLABORATOR') as never) },
+    { provide: DepartureCapacity, useValue: new DemoDepartureCapacity() },
     { provide: DeparturesSource, useValue: over.departures ?? new StubDepartures(() => of(DEFAULT_DEPARTURES)) },
     { provide: LeadCustomersSource, useValue: new StubCustomers() },
     { provide: CatalogItemsSource, useValue: new StubCatalog(DEFAULT_SERVICES) },
