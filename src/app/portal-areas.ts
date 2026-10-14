@@ -140,7 +140,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource, PaymentsWriter, PaymentMethodsSource) },
   // HU-COM-010 admin-pagos.html (13), item Pagos of the mockup's sidebar, and admin-validar-soporte.html opened with { reservation, payment }.
   { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
-  { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent, menu: false, parent: 'payments',
+  { key: 'payments-validate', label: 'Validar comprobante', component: ValidateProofPageComponent, menu: false, parent: 'payments',
     isAvailable: (injector) => has(injector, ReservationsSource, ProofReviewWriter, PaymentMethodsSource) },
   // HU-COM-018 admin-reprogramar-reserva.html: opened from the 10A header with { reservation } (DP-RP4); every operator reads it, Reservas stays active.
   { key: RESCHEDULING_AREA, label: 'Propuesta de reprogramación', component: ReschedulingPageComponent, menu: false, parent: 'reservations',
