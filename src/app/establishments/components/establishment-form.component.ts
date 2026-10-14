@@ -8,6 +8,8 @@ import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '..
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
 import { ESTABLISHMENTS_COPY } from '../establishments-copy';
+import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { FilePickerComponent } from '../../shared/file-picker.component';
 
 type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;
@@ -18,6 +20,7 @@ let nextFormId = 0;
 @Component({
   selector: 'app-establishment-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FilePickerComponent],
   template: `
     @if (canRegister) {
       <form novalidate (submit)="submit($event)">
@@ -36,9 +39,16 @@ let nextFormId = 0;
         @for (field of textFields; track field.name) {
           <div>
             <label [for]="id(field.name)">{{ field.label }}</label>
-            <textarea [name]="field.name" [id]="id(field.name)" [value]="draft()[field.name]" [disabled]="pending()"
-              [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
-              [attr.aria-describedby]="describedBy(field.name)" (input)="edit(field.name, $event)"></textarea>
+            <!-- admin-configurar-hospedaje.html: the name is a one-line input. -->
+            @if (field.name === 'commercialName') {
+              <input [name]="field.name" [id]="id(field.name)" [value]="draft()[field.name]" [disabled]="pending()"
+                [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
+                [attr.aria-describedby]="describedBy(field.name)" (input)="edit(field.name, $event)">
+            } @else {
+              <textarea [name]="field.name" [id]="id(field.name)" [value]="draft()[field.name]" [disabled]="pending()"
+                [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
+                [attr.aria-describedby]="describedBy(field.name)" (input)="edit(field.name, $event)"></textarea>
+            }
             @if (messages()[field.name]; as text) { <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p> }
           </div>
         }
@@ -49,10 +59,11 @@ let nextFormId = 0;
         <p class="crp-operator-eyebrow">02. Imagen</p>
         <div>
           <label [for]="id('image')">Imagen</label>
-          <input type="file" name="image" [id]="id('image')" [accept]="acceptedTypes" [disabled]="pending()"
-            [attr.aria-invalid]="messages().image ? 'true' : null" [attr.aria-describedby]="describedBy('image')" (change)="chooseImage($event)">
-          <p [id]="id('image') + '-help'">{{ guidance }}</p>
-          @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
+          <app-file-picker inputName="image" [inputId]="id('image')" [accept]="acceptedTypes" [disabled]="pending()" [file]="image()"
+            [invalid]="!!messages().image" [describedBy]="describedBy('image')" (chosen)="chooseImage($event)">
+            <p [id]="id('image') + '-help'">{{ guidance }}</p>
+            @if (messages().image; as text) { <p role="alert" [id]="id('image') + '-error'">{{ text }}</p> }
+          </app-file-picker>
         </div>
         </section>
         <div class="crp-form-actions">
@@ -82,7 +93,7 @@ export class EstablishmentFormComponent {
   protected readonly acceptedTypes = IMAGE_TYPES.join(',');
   protected readonly pending = signal(false);
   protected readonly draft = signal({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '' });
-  private readonly image = signal<File | null>(null);
+  protected readonly image = signal<File | null>(null);
   private readonly attempted = signal(false);
   private readonly refused = signal<Messages>({});
   protected readonly messages = computed(() => {
@@ -116,9 +127,9 @@ export class EstablishmentFormComponent {
     if (this.pending()) { return; }
     this.draft.update((draft) => ({ ...draft, [field]: (event.target as HTMLInputElement).value })); this.clearRefusal(field);
   }
-  protected chooseImage(event: Event): void {
+  protected chooseImage(file: File | null): void {
     if (this.pending()) { return; }
-    this.image.set((event.target as HTMLInputElement).files?.[0] ?? null); this.clearRefusal('image');
+    this.image.set(file); this.clearRefusal('image');
   }
   private clearRefusal(field: Field): void { this.refused.update(({ [field]: _previous, ...rest }) => rest); }
   protected cancel(): void { if (!this.pending()) { this.cancelled.emit(); } }

@@ -82,16 +82,10 @@ export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTA
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
-  // HU-COM-001 (mockup PDR v1.9, AC-P1.17): the operator lands on Reservas, and this story owns the order of the sidebar.
-  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
-  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
-  // HU-COM-001 admin-catalogos.html (the hub), whose cards open the tour list and, for the Administrator, the establishments.
-  { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
-  { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent, menu: false, parent: 'catalog',
-    isAvailable: (injector) => has(injector, CatalogItemsSource) },
-  // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
-  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
-    isAvailable: (injector) => has(injector, AssociatedEstablishmentsSource) },
+  { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  // 002 plan D-06, AC-PE.7: no menu entry for a role that cannot read establishments (the Colaborador operativo).
+  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent,
+    isAvailable: (injector) => injector.get(PortalCapabilities).canReadEstablishments() && has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
