@@ -155,7 +155,7 @@
 .crp-root .crp-nav button[aria-current="page"] { background: var(--crp-accent-soft); border-color: var(--crp-accent); color: var(--crp-accent-strong); }
 
 /* Operator shell: light 226 px sidebar (brand, role, menu) and content up to 1420 px. */
-.crp-root .crp-operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100%; color: var(--crp-shade-1c292b); background: var(--crp-bg); }
+.crp-root .crp-operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); flex: 1 0 auto; color: #1c292b; background: var(--crp-bg); }
 .crp-root .crp-operator-sidebar { display: flex; flex-direction: column; padding: 22px 14px 18px; background: var(--crp-surface); border-right: 1px solid var(--crp-line); color: var(--crp-text); }
 .crp-root .crp-operator-brand { margin: 0; font-size: 0.9rem; font-weight: 800; letter-spacing: 0.12em; }
 .crp-root .crp-operator-role { margin: 10px 0 26px; color: var(--crp-soft); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -209,7 +209,9 @@
 .crp-root .crp-operator-table small { color: var(--crp-soft); font-size: 0.76rem; }
 .crp-root .crp-operator-table button { min-height: 0; width: max-content; padding: 0; border: 0; background: transparent; color: var(--crp-accent-strong); font-size: 0.82rem; font-weight: 800; }
 .crp-root .crp-operator-table button:hover:not(:disabled) { text-decoration: underline; }
-.crp-root .crp-operator-table button:disabled { background: transparent; color: var(--crp-placeholder); }
+.crp-root .crp-operator-table button:disabled { background: transparent; color: #93a29d; }
+/* Screens 10 and 13 (admin-reservas.html, admin-pagos.html): the last-cell actions are the mockup pills. */
+.crp-root .crp-table-wrap[data-state="data"] > .crp-operator-table td:last-child button, .crp-root .crp-proof-review-hero ~ .crp-operator-panel .crp-operator-table td:last-child button { min-height: 34px; padding: 0 11px; border-radius: 8px; background: var(--crp-row-action-bg); color: var(--crp-row-action-text); font-size: 0.78rem; text-decoration: none; }
 .crp-root .crp-row-actions { white-space: nowrap; }
 .crp-root .crp-row-actions button + button { margin-left: 16px; }
 .crp-root .crp-row-actions [role="alert"] { white-space: normal; }
@@ -234,9 +236,10 @@
 .crp-root .crp-operator-shell form > div, .crp-root .crp-operator-shell form > p { margin: 0; }
 .crp-root .crp-operator-shell form > p, .crp-root .crp-form-actions { grid-column: 1 / -1; }
 .crp-root .crp-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.crp-root .crp-operator-shell textarea { max-width: none; min-height: 92px; resize: vertical; }
 /* Screen 11 forms: numbered panels with a two-column grid. */
-.crp-root .crp-form-panel { grid-column: 1 / -1; margin: 0; padding: 20px; border: 1px solid var(--crp-line-green); border-radius: var(--crp-radius-card); background: var(--crp-surface); }
-.crp-root .crp-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.crp-root .crp-form-panel { grid-column: 1 / -1; margin: 0; padding: 20px; border: 1px solid #dce8e1; border-radius: var(--crp-radius-card); background: var(--crp-surface); }
+.crp-root .crp-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .crp-root .crp-form-grid small { display: block; margin-top: 4px; color: var(--crp-soft); font-size: 0.78rem; }
 .crp-root label { display: block; margin: 12px 0 4px; font-size: 0.86rem; font-weight: 700; }
 .crp-root form label { margin-top: 0; }
@@ -323,11 +326,34 @@
   .crp-root .crp-discount-promo { align-items: flex-start; flex-direction: column; }
 }
 
-/* Client layout of tours.html: sticky header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. */
-.crp-root .crp-client-shell { display: flex; flex-direction: column; min-height: 100%; background: var(--crp-bg); color: var(--crp-text); }
-.crp-root .crp-client-header { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px clamp(20px, 4vw, 60px); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); }
-.crp-root .crp-client-header button { min-height: 36px; padding: 0 4px; border-color: transparent; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
-.crp-root .crp-client-header button:hover:not(:disabled) { border-color: transparent; color: var(--crp-accent-strong); }
+/* HU-COM-008 as finalizar-reserva.html and mis-reservas.html: phone width first (RNF-RS1). */
+.crp-root .self-service-consent { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 10px; font-size: 0.9rem; }
+.crp-root .self-service-consent input { margin-top: 4px; }
+.crp-root .self-service-field-error { min-height: 1.2em; margin: 0 0 12px; color: #a3312a; font-size: 0.82rem; }
+.crp-root .self-service-summary-copy { display: grid; gap: 4px; margin: 16px 0 0; color: var(--crp-soft); }
+.crp-root .self-service-summary-copy strong { color: #17252b; font-size: 1.05rem; }
+.crp-root .self-service-pricing { display: grid; grid-template-columns: 1fr auto; gap: 14px 16px; margin: 18px 0 0; }
+.crp-root .self-service-pricing dt { color: #5a6b70; }
+.crp-root .self-service-pricing dd { margin: 0; color: #17252b; font-weight: 700; text-align: right; }
+.crp-root .self-service-pricing dt:last-of-type, .crp-root .self-service-total { padding-top: 12px; border-top: 1px solid #e7ece9; color: #17252b; font-weight: 800; }
+.crp-root .self-service-total { font-size: 1.7rem; letter-spacing: -0.03em; }
+.crp-root .self-service-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.crp-root .self-service-card { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; padding: 22px; background: var(--crp-surface); border: 1px solid #dce8e1; border-radius: 20px; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); overflow-wrap: anywhere; }
+.crp-root .self-service-card-copy { display: grid; gap: 6px; }
+.crp-root .self-service-card-copy strong { color: #17252b; font-size: 1.2rem; }
+.crp-root .self-service-card-copy p { margin: 0; color: #5a6b70; }
+.crp-root .self-service-card-status { display: grid; justify-items: end; align-content: start; gap: 8px; }
+.crp-root .self-service-note, .crp-root .self-service-created { margin: 0 0 12px; color: var(--crp-soft); font-size: 0.86rem; }
+@media (max-width: 760px) {
+  .crp-root .crp-finish-layout, .crp-root .crp-finish-grid, .crp-root .self-service-card { grid-template-columns: 1fr; }
+  .crp-root .self-service-card-status { justify-items: start; }
+}
+/* Client layout of tours.html: header (brand, center links, account link), the page, the dark footer. No sidebar, no role line. Header and footer stay in the portal element (001- HC-3): content centred in 1320px by the padding, no bleed, no sticky. */
+.crp-root .crp-client-shell { display: flex; flex: 1 0 auto; flex-direction: column; background: var(--crp-bg); color: var(--crp-text); }
+.crp-root .crp-client-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 14px 0; padding-inline: max(clamp(20px, 4vw, 60px), calc((100% - 1320px) / 2)); background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid var(--crp-line); }
+.crp-root .crp-client-header button, .crp-root .crp-client-panel-header button { min-height: 36px; padding: 0 4px; border: 0; background: transparent; color: var(--crp-soft); font-size: 0.94rem; font-weight: 700; }
+.crp-root .crp-client-header button:hover:not(:disabled), .crp-root .crp-client-panel-header button:hover:not(:disabled) { color: var(--crp-accent-strong); }
+.crp-root .crp-client-header button:focus:not(:focus-visible), .crp-root .crp-client-panel-header button:focus:not(:focus-visible) { outline: none; box-shadow: none; }
 .crp-root .crp-client-header .crp-client-brand { color: var(--crp-text); font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
 .crp-root .crp-client-brand span, .crp-root .crp-client-footer-brand span { color: var(--crp-cta); }
 .crp-root .crp-client-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
@@ -747,9 +773,10 @@
 .crp-root .crp-transfer-proof input[type="file"] { display: block; margin: 8px 0 12px; }
 /* HU-COM-010 screen 13 (admin-pagos.html hero, admin-validar-soporte.html form). */
 .crp-root .crp-proof-review-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: var(--crp-space-5); margin-bottom: 22px; padding: var(--crp-space-5) 28px;
-  border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-accent-soft); }
+  border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-hero-gradient); }
 .crp-root .crp-proof-review-hero h2 { margin: var(--crp-space-1) 0 0; color: var(--crp-text); } .crp-root .crp-proof-review-hero > p { margin: 0; color: var(--crp-soft); line-height: 1.6; }
 .crp-root .crp-proof-review-wide { grid-column: 1 / -1; }
+.crp-root .crp-proof-review-hero ~ .crp-operator-panel .crp-operator-table .crp-operator-status { background: transparent; color: inherit; }
 @media (max-width: 720px) { .crp-root .crp-proof-review-hero { grid-template-columns: minmax(0, 1fr); } }
 .crp-root .crp-payment-followup-wide { grid-column: 1 / -1; display: grid; }
 .crp-root .crp-operator-form-feedback { margin: -6px 0 0; color: var(--crp-soft); font-size: 0.8rem; line-height: 1.45; }
@@ -774,7 +801,7 @@
 .crp-root .self-service-card > crp-my-payments-card-actions { grid-column: 1 / -1; }
 /* HU-COM-016 refund screens (admin-solicitudes-devolucion.html hero, admin-detalle-devolucion.html list and forms). */
 .crp-root .crp-refunds-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: var(--crp-space-5); margin-bottom: 22px; padding: var(--crp-space-5) 28px;
-  border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-accent-soft); }
+  border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-hero-gradient); }
 .crp-root .crp-refunds-hero h2 { margin: var(--crp-space-1) 0 0; color: var(--crp-text); } .crp-root .crp-refunds-hero > p { margin: 0; color: var(--crp-soft); line-height: 1.6; }
 .crp-root .crp-refunds-list { display: grid; gap: 11px; margin: 16px 0 0; }
 .crp-root .crp-refunds-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--crp-line); }
@@ -789,7 +816,7 @@
 .crp-root .crp-refunds-alert-icon { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
   background: var(--crp-accent-soft); color: var(--crp-accent-strong); font-weight: 800; }
 /* HU-COM-018 admin-reprogramar-reserva.html: the compact hero of operator-hero, with the episode badge beside the title. */
-.crp-root .crp-rescheduling-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); align-items: center; gap: 28px; margin-bottom: 22px; padding: 25px 28px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: linear-gradient(135deg, var(--crp-accent-soft), var(--crp-surface) 76%); }
+.crp-root .crp-rescheduling-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); align-items: center; gap: 28px; margin-bottom: 22px; padding: 25px 28px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-hero-gradient); }
 .crp-root .crp-rescheduling-hero h2 { margin: 4px 0 0; color: var(--crp-text); font-size: clamp(1.25rem, 1.1rem + 0.45vw, 1.58rem); line-height: 1.25; letter-spacing: -0.045em; }
 .crp-root .crp-rescheduling-hero .crp-status { justify-self: end; }
 @media (max-width: 620px) { .crp-root .crp-rescheduling-hero { grid-template-columns: 1fr; } .crp-root .crp-rescheduling-hero .crp-status { justify-self: start; } }
