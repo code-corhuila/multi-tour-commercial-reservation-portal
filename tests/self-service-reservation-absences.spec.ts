@@ -12,7 +12,7 @@ import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION
 const CHANGE_ACTIONS = /modif|cancel|reschedul|reprogram|postpone|amend|\bedit|aplazar/i;
 // Not actions: the note of mis-reservas.html that sends changes to the operator, the condition of finalizar-reserva.html that
 // says changes depend on the tour, and the Cancelada state a reservation can be in.
-const INFORMATIVE = /Para cambios o cancelaciones, comunícate con el operador\.|La modificación o cancelación depende de las condiciones vigentes del tour\.|Cancelada|crp-is-cancelled|CANCELLED/g;
+const INFORMATIVE = /Desde este portal no puedes modificar ni cancelar reservas: para cambios o cancelaciones, comunícate con el operador\.|La modificación o cancelación depende de las condiciones vigentes del tour\.|Cancelada|crp-is-cancelled|CANCELLED/g;
 // RN-RS1 / T-01: no sign-in or registration form of its own, no client, no storage, no token.
 const OWN_SESSION = /password|passwd|contrase|credential|Authorization|Bearer|HttpClient|fetch\s*\(|XMLHttpRequest|localStorage|sessionStorage|https?:\/\//i;
 
@@ -58,7 +58,8 @@ describe('myReservationsOffersNoModifyCancelOrReschedule', () => {
     for (const shown of ['RES-1843', 'RES-1844', '$1.299.000', 'Pendiente de pago']) expect(element.textContent).toContain(shown);
     expect(element.querySelectorAll('button, a, form, input, select, textarea')).toHaveLength(0);
     expect(element.textContent?.replace(INFORMATIVE, '')).not.toMatch(CHANGE_ACTIONS);
-    expect(element.textContent).toContain('Para cambios o cancelaciones, comunícate con el operador.');
+    expect(element.textContent).toContain('Desde este portal no puedes modificar ni cancelar reservas: para cambios o cancelaciones, comunícate con el operador.');
+    expect(element.textContent).toContain('Consulta el estado de tus reservas propias, activas y pasadas, dentro del operador actual: salida, saldo, plazos y comprobantes.');
   });
 });
 
