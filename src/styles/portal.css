@@ -84,6 +84,7 @@
 .crp-root .crp-page-header-title { display: block; font-size: clamp(1.35rem, 1.15rem + 0.6vw, 1.7rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
 .crp-root .crp-page-header-desc { display: block; max-width: 58ch; margin: 0; color: var(--crp-soft); font-size: 0.88rem; }
 .crp-root .crp-page-header-action { flex: 0 0 auto; }
+.crp-root .crp-page-header > :empty { display: none; }
 .crp-root .crp-access-note { margin: 0 0 18px; padding: 12px 14px; border: 1px solid #dce9e2; border-radius: 10px; background: #f4faf7; color: #5c6c6b; font-size: 0.78rem; line-height: 1.45; }
 .crp-root .crp-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
 .crp-root .crp-filters > div { flex: 1 1 200px; }
