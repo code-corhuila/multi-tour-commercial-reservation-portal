@@ -20,6 +20,10 @@ describe('operatorHeaderKeepsItsActionsTogetherOnTheRight', () => {
     expect(main).toMatch(/margin-right:\s*auto;/);
     noHex(main);
   });
+
+  it('takes the empty slot hosts out of the header flow, so they add no gap between the actions', () => {
+    expect(ruleOf('.crp-root .crp-page-header > :empty')).toMatch(/display:\s*none;/);
+  });
 });
 
 describe('operatorHeroesUseTheMockupGradient', () => {
