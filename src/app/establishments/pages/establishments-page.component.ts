@@ -27,11 +27,14 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
     } @else {
       <header class="crp-page-header">
       <div class="crp-page-header-main">
-        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
-        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
+        <p class="crp-page-header-eyebrow">{{ fixedType ? copy.eyebrowOf[fixedType] : copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title[fixedType ?? 'all'] }}</h1>
       </div>
+      @if (navigation) {
+        <button class="crp-operator-outline crp-page-header-action" type="button" (click)="navigation.open('catalog')">{{ copy.backToCatalogs }}</button>
+      }
       </header>
-      <p class="crp-access-note">{{ copy.accessNote }}</p>
+      <p class="crp-access-note">{{ fixedType ? copy.noteOf[fixedType] : copy.accessNote }}</p>
       <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
       <div class="crp-operator-panel-head">
         <div><p class="crp-operator-eyebrow">{{ copy.panelEyebrow }}</p><h2>{{ copy.panelTitle }}</h2></div>
@@ -122,10 +125,9 @@ export class EstablishmentsPageComponent {
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly statuses = ASSOCIATION_STATUSES;
   /** The hub opens the area with { type } (admin-catalogos.html cards); anything else shows both types. */
-  private readonly openedType = inject(PortalNavigation, { optional: true })?.params()['type'];
-  protected readonly filters = signal<EstablishmentFilters>(
-    ESTABLISHMENT_TYPES.find((type) => type === this.openedType) ? { establishmentType: this.openedType as EstablishmentType } : {},
-  );
+  protected readonly navigation = inject(PortalNavigation, { optional: true });
+  protected readonly fixedType = ESTABLISHMENT_TYPES.find((type) => type === this.navigation?.params()['type']);
+  protected readonly filters = signal<EstablishmentFilters>(this.fixedType ? { establishmentType: this.fixedType } : {});
   private readonly requests = new Subject<EstablishmentFilters>();
   private readonly listed = toSignal(this.requests.pipe(
     // RN-PE3: only the most recent request may supply the screen's next state.
