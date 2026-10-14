@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -8,6 +8,7 @@ import { formatCop } from '../../shared/format';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PortalSlot } from '../../shared/portal-slots';
 import { PaymentsWriter } from '../data/payments-writer';
+import { tenantDateTime } from '../payment-followup-copy';
 import { PAYMENTS_TEXT } from '../payments-copy';
 
 export type PaymentLabels = Readonly<Record<string, string | undefined>>;
@@ -47,6 +48,16 @@ export function modalityOf(r: Reservation, labels: PaymentLabels): string {
           </table></div>
         }
       </section>
+      <section class="crp-operator-panel crp-payments-receipts">
+        <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.receiptsEyebrow }}</p><h2>{{ text.receiptsTitle }}</h2></div></div>
+        <div class="crp-table-wrap"><table class="crp-operator-table">
+          <thead><tr>@for (column of text.receiptColumns; track column) { <th>{{ column }}</th> }</tr></thead>
+          <tbody>@for (p of receipts(); track p.id) { <tr><td>{{ presented(p) }}</td><td>{{ money(p.amountCents) }}</td>
+            <td>{{ p.proofStatus === 'APROBADO' && p.review?.verifiedAmountCents != null ? money(p.review!.verifiedAmountCents!) : '—' }}</td><td>{{ text.proofStatus[p.proofStatus] }}</td>
+            <td>{{ p.review ? p.review.actorLabel + ' · ' + tenant(p.review.decidedAt) + (p.review.reason ? ' · ' + p.review.reason : '') : text.pendingDecision }}</td></tr> }
+            @empty { <tr><td colspan="5">{{ text.noReceipts }}</td></tr> }</tbody>
+        </table></div>
+      </section>
     }
   `,
 })
@@ -59,6 +70,9 @@ export class ReservationPaymentsBlockComponent {
   private readonly requests = new Subject<void>();
   protected readonly labels = toSignal(this.requests.pipe(switchMap(() => defer(() => paymentLabels(this.methods)).pipe(
     startWith('loading' as const), catchError(() => of('error' as const))))), { initialValue: 'loading' as const });
+  protected readonly receipts = computed(() => (this.reservation().payments ?? []).filter((p) => p.method === 'BANK_TRANSFER'));
+  protected readonly tenant = tenantDateTime;
+  protected presented(p: { presentedAt?: string }): string { return p.presentedAt ? tenantDateTime(p.presentedAt) : '—'; }
   protected readonly text = PAYMENTS_TEXT; protected readonly financial = FINANCIAL_LABEL; protected readonly money = formatCop;
   constructor() { this.reload(); }
   protected reload(): void { this.requests.next(); }
