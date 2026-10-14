@@ -3,6 +3,7 @@ import { Observable, map, of, throwError } from 'rxjs';
 import { RegisteringUser } from '../payments/data/payments-writer';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import { Reservation, ReservationsSource } from '../reservations/data/reservations-source';
+import type { RefundAct } from '../reservations/model/reservation';
 import { ExecuteOutcome, Refund, RefundMethod, RefundsSource, RefundsWriter } from '../refunds/data/refunds-ports';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import type { DemoReservationsStore } from './reservations-demo';
@@ -30,19 +31,20 @@ export function refundFactsOf(r: Reservation, now: number): Facts | null {
   const d = r.financialDecision;
   const f: Facts | null = r.refund ?? (d?.refundableCents ? { origin: d.kind === 'CUSTOMER_CANCELLATION' ? 'CUSTOMER_CANCELLATION' : 'NON_PAYMENT', reason: r.cancellation?.cause ?? '',
     amountCents: d.refundableCents, recognizedAt: d.recognizedAt } : null);
-  if (!f || f.decision || f.authorization || FULL.has(f.origin) || now < deadlineOf(f)) return f;
+  if (!f || f.decision || f.authorization || f.creditBalance || FULL.has(f.origin) || now < deadlineOf(f)) return f;
   const act = { by: AUTOMATIC, at: colombian(deadlineOf(f)) };
   return { ...f, decision: act, authorization: { ...act, reason: DEFAULT_REASON } };
 }
 
 /** As the service will answer it: amount, state, person, date, counter and marks resolved; the view formats only. */
 export function resolveRefund(r: Reservation, f: Facts, now: number): Refund {
-  const { authorization: a, execution: e } = f;
-  const state = e ? 'EJECUTADA' : a ? 'AUTORIZADA' : f.decision || FULL.has(f.origin) ? 'PENDIENTE_DE_AUTORIZACION' : 'PENDIENTE_DE_DECISION';
+  const { authorization: a, execution: e, rejection: j, creditBalance: c } = f;
+  const state = e ? 'EJECUTADA' : j ? 'RECHAZADA' : c ? 'SALDO_A_FAVOR' : a ? 'AUTORIZADA' : f.decision || FULL.has(f.origin) ? 'PENDIENTE_DE_AUTORIZACION' : 'PENDIENTE_DE_DECISION';
   return { id: r.id, customer: r.leadCustomerName, reason: f.reason, amountCents: FULL.has(f.origin) ? r.validatedCents ?? f.amountCents : f.amountCents, state,
-    decisionReason: a?.reason ?? null, owner: e?.by ?? a?.by ?? null, date: e?.at ?? f.recognizedAt, method: (e?.method as RefundMethod) ?? null, cashMovement: e?.cashMovement ?? null,
+    decisionReason: j?.reason ?? c?.reason ?? a?.reason ?? null, owner: e?.by ?? j?.by ?? c?.by ?? a?.by ?? null, date: e?.at ?? c?.at ?? f.recognizedAt, method: (e?.method as RefundMethod) ?? null, cashMovement: e?.cashMovement ?? null,
     remainingMinutes: state === 'PENDIENTE_DE_DECISION' ? Math.floor((deadlineOf(f) - now) / 60_000) : null, defaulted: a?.by === AUTOMATIC,
-    overdue: state === 'AUTORIZADA' && now >= businessDaysAfter(Date.parse(a!.at), 5) };
+    overdue: state === 'AUTORIZADA' && now >= businessDaysAfter(Date.parse(a!.at), 5), note: f.note ?? null,
+    decisionDueAt: state === 'PENDIENTE_DE_DECISION' ? colombian(deadlineOf(f)) : null, executionDueAt: state === 'AUTORIZADA' ? colombian(businessDaysAfter(Date.parse(a!.at), 5)) : null };
 }
 
 /** Lists the refunds over the clock; a default that applies is recorded once in the store (plan D-06). */
@@ -64,31 +66,41 @@ export class DemoRefundsWriter extends RefundsWriter {
     private readonly user: RegisteringUser, private readonly cashFails: ReadonlySet<string>, private readonly answered = new Map<string, Refund | ExecuteOutcome>()) { super(); }
 
   override decideFullRefund(id: string, key: string): Observable<Refund> {
-    const known = this.answered.get(key) as Refund | undefined, c = this.current(id);
-    if (known) return of(known);
-    if (!this.can.canAuthorizeRefund()) return refuse(403, 'refund-decision-forbidden');
-    if (c?.refund.state !== 'PENDIENTE_DE_DECISION') return refuse(409, 'refund-not-decidable');
-    return of(this.keep(key, this.save(c.r, { ...c.f, decision: { by: this.user.label(), at: this.clock.now() } })));
+    return this.move(id, key, 'PENDIENTE_DE_DECISION', 'decision', true, (f) => ({ ...f, decision: this.act() }));
   }
 
   override authorize(id: string, reason: string, key: string): Observable<Refund> {
-    const known = this.answered.get(key) as Refund | undefined, c = this.current(id);
-    if (known) return of(known);
-    if (!this.can.canAuthorizeRefund()) return refuse(403, 'refund-authorization-forbidden');
-    if (!reason.trim() || c?.refund.state !== 'PENDIENTE_DE_AUTORIZACION') return refuse(409, 'refund-not-authorizable');
-    return of(this.keep(key, this.save(c.r, { ...c.f, authorization: { by: this.user.label(), at: this.clock.now(), reason: reason.trim() } })));
+    return this.move(id, key, 'PENDIENTE_DE_AUTORIZACION', 'authorization', !!reason.trim(), (f) => ({ ...f, authorization: { ...this.act(), reason: reason.trim() } }));
   }
 
-  override executeRefund(id: string, method: RefundMethod, key: string): Observable<ExecuteOutcome> {
+  override reject(id: string, reason: string, key: string): Observable<Refund> {
+    return this.move(id, key, 'PENDIENTE_DE_AUTORIZACION', 'rejection', !!reason.trim(), (f) => ({ ...f, rejection: { ...this.act(), reason: reason.trim() } }));
+  }
+
+  override keepAsCreditBalance(id: string, reason: string, key: string): Observable<Refund> {
+    return this.move(id, key, 'PENDIENTE_DE_DECISION', 'credit-balance', !!reason.trim(), (f) => ({ ...f, creditBalance: { ...this.act(), reason: reason.trim() } }));
+  }
+
+  override executeRefund(id: string, method: RefundMethod | null, key: string): Observable<ExecuteOutcome> {
     const known = this.answered.get(key) as ExecuteOutcome | undefined, c = this.current(id);
     if (known) return of(known);
     if (!this.can.canExecuteRefund()) return refuse(403, 'refund-execution-forbidden');
     if (c?.refund.state !== 'AUTORIZADA') return refuse(409, 'refund-not-authorized');
+    if (!method) return of(this.keep(key, { kind: 'credit-balance', refund: this.save(c.r, { ...c.f, creditBalance: this.act() }) }));
     if (this.cashFails.has(id)) return of({ kind: 'cash-failed', refund: c.refund });
-    const execution = { by: this.user.label(), at: this.clock.now(), method, cashMovement: `MC-${id.replace('RES-', '')}` };
+    const execution = { ...this.act(), method, cashMovement: `MC-${id.replace('RES-', '')}` };
     return of(this.keep(key, { kind: 'executed', refund: this.save(c.r, { ...c.f, execution }) }));
   }
 
+  private act(): RefundAct { return { by: this.user.label(), at: this.clock.now() }; }
+  /** One transition: the same answer for the same key, 403 for a role without the capability, 409 for a refund in another state or a blank reason. */
+  private move(id: string, key: string, from: Refund['state'], act: string, valid: boolean, change: (f: Facts) => Facts): Observable<Refund> {
+    const known = this.answered.get(key) as Refund | undefined, c = this.current(id);
+    if (known) return of(known);
+    if (!this.can.canAuthorizeRefund()) return refuse(403, `refund-${act}-forbidden`);
+    if (!valid || c?.refund.state !== from) return refuse(409, `refund-${act}-refused`);
+    return of(this.keep(key, this.save(c.r, change(c.f))));
+  }
   private current(id: string) {
     const r = this.store.items.find((x) => x.id === id), now = Date.parse(this.clock.now()), f = r && !keptAsCreditBalance(this.store, id) ? refundFactsOf(r, now) : null;
     return r && f ? { r, f, refund: resolveRefund(r, f, now) } : null;
