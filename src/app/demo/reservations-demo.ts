@@ -13,7 +13,8 @@ import { DemoDiscountRulesStore } from './discounts-demo';
 import { DemoReservationQuotes } from './reservation-quote-demo';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
 import { RESCHEDULING_DEPARTURES, RESCHEDULING_SEEDS } from './rescheduling-seeds';
-import type { CreditBalance } from '../credit-balance/data/credit-balance-ports';
+import type { CreditBalance, CreditRequest } from '../credit-balance/data/credit-balance-ports';
+import type { CreditApplication } from './credit-overview-demo';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
 const CONDITIONS = 'Changes up to 72 hours before departure; cancellation as the tour policy states (demo text, DP-RC4).';
@@ -97,6 +98,9 @@ export class DemoReservationsStore extends ReservationsSource {
   readonly modifications: ModificationTrace[] = [];
   /** HU-COM-017 plan D-02: the credit balance lines of these reservations. */
   creditBalances: readonly CreditBalance[] = [];
+  /** Amendment 2026-10-14 (AC-CB.4, AC-CB.10): the uses of those lines and the refund requests that set part of them aside. */
+  creditApplications: readonly CreditApplication[] = [];
+  creditRequests: readonly CreditRequest[] = [];
   constructor(public items: Reservation[] = []) { super(); }
   override list(): Observable<readonly Reservation[]> { return of([...this.items]); }
 }
