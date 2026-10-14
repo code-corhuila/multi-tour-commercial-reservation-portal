@@ -52,7 +52,7 @@ const fixtures = () => new DemoReservationsStore([
 const USER = new (class extends RegisteringUser { override label() { return 'Ana Torres (demo)'; } })();
 const demo = (role = 'TENANT_ADMINISTRATOR', cashFails: readonly string[] = []) => {
   const store = fixtures();
-  return { store, source: new DemoRefundsSource(store), writer: new DemoRefundsWriter(store, PortalCapabilities.for(role), new FixedClock(NOW), USER, new Set(cashFails)) };
+  return { store, source: new DemoRefundsSource(store, new FixedClock(NOW)), writer: new DemoRefundsWriter(store, PortalCapabilities.for(role), new FixedClock(NOW), USER, new Set(cashFails)) };
 };
 const factsOf = (store: DemoReservationsStore, id: string) => store.items.find((r) => r.id === id)!.refund;
 const byId = async (source: RefundsSource, id: string) => (await firstValueFrom(source.list())).find((r) => r.id === id)!;
@@ -65,6 +65,7 @@ class ControllableSource extends RefundsSource {
 class ControllableWriter extends RefundsWriter {
   readonly authorizations: { id: string; reason: string; key: string; answer: Subject<Refund> }[] = [];
   readonly executions: { id: string; method: RefundMethod; key: string; answer: Subject<ExecuteOutcome> }[] = [];
+  override decideFullRefund(): Observable<Refund> { return new Subject<Refund>(); }
   override authorize(id: string, reason: string, key: string) { const answer = new Subject<Refund>(); this.authorizations.push({ id, reason, key, answer }); return answer; }
   override executeRefund(id: string, method: RefundMethod, key: string) { const answer = new Subject<ExecuteOutcome>(); this.executions.push({ id, method, key, answer }); return answer; }
 }

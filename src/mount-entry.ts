@@ -10,7 +10,9 @@ import { roleOf } from './app/shared/portal-capabilities';
 import { ActorContext } from './app/shared/actor-context';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
 import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
-import { CHECKOUT_BLOCKS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { CHECKOUT_BLOCKS, OPERATOR_NOTIFICATIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { REFUND_DETAIL_LINK } from './app/refunds/components/refund-link.component';
+import { REFUND_ALERTS } from './app/refunds/components/refund-alerts.component';
 import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
@@ -18,6 +20,7 @@ import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reserva
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
+import { PAYMENT_FOLLOWUP_CONTRIBUTIONS } from './app/payments/components/pending-payment-rows.component';
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
 import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
@@ -78,12 +81,16 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
       // HU-COM-010: Validar soporte of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.
       ...PROOF_REVIEW_CONTRIBUTIONS,
+      // HU-COM-011: the Saldo pendiente rows of 13 and the departure start sentence of 21 and 24; only with its ports.
+      ...PAYMENT_FOLLOWUP_CONTRIBUTIONS,
       // HU-COM-012: "Modificación de viajeros", after Cancelación, on the screen of HU-COM-013 only (its area needs the cancellation ports).
       provideTravellersModification(),
       // HU-COM-014: Continuar pago, Mis pagos and the proof notice of 17, and the economic lines of Mis reservas; each only with its port.
       ...MY_PAYMENTS_CONTRIBUTIONS,
       // HU-COM-016: "Devoluciones monetarias" of 13, only for who authorizes or executes and with the refund ports.
       contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
+      // HU-COM-016: "Gestionar devolución" of 10A after the HU-COM-013 blocks, and the alert of admin-notificaciones.html.
+      contribute(RESERVATION_DETAIL_BLOCKS, REFUND_DETAIL_LINK), contribute(OPERATOR_NOTIFICATIONS, REFUND_ALERTS),
       // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
       RESCHEDULING_ENTRY,
       // HU-COM-018: Salida propuesta, the mark and Responder propuesta of Mis reservas, and the notice of 17; only with the proposals port.

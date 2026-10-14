@@ -36,6 +36,8 @@ import { TransferPaymentPageComponent } from './payments/pages/transfer-payment-
 import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
 import { PaymentsPageComponent } from './payments/pages/payments-page.component';
 import { ValidateProofPageComponent } from './payments/pages/validate-proof-page.component';
+import { PaymentDeadlineReader, PaymentFollowupsWriter } from './payments/data/payment-followup-ports';
+import { PaymentFollowupPageComponent } from './payments/pages/payment-followup-page.component';
 import { MyPaymentsSource } from './my-payments/data/my-payments-source';
 import { MyPaymentsPageComponent } from './my-payments/pages/my-payments-page.component';
 import { REFUND_SCREENS, refundsAvailable } from './refunds/data/refunds-ports';
@@ -43,6 +45,9 @@ import { RefundDetailPageComponent } from './refunds/pages/refund-detail-page.co
 import { RefundRequestsPageComponent } from './refunds/pages/refund-requests-page.component';
 import { MyProposalsSource, PROPOSAL_AREA, ProposalAnswerWriter, RESCHEDULING_AREA, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
 import { ReschedulingProposalPageComponent } from './rescheduling/pages/rescheduling-proposal-page.component';
+import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
+import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
+import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
@@ -134,12 +139,22 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: 'payments', label: 'Pagos', component: PaymentsPageComponent, isAvailable: (injector) => has(injector, PendingProofsSource, ProofReviewWriter, PaymentMethodsSource) },
   { key: 'payments-validate', label: 'Validar soporte', component: ValidateProofPageComponent, menu: false, parent: 'payments',
     isAvailable: (injector) => has(injector, ReservationsSource, ProofReviewWriter, PaymentMethodsSource) },
+  // HU-COM-011 admin-registrar-seguimiento.html, opened by Registrar seguimiento of 13 with { reservation }; Pagos stays active.
+  { key: 'payments-followup', label: 'Registrar seguimiento', component: PaymentFollowupPageComponent, menu: false, parent: 'payments',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canFollowUp() && has(injector, ReservationsSource, PaymentFollowupsWriter, PaymentDeadlineReader, PaymentMethodsSource) },
   // HU-COM-014 mis-pagos.html, opened by Mis pagos of 17; read only, under the compact header of the panel (Volver al panel).
   { key: CLIENT_AREA.payments, label: 'Mis pagos', component: MyPaymentsPageComponent, audience: 'customer', clientChrome: 'panel', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyPaymentsSource) },
   // HU-COM-016 admin-solicitudes-devolucion.html and admin-detalle-devolucion.html with { refund }, sub-screens of 13; Pagos stays active.
   { key: REFUND_SCREENS.requests, label: 'Solicitudes de devolución', component: RefundRequestsPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
   { key: REFUND_SCREENS.detail, label: 'Detalle de devolución', component: RefundDetailPageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
+  // HU-COM-016 admin-gestionar-devolucion.html (from 10A) and admin-tratamiento-pendiente-devolucion.html, whose decision is the Administrator's.
+  { key: REFUND_SCREENS.manage, label: 'Gestionar devolución', component: RefundManagePageComponent, menu: false, parent: 'payments', isAvailable: refundsAvailable },
+  { key: REFUND_SCREENS.treatment, label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent, menu: false, parent: 'payments',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canAuthorizeRefund() && refundsAvailable(injector) },
+  // HU-COM-016 admin-notificaciones.html: "Notificaciones" is a sidebar item only of screen 9 (admin-operador.html:25, between Operación and Reportes);
+  // here it follows Pagos, since Operación belongs to another portal (position PROPUESTO, spec 016- section 5), while some alert is offered (DP-RF6).
+  { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent, isAvailable: hasNotifications },
   // HU-COM-018 admin-reprogramar-reserva.html: opened from the 10A header with { reservation } (DP-RP4); every operator reads it, Reservas stays active.
   { key: RESCHEDULING_AREA, label: 'Propuesta de reprogramación', component: ReschedulingPageComponent, menu: false, parent: 'reservations',
     isAvailable: (injector) => has(injector, ReschedulingSource, ReschedulingWriter) },
