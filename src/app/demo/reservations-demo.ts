@@ -1,4 +1,4 @@
-import { Provider } from '@angular/core';
+import { Provider, inject } from '@angular/core';
 import { Observable, map, of, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { DeparturesSource } from '../reservations/data/departures-source';
@@ -130,7 +130,8 @@ export function reservationDemoProviders(): Provider[] {
   return [
     { provide: DeparturesSource, useValue: departures },
     { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
-    { provide: ReservationDiscounts, useFactory: (rules: DiscountRulesSource) => new DemoReservationDiscounts(() => (rules as DemoDiscountRulesStore).rules), deps: [DiscountRulesSource] },
+    // Optional: a module mounted without the discounts story quotes no discount.
+    { provide: ReservationDiscounts, useFactory: () => { const rules = inject(DiscountRulesSource, { optional: true }) as DemoDiscountRulesStore | null; return new DemoReservationDiscounts(() => rules?.rules ?? []); } },
     { provide: ReservationsSource, useValue: store },
     { provide: ReservationQuoteSource, useFactory: (c: CatalogItemsSource, r: ReservationDiscounts) => new DemoReservationQuotes(departures, c, r), deps: [CatalogItemsSource, ReservationDiscounts] },
     { provide: ReservationsWriter, useFactory: (q: ReservationQuoteSource) => (writer ??= new DemoReservationsWriter(store, departures, q)), deps: [ReservationQuoteSource] },
