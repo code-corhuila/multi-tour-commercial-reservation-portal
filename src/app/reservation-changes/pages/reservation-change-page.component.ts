@@ -1,7 +1,9 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, InjectionToken, Injector, afterNextRender, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { Observable, Subject, catchError, map, of, startWith, switchMap, take } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
 import { Reservation, STATUS_LABEL } from '../../reservations/data/reservations-source';
 import { focusFirstError } from '../../shared/focus';
@@ -25,7 +27,7 @@ export const RESERVATION_CHANGE_RETURN_DELAY = new InjectionToken<() => Observab
 
 /** admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Tipo lists RESERVATION_CHANGE_TYPES (plan D-08). */
 @Component({
-  selector: 'app-reservation-change-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [NgComponentOutlet],
+  selector: 'app-reservation-change-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, NgComponentOutlet],
   template: `
     <header class="crp-page-header">
       <div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.title }}</h1></div>
@@ -35,7 +37,7 @@ export const RESERVATION_CHANGE_RETURN_DELAY = new InjectionToken<() => Observab
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ t.notFound }}</p> }
       @case ('data') {
         @let q = s.items[0]; @let r = q.reservation; @let closed = refusal(q); @let locked = !!closed || pending();
@@ -95,7 +97,7 @@ export class ReservationChangePageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.quotes.quote(this.code).pipe(
     map((q): State => (q ? { kind: 'data', items: [q] } : { kind: 'empty' })),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
 
   protected chosen() { return this.types.find((type) => type.key === this.selected()); }

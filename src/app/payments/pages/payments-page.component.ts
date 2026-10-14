@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, Injector, inject } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -16,7 +18,7 @@ type State = PageState<PendingProofs & { labels: PaymentLabels }>;
 
 /** Screen 13 (admin-pagos.html): "Pagos pendientes" with the Revisión vencida mark; 011 adds row actions, 016 its panel (slots). */
 @Component({
-  selector: 'app-payments-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [PortalSlotOutlet],
+  selector: 'app-payments-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, PortalSlotOutlet],
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.title }}</h1></div>
       <button type="button" class="crp-operator-outline crp-page-header-action" (click)="navigation?.open('reservations')">{{ t.reservations }}</button></header>
@@ -26,7 +28,7 @@ type State = PageState<PendingProofs & { labels: PaymentLabels }>;
         @if (s.kind === 'data' || s.kind === 'empty') { <span class="crp-operator-status crp-is-pending">{{ t.pending(s.kind === 'data' ? waiting(s.items[0].rows) : 0) }}</span> }</div>
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ common.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ common.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="common.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ common.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ t.empty }}</p> }
         @case ('data') { @let d = s.items[0];
           <div data-state="data">@if (d.overdueCount && canDecide) { <p class="crp-access-note">{{ t.overdue(d.overdueCount) }}</p> }
@@ -54,7 +56,7 @@ export class PaymentsPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => forkJoin({ proofs: this.source.list(), labels: paymentLabels(this.methods) })).pipe(
     map(({ proofs, labels }): State => (proofs.rows.length || this.bodies ? { kind: 'data', items: [{ ...proofs, labels }] } : { kind: 'empty' })),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   protected readonly statusClass: Readonly<Record<string, string>> = { EN_VALIDACION: 'crp-is-pending', SIN_COMPROBANTE: 'crp-is-pending', APROBADO: 'crp-is-confirmed', RECHAZADO: 'crp-is-cancelled' };
   protected waiting(rows: readonly PendingProof[]): number { return rows.filter((row) => row.payment.proofStatus === 'EN_VALIDACION').length; }
   protected open(row: PendingProof): void { this.navigation?.open('payments-validate', { reservation: row.reservation.id, payment: row.payment.id }); }

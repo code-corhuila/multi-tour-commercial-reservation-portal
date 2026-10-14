@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ReadErrorComponent } from '../../../shared/read-error.component';
+import { readFailure } from '../../../shared/read-failure';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, merge, of, startWith, switchMap } from 'rxjs';
 import { Reservation } from '../../../reservations/data/reservations-source';
@@ -9,14 +11,14 @@ import { TRAVELLERS_MODIFICATION_COPY } from '../travellers-modification-copy';
 type State = PageState<Admission>;
 
 /** Plan D-06: under Tipo, only the policy answer of the port; no field until DP-MD5. Announced as a status (no hook on Tipo). */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-travellers-modification-form', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="crp-travellers-modification">
       @let s = state();
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-        @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+        @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ t.notFound }}</p> }
         @case ('data') { <p role="status" data-state="data" class="crp-travellers-modification-answer">{{ answer(s.items[0]) }}</p> }
       }
@@ -32,7 +34,7 @@ export class TravellersModificationFormComponent {
   protected readonly state = toSignal(merge(toObservable(this.reservation), this.retries.pipe(map(() => this.reservation()))).pipe(
     switchMap((r) => this.quotes.admits(r.id).pipe(
       map((a): State => (a ? { kind: 'data', items: [a] } : { kind: 'empty' })),
-      catchError(() => of<State>({ kind: 'error', retry: () => this.retries.next() })), startWith<State>({ kind: 'loading' })))),
+      catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.retries.next() })), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
 
   protected answer(a: Admission): string { return a.kind === 'allowed' ? this.t.allowed : this.t.refused[a.reason]; }
