@@ -235,7 +235,7 @@ describe('creditHistoryShowsWhoAppliedAndRequested', () => {
     expect(s.spy.applied[0].slice(0, 2)).toEqual(['RES-T1', 10_000_000]);
     expect(s.host.querySelector('[data-credit-feedback]')?.textContent?.trim()).toBe('Saldo a favor aplicado: $100.000 como pago validado de RES-T1; el cupo quedó apartado en la misma operación. Queda en auditoría.');
     expect(s.host.querySelector('[data-credit-feedback]')?.getAttribute('aria-live')).toBe('polite');
-    expect(s.texts('[data-credit-customer] details tbody tr')[0]).toBe(`${formatDateTime(NOW).replace(' · 10:00', '')} · 10:00 Aplicación Aplicado a la reserva RES-T1 #RES-T1 -$100.000 Administrador del tenant`);
+    expect(s.texts('[data-credit-customer] details tbody tr')[0]).toBe(`${formatDateTime(NOW)} Aplicación Aplicado a la reserva RES-T1 #RES-T1 -$100.000 Administrador del tenant`);
     expect(s.host.querySelector('[data-credit-customer] .crp-operator-status')?.textContent?.trim()).toBe('Disponible $200.000');
   });
 
