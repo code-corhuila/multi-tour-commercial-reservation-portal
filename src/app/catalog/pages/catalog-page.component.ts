@@ -70,7 +70,7 @@ function reasonOf(error: unknown): string {
       <p role="status" data-state="loading">{{ copy.loading }}</p>
     } @else if (current.kind === 'error') {
       <div role="alert" data-state="error">
-        <p>{{ copy.requestFailed }}</p>
+        <p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p>
         <button class="crp-operator-outline" type="button" (click)="current.retry()">{{ copy.retry }}</button>
       </div>
     }
@@ -153,7 +153,7 @@ export class CatalogPageComponent {
               const items = all.filter((each) => each.serviceType === 'TOUR');
               return items.length === 0 ? { kind: 'empty' } : { kind: 'data', items };
             }),
-            catchError(() => of<PageState<CatalogItem>>({ kind: 'error', retry: () => this.reload() })),
+            catchError((error) => of<PageState<CatalogItem>>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
             startWith<PageState<CatalogItem>>({ kind: 'loading' }),
           ),
         ),

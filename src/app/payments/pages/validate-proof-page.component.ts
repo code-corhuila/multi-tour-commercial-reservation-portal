@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -24,7 +26,7 @@ const BACK_DELAY_MS = 1600;
  * admin-validar-soporte.html (13, titled Validar comprobante), opened with { reservation, payment }; without Validar comprobantes,
  * the mockup's "Ver comprobante" mode. The preview of the file (image or PDF viewer) is blocked by contract: the port gives its name only.
  */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-validate-proof-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ canDecide ? t.validate : t.view }}</h1></div>

@@ -56,7 +56,7 @@ export class PaymentsPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => forkJoin({ proofs: this.source.list(), labels: paymentLabels(this.methods) })).pipe(
     map(({ proofs, labels }): State => (proofs.rows.length || this.bodies ? { kind: 'data', items: [{ ...proofs, labels }] } : { kind: 'empty' })),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   protected readonly statusClass: Readonly<Record<string, string>> = { EN_VALIDACION: 'crp-is-pending', SIN_COMPROBANTE: 'crp-is-pending', APROBADO: 'crp-is-confirmed', RECHAZADO: 'crp-is-cancelled' };
   protected waiting(rows: readonly PendingProof[]): number { return rows.filter((row) => row.payment.proofStatus === 'EN_VALIDACION').length; }
   protected open(row: PendingProof): void { this.navigation?.open('payments-validate', { reservation: row.reservation.id, payment: row.payment.id }); }

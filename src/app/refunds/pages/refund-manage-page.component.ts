@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -11,7 +13,7 @@ import { REFUNDS_COPY, refundStateText } from '../refunds-copy';
 type State = PageState<Refund>;
 
 /** admin-gestionar-devolucion.html, opened by "Gestionar devolución" of 10A or by the list with { refund }: the treatment, its counter and where to go. */
-@Component({
+@Component({ imports: [ReadErrorComponent],
   selector: 'app-refund-manage-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.trace }}</p><h1 class="crp-page-header-title crp-h1">{{ t.manageTitle }}</h1></div>
@@ -19,7 +21,7 @@ type State = PageState<Refund>;
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ t.notFound }}</p> }
       @case ('data') { @let r = s.items[0]; @let pending = r.remainingMinutes !== null;
         <section class="crp-operator-panel" data-state="data"><p class="crp-operator-eyebrow">{{ t.origin(r) }}</p><h2>{{ t.pendingTitle }}</h2>
@@ -40,6 +42,6 @@ export class RefundManagePageComponent {
   private readonly source = inject(RefundsSource); private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.list().pipe(
     map((all): State => { const found = all.find((r) => r.id === this.id); return found ? { kind: 'data', items: [found] } : { kind: 'empty' }; }),
-    catchError(() => of<State>({ kind: 'error', retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   protected go(key: string, r?: Refund): void { this.navigation?.open(key, r ? { refund: r.id } : {}); }
 }

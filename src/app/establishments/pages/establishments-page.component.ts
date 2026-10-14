@@ -78,7 +78,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loading }}</p> }
         @case ('error') {
           <div role="alert" data-state="error">
-            <p>{{ copy.requestFailed }}</p>
+            <p><crp-read-error [state]="current" [fallback]="copy.requestFailed" /></p>
             <button class="crp-operator-outline" type="button" [disabled]="saving()" (click)="current.retry()">{{ copy.retry }}</button>
           </div>
         }

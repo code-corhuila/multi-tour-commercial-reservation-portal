@@ -1,12 +1,15 @@
-import { Clock, tenantDay } from '../../shared/clock';
+import { ReadErrorComponent } from '../../shared/read-error.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
-import { formatCop, formatDate } from '../../shared/format';
+import { formatCop, formatDate, formatDateRange } from '../../shared/format';
 import { PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
 import { PublicTour, TourValue } from '../model/public-offer';
-import { PUBLIC_OFFER_COPY, matchesSearch, photoAt } from '../public-offer-copy';
+import { PUBLIC_OFFER_COPY, matchesSearch, sameName } from '../public-offer-copy';
+import { DepartureCapacity } from '../../reservations/data/departure-capacity';
+import { TourImages } from '../../shared/tour-photo';
 
 /** The four states of one part of the page (Annex H). */
 export type PartState<T> =
@@ -21,7 +24,7 @@ interface PricedTour { readonly tour: PublicTour; readonly value: TourValue; rea
 export function partOf<A, T>(requests: Subject<A>, read: (arg: A) => Observable<readonly T[]>, retry: () => void) {
   return toSignal(requests.pipe(switchMap((arg) => read(arg).pipe(
     map((items): PartState<T> => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError(() => of<PartState<T>>({ kind: 'error', retry })),
+    catchError((error) => of<PartState<T>>({ kind: 'error', ...readFailure(error), retry })),
     startWith<PartState<T>>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PartState<T> });
 }
@@ -37,6 +40,7 @@ export function backToPanel(): (() => void) | null {
 /** tours.html and detalle-tour.html. Read-only for everyone (plan D-07): it reads no actor and offers no reservation. */
 @Component({
   selector: 'app-public-offer-page',
+  imports: [ReadErrorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (chosen(); as priced) {
@@ -82,7 +86,7 @@ export function backToPanel(): (() => void) | null {
         @let tours = toursState();
         @switch (tours.kind) {
           @case ('loading') { <p role="status" data-state="loading">{{ copy.loadingTours }}</p> }
-          @case ('error') { <div role="alert" data-state="error"><p>{{ copy.requestFailed }}</p><button class="crp-outline" type="button" (click)="tours.retry()">{{ copy.retry }}</button></div> }
+          @case ('error') { <div role="alert" data-state="error"><p><crp-read-error [state]="tours" [fallback]="copy.requestFailed" /></p><button class="crp-outline" type="button" (click)="tours.retry()">{{ copy.retry }}</button></div> }
           @case ('empty') { <p role="status" data-state="empty">{{ copy.empty }}</p> }
           @case ('data') {
             @let shown = found(tours.items);
@@ -119,6 +123,8 @@ export class PublicOfferPageComponent {
   protected readonly copy = PUBLIC_OFFER_COPY;
   protected readonly back = backToPanel();
   private readonly offer = inject(PublicOfferSource, { optional: true });
+  private readonly capacity = inject(DepartureCapacity, { optional: true });
+  private readonly images = inject(TourImages);
   // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });
   protected readonly date = signal(tenantDay(inject(Clock).now()));
@@ -129,7 +135,7 @@ export class PublicOfferPageComponent {
   protected readonly toursState = partOf(this.dates, (date) => (this.offer?.listAvailable(date) ?? unavailable()).pipe(
     // RN-PO2: whatever the port answers, what is not available for the date is not listed.
     map((tours) => tours.filter((tour) => tour.available)
-      .map((tour, position): PricedTour => ({ tour, value: this.valueOf(tour, date), photo: photoAt(position) }))),
+      .map((tour): PricedTour => ({ tour, value: this.valueOf(tour, date), photo: this.images.urlOf(tour.serviceId) ?? '' }))),
   ), () => this.dates.next(this.date()));
 
   constructor() { this.dates.next(this.date()); }
@@ -145,10 +151,25 @@ export class PublicOfferPageComponent {
     return items.filter((priced) => matchesSearch(priced.tour.commercialName, this.search()));
   }
 
-  protected discounted(priced: PricedTour): boolean { return priced.value.currentValueCents !== priced.value.baseRateCents; }
+  /** A tour is drawn as discounted when the value port wrote the tag of its discount. */
+  protected discounted(priced: PricedTour): boolean { return !!priced.value.discountLabel; }
 
-  /** The label of HU-COM-004's value port; without one, a generic tag (RN-PO4: no percentage is derived here). */
-  protected tag(priced: PricedTour): string { return priced.value.discountLabel ?? this.copy.discountTag; }
+  /** The tag HU-COM-004's value port wrote ("20% de descuento"); the view derives nothing. */
+  protected tag(priced: PricedTour): string {
+    return priced.value.discountLabel ?? '';
+  }
+
+  /** The departures of a tour (the port has no tour id yet, so the name links them), or null when none can be read. */
+  protected departuresOf(priced: PricedTour): readonly Departure[] | null {
+    return this.departures()?.filter((departure) => sameName(departure.tourName, priced.tour.commercialName)) ?? null;
+  }
+
+  /** Without a departures port nothing is known, so the button stays enabled; with one, it needs a departure with seats. */
+  protected hasSeats(priced: PricedTour): boolean { return this.departuresOf(priced)?.some((d) => this.capacity?.hasSeats(d) ?? true) ?? true; }
+
+  protected seats(departure: Departure): string {
+    return this.capacity?.hasSeats(departure) ?? true ? this.copy.seatsLeft(departure.effectiveCapacity) : this.copy.departureFull;
+  }
 
   protected money(cents: number): string { return formatCop(cents); }
 
