@@ -46,6 +46,8 @@ export function itemNamed(commercialName: string): CatalogItem {
     configuredCapacity: null,
     transportRequired: false,
     highRisk: false,
+    validFrom: '2026-09-01',
+    validTo: '2026-09-30',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
   };

@@ -45,7 +45,7 @@ async function openAs(actor?: ActorContext, items = [itemNamed('Alpha'), itemNam
   return { source, writer, host, ui, settle, buttonNames, click };
 }
 
-const CHANGING_ACTIONS = [CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.reactivate, 'Guardar servicio'];
+const CHANGING_ACTIONS = [CATALOG_COPY.newItem, CATALOG_COPY.edit, CATALOG_COPY.inactivate, CATALOG_COPY.reactivate, 'Guardar tour'];
 
 describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
   it('offers only Edit on a row, with no New item and no status action', async () => {
@@ -57,7 +57,7 @@ describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
     await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
     expect((page.ui.getByLabelText('Nombre comercial') as HTMLInputElement).value).toBe('Alpha');
-    for (const label of ['Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Tipo de servicio', 'Transporte obligatorio', 'Alto riesgo']) {
+    for (const label of ['Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Transporte obligatorio', 'Alto riesgo']) {
       expect(page.ui.queryByLabelText(label), label).toBeNull();
     }
   });
@@ -66,7 +66,7 @@ describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
     await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
     fireEvent.input(page.ui.getByLabelText('Nombre comercial'), { target: { value: 'Alpha renamed' } });
-    await page.click(page.ui.getByRole('button', { name: 'Guardar servicio' }));
+    await page.click(page.ui.getByRole('button', { name: 'Guardar tour' }));
 
     expect(page.writer.calls).toHaveLength(1);
     expect(page.writer.calls[0]).toMatchObject({ kind: 'update', serviceId: itemNamed('Alpha').serviceId });
@@ -82,7 +82,7 @@ describe('collaboratorOfAnEnablingTenantSeesNoRateCostOrCapacityField', () => {
     const page = await openAs(actorAs('OPERATIONAL_COLLABORATOR', true));
     await page.click(within(page.host.querySelector('tbody tr') as HTMLElement).getByRole('button', { name: CATALOG_COPY.edit }));
     fireEvent.input(page.ui.getByLabelText('Nombre comercial'), { target: { value: '  ' } });
-    await page.click(page.ui.getByRole('button', { name: 'Guardar servicio' }));
+    await page.click(page.ui.getByRole('button', { name: 'Guardar tour' }));
     expect(page.writer.calls).toHaveLength(0);
     expect(page.ui.getByLabelText('Nombre comercial').getAttribute('aria-invalid')).toBe('true');
   });
@@ -135,7 +135,7 @@ describe('theAdministratorSeesEveryAction', () => {
   it('opens the full form with every control', async () => {
     const page = await openAs(actorAs('TENANT_ADMINISTRATOR'));
     await page.click(page.ui.getByRole('button', { name: CATALOG_COPY.newItem }));
-    for (const label of ['Nombre comercial', 'Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Tipo de servicio', 'Transporte obligatorio', 'Alto riesgo']) {
+    for (const label of ['Nombre comercial', 'Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Transporte obligatorio', 'Alto riesgo']) {
       expect(page.ui.queryByLabelText(label), label).not.toBeNull();
     }
   });

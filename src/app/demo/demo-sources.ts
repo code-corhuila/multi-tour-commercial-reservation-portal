@@ -10,7 +10,8 @@ import { AssociatedEstablishment, EstablishmentFilters } from '../establishments
 const NOW = '2026-10-01T09:00:00Z';
 const item = (n: number, serviceType: CatalogItem['serviceType'], commercialName: string, catalogStatus: CatalogItem['catalogStatus'], rate: number): CatalogItem => ({
   serviceId: `demo-svc-${n}`, serviceType, commercialName, catalogStatus, baseRateCents: rate, baseOperationalCostCents: Math.round(rate * 0.6),
-  configuredCapacity: serviceType === 'TOUR' ? 12 : null, transportRequired: serviceType === 'TRANSPORTATION', highRisk: n === 3, createdAt: NOW, updatedAt: NOW,
+  configuredCapacity: serviceType === 'TOUR' ? 12 : null, transportRequired: serviceType === 'TRANSPORTATION', highRisk: n === 3,
+  validFrom: '2026-09-01', validTo: '2026-09-30', createdAt: NOW, updatedAt: NOW,
 });
 const place = (n: number, establishmentType: AssociatedEstablishment['establishmentType'], commercialName: string, associationStatus: AssociatedEstablishment['associationStatus'], commercialInformation: string): AssociatedEstablishment =>
   ({ associationId: `demo-est-${n}`, establishmentType, commercialName, commercialInformation, imageReference: `demo://image-${n}.jpg`, associationStatus });
