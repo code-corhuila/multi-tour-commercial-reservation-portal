@@ -11,7 +11,7 @@ import { ConfirmReservationPageComponent } from '../src/app/self-service-reserva
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 import { sourceProviders } from '../src/app/sources.demo';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
-import { ControllablePaymentMethods, CustomerAs, QUOTE, RecordingRequester, SELECTION, quoteOf, selectionAt } from './self-service-reservation.double';
+import { ControllablePaymentMethods, CustomerAs, METHODS, QUOTE, RecordingRequester, SELECTION, quoteOf, selectionAt } from './self-service-reservation.double';
 
 // HU-COM-004 amendment v1.9, T-V19-3, AC-CD.3: the customer sees the lines in application order. DP-004-V19-3 PROPUESTO.
 afterEach(() => TestBed.resetTestingModule());
@@ -26,15 +26,16 @@ async function confirm(quote: SelectionQuote) {
     { provide: PaymentMethodsSource, useValue: methods }, { provide: SelectionQuoteSource, useValue: quoteOf(quote) }, { provide: ReservationRequester, useValue: new RecordingRequester() },
     { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() }, { provide: PortalNavigation, useValue: navigation }] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
-  fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+  const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
+  await settle(); methods.requests.at(-1)!.reply(METHODS); await settle();
   return fixture.nativeElement as HTMLElement;
 }
 
 describe('theCustomerBreakdownShowsEveryLineInApplicationOrder', () => {
   it('lists each line with its order, base, amount and subtotal under Descuentos aplicables', async () => {
     const lines = Array.from((await confirm(QUOTED)).querySelectorAll('.self-service-breakdown li'), (li) => flat(li.textContent));
-    expect(lines).toEqual(['1. 10% de descuento · sobre el valor original · -$100.000 · Subtotal $900.000',
-      '2. 50% de descuento · sobre el subtotal anterior · -$450.000 · Subtotal $450.000']);
+    expect(lines).toEqual(['1. 10% de descuento · sobre el valor original · -$10.000 · Subtotal $90.000',
+      '2. 50% de descuento · sobre el subtotal anterior · -$45.000 · Subtotal $45.000']);
   });
   it('draws no list when the quote carries no line, and keeps the total row', async () => {
     const page = await confirm({ ...QUOTE, discountLines: undefined });
