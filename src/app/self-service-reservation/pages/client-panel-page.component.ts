@@ -1,11 +1,10 @@
-import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, Injector, afterNextRender, inject } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/model/catalog-item';
+import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { DiscountRulesSource } from '../../discounts/data/discount-rules-source';
 import { DiscountRule, discountValueText } from '../../discounts/data/discount-rules-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
@@ -49,8 +48,6 @@ const QUICK = [
   { key: CLIENT_AREA.tours, icon: 'NR', title: 'Nueva reserva', copy: 'Inicia una nueva reserva' },
   { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Restaurantes asociados', copy: 'Consulta los datos de contacto de restaurantes asociados.' },
 ];
-/** Self-hosted photos of the multi-tour-front container (same origin, CSP img-src 'self'). */
-const PHOTOS = ['/assets/destino-sendero-del-condor.jpg', '/assets/destino-bahia-esmeralda.jpg', '/assets/destino-cascadas-de-iraka.jpg', '/assets/mountain-hero.jpg'];
 const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 
 type Part<T> = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly T[] };
@@ -117,11 +114,11 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
             }
           </article>
         </section>
-        @if (quick.length) {
+        @if (quick.length || quickSlots) {
         <section class="crp-panel-quick"><h2>{{ t.quick }}</h2>
           <ul>@for (action of quick; track action.key) {
-            <li><button type="button" (click)="go(action.key)"><span aria-hidden="true">{{ action.icon }}</span>&ngsp;<span><strong>{{ action.title }}</strong>&ngsp;<span>{{ action.copy }}</span></span></button></li>
-          }</ul>
+            <li><button type="button" class="crp-panel-quick-item" (click)="go(action.key)"><span class="crp-panel-quick-icon" aria-hidden="true">{{ action.icon }}</span>&ngsp;<span class="crp-panel-quick-copy"><strong>{{ action.title }}</strong>&ngsp;<span>{{ action.copy }}</span></span></button></li>
+          }<ng-container *crpSlot="slots.quick" /></ul>
         </section>
         }
       </div>
@@ -129,7 +126,7 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
         @let promos = discounts();
         @if (promos.length) {
           <ul>@for (rule of promos; track rule.id) {
-            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.name }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
+            <li class="crp-panel-promo"><span class="crp-panel-promo-tag">{{ tag(rule) }}</span>&ngsp;<strong>{{ rule.tourName }}</strong>&ngsp;<p>{{ t.validUntil }} {{ date(rule.endsOn) }}</p></li>
           }</ul>
         } @else { <p>{{ t.noDiscounts }}</p> }
       </aside>
@@ -141,8 +138,8 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
         @case ('error') { <p role="alert"><crp-read-error [state]="f" [fallback]="text.failed" /></p> }
         @case ('empty') { <p role="status">{{ t.noFeatured }}</p> }
         @case ('data') {
-          <ul>@for (item of f.items; track item.serviceId; let i = $index) {
-            <li><img [src]="photos[i % photos.length]" [alt]="item.commercialName" loading="lazy" />
+          <ul>@for (item of f.items; track item.serviceId) {
+            <li><img [src]="photo(item.serviceId)" [alt]="item.commercialName" loading="lazy" />
               <div class="crp-panel-featured-body"><strong>{{ item.commercialName }}</strong>
                 <div class="crp-panel-featured-meta"><small>{{ t.from }}</small>&ngsp;<em>{{ cop(item.baseRateCents) }}</em></div>&ngsp;
                 @if (has(area.tours)) { <button type="button" class="crp-panel-link" (click)="go(area.tours)">{{ t.detail }}</button> }

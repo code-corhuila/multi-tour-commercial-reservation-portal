@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, output, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
+import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, distinctUntilChanged, finalize, forkJoin, map, of, startWith, switchMap, take } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
@@ -21,8 +22,9 @@ import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 type Options = { departures: readonly Departure[]; customers: readonly LeadCustomer[]; services: readonly ServiceOption[] };
 type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; options: Options };
 
+/** Screen 10B, sections 02 and 04 and the calculated values; sections 01 and 03 belong to HU-COM-005. */
 @Component({
-  selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationBreakdownComponent],
+  selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationBreakdownComponent],
   template: `
     @let current = state();
     @switch (current.kind) {
@@ -192,7 +194,7 @@ export class ReservationFormComponent {
     if (this.pending()) return;
     this.tried.set(true); this.refusedForCapacity.set(''); this.failure.set('');
     const d = this.draft(), departure = o.departures.find((x) => x.id === d.departureId), q = this.preview();
-    if (Object.keys(validateReservation(d, departure, this.seatRule)).length || !departure || !q) return;
+    if (Object.keys(validateReservation(d, departure, this.seatRule)).length || !departure || !q) { this.focusFirstErrorOnRender(); return; }
     // 007- H-D8: the command carries no value; the service quotes again and is the authority.
     const command = { leadCustomerId: d.leadCustomerId, departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod };
     this.pending.set(true);

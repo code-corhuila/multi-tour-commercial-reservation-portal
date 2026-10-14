@@ -14,14 +14,14 @@ export type ServiceOption = { readonly id: string; readonly name: string; readon
 export type AppliedDiscount = { readonly name: string; readonly base: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly amountCents: number };
 export type Quote = {
   readonly services: readonly { readonly name: string; readonly cents: number }[]; readonly transportCents: number;
-  readonly projectedCents: number; readonly discounts: readonly AppliedDiscount[]; readonly finalCents: number;
+  readonly projectedCents: number; readonly discounts: readonly AppliedDiscount[]; readonly discountCents: number; readonly finalCents: number;
 };
 export type CreateReservationCommand = {
   readonly leadCustomerId: string; readonly departureId: string; readonly serviceIds: readonly string[]; readonly people: number;
   /** v1.9 (mockup 04, PROPUESTO until the contract, G-B): the expected type and method, chosen apart; codes of PaymentMethodsSource. */
   readonly paymentType?: string; readonly paymentMethod?: string;
 };
-/** The snapshot fixed at creation; the detail renders it and never recalculates it (RN-RES-003). */
+/** The snapshot fixed at creation and the balance the service keeps; the screens never recalculate them (RN-RES-003, 007- H-D8). */
 export type Reservation = {
   readonly id: string; readonly leadCustomerName: string; readonly tourName: string; readonly departureDate: string; readonly conditions: string;
   readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL' | 'ABONO_RECIBIDO' | 'PAGO_COMPLETO';
@@ -120,8 +120,6 @@ export const money = formatCop;
 export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
 export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
-/** RBAC: only the administrator and the collaborator create; any other role, known or not, reads. */
-export const canCreateReservations = (actor: { role: string }) => actor.role === 'TENANT_ADMINISTRATOR' || actor.role === 'OPERATIONAL_COLLABORATOR';
 /** RN-RES-010, RN-SAL-001: only a Programada departure that is open for reservations is offered. */
 export const openDepartures = (all: readonly Departure[]) => all.filter((d) => d.state === 'PROGRAMADA' && d.openForReservations);
 

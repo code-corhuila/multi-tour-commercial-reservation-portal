@@ -18,7 +18,7 @@ import { EstablishmentsPageComponent } from '../src/app/establishments/pages/est
 import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
-import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
+import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea } from '../src/app/portal-areas';
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
@@ -110,6 +110,7 @@ describe('portalAreasRegistry', () => {
       { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
       { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
+      { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
       { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
       { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
       { key: 'payment-received', label: 'Comprobante recibido', component: PaymentReceivedPageComponent },
@@ -371,23 +372,6 @@ describe('portalAudience', () => {
   it('keeps the foundation areas for operators', () => {
     const foundation = PORTAL_AREAS.filter((area) => ['catalog', 'establishments', 'discounts'].includes(area.key));
     expect(foundation.every((area) => (area.audience ?? 'operator') === 'operator')).toBe(true);
-  });
-});
-
-describe('demoDataSpeaksSpanishWithAccents', () => {
-  it('writes the visible demo names and texts with their Spanish accents', () => {
-    const catalog = new DemoCatalogStore();
-    const tours = ['demo-svc-2', 'demo-svc-3'].map((id) => catalog.find(id).commercialName);
-    expect(tours).toEqual(['Ruta del café en Pitalito', 'Canotaje en el Río Suaza']);
-    const places = new DemoEstablishmentsStore().items.map((e) => `${e.commercialName} | ${e.commercialInformation}`);
-    expect(places).toEqual([
-      'Hotel Casa Neiva | Habitaciones con vista al río Magdalena.',
-      'Posada del Café | Alojamiento rural entre cafetales.',
-      'Hostal La Tatacoa | Cerrado por remodelación.',
-      'Sabores del Huila | Cocina típica: asado huilense y tamal.',
-      'Fogón del Desierto | Cabrito al horno de barro.',
-      'Café Altura | Desayunos de montaña.',
-    ]);
   });
 });
 

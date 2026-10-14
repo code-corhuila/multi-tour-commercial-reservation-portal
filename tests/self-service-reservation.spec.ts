@@ -2,22 +2,20 @@ import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { resolvedPortalCss } from './css-tokens';
 import { describe, expect, it } from 'vitest';
-import { IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import {
   PaymentMethodsSource,
   ReservationRequester,
   ReservationSelectionSource,
+  SelectionQuoteSource,
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
-  CustomerStanding,
   RESERVATION_FLOW,
   ReservationSelection,
   SELF_SERVICE_TEXT as T,
   selectionFromParams,
   selectionFromQuery,
-  standingOf,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { MyReservationsPageComponent } from '../src/app/self-service-reservation/pages/my-reservations-page.component';
@@ -32,16 +30,19 @@ import {
   CustomerAs,
   METHODS,
   noCapacity,
+  quoteOf,
   RecordingRequester,
   reservationFor,
   SELECTION,
   selectionAt,
 } from './self-service-reservation.double';
+import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
 
-async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys } = {}) {
+async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys; areas?: readonly string[] } = {}) {
   const customer = new CustomerAs(options.standing ?? 'FINAL_CUSTOMER');
   const methods = new ControllablePaymentMethods();
   const requester = new RecordingRequester();
@@ -50,6 +51,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: CustomerContext, useValue: customer },
     { provide: ReservationSelectionSource, useValue: selectionAt(options.selection === undefined ? SELECTION : options.selection) },
     { provide: PaymentMethodsSource, useValue: methods },
+    { provide: SelectionQuoteSource, useValue: quoteOf() },
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
     { provide: TourImages, useValue: new DemoTourImages() },
@@ -65,15 +67,21 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     const select = element.querySelector('select') as HTMLSelectElement;
     select.value = code; select.dispatchEvent(new Event('change')); await settle();
   };
+  const accept = async () => {
+    for (const box of Array.from(element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))) { box.click(); }
+    await settle();
+  };
+  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); };
   const confirm = async () => { buttonNamed(element, T.confirm)!.click(); await settle(); };
-  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, confirm };
+  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm };
 }
 
-async function openPanel(standing: CustomerStanding = 'FINAL_CUSTOMER') {
+async function openPanel(standing: CustomerStanding = 'FINAL_CUSTOMER', areas?: readonly string[]) {
   const source = new ControllableMyReservationsSource();
   TestBed.configureTestingModule({ providers: [
     { provide: CustomerContext, useValue: new CustomerAs(standing) },
     { provide: MyReservationsSource, useValue: source },
+    ...(areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(areas); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(MyReservationsPageComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
@@ -98,10 +106,10 @@ describe('theSelectionTravelsInTheUrl (DP-RS1)', () => {
 
 describe('theCustomerStandingComesFromTheSessionRoles (DP-RS2)', () => {
   it('is a final customer, no session, or any other role', () => {
-    expect(standingOf(['FINAL_CUSTOMER'])).toBe('FINAL_CUSTOMER');
-    expect(standingOf([])).toBe('NO_SESSION');
-    expect(standingOf(['TENANT_ADMINISTRATOR'])).toBe('OTHER');
-    expect(standingOf(['SOMETHING_ELSE'])).toBe('OTHER');
+    expect(customerStandingOf(['FINAL_CUSTOMER'])).toBe('FINAL_CUSTOMER');
+    expect(customerStandingOf([])).toBe('NO_SESSION');
+    expect(customerStandingOf(['TENANT_ADMINISTRATOR'])).toBe('OTHER');
+    expect(customerStandingOf(['SOMETHING_ELSE'])).toBe('OTHER');
   });
   it('asks the container to sign in through the function it is given, and fails closed by default', () => {
     let asked = 0;
@@ -156,10 +164,10 @@ describe('everySelfServiceScreenShowsOneOfTheFourStates', () => {
 });
 
 describe('confirmsTheSelectionAndCreatesAPendingPaymentReservation', () => {
-  it('shows the selection, sends it with the method, and shows the values the service returned', async () => {
+  it('summarizes the selection, sends it with the method, and shows the values the service returned', async () => {
     const p = await openConfirm(); await p.showMethods();
-    for (const shown of ['demo-dep-7', 'demo-svc-1', 'demo-svc-2']) expect(p.element.textContent).toContain(shown);
-    await p.choose('BANK_TRANSFER'); await p.confirm();
+    for (const shown of ['Ruta Andina', '18 sep 2026', '2 viajeros']) expect(p.element.textContent).toContain(shown);
+    await p.fill(); await p.confirm();
     expect(p.requester.calls).toHaveLength(1);
     expect(p.requester.calls[0].selection).toEqual(SELECTION);
     expect(p.requester.calls[0].paymentMethod).toBe('BANK_TRANSFER');
@@ -185,22 +193,31 @@ describe('aMissingFieldShowsItsErrorBesideItAndSubmitWaits', () => {
     expect(select.getAttribute('aria-invalid')).toBe('true');
     expect(p.element.querySelector(`#${select.getAttribute('aria-describedby')}`)?.textContent).toContain(T.methodMissing);
     expect(p.element.querySelector(`label[for="${select.id}"]`)?.textContent).toContain(T.method);
+    const box = p.element.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    expect(p.element.querySelector(`#${box.getAttribute('aria-describedby')}`)?.textContent).toContain(T.mustAccept);
+  });
+  it('creates nothing until both conditions are accepted', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER');
+    p.element.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click(); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.textContent).toContain(T.mustAccept);
   });
   it('disables the confirmation while a request is pending', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.confirm();
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     expect(buttonNamed(p.element, T.confirm)!.disabled).toBe(true);
   });
 });
 
 describe('aRetriedConfirmationReusesItsIdempotencyKey', () => {
   it('a double click sends one request', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER');
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
     const button = buttonNamed(p.element, T.confirm)!;
     button.click(); button.click(); await p.settle();
     expect(p.requester.calls).toHaveLength(1);
   });
-  it('a retry after an error sends the same key, and a new intention after success gets a new one', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER');
+  it('a retry after an error sends the same key, and success makes no new key', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
     await p.confirm(); p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
     expect(p.element.textContent).toContain('Try again later.');
     await p.confirm();
@@ -231,14 +248,14 @@ describe('aCreatedReservationCannotBeConfirmedAgain (audit S23, AC-RS.6)', () =>
 
 describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
   it('reports the refusal and shows no created reservation', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.confirm();
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity()); await p.settle();
     expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
     expect(p.element.textContent).not.toContain(T.created);
     expect(buttonNamed(p.element, T.confirm)!.disabled).toBe(false);
   });
   it('prefers the message the container decided, when there is one', async () => {
-    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.confirm();
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity({ userMessage: 'Sold out for that date.' })); await p.settle();
     expect(p.element.querySelector('[role="alert"]')?.textContent).toContain('Sold out for that date.');
   });
@@ -246,14 +263,14 @@ describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
 
 describe('withoutSessionConfirmAsksToSignInAndKeepsTheSelection (AC-RS.2)', () => {
   it('asks the container to sign in, sends nothing, and the remounted screen still has the selection', async () => {
-    const before = await openConfirm({ standing: 'NO_SESSION' }); await before.showMethods(); await before.choose('BANK_TRANSFER');
+    const before = await openConfirm({ standing: 'NO_SESSION' }); await before.showMethods(); await before.fill();
     await before.confirm();
     expect(before.customer.signInRequests).toBe(1);
     expect(before.requester.calls).toHaveLength(0);
     expect(before.element.textContent).toContain(T.signIn);
     TestBed.resetTestingModule();
     const after = await openConfirm({ standing: 'FINAL_CUSTOMER' }); await after.showMethods();
-    expect(after.element.textContent).toContain('demo-dep-7');
+    expect(after.element.textContent).toContain('Ruta Andina');
     expect(buttonNamed(after.element, T.confirm)).toBeDefined();
   });
 });
@@ -261,7 +278,7 @@ describe('withoutSessionConfirmAsksToSignInAndKeepsTheSelection (AC-RS.2)', () =
 describe('anInternalOrUnknownRoleIsNotOfferedTheConfirmation', () => {
   it('shows the selection read-only, with no confirm action', async () => {
     const p = await openConfirm({ standing: 'OTHER' }); await p.showMethods();
-    expect(p.element.textContent).toContain('demo-dep-7');
+    expect(p.element.textContent).toContain('Ruta Andina');
     expect(buttonNamed(p.element, T.confirm)).toBeUndefined();
     expect(p.element.textContent).toContain(T.notCustomer);
   });
@@ -276,13 +293,22 @@ describe('anInternalOrUnknownRoleIsNotOfferedTheConfirmation', () => {
 });
 
 describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)', () => {
-  it('the confirmation shows the summary in pesos and the two conditions, with no payment terms', async () => {
+  it('the confirmation draws finalizar-reserva: topbar, holder, travelers, conditions, method, summary, help and bar', async () => {
     const p = await openConfirm(); await p.showMethods();
-    expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Finalizar reserva de tour');
-    const summary = p.element.querySelector('.self-service-summary')!;
-    expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
-    const rows = Array.from(summary.querySelectorAll('dt'), (dt) => `${dt.textContent?.trim()} ${dt.nextElementSibling?.textContent?.trim()}`);
-    expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
+    const text = (selector: string) => p.element.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim();
+    expect(text('.crp-booking-topbar h1')).toBe('Finalizar reserva de tour');
+    expect(text('.crp-finish-pill')).toBe('Tu reserva se crea Pendiente de pago. Elige por separado el tipo de pago y el medio de pago habilitados.');
+    expect(Array.from(p.element.querySelectorAll('.crp-finish-main h2'), (h) => h.textContent?.trim()))
+      .toEqual(['Cliente titular', 'Viajeros', 'Condiciones de reserva', 'Medio de pago']);
+    const holder = Array.from(p.element.querySelectorAll<HTMLInputElement>('.crp-finish-holder input'));
+    expect(holder.map((input) => p.element.querySelector('label[for="' + input.id + '"]')?.textContent?.trim()))
+      .toEqual(['Nombre completo', 'Documento de identidad', 'Teléfono', 'Correo electrónico', 'Fecha de nacimiento']);
+    expect(holder.map((input) => input.type)).toEqual(['text', 'text', 'tel', 'email', 'date']);
+    expect(text('.crp-finish-travelers')).toContain('1 acompañante requerido');
+    expect(Array.from(p.element.querySelectorAll('.crp-finish-conditions li'), (li) => li.textContent?.trim())).toEqual([
+      'La modificación o cancelación depende de las condiciones vigentes del tour.',
+      'La disponibilidad y los valores se validan antes de registrar la reserva.',
+    ]);
     const consents = Array.from(p.element.querySelectorAll('input[type="checkbox"]'), (box) => box.closest('label')?.textContent?.trim());
     expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
     const summary = p.element.querySelector('.crp-finish-aside .crp-self-service-summary')!;
@@ -292,7 +318,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(summary.querySelector('.crp-self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
     const rows = Array.from(summary.querySelectorAll('dt'), (dt) => (dt.textContent?.trim() ?? '') + ' ' + (dt.nextElementSibling?.textContent?.trim() ?? ''));
     expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
-    expect(text('.crp-finish-help')).toBe('¿Necesitas ayuda? Asistencia comercial El equipo del operador puede ayudarte a continuar el proceso.');
+    expect(text('.crp-finish-help')).toBe('¿Necesitas ayuda? Asistencia comercial El equipo del operador puede ayudarte a continuar el proceso de reserva y pago; no es un medio de pago.');
     const bar = Array.from(p.element.querySelectorAll('.crp-booking-bar-pricing > div, .crp-booking-bar-selection'), (d) => d.textContent?.replace(/\s+/g, ' ').trim());
     expect(bar).toEqual(['Reserva Borrador', 'Total $2.078.400', 'Seleccionado 18 sep 2026 - 2 viajeros']);
     expect(p.element.querySelector('.crp-booking-bar button[type="submit"]')?.textContent?.trim()).toBe('Confirmar reserva');
@@ -302,12 +328,12 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
   });
 
 
-  it('Volver a fecha y viajeros reopens Reservar tour on the same tour', async () => {
+  it('Volver a salida y viajeros reopens Reservar tour on the same tour', async () => {
     const navigation = new PortalNavigation();
     navigation.register([RESERVATION_FLOW.reserve, RESERVATION_FLOW.finish]);
     TestBed.configureTestingModule({ providers: [{ provide: PortalNavigation, useValue: navigation }] });
     const p = await openConfirm();
-    buttonNamed(p.element, '← Volver a fecha y viajeros')!.click();
+    buttonNamed(p.element, '← Volver a salida y viajeros')!.click();
     expect(navigation.selected()).toBe(RESERVATION_FLOW.reserve);
     expect(navigation.params()).toEqual({ tour: 'demo-svc-1' });
   });
@@ -361,7 +387,7 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
   it('Finalizar reserva is its own customer area and Mis reservas only lists', () => {
     const finish = PORTAL_AREAS.filter((area) => area.component === ConfirmReservationPageComponent);
     expect(finish).toHaveLength(1);
-    expect(finish[0]).toMatchObject({ key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', audience: 'customer', clientChrome: 'panel' });
+    expect(finish[0]).toMatchObject({ key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', audience: 'customer', clientChrome: 'none' });
     expect(PORTAL_AREAS.find((area) => area.key === CLIENT_AREA.reservations)?.component).toBe(MyReservationsPageComponent);
   });
 
@@ -400,5 +426,17 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
     expect(rule('.crp-root .crp-self-service-panel .crp-page-header-title')).toMatch(/margin:\s*0;/);
     expect(rule('.crp-root .crp-self-service-panel .crp-page-header-desc')).toMatch(/font-size:\s*1rem;\s*line-height:\s*1\.65/);
     expect(rule('.crp-root .crp-self-service-panel .crp-page-header-desc + .crp-page-header-desc')).toMatch(/margin-top:\s*8px;\s*color:\s*#17252b/);
+  });
+});
+
+describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () => {
+  it('changes the key when the payment method changes and keeps it for the same data', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    await p.confirm(); p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    await p.choose('CASH_AT_OFFICE'); p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+    p.requester.calls[1].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
+    expect(p.requester.calls[2].idempotencyKey).toBe(p.requester.calls[1].idempotencyKey);
   });
 });

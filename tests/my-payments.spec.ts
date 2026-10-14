@@ -10,8 +10,8 @@ import { DemoMyPayments, myPaymentsDemoProviders } from '../src/app/demo/my-paym
 import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
 import { reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { selfServiceDemoProviders } from '../src/app/demo/self-service-reservation-demo';
-import { ContinuePaymentActionComponent, MyPaymentsActionComponent, PaymentNoticesComponent } from '../src/app/my-payments/components/my-payments-panel.component';
-import { ReservationEconomicLinesComponent } from '../src/app/my-payments/components/reservation-economic-lines.component';
+import { ContinuePaymentActionComponent, MY_PAYMENTS_CONTRIBUTIONS, MyPaymentsActionComponent, PaymentNoticesComponent } from '../src/app/my-payments/components/my-payments-panel.component';
+import { ReservationEconomicActionsComponent, ReservationEconomicLinesComponent } from '../src/app/my-payments/components/reservation-economic-lines.component';
 import { ContinuePaymentTarget, CustomerPaymentSummary, MyPaymentsSource, PaymentNotice } from '../src/app/my-payments/data/my-payments-source';
 import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
 import { PaymentsWriter } from '../src/app/payments/data/payments-writer';
@@ -44,12 +44,13 @@ class SourceDouble extends MyPaymentsSource {
 
 afterEach(() => TestBed.resetTestingModule());
 
-async function render<T>(component: Type<T>, source: MyPaymentsSource, options: { params?: Record<string, string>; areas?: string[] } = {}) {
+async function render<T>(component: Type<T>, source: MyPaymentsSource, options: { params?: Record<string, string>; areas?: string[]; roles?: string[] } = {}) {
   const navigation = new PortalNavigation();
   navigation.register(options.areas ?? [CLIENT_AREA.panel, CLIENT_AREA.payments, 'transfer-payment']);
   navigation.params.set(options.params ?? {});
   const open = vi.spyOn(navigation, 'open');
-  TestBed.configureTestingModule({ providers: [{ provide: MyPaymentsSource, useValue: source }, { provide: PortalNavigation, useValue: navigation }] });
+  TestBed.configureTestingModule({ providers: [{ provide: MyPaymentsSource, useValue: source }, { provide: PortalNavigation, useValue: navigation },
+    { provide: CustomerContext, useValue: customerContextFor(options.roles ?? ['FINAL_CUSTOMER'], () => undefined) }] });
   const fixture = TestBed.createComponent(component);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
   await settle();
@@ -84,8 +85,20 @@ describe('everyMyPaymentsScreenShowsOneOfTheFourStates', () => {
     expect(view.host.querySelector('.crp-page-header-eyebrow')?.textContent).toBe('Portal cliente');
     expect(view.host.querySelector('h1')?.textContent).toBe('Mis pagos');
     expect(view.host.querySelector('.crp-page-header-desc')?.textContent)
-      .toBe('Consulta pagos, abonos, saldos y soportes de tus reservas propias. Esta consulta no permite validar ni rechazar soportes.');
-    expect(view.host.querySelector('h2')?.textContent).toBe('Estado económico de mis reservas');
+      .toBe('Consulta el tipo y medio de pago, el estado de cada comprobante, la situación financiera, el saldo pendiente, los valores devueltos y tu saldo a favor. Esta consulta no permite validar ni rechazar comprobantes.');
+    expect(view.host.querySelector('h2')?.textContent).toBe('Estado económico de mis reservas y saldo a favor');
+  });
+});
+
+describe('aVisitorInMyPaymentsSeesTheSignInNoticeOfMyReservations', () => {
+  it('without a final-customer session, writes the notice of Mis reservas instead of the empty state, and reads nothing', async () => {
+    const source = new SourceDouble();
+    const view = await render(MyPaymentsPageComponent, source, { roles: ['UNKNOWN'] });
+    expect(view.host.querySelector('h1')?.textContent).toBe('Mis pagos');
+    expect(view.host.querySelector('[role="status"]')?.textContent?.trim()).toBe('Inicia sesión como cliente para ver tus reservas.');
+    expect(view.host.querySelector('[data-state]')).toBeNull();
+    expect(view.text()).not.toContain('Todavía no tienes pagos ni reservas registradas.');
+    expect(source.reads).toHaveLength(0);
   });
 });
 
@@ -103,12 +116,12 @@ describe('myPaymentsShowsTypeMethodProofSituationValidatedAndBalance', () => {
 
   it('writes the mockup text for a cancelled reservation without a financial situation, and Por definir for what is missing', async () => {
     const view = await pageWith([{ ...SUMMARY, reservationStatus: 'CANCELLED', paymentType: undefined, paymentMethod: undefined, proofStatus: 'SIN_COMPROBANTE', financialStatus: null }]);
-    expect(view.text()).toContain('Tipo: Por definir Medio: Por definir Comprobante: Sin comprobante Situación financiera: No aplica por reserva cancelada');
+    expect(view.text()).toContain('Estado de la reserva: Cancelada Tipo de pago: Por definir Medio de pago: Por definir Estado del comprobante: Sin comprobante Situación financiera: No aplica por reserva cancelada');
   });
 
   it('writes the departure as mis-pagos.html and Mis reservas do: date and time', async () => {
     const view = await pageWith([{ ...SUMMARY, departureAt: '2026-09-18T06:30:00' }]);
-    expect(view.text()).toContain('RES-1842 Desierto de la Tatacoa al atardecer 18 sep 2026 · 06:30 Tipo: Pago total');
+    expect(view.text()).toContain('RES-1842 Desierto de la Tatacoa al atardecer 18 sep 2026 · 06:30 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total');
   });
 });
 
@@ -117,7 +130,7 @@ describe('myPaymentsTextsAreSpanishWithAccentsAndNoRawCodes', () => {
     const view = await pageWith([SUMMARY, { ...SUMMARY, reservationId: 'RES-1851', proofStatus: 'APROBADO', financialStatus: 'PAGO_COMPLETO', paymentType: 'OTRO_TIPO' }]);
     const text = view.text();
     expect(text).not.toMatch(/[A-Z]{2,}_[A-Z]{2,}|PENDING|TOTAL\b|85000000/);
-    expect(text).toContain('Comprobante: Aprobado'); expect(text).toContain('Situación financiera: Pago completo'); expect(text).toContain('Tipo: Por definir');
+    expect(text).toContain('Estado del comprobante: Aprobado'); expect(text).toContain('Situación financiera: Pago completo'); expect(text).toContain('Tipo de pago: Por definir');
     expect(text).toMatch(/Situación financiera: Sin pago/);
   });
 });
@@ -193,12 +206,13 @@ describe('myReservationsCardAddsTheEconomicLines', () => {
   it('adds Tipo de pago · Medio de pago, Estado del comprobante · Situación financiera and Saldo to the card', async () => {
     expect(await linesOf(SUMMARY)).toEqual([
       'Tipo de pago: Pago total · Medio de pago: Transferencia', 'Estado del comprobante: En validación · Situación financiera: Sin pago', 'Saldo: $850.000',
+      'Comprobante presentado dentro del plazo: la reserva no se cancela mientras se revisa (hasta 24 horas corridas).',
     ]);
   });
 
   it('adds the cancellation cause and the refund treatment when the store holds them, and drops the situation as the mockup does', async () => {
     expect(await linesOf({ ...SUMMARY, reservationStatus: 'CANCELLED', financialStatus: null, cancellationCause: 'Causal (demo)', refundTreatment: 'Tratamiento (demo)' })).toEqual([
-      'Tipo de pago: Pago total · Medio de pago: Transferencia', 'Estado del comprobante: En validación', 'Saldo: $850.000', 'Causal (demo)', 'Tratamiento (demo)',
+      'Tipo de pago: Pago total · Medio de pago: Transferencia', 'Estado del comprobante: En validación', 'Causal (demo)', 'Tratamiento (demo)',
     ]);
   });
 
@@ -213,7 +227,7 @@ describe('myReservationsCardAddsTheEconomicLines', () => {
       const cancelled = Array.from(host.querySelectorAll('.crp-self-service-card-copy')).find((c) => c.textContent?.startsWith('RES-1831'))!;
       expect(flat(cancelled.querySelector('p')?.textContent)).toBe('Salida: 22 sep 2026 · 06:30 · 2 viajeros');
       expect(Array.from(cancelled.querySelectorAll('small'), (line) => flat(line.textContent))).toEqual(['Tipo de pago: Abono · Medio de pago: Transferencia',
-        'Estado del comprobante: Aprobado · Situación financiera: Parcial', 'Saldo: $0', 'Cancelada por falta de pago']);
+        'Estado del comprobante: Aprobado · Situación financiera: Parcial', 'Cancelada por falta de pago']);
     } finally { cleanup(); }
   });
 });
@@ -222,8 +236,8 @@ describe('aProofInValidationRaisesOneNoticeInNotifications', () => {
   it('writes one notice per reservation the port names, with the text of panel-cliente.html', async () => {
     const view = await render(PaymentNoticesComponent, new SourceDouble(null, [{ reservationId: 'RES-1842', proofStatus: 'EN_VALIDACION' }, { reservationId: 'RES-1850', proofStatus: 'EN_VALIDACION' }]));
     expect(Array.from(view.host.querySelectorAll('p'), (p) => flat(p.textContent))).toEqual([
-      'Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas.',
-      'Reserva RES-1850: comprobante En validación. La revisión puede tardar hasta 24 horas.',
+      'Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.',
+      'Reserva RES-1850: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.',
     ]);
     expect(view.host.querySelector('p strong')?.textContent).toBe('Reserva RES-1842:');
   });
@@ -284,7 +298,7 @@ describe('quickActionsShowMyPaymentsWhenTheAreaExists', () => {
   it('draws Mis pagos with the texts of panel-cliente.html and opens the area', async () => {
     const view = await render(MyPaymentsActionComponent, new SourceDouble());
     const button = view.host.querySelector('button')!;
-    expect(flat(button.textContent)).toBe('MP Mis pagos Consulta pagos, abonos, saldos y soportes de tus reservas.');
+    expect(flat(button.textContent)).toBe('MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
     button.click();
     expect(view.open).toHaveBeenCalledWith(CLIENT_AREA.payments);
     TestBed.resetTestingModule();
@@ -308,11 +322,11 @@ describe('quickActionsShowMyPaymentsWhenTheAreaExists', () => {
       const items = () => Array.from(host.querySelectorAll('.crp-panel-quick li'), (li) => flat(li.textContent)).filter(Boolean);
       await vi.waitFor(() => expect(items()).toHaveLength(2));
       expect(items()).toEqual(['CP Continuar pago Continúa el pago pendiente de una de tus reservas.',
-        'MP Mis pagos Consulta pagos, abonos, saldos y soportes de tus reservas.']);
-      press(host, 'MP Mis pagos Consulta pagos, abonos, saldos y soportes de tus reservas.');
+        'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.']);
+      press(host, 'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
       await vi.waitFor(() => expect(host.querySelector('app-my-payments-page [data-state="data"]')).toBeTruthy());
-      expect(flat(host.querySelector('li.crp-my-payments-card')?.textContent)).toBe(
-        'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Tipo: Pago total Medio: Transferencia Comprobante: Sin comprobante Situación financiera: Sin pago Valores validados: $0 Saldo pendiente: $850.000');
+      expect(flat(host.querySelector('li.crp-my-payments-card')?.textContent)).toContain(
+        'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: Sin comprobante Situación financiera: Sin pago Valor final: $850.000 Valores validados: $0 Saldo pendiente: $850.000 Valores devueltos: $0 Saldo a favor: $0');
       expect(flat(host.querySelector('.crp-client-panel-header')?.textContent)).toContain('Volver al panel');
     } finally { cleanup(); }
   });
@@ -339,14 +353,14 @@ describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
     try {
       await vi.waitFor(() => press(host, 'CP Continuar pago Continúa el pago pendiente de una de tus reservas.'));
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Pago por transferencia'));
-      expect(flat(host.textContent)).toContain('Código de referencia: #RES-1842');
+      expect(flat(host.textContent)).toContain('Reserva #RES-1842');
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;
       Object.defineProperty(proof, 'files', { value: [pdf()], configurable: true }); proof.dispatchEvent(new Event('change'));
       press(host, 'Enviar comprobante para validación');
       // The proof closes on 22, Comprobante recibido, which does not confirm the reservation; the panel is one click away.
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Comprobante recibido'));
       press(host, 'Volver al panel');
-      await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-panel-notices .crp-operator-panel p'), (p) => flat(p.textContent)).filter((t) => t.includes('En validación'))).toEqual([
+      await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-client-bell-panel .crp-client-bell-list p'), (p) => flat(p.textContent)).filter((t) => t.includes('En validación'))).toEqual([
         'Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.',
         'Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.']));
       press(host, 'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
@@ -360,9 +374,9 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
   it('Mis pagos of the demo build shows Sin comprobante, En validación, Abono recibido, Pago completo and a cancelled reservation', async () => {
     const { host, cleanup } = mountDemo();
     try {
-      await vi.waitFor(() => expect(flat(host.querySelector('.crp-panel-notices .crp-operator-panel')?.textContent))
-        .toBe('Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas.'));
-      press(host, 'MP Mis pagos Consulta pagos, abonos, saldos y soportes de tus reservas.');
+      await vi.waitFor(() => expect(flat(host.querySelector('.crp-client-bell-panel .crp-client-bell-list')?.textContent))
+        .toContain('Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.'));
+      press(host, 'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
       // The five situations of the mockup come first; HU-COM-018 adds the demo customer's RES-1829 and RES-1828 after them.
       await vi.waitFor(() => expect(host.querySelectorAll('li.crp-my-payments-card')).toHaveLength(7));
       const cards = Array.from(host.querySelectorAll('li.crp-my-payments-card'), (c) => flat(c.textContent));
@@ -385,11 +399,12 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
 });
 
 describe('clientPagesWithoutContributionsRenderAsBefore', () => {
-  it('without the port of this story, 17 has neither Continuar pago, Mis pagos nor Notificaciones, and Mis reservas no economic line', async () => {
+  it('without the port of this story, 17 has neither Continuar pago nor Mis pagos, its bell has no notifications, and Mis reservas no economic line', async () => {
     const { host, cleanup } = mountDemo([{ provide: MyPaymentsSource, useValue: null }]);
     try {
       await vi.waitFor(() => expect(host.querySelector('app-client-panel-page .crp-panel-card')).toBeTruthy());
-      expect(host.textContent).not.toMatch(/Continuar pago|Mis pagos|Notificaciones/);
+      expect(host.textContent).not.toMatch(/Continuar pago|Mis pagos/);
+      expect(host.querySelector('.crp-client-bell-list')?.textContent?.trim()).toBe('No tienes notificaciones nuevas.');
       await vi.waitFor(() => press(host, 'Ver mis reservas'));
       await vi.waitFor(() => expect(host.querySelector('.crp-self-service-card')).toBeTruthy());
       expect(host.textContent).not.toMatch(/Tipo de pago|Estado del comprobante/);

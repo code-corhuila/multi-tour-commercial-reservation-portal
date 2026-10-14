@@ -17,3 +17,8 @@ export abstract class TourImages {
 class ContainerTourImages extends TourImages {
   override urlOf(serviceId: string | undefined): string | null { return serviceId ? SITE_PHOTOS[3] : null; }
 }
+
+/** The photo of an associated establishment by its type: a hotel for lodging, a restaurant for gastronomy (landing img/*-asociado.jpg, served by the container). */
+export function establishmentPhoto(type: 'HOTEL' | 'RESTAURANT'): string {
+  return type === 'HOTEL' ? '/assets/alojamiento-asociado.jpg' : '/assets/restaurante-asociado.jpg';
+}

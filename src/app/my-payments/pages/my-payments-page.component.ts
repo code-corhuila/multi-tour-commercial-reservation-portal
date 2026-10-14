@@ -4,6 +4,7 @@ import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
+import { CustomerContext } from '../../self-service-reservation/data/customer-context';
 import { departureLine, formatCop } from '../../shared/format';
 import { PageState } from '../../shared/page-state';
 import { CustomerPaymentSummary, MyPaymentsSource } from '../data/my-payments-source';
@@ -22,6 +23,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
         <p class="crp-page-header-desc">{{ t.desc }}</p>
       </div></header>
       <h2>{{ t.section }}</h2>
+      @if (isCustomer) {
       @let s = state();
       @switch (s.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
@@ -46,6 +48,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
           </ul>
         }
       }
+      } @else { <p role="status">{{ t.notCustomer }}</p> }
     </section>
   `,
 })

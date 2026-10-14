@@ -11,7 +11,7 @@ export function validityOn(rule: Pick<DiscountRule, 'status' | 'startsOn' | 'end
 }
 type RawRule = Omit<DiscountRule, 'validity'>;
 
-/** DEMO build only: invented discount rules (screen 12), kept in memory. */
+/** DEMO build only: invented discount rules (screen 12) over the tours of the demo catalog, kept in memory. */
 export class DemoDiscountRulesStore extends DiscountRulesSource {
   constructor(private readonly today: () => string = () => new Date().toLocaleDateString('en-CA')) { super(); }
   private stored: readonly RawRule[] = [
@@ -33,7 +33,7 @@ export class DemoDiscountRulesStore extends DiscountRulesSource {
 export class DemoDiscountRulesWriter extends DiscountRulesWriter {
   private sequence = 100;
   private readonly answered = new Map<string, DiscountRule>();
-  constructor(private readonly store: DemoDiscountRulesStore) { super(); }
+  constructor(private readonly store: DemoDiscountRulesStore, private readonly catalog: DemoCatalogStore) { super(); }
   override create(command: DiscountRuleCommand, key: string): Observable<DiscountRule> {
     return this.once(key, () => this.store.resolve({ ...command, id: `demo-discount-${++this.sequence}`, tourName: this.tourName(command), status: 'ACTIVE' }));
   }
@@ -43,6 +43,7 @@ export class DemoDiscountRulesWriter extends DiscountRulesWriter {
   override inactivate(id: string, key: string): Observable<DiscountRule> {
     return this.once(key, () => this.store.resolve({ ...this.find(id), status: 'INACTIVE' }));
   }
+  private tourName(command: DiscountRuleCommand): string { return this.catalog.find(command.tourId).commercialName; }
   private find(id: string): DiscountRule { return this.store.rules.find(r => r.id === id)!; }
   private once(key: string, next: () => DiscountRule): Observable<DiscountRule> {
     const known = this.answered.get(key);

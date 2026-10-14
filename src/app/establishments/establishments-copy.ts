@@ -6,7 +6,6 @@ import { AssociationStatus, EstablishmentType } from './model/associated-establi
  */
 export const ESTABLISHMENTS_COPY = {
   eyebrow: 'Catálogos',
-  back: 'Volver a catálogos',
   title: { all: 'Establecimientos asociados', HOTEL: 'Establecimientos de alojamiento', RESTAURANT: 'Restaurantes asociados' },
   accessNote: 'El Colaborador operativo no tiene acceso a esta gestión. Estos registros son convenios informativos y no contienen cupos, tarifas ni inventario reservable.',
   // Opened from a card of the hub with its type, the page speaks as the lodging or the food screen of the mockup (admin-gestionar-hospedaje / -alimentacion).

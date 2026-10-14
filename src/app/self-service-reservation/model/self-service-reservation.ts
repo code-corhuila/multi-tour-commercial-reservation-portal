@@ -1,3 +1,5 @@
+import { SIGN_IN_AS_CUSTOMER_NOTICE } from '../data/customer-context';
+
 /** What the customer chose in the public offer (HU-COM-006). DP-RS1: it travels in the URL, never in storage. */
 export interface ReservationSelection {
   readonly departureId: string;
@@ -25,6 +27,8 @@ export interface CustomerReservation {
   readonly finalValueCents: number;
   readonly reservationStatus: string;
   readonly paymentStatus: string;
+  /** HU-COM-009: the method chosen on 21 and the state of the last proof, as codes; absent while none. */
+  readonly paymentMethod?: string; readonly proofStatus?: string;
 }
 
 /** The summary of a selection before it is confirmed, in cents, from the calculation of HU-COM-007 (RN-RS4). */
@@ -67,17 +71,6 @@ export function travelers(people: number): string {
   return `${people} ${people === 1 ? 'viajero' : 'viajeros'}`;
 }
 
-/** DP-RS2: who is looking, as far as this area cares. Anything not a final customer is OTHER (fails closed). */
-export type CustomerStanding = 'FINAL_CUSTOMER' | 'NO_SESSION' | 'OTHER';
-
-/** PROVISIONAL, demo only: the real role string is NO DEFINIDO until HU-SEC-002 (DP-RS2). */
-export const FINAL_CUSTOMER_ROLE = 'FINAL_CUSTOMER';
-
-export function standingOf(roles: readonly string[]): CustomerStanding {
-  if (roles.includes(FINAL_CUSTOMER_ROLE)) return 'FINAL_CUSTOMER';
-  return roles.length === 0 ? 'NO_SESSION' : 'OTHER';
-}
-
 /** Reads `?departure=..&services=a,b&people=n`; an incomplete or malformed selection is null, never guessed. */
 export function selectionFromQuery(query: string): ReservationSelection | null {
   const params = new URLSearchParams(query);
@@ -96,6 +89,7 @@ export const SELF_SERVICE_TEXT = {
   backToReserve: 'Volver a salida y viajeros',
   pill: 'Tu reserva se crea Pendiente de pago. Elige por separado el tipo de pago y el medio de pago habilitados.',
   holderTitle: 'Cliente titular',
+  holderPending: 'Pendiente de definición: estos datos aún no se registran (DP-RS5).',
   travelersTitle: 'Viajeros',
   travelersCopy: 'La cantidad total de viajeros determina los acompañantes que deben registrarse. Los documentos no pueden repetirse dentro de la misma reserva.',
   conditionLines: ['La modificación o cancelación depende de las condiciones vigentes del tour.', 'La disponibilidad y los valores se validan antes de registrar la reserva.'],
@@ -126,12 +120,13 @@ export const SELF_SERVICE_TEXT = {
   loading: 'Cargando…',
   failed: 'No pudimos cargar esta información.',
   retry: 'Reintentar',
-  noSelection: 'Elige un tour, la fecha y los viajeros en el catálogo para finalizar tu reserva.',
+  noSelection: 'No hay una reserva en curso. Vuelve a Explorar para seleccionar un tour.',
   noMethods: 'El operador todavía no tiene medios de pago habilitados.',
   signIn: 'Inicia sesión o regístrate para confirmar. Tu selección se conserva.',
   noCapacity: 'No hay cupos suficientes en esta salida. No se creó ninguna reserva.',
   refused: 'No se creó la reserva. Inténtalo de nuevo.',
   created: 'Reserva creada',
+  seeMine: 'Ver mis reservas',
   notCustomer: 'Solo un cliente con sesión iniciada puede confirmar una reserva aquí.',
   panelEyebrow: 'Portal cliente',
   panelTitle: 'Mis reservas',
@@ -141,7 +136,7 @@ export const SELF_SERVICE_TEXT = {
   departure: 'Salida',
   value: 'Valor',
   empty: 'Todavía no tienes reservas registradas. Explora el catálogo para crear la primera.',
-  panelNotCustomer: 'Inicia sesión como cliente para ver tus reservas.',
+  panelNotCustomer: SIGN_IN_AS_CUSTOMER_NOTICE,
 } as const;
 
 /** The keys of the client areas of this story that a page opens with parameters (PortalNavigation.open). */
