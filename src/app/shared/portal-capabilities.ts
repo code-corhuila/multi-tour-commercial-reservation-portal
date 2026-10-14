@@ -151,6 +151,8 @@ export function roleOf(roles: readonly string[]): ActorRole {
 
 /** PROVISIONAL, demo only: the real role string is NO DEFINIDO until HU-SEC-002 (DP-RS2). */
 const FINAL_CUSTOMER_ROLE = 'FINAL_CUSTOMER';
+export const isFinalCustomerStanding = (standing: CustomerStanding): boolean => standing === 'FINAL_CUSTOMER';
+export const hasSessionStanding = (standing: CustomerStanding): boolean => standing !== 'NO_SESSION';
 
 export function customerStandingOf(roles: readonly string[]): CustomerStanding {
   if (roles.includes(FINAL_CUSTOMER_ROLE)) return 'FINAL_CUSTOMER';
