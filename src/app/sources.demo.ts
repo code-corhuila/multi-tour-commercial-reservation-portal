@@ -21,6 +21,7 @@ import { paymentFollowupDemoProviders } from './demo/payment-followup-demo';
 import { reservationModificationDemoProviders } from './demo/reservation-modification-demo';
 import { myPaymentsDemoProviders } from './demo/my-payments-demo';
 import { reschedulingDemoProviders } from './demo/rescheduling-demo';
+import { creditBalanceDemoProviders } from './demo/credit-balance-demo';
 import { demoSessionProviders } from './demo/demo-fixtures';
 
 /** DEMO build only: in-memory data to show the portal without a backend. The client is ignored on purpose. */
@@ -56,5 +57,6 @@ function demoStores(): Provider[] {
     ...myPaymentsDemoProviders(),
     ...refundsDemoProviders(),
     ...reschedulingDemoProviders(),
+    ...creditBalanceDemoProviders(),
   ];
 }
