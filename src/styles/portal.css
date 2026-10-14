@@ -229,6 +229,8 @@
 .crp-root .self-service-pricing { display: grid; grid-template-columns: 1fr auto; gap: 14px 16px; margin: 18px 0 0; }
 .crp-root .self-service-pricing dt { color: #5a6b70; }
 .crp-root .self-service-pricing dd { margin: 0; color: #17252b; font-weight: 700; text-align: right; }
+.crp-root .self-service-pricing .self-service-breakdown { grid-column: 1 / -1; text-align: left; font-weight: 400; color: var(--crp-soft); font-size: 0.9rem; }
+.crp-root .self-service-breakdown ol { display: grid; gap: 6px; margin: 0; padding-left: 20px; }
 .crp-root .self-service-pricing dt:last-of-type, .crp-root .self-service-total { padding-top: 12px; border-top: 1px solid #e7ece9; color: #17252b; font-weight: 800; }
 .crp-root .self-service-total { font-size: 1.7rem; letter-spacing: -0.03em; }
 .crp-root .self-service-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
