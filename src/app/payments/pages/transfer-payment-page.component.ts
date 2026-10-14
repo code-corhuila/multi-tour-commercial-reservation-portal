@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
@@ -62,6 +63,8 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
   `,
 })
 export class TransferPaymentPageComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   protected readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly params = this.navigation?.params() ?? {};
   private readonly mine = inject(MyReservationsSource); private readonly methods = inject(PaymentMethodsSource);
@@ -92,7 +95,8 @@ export class TransferPaymentPageComponent {
 
   protected send(): void {
     const s = this.state();
-    if (this.pending() || s.kind !== 'data' || !this.choose(this.proof)) return;
+    if (this.pending() || s.kind !== 'data') return;
+    if (!this.choose(this.proof)) { this.focusFirstErrorOnRender(); return; }
     if (this.amount === null) { this.refused.set(this.common.amountRequired); return; }
     this.pending.set(true); this.refused.set('');
     const command = { reservationId: s.reservation.reservationId, amountCents: this.amount, proof: this.proof, paymentType: this.params['type'] };
