@@ -43,7 +43,7 @@ describe('the list is screen 10', () => {
     expect(texts(element, 'table.crp-operator-table th')).toEqual(['Reserva', 'Cliente', 'Servicio y salida', 'Estado', 'Saldo', 'Acción']);
     const cells = texts(element, 'tbody tr td');
     expect(cells[0]).toContain('#RES-1842'); expect(cells[0]).toContain('07 nov 2026 · 2 viajeros');
-    expect(cells.slice(1)).toEqual(['Lead Demo', 'Tour 1', 'Pendiente de pago', 'Sin comprobante · Sin pago$50', 'Ver detalle · Gestionar pago']);
+    expect(cells.slice(1)).toEqual(['Lead Demo', 'Tour 1', 'Pendiente de pago', 'Sin comprobante · Sin pago$50', 'Ver detalle']);
     expect(element.querySelector('tbody .crp-operator-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
     noRawCodes(element); noPayments(element);
   });
