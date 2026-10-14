@@ -10,6 +10,8 @@ import { DemoReservationQuotes } from './reservation-quote-demo';
 import type { ModificationTrace } from '../reservation-changes/travellers-modification/data/modification-ports';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
 import { RESCHEDULING_DEPARTURES, RESCHEDULING_SEEDS } from './rescheduling-seeds';
+import type { CreditBalance, CreditRequest } from '../credit-balance/data/credit-balance-ports';
+import type { CreditApplication } from './credit-overview-demo';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
 const CONDITIONS = 'Cambios hasta 72 horas antes de la salida; cancelación según la política del tour (texto de demostración, DP-RC4).';
@@ -56,6 +58,10 @@ SEEDED.push(ofAbono('RES-1834', { leadCustomerName: 'Juliana Cruz (demo)', statu
   ofAbono('RES-1833', { leadCustomerName: 'Sofía Herrera (demo)', payments: [proof('RES-1833-P1', 10_000_000, '2026-10-13T09:00:00-05:00')] }));
 /** HU-COM-018 (spec section 6): the affected reservations of the seeded cancelled departure. */
 SEEDED.push(...RESCHEDULING_SEEDS);
+/** HU-COM-017 AC-CB.3 (tasks T-07): Confirmada with $300.000 pending and a $500.000 proof En validación; approving it leaves a $200.000 excess. */
+SEEDED.push(inState('RES-1822', 'CONFIRMADA', { leadCustomerName: 'Paula Rojas (demo)', paymentType: 'PARTIAL', paymentMethod: 'BANK_TRANSFER', validatedCents: 10_000_000, balanceCents: 30_000_000,
+  financialStatus: 'PARCIAL', quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 0, projectedCents: 40_000_000, discounts: [], discountCents: 0, finalCents: 40_000_000 },
+  payments: [{ id: 'RES-1822-P1', method: 'BANK_TRANSFER', amountCents: 50_000_000, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)' }] }));
 
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [
@@ -80,6 +86,11 @@ export class DemoReservationDiscounts extends ReservationDiscounts {
 export class DemoReservationsStore extends ReservationsSource {
   /** HU-COM-012 plan D-02: the modification traces of every reservation, in the same store. */
   readonly modifications: ModificationTrace[] = [];
+  /** HU-COM-017 plan D-02: the credit balance lines of these reservations. */
+  creditBalances: readonly CreditBalance[] = [];
+  /** Amendment 2026-10-14 (AC-CB.4, AC-CB.10): the uses of those lines and the refund requests that set part of them aside. */
+  creditApplications: readonly CreditApplication[] = [];
+  creditRequests: readonly CreditRequest[] = [];
   constructor(public items: Reservation[] = []) { super(); }
   override list(): Observable<readonly Reservation[]> { return of([...this.items]); }
 }
