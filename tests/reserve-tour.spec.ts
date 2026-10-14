@@ -61,8 +61,7 @@ async function openReserve(options: Options = {}) {
   const button = (label: string) => Array.from(host.querySelectorAll('button'))
     .find((b) => b.textContent?.replace(/\s+/g, ' ').trim() === label || b.getAttribute('aria-label') === label) as HTMLButtonElement;
   const click = async (label: string) => { button(label).click(); await settle(); };
-  const enabledDays = () => Array.from(host.querySelectorAll<HTMLButtonElement>('.crp-booking-day:not(:disabled)'), (b) => b.textContent?.trim());
-  return { host, navigation, quotes, settle, text, button, click, enabledDays };
+  return { host, navigation, quotes, settle, text, button, click };
 }
 
 afterEach(() => TestBed.resetTestingModule());
@@ -85,29 +84,34 @@ describe('reservarTourIsItsOwnCustomerArea (reservar-tour.html, screen 20)', () 
   });
 });
 
-describe('theCalendarOffersOnlyTheOpenDeparturesOfTheTour (DeparturesSource of HU-COM-007)', () => {
-  it('opens on the month of the first departure, with only its open days enabled and the first one chosen', async () => {
+describe('theDepartureListOffersOnlyTheOpenDeparturesOfTheTour (reservar-tour.html v1.9, DeparturesSource of HU-COM-007)', () => {
+  const options = (p: { host: HTMLElement }) => Array.from(p.host.querySelectorAll('.crp-departure-option'), (o) => o.textContent?.replace(/\s+/g, ' ').trim());
+
+  it('lists the open departures by date as radios, with their seats, the first one chosen, and no calendar', async () => {
     const p = await openReserve();
-    expect(p.text('.crp-booking-calendar-head strong')).toBe('Noviembre de 2026');
-    expect(p.text('.crp-booking-calendar-head span')).toBe('Salidas disponibles');
-    expect(Array.from(p.host.querySelectorAll('.crp-booking-weekdays span'), (s) => s.textContent)).toEqual(['D', 'L', 'M', 'M', 'J', 'V', 'S']);
-    expect(p.host.querySelectorAll('.crp-booking-day')).toHaveLength(30);
-    expect(p.host.querySelectorAll('.crp-booking-day-spacer')).toHaveLength(0);
-    expect(p.enabledDays()).toEqual(['14']);
-    expect(p.host.querySelector('.crp-booking-day.crp-is-active')?.textContent?.trim()).toBe('14');
+    expect(p.text('.crp-booking-card-head p')).toBe('Elige una de las salidas programadas.');
+    expect(p.text('.crp-booking-card h3')).toBe('Salidas programadas');
+    expect(p.text('.crp-booking-card .crp-booking-reference')).toContain('Cada reserva corresponde a una única salida; si quieres viajar en otra salida, crea otra reserva.');
+    expect(p.host.querySelector('[role="radiogroup"]')?.getAttribute('aria-label')).toBe('Salidas programadas');
+    expect(options(p)).toEqual(['14 nov 2026 3 cupos disponibles', '05 dic 2026 3 cupos disponibles']);
+    expect(p.host.querySelector<HTMLInputElement>('.crp-departure-option input:checked')?.value).toBe('dep-a');
+    expect(p.host.querySelector('.crp-booking-calendar-head, .crp-booking-days')).toBeNull();
   });
 
-  it('moves between the months that have departures with ‹ and ›', async () => {
+  it('choosing another departure moves the selection of the bar', async () => {
     const p = await openReserve();
-    expect(p.button('Mes anterior').disabled).toBe(true);
-    await p.click('Mes siguiente');
-    expect(p.text('.crp-booking-calendar-head strong')).toBe('Diciembre de 2026');
-    expect(p.host.querySelectorAll('.crp-booking-day-spacer')).toHaveLength(2);
-    expect(p.enabledDays()).toEqual(['5']);
-    expect(p.button('Mes siguiente').disabled).toBe(true);
-    await p.click('5');
-    expect(p.host.querySelector('.crp-booking-day.crp-is-active')?.textContent?.trim()).toBe('5');
+    p.host.querySelector<HTMLInputElement>('.crp-departure-option input[value="dep-b"]')!.click(); await p.settle();
     expect(p.text('.crp-booking-bar-selection strong')).toBe('05 dic 2026 - 1 viajero');
+    expect(p.host.querySelector('.crp-departure-option.crp-is-active')?.textContent).toContain('05 dic 2026');
+  });
+
+  it('a full departure says so, is not chosen first and cannot be continued', async () => {
+    const p = await openReserve({ departures: of([departure('dep-a', '2026-11-14', { effectiveCapacity: 0 }), departure('dep-b', '2026-12-05')]) });
+    expect(options(p)).toEqual(['14 nov 2026 Salida llena', '05 dic 2026 3 cupos disponibles']);
+    expect(p.host.querySelector<HTMLInputElement>('.crp-departure-option input:checked')?.value).toBe('dep-b');
+    p.host.querySelector<HTMLInputElement>('.crp-departure-option input[value="dep-a"]')!.click(); await p.settle();
+    expect(p.text('.crp-booking-capacity')).toBe('Esta salida está llena: no hay cupos disponibles y no se crea la reserva. Elige otra salida.');
+    expect(p.button('Continuar reserva').disabled).toBe(true);
   });
 
   it('shows the conditions of the chosen departure inside Ver condiciones', async () => {
@@ -122,13 +126,14 @@ describe('theTravelersCounterChecksTheCapacityWithoutHoldingASeat', () => {
   it('counts from one, includes the holder, and says when the departure has no room', async () => {
     const p = await openReserve();
     expect(p.text('.crp-booking-guest-row p')).toBe('Viajeros Incluye al titular y sus acompañantes.');
+    expect(p.host.textContent).toContain('Incluido en el paquete: la alimentación indicada en el tour forma parte del paquete. Multitour no reserva habitaciones ni mesas: hoteles y restaurantes asociados se consultan solo como información de contacto.');
     expect(p.text('.crp-booking-counter strong')).toBe('1');
     await p.click('Quitar un viajero');
     expect(p.text('.crp-booking-counter strong')).toBe('1');
-    expect(p.text('.crp-booking-capacity')).toBe('Disponibilidad validada para la cantidad de viajeros seleccionada.');
+    expect(p.text('.crp-booking-capacity')).toBe('Hay 3 cupos disponibles en la salida seleccionada. El cupo no se garantiza hasta tu primer pago (comprobante presentado o efectivo registrado).');
     for (let i = 0; i < 3; i += 1) await p.click('Agregar un viajero');
     expect(p.text('.crp-booking-counter strong')).toBe('4');
-    expect(p.text('.crp-booking-capacity')).toBe('La cantidad seleccionada supera la capacidad disponible (3 viajeros).');
+    expect(p.text('.crp-booking-capacity')).toBe('Cupo no disponible: esta salida solo tiene 3 cupos disponibles y seleccionaste 4 viajeros.');
     expect(p.button('Continuar reserva').disabled).toBe(true);
   });
 });

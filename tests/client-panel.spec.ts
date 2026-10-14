@@ -19,8 +19,8 @@ import { CustomerStanding } from '../src/app/shared/portal-capabilities';
 
 const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
 const rule = (overrides: Partial<DiscountRule>): DiscountRule => ({
-  id: 'r1', name: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
-  type: 'PERCENTAGE', percentageBasisPoints: 2000, status: 'ACTIVE', ...overrides,
+  id: 'r1', tourId: 'svc-1', tourName: 'Tour Montañas', startsOn: '2000-01-01', endsOn: '2999-12-31', priority: 1, calculationBase: 'ORIGINAL_VALUE',
+  percentageBasisPoints: 2000, stackable: false, status: 'ACTIVE', ...overrides,
 } as DiscountRule);
 const tour = (n: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
   serviceId: `svc-${n}`, serviceType: 'TOUR', commercialName: `Tour ${n}`, catalogStatus: 'ACTIVE', baseRateCents: 18_000_000 + n * 100_000,
@@ -72,7 +72,7 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('greets the customer as panel-cliente.html, with no name because the session carries none', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-eyebrow')).toBe('Portal cliente');
-    expect(p.text('h1')).toBe('Hola, te damos la bienvenida');
+    expect(p.text('h1')).toBe('Hola, bienvenido');
     expect(p.text('.crp-panel-hero > p:not(.crp-panel-eyebrow)')).toBe(
       'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.');
   });
@@ -80,8 +80,8 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('draws the search block with its chips, which open Explorar, Gastronomía and Alojamiento', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-search label')).toBe('Buscar tours o establecimientos asociados');
-    expect(p.host.querySelector('.crp-panel-search input')?.getAttribute('placeholder')).toBe('Buscar tours, alojamiento o experiencias...');
-    expect(p.texts('.crp-panel-chips button')).toEqual(['Gastronomía', 'Tours', 'Alojamiento asociado']);
+    expect(p.host.querySelector('.crp-panel-search input')?.getAttribute('placeholder')).toBe('Buscar tours o experiencias...');
+    expect(p.texts('.crp-panel-chips button')).toEqual(['Restaurantes asociados', 'Tours', 'Alojamiento asociado']);
     await p.click('.crp-panel-chips button', 'Alojamiento asociado');
     expect(p.navigation.selected()).toBe(CLIENT_AREA.lodging);
     await p.click('.crp-panel-search button', 'Buscar');
@@ -139,11 +139,11 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
     expect(p.text('.crp-panel-card')).toContain('Inicia sesión como cliente para ver tus reservas.');
   });
 
-  it('offers only the quick actions of this story: Nueva reserva and Gastronomía', async () => {
+  it('offers only the quick actions of this story: Nueva reserva and Restaurantes asociados', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-quick h2')).toBe('Acciones rápidas');
     expect(p.texts('.crp-panel-quick button')).toEqual([
-      'NR Nueva reserva Inicia una nueva reserva', 'GA Gastronomía Explora opciones gastronómicas disponibles.',
+      'NR Nueva reserva Inicia una nueva reserva', 'GA Restaurantes asociados Consulta los datos de contacto de restaurantes asociados.',
     ]);
     expect(p.host.textContent).not.toMatch(/Continuar pago|Mis pagos|Notificaciones|Responder propuesta/);
     await p.click('.crp-panel-quick button', 'NR Nueva reserva Inicia una nueva reserva');
@@ -151,11 +151,11 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   });
 
   it('lists the discounts in force today, or says there are none', async () => {
-    const p = await openPanel({ rules: [rule({}), rule({ id: 'r2', name: 'Vencido', endsOn: '2001-01-01' }), rule({ id: 'r3', name: 'Inactivo', status: 'INACTIVE' }),
-      rule({ id: 'r4', name: 'Valor fijo', type: 'FIXED_AMOUNT', amountCents: 5_000_000, percentageBasisPoints: undefined })] });
+    const p = await openPanel({ rules: [rule({}), rule({ id: 'r2', tourName: 'Vencido', endsOn: '2001-01-01' }), rule({ id: 'r3', tourName: 'Inactivo', status: 'INACTIVE' }),
+      rule({ id: 'r4', tourName: 'Con decimales', percentageBasisPoints: 1250 })] });
     expect(p.text('.crp-panel-discounts h2')).toBe('Descuentos vigentes');
     expect(p.texts('.crp-panel-promo')).toEqual([
-      '20% de descuento Tour Montañas Válido hasta 31 dic 2999', '$50.000 de descuento Valor fijo Válido hasta 31 dic 2999',
+      '20% de descuento Tour Montañas Válido hasta 31 dic 2999', '12,5% de descuento Con decimales Válido hasta 31 dic 2999',
     ]);
     TestBed.resetTestingModule();
     for (const rules of [[], 'none'] as const) {

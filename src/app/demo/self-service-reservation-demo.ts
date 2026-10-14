@@ -30,7 +30,7 @@ export class DemoMyReservations extends MyReservationsSource {
   constructor(private readonly store: ReservationsSource, private readonly leads: LeadCustomersSource, private readonly customer: CustomerContext,
     readonly selections = new Map<string, ReservationSelection>()) { super(); }
   override listMine(): Observable<readonly CustomerReservation[]> {
-    if (this.customer.standing !== 'FINAL_CUSTOMER') return of([]);
+    if (!this.customer.isFinalCustomer) return of([]);
     return forkJoin({ all: this.store.list(), leads: this.leads.list() }).pipe(map(({ all, leads }) => {
       const name = leads.find((l) => l.id === DEMO_FINAL_CUSTOMER)?.fullName;
       return all.filter((r) => r.leadCustomerName === name).map((r) => asCustomer(r, this.selections.get(r.id) ?? {}));
@@ -56,7 +56,9 @@ export class DemoSelectionQuotes extends SelectionQuoteSource {
     return forkJoin({ all: this.departures.list(), q: this.quotes.quote(selection) }).pipe(map(({ all, q }) => {
       const departure = all.find((d) => d.id === selection.departureId);
       if (!departure) throw new Error('Unknown departure');
-      return { tourName: departure.tourName, departureAt: departure.date, baseValueCents: q.projectedCents, discountCents: q.discountCents, finalValueCents: q.finalCents };
+      return { tourName: departure.tourName, departureAt: departure.date, baseValueCents: q.projectedCents, discountCents: q.discountCents, finalValueCents: q.finalCents,
+        discountLines: q.discounts.map((d, i) => ({ order: i + 1, name: d.name, base: d.base, amountCents: d.amountCents,
+          subtotalCents: q.projectedCents - q.discounts.slice(0, i + 1).reduce((sum, x) => sum + x.amountCents, 0) })) };
     }));
   }
 }

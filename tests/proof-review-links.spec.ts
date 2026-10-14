@@ -26,7 +26,7 @@ import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { actorAs } from './actor-context.double';
 import { screenOf } from './reservations.double';
 
-// HU-COM-010, second pull request (spec 010-, tasks T-07, AC-PV.3): the "Validar soporte" links of 10 (RESERVATION_ROW_ACTIONS)
+// HU-COM-010, second pull request (spec 010-, tasks T-07, AC-PV.3): the "Validar comprobante" links of 10 (RESERVATION_ROW_ACTIONS)
 // and 10A (RESERVATION_DETAIL_ACTIONS). Seeded: RES-1833 has a $100.000 proof En validación; RES-1842 has none.
 const EXAMPLE = 'RES-1833';
 const TOTAL = 'RES-1842';
@@ -62,33 +62,33 @@ async function drawn<T>(component: Type<T>, r: Reservation, role?: string) {
 
 afterEach(() => TestBed.resetTestingModule());
 
-describe('the Validar soporte links of 10 and 10A (T-07, second pull request)', () => {
+describe('the Validar comprobante links of 10 and 10A (T-07, second pull request)', () => {
   it('validateLinkAppearsOnlyForProofsUnderValidation (AC-PV.3)', async () => {
     const example = await reservation(EXAMPLE), plain = await reservation(TOTAL);
     const row = await drawn(ProofRowLinkComponent, example);
-    expect(flat(row.element)).toBe('· Validar soporte');
-    row.press('Validar soporte');
+    expect(flat(row.element)).toBe('· Validar comprobante');
+    row.press('Validar comprobante');
     expect(row.navigation.selected()).toBe('payments-validate');
     expect(row.navigation.params()).toEqual({ reservation: EXAMPLE, payment: `${EXAMPLE}-P1` });
     TestBed.resetTestingModule();
     expect(flat((await drawn(ProofRowLinkComponent, plain)).element)).toBe('');
     TestBed.resetTestingModule();
     const detail = await drawn(ProofDetailActionComponent, example);
-    detail.press('Validar soporte');
+    detail.press('Validar comprobante');
     expect(detail.navigation.params()).toEqual({ reservation: EXAMPLE, payment: `${EXAMPLE}-P1` });
     TestBed.resetTestingModule();
     expect((await drawn(ProofDetailActionComponent, plain)).element.querySelector('button')).toBeNull();
     TestBed.resetTestingModule();
-    expect(flat((await drawn(ProofRowLinkComponent, example, 'ANALYST')).element)).toBe('· Ver soporte');
+    expect(flat((await drawn(ProofRowLinkComponent, example, 'ANALYST')).element)).toBe('· Ver comprobante');
   });
 
-  it('orders Validar soporte of 10A explicitly after Cancelar o modificar reserva (order 0 of 013) and before later actions (order 1)', () => {
+  it('orders Validar comprobante of 10A explicitly after Cancelar o modificar reserva (order 0 of 013) and before later actions (order 1)', () => {
     const slot = (PROOF_REVIEW_CONTRIBUTIONS as { provide: unknown; useValue: PortalSlot }[]).find((p) => p.provide === RESERVATION_DETAIL_ACTIONS)!.useValue;
     expect(slot.order).toBeGreaterThan(0);
     expect(slot.order).toBeLessThan(1);
   });
 
-  it('the demo build draws Validar soporte after Ver detalle in the row of 10', async () => {
+  it('the demo build draws Validar comprobante after Ver detalle in the row of 10', async () => {
     const host = document.createElement('div');
     document.body.append(host);
     const props: MountProps = { apiClient: { request: vi.fn() } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } };
@@ -98,7 +98,7 @@ describe('the Validar soporte links of 10 and 10A (T-07, second pull request)', 
       Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Reservas')!.click();
       await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
       const row = Array.from(host.querySelectorAll('app-reservations-page tbody tr')).find((tr) => tr.textContent?.includes(`#${EXAMPLE}`))!;
-      expect(row.querySelector('td:last-child')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ver detalle · Validar soporte');
+      expect(row.querySelector('td:last-child')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ver detalle · Validar comprobante');
     } finally { cleanup(); host.remove(); }
   });
 });
@@ -130,7 +130,7 @@ describe('where the history of 13 and the review limit of 24 are drawn', () => {
 
   it('the history note and the decision buttons of 13 are separate contributions', async () => {
     const example = await reservation(EXAMPLE);
-    expect(Array.from((await drawn(ProofManagementActionsComponent, example)).element.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Rechazar soporte', 'Validar soporte']);
+    expect(Array.from((await drawn(ProofManagementActionsComponent, example)).element.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Rechazar comprobante', 'Validar comprobante']);
     TestBed.resetTestingModule();
     expect(flat((await drawn(ProofHistoryNoteComponent, example)).element)).toBe('Historial: En validación.');
     TestBed.resetTestingModule();
@@ -163,12 +163,12 @@ describe('the decision buttons of 13 on reservations that admit no payment (T-09
     ['in execution', { status: 'EN_EJECUCION' }],
     ['finished', { status: 'FINALIZADA' }],
     ['settled', { balanceCents: 0 }],
-  ] as const)('hides Rechazar and Validar soporte on a %s reservation with a proof En validación', async (_, over) => {
+  ] as const)('hides Rechazar and Validar comprobante on a %s reservation with a proof En validación', async (_, over) => {
     const example = await reservation(EXAMPLE);
     expect(await buttons({ ...example, ...over } as Reservation)).toEqual([]);
   });
 
-  it('keeps Rechazar and Validar soporte on an open reservation with a proof En validación', async () => {
-    expect(await buttons(await reservation(EXAMPLE))).toEqual(['Rechazar soporte', 'Validar soporte']);
+  it('keeps Rechazar and Validar comprobante on an open reservation with a proof En validación', async () => {
+    expect(await buttons(await reservation(EXAMPLE))).toEqual(['Rechazar comprobante', 'Validar comprobante']);
   });
 });

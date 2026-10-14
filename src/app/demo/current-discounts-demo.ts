@@ -2,13 +2,17 @@ import { Provider } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../current-discounts/data/current-discounts-source';
+import { DiscountBreakdowns } from '../current-discounts/data/discount-breakdowns';
+import { DemoDiscountBreakdowns, applyDiscounts } from './discount-calculation';
 import { AdditionalDiscount, AdditionalDiscountCommand, PricedService } from '../current-discounts/model/current-discounts';
-import { DiscountRule } from '../discounts/model/discount-rule';
+import { ApplicableRule } from '../current-discounts/model/current-discounts';
+import { TourValueSource } from '../public-offer/data/public-offer-sources';
+import { PublicTour, TourValue } from '../public-offer/model/public-offer';
 
 // DEMO (DD-1, G-API): invented services and HU-COM-003 rules in memory until the API exists. No real person appears.
-const rule = (id: string, name: string, priority: number, extra: Partial<DiscountRule>): DiscountRule => ({ id, name, priority,
+const rule = (_id: string, name: string, priority: number, extra: Partial<ApplicableRule>): ApplicableRule => ({ name, priority,
   startsOn: '2026-01-01', endsOn: '2026-12-31', calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', type: 'PERCENTAGE', percentageBasisPoints: 1000,
-  ...extra } as DiscountRule);
+  ...extra } as ApplicableRule);
 const SERVICES: readonly PricedService[] = [
   { serviceId: 'demo-svc-1', serviceName: 'Desierto de la Tatacoa al atardecer', baseCents: 18_000_000, rules: [
     rule('demo-rule-1', 'Temporada de vacaciones', 1, { percentageBasisPoints: 1250 }),
@@ -35,7 +39,22 @@ export class DemoAdditionalDiscountWriter extends AdditionalDiscountWriter {
   }
 }
 
+/**
+ * DEMO: the value of a tour on a date, from the rules in force of the demo services (the pure function of HU-COM-004).
+ * The production port is asynchronous (CurrentDiscountsSource) and TourValueSource is synchronous, so no production
+ * provider exists yet and the public offer shows the base value there (blocked by contract, declared in the PR).
+ */
+export class DemoTourValueSource extends TourValueSource {
+  override valueOf(tour: PublicTour, date: string): TourValue {
+    const rules = SERVICES.find((service) => service.serviceId === tour.serviceId)?.rules ?? [];
+    const { finalCents } = applyDiscounts(tour.baseRateCents, rules, date);
+    return { baseRateCents: tour.baseRateCents, currentValueCents: finalCents };
+  }
+}
+
 export function currentDiscountsProviders(): Provider[] {
   return [{ provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() },
-    { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() }];
+    { provide: TourValueSource, useValue: new DemoTourValueSource() },
+    { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() },
+    { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }];
 }

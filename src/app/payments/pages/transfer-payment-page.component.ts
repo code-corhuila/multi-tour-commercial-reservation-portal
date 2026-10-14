@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
+import { departureLine, formatCop } from '../../shared/format';
 import { FINANCIAL_LABEL } from '../../reservations/data/reservations-source';
 import { MyReservationsSource } from '../../self-service-reservation/data/my-reservations-source';
 import { BankAccount, CustomerReservation, PaymentMethodsSource, reservationState } from '../../self-service-reservation/data/reservation-confirmation-ports';
@@ -9,7 +11,11 @@ import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { TRANSFER_PAYMENT_LINES, PortalSlotOutlet } from '../../shared/portal-slots';
 import { PaymentsWriter } from '../data/payments-writer';
 import { proofProblem } from '../model/payment';
-import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
+import { PAYMENT_RESULT_AREA } from '../payment-result-copy';
+import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT, viajeros } from '../payments-copy';
+
+/** The amount travels as navigation text: only a positive safe integer of cents is ever sent (pillar 3). */
+const amountOf = (text: string | undefined): number | null => { const n = /^[0-9]+$/.test(text ?? '') ? Number(text) : NaN; return Number.isSafeInteger(n) && n > 0 ? n : null; };
 
 type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservation: CustomerReservation; bank: BankAccount };
 
@@ -18,7 +24,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
   selector: 'app-transfer-payment-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [PortalSlotOutlet],
   template: `
     <form class="crp-transfer" novalidate (submit)="$event.preventDefault(); send()">
-      <header class="crp-booking-topbar"><span></span><h1>{{ text.title }}</h1><span></span></header>
+      <header class="crp-booking-topbar"><button type="button" class="crp-booking-back" (click)="navigation?.open(reservations)"><span aria-hidden="true">←</span>&ngsp;<span>{{ text.panel }}</span></button><h1>{{ text.title }}</h1><span></span></header>
       <div class="crp-finish-content">
         @let s = state();
         @switch (s.kind) {
@@ -29,11 +35,14 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
             @let r = s.reservation;
             <div class="crp-transfer-content" data-state="data">
               <article class="crp-booking-card crp-transfer-alert"><strong>{{ text.reservation }} {{ badge(r.reservationStatus) }}</strong><p>{{ text.alert }}</p></article>
+              <article class="crp-booking-card"><h2>{{ text.yourReservation }}</h2>
+                <div class="crp-transfer-summary"><div><span>{{ text.reservation }}</span>&ngsp;<strong>#{{ r.reservationId }}</strong></div><div><span>{{ text.tour }}</span>&ngsp;<strong>{{ r.tourName }}</strong></div>
+                  <div><span>{{ text.departure }}</span>&ngsp;<strong>{{ departure(r.departureAt) }}</strong></div><div><span>{{ text.travelers }}</span>&ngsp;<strong>{{ travelers(r.people) }}</strong></div>
+                  <div><span>{{ text.typeAndMethod }}</span>&ngsp;<strong>{{ typeName }}{{ text.transferMethod }}</strong></div><div><span>{{ text.toTransfer }}</span>&ngsp;<strong>{{ amount === null ? "" : cop(amount) }}</strong></div></div></article>
               <article class="crp-booking-card"><h2>{{ text.bankTitle }}</h2>
                 <dl class="crp-transfer-bank"><div><dt>{{ text.bank }}</dt><dd>{{ s.bank.bank }}</dd></div><div><dt>{{ text.accountType }}</dt><dd>{{ s.bank.accountType }}</dd></div>
                   <div><dt>{{ text.accountNumber }}</dt><dd>{{ s.bank.accountNumber }}</dd></div><div><dt>{{ text.holder }}</dt><dd>{{ s.bank.holder }}</dd></div></dl></article>
               <article class="crp-booking-card crp-transfer-proof"><h2>{{ text.proofTitle }}</h2>
-                <p>{{ text.reference }} <strong>#{{ r.reservationId }}</strong></p>
                 <label for="crp-transfer-proof">{{ text.proof }}</label>
                 <input id="crp-transfer-proof" name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="choose($any($event.target).files?.[0] ?? null)"
                   [attr.aria-invalid]="invalid() ? 'true' : null" aria-describedby="crp-transfer-proof-feedback" />
@@ -41,10 +50,11 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
                 <p><strong>{{ text.proofState }}</strong> {{ common.proofStatus[r.proofStatus ?? ''] ?? common.noProof }}<br />
                   <strong>{{ text.financial }}</strong> {{ financial[r.paymentStatus] }}</p>
                 <p id="crp-transfer-proof-feedback" aria-live="polite">{{ feedback() }}</p>
+                <p class="self-service-note">{{ text.seatNote }}</p>
                 @if (refused()) { <p role="alert">{{ refused() }}</p> }
               </article>
               <div class="crp-form-actions"><button type="submit" class="crp-primary" [disabled]="pending()">{{ text.send }}</button>
-                <button type="button" class="crp-outline" (click)="navigation?.open(panel)">{{ text.panel }}</button></div>
+                <button type="button" class="crp-outline" (click)="navigation?.open(reservations)">{{ text.panel }}</button></div>
             </div>
           }
         }
@@ -53,12 +63,16 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
   `,
 })
 export class TransferPaymentPageComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   protected readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly params = this.navigation?.params() ?? {};
   private readonly mine = inject(MyReservationsSource); private readonly methods = inject(PaymentMethodsSource);
   private readonly writer = inject(PaymentsWriter); private readonly keys = inject(IdempotencyKeys);
   protected readonly text = CUSTOMER_PAYMENT_TEXT; protected readonly common = PAYMENTS_TEXT; protected readonly financial: Readonly<Record<string, string>> = FINANCIAL_LABEL;
-  protected readonly lines = TRANSFER_PAYMENT_LINES; protected readonly panel = CLIENT_AREA.panel;
+  protected readonly lines = TRANSFER_PAYMENT_LINES; protected readonly reservations = CLIENT_AREA.reservations;
+  protected readonly cop = formatCop; protected readonly departure = departureLine; protected readonly travelers = viajeros;
+  protected readonly typeName = CUSTOMER_PAYMENT_TEXT.typeName[this.params['type']] ?? ''; protected readonly amount = amountOf(this.params['amount']);
   protected readonly feedback = signal(''); protected readonly invalid = signal(false);
   protected readonly pending = signal(false); protected readonly refused = signal('');
   private proof: File | null = null; private key = this.keys.generate();
@@ -81,11 +95,13 @@ export class TransferPaymentPageComponent {
 
   protected send(): void {
     const s = this.state();
-    if (this.pending() || s.kind !== 'data' || !this.choose(this.proof)) return;
+    if (this.pending() || s.kind !== 'data') return;
+    if (!this.choose(this.proof)) { this.focusFirstErrorOnRender(); return; }
+    if (this.amount === null) { this.refused.set(this.common.amountRequired); return; }
     this.pending.set(true); this.refused.set('');
-    const command = { reservationId: s.reservation.reservationId, amountCents: Number(this.params['amount']), proof: this.proof, paymentType: this.params['type'] };
+    const command = { reservationId: s.reservation.reservationId, amountCents: this.amount, proof: this.proof, paymentType: this.params['type'] };
     this.writer.register(command, this.key).subscribe({
-      next: () => { this.pending.set(false); this.navigation?.open(CLIENT_AREA.panel); },
+      next: () => { this.pending.set(false); if (!this.navigation?.open(PAYMENT_RESULT_AREA.received, { reservation: command.reservationId })) this.navigation?.open(CLIENT_AREA.panel); },
       error: (e: { userMessage?: string }) => { this.refused.set(e?.userMessage || this.common.failed); this.pending.set(false); },
     });
   }

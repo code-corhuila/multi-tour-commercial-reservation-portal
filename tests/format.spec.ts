@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCop, formatDate, formatDateRange } from '../src/app/shared/format';
+import { formatCop, formatDate, formatDateRange, pctOff } from '../src/app/shared/format';
 
 // Authorized screens, section 3: money `$1.039.200` / `-$259.800`; dates `15 sep 2026`; ranges with " - ".
 describe('formatCop', () => {
@@ -42,5 +42,13 @@ describe('formatDate', () => {
 describe('formatDateRange', () => {
   it('joins both dates with a spaced hyphen', () => {
     expect(formatDateRange('2026-09-01', '2026-09-30')).toBe('01 sep 2026 - 30 sep 2026');
+  });
+});
+
+describe('pctOff', () => {
+  it('rounds the whole percentage below the base value and is 0 without a base', () => {
+    expect(pctOff(129_900_000, 103_920_000)).toBe(20);
+    expect(pctOff(18_000_000, 18_000_000)).toBe(0);
+    expect(pctOff(0, 0)).toBe(0);
   });
 });

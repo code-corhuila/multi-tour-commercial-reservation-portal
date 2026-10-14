@@ -294,7 +294,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const p = await openConfirm(); await p.showMethods();
     const text = (selector: string) => p.element.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim();
     expect(text('.crp-booking-topbar h1')).toBe('Finalizar reserva de tour');
-    expect(text('.crp-finish-pill')).toBe('Selecciona el medio de pago habilitado para esta reserva.');
+    expect(text('.crp-finish-pill')).toBe('Tu reserva se crea Pendiente de pago. Elige por separado el tipo de pago y el medio de pago habilitados.');
     expect(Array.from(p.element.querySelectorAll('.crp-finish-main h2'), (h) => h.textContent?.trim()))
       .toEqual(['Cliente titular', 'Viajeros', 'Condiciones de reserva', 'Medio de pago']);
     const holder = Array.from(p.element.querySelectorAll<HTMLInputElement>('.crp-finish-holder input'));
@@ -315,7 +315,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(summary.querySelector('.self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
     const rows = Array.from(summary.querySelectorAll('dt'), (dt) => (dt.textContent?.trim() ?? '') + ' ' + (dt.nextElementSibling?.textContent?.trim() ?? ''));
     expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
-    expect(text('.crp-finish-help')).toBe('¿Necesitas ayuda? Asistencia comercial El equipo del operador puede ayudarte a continuar el proceso.');
+    expect(text('.crp-finish-help')).toBe('¿Necesitas ayuda? Asistencia comercial El equipo del operador puede ayudarte a continuar el proceso de reserva y pago; no es un medio de pago.');
     const bar = Array.from(p.element.querySelectorAll('.crp-booking-bar-pricing > div, .crp-booking-bar-selection'), (d) => d.textContent?.replace(/\s+/g, ' ').trim());
     expect(bar).toEqual(['Reserva Borrador', 'Total $2.078.400', 'Seleccionado 18 sep 2026 - 2 viajeros']);
     expect(p.element.querySelector('.crp-booking-bar button[type="submit"]')?.textContent?.trim()).toBe('Confirmar reserva');
@@ -332,12 +332,12 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(tourPhoto('demo-svc-3')).toBe('/assets/destino-cascadas-de-iraka.jpg'); // Canotaje en el Río Suaza
   });
 
-  it('Volver a fecha y viajeros reopens Reservar tour on the same tour', async () => {
+  it('Volver a salida y viajeros reopens Reservar tour on the same tour', async () => {
     const navigation = new PortalNavigation();
     navigation.register([RESERVATION_FLOW.reserve, RESERVATION_FLOW.finish]);
     TestBed.configureTestingModule({ providers: [{ provide: PortalNavigation, useValue: navigation }] });
     const p = await openConfirm();
-    buttonNamed(p.element, '← Volver a fecha y viajeros')!.click();
+    buttonNamed(p.element, '← Volver a salida y viajeros')!.click();
     expect(navigation.selected()).toBe(RESERVATION_FLOW.reserve);
     expect(navigation.params()).toEqual({ tour: 'demo-svc-1' });
   });

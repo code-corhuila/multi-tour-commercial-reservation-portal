@@ -36,7 +36,7 @@ describe('theAdditionalDiscountIsLastWithItsReasonAndAuthor', () => {
 
   it('takes the authorizer from the stored answer, never from a field the person types', async () => {
     const page = await withData();
-    expect(Array.from(page.element.querySelectorAll('form label'), (label) => label.textContent?.trim())).toEqual(['Valor del descuento', 'Tipo de valor', 'Motivo (obligatorio)']);
+    expect(Array.from(page.element.querySelectorAll('form label'), (label) => label.textContent?.trim())).toEqual(['Descuento adicional (%)', 'Motivo (obligatorio)']);
   });
 });
 
@@ -46,7 +46,7 @@ describe('anEmptyReasonOrValueIsRefusedBesideItsField', () => {
     await submit(page);
     expect(page.errorFor('reason')).toContain('El motivo es obligatorio');
     expect(page.errorFor('value')).toContain('valor positivo');
-    for (const value of ['0', '-3', 'abc']) {
+    for (const value of ['0', '0.5', '100.5', '-3', 'abc']) {
       await fillAdditional(page, value, 'Loyal customer');
       await submit(page);
       expect(page.errorFor('value')).toContain('valor positivo');
@@ -155,7 +155,9 @@ describe('theScreenFollowsTheAuthorizedMockup', () => {
     expect(text(page.element, '.crp-operator-panel > .crp-operator-eyebrow')).toEqual(['01. Descuentos vigentes', '02. Descuento adicional']);
     expect(text(page.element, '.crp-operator-panel > h2')).toEqual(['Valores por servicio', 'Autorización']);
     expect(page.submitButton().textContent?.trim()).toBe('Aplicar descuento');
-    expect(text(page.element, 'select[name="type"] option')).toEqual(['Porcentaje', 'Valor fijo']);
+    expect(page.element.querySelector('select[name="type"]')).toBeNull();
+    expect(page.field('reason').getAttribute('placeholder')).toBe('Describe el motivo del descuento adicional (por ejemplo, fidelización)');
+    expect(page.element.querySelector('.current-discounts-note')?.textContent).toBe('El motivo y el responsable quedan asociados a la reserva.');
   });
 
   it('offers the outline Cancelar of the mockup, which clears the form without sending', async () => {
@@ -231,5 +233,15 @@ describe('currentDiscountsAreWiredInTheMountEntry', () => {
     Array.from(host.querySelectorAll('nav button')).find((b) => b.textContent?.trim() === 'Descuentos vigentes')!.dispatchEvent(new Event('click'));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-line]').length).toBeGreaterThan(0));
     expect(host.querySelector('form')).not.toBeNull();
+  });
+});
+
+describe('aRefusedSubmitMovesTheFocusToTheFirstFieldInError', () => {
+  it('focuses the percentage when both fields are refused, and the reason when only it is', async () => {
+    const page = await withData(); document.body.append(page.element);
+    await submit(page);
+    expect(document.activeElement).toBe(page.field('value'));
+    await fillAdditional(page, '5', '   '); (document.activeElement as HTMLElement).blur(); await submit(page);
+    expect(document.activeElement).toBe(page.field('reason')); page.element.remove();
   });
 });

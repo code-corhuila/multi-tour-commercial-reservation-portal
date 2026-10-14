@@ -11,11 +11,11 @@ import { RESERVATION_CHANGES_COPY } from '../reservation-changes-copy';
     @if (!fresh() && r.cancellation; as c) {
       @if (r.financialDecision; as d) {
         <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.decisionEyebrow }}</p><h2>{{ t.decisionTitle }}</h2>
-          <dl class="crp-reservation-changes-list"><div><dt>{{ t.cause }}</dt><dd>{{ c.cause }}</dd></div>
+          <dl class="crp-reservation-changes-list"><div><dt>{{ t.causeShort }}</dt><dd>{{ c.cause }}</dd></div>
             <div><dt>{{ t.potential }}</dt><dd>{{ d.refundableCents === null ? t.pendingPolicy : money(d.refundableCents) }}</dd></div></dl></section>
       } @else {
         <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.historyEyebrow }}</p><h2>{{ t.historyTitle }}</h2>
-          <dl class="crp-reservation-changes-list"><div><dt>{{ t.cause }}</dt><dd>{{ c.cause }}</dd></div>
+          <dl class="crp-reservation-changes-list"><div><dt>{{ t.causeShort }}</dt><dd>{{ c.cause }}</dd></div>
             <div><dt>{{ t.registeredAt }}</dt><dd>{{ date(c.at) }}</dd></div></dl></section>
       }
     }

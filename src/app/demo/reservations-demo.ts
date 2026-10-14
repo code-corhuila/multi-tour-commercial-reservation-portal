@@ -1,15 +1,21 @@
-import { Provider } from '@angular/core';
+import { Provider, inject } from '@angular/core';
 import { Observable, map, of, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { DeparturesSource } from '../reservations/data/departures-source';
-import { LeadCustomersSource, ReservationDiscounts } from '../reservations/data/reservation-integrations';
+import { DiscountContext, LeadCustomersSource, ReservationDiscounts } from '../reservations/data/reservation-integrations';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
 import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
+import { DiscountRule, discountValueText } from '../discounts/model/discount-rule';
+import { DiscountRulesSource } from '../discounts/data/discount-rules-source';
+import { applyDiscounts } from './discount-calculation';
+import { DemoDiscountRulesStore } from './discounts-demo';
 import { DemoReservationQuotes } from './reservation-quote-demo';
 import type { ModificationTrace } from '../reservation-changes/travellers-modification/data/modification-ports';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
 import { RESCHEDULING_DEPARTURES, RESCHEDULING_SEEDS } from './rescheduling-seeds';
+import type { CreditBalance, CreditRequest } from '../credit-balance/data/credit-balance-ports';
+import type { CreditApplication } from './credit-overview-demo';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
 const CONDITIONS = 'Cambios hasta 72 horas antes de la salida; cancelación según la política del tour (texto de demostración, DP-RC4).';
@@ -56,6 +62,10 @@ SEEDED.push(ofAbono('RES-1834', { leadCustomerName: 'Juliana Cruz (demo)', statu
   ofAbono('RES-1833', { leadCustomerName: 'Sofía Herrera (demo)', payments: [proof('RES-1833-P1', 10_000_000, '2026-10-13T09:00:00-05:00')] }));
 /** HU-COM-018 (spec section 6): the affected reservations of the seeded cancelled departure. */
 SEEDED.push(...RESCHEDULING_SEEDS);
+/** HU-COM-017 AC-CB.3 (tasks T-07): Confirmada with $300.000 pending and a $500.000 proof En validación; approving it leaves a $200.000 excess. */
+SEEDED.push(inState('RES-1822', 'CONFIRMADA', { leadCustomerName: 'Paula Rojas (demo)', paymentType: 'PARTIAL', paymentMethod: 'BANK_TRANSFER', validatedCents: 10_000_000, balanceCents: 30_000_000,
+  financialStatus: 'PARCIAL', quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 0, projectedCents: 40_000_000, discounts: [], discountCents: 0, finalCents: 40_000_000 },
+  payments: [{ id: 'RES-1822-P1', method: 'BANK_TRANSFER', amountCents: 50_000_000, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)' }] }));
 
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [
@@ -72,14 +82,27 @@ export class DemoLeadCustomers extends LeadCustomersSource {
   override list() { return of(CUSTOMERS); }
 }
 
-/** Zero discounts until HU-COM-004 merges; then its calculation replaces this class. */
+/**
+ * DEMO (HU-COM-003 T-V19-2): the rules of the tour the discounts story stores, through the shared calculation. The lines are
+ * copied into the quote when the reservation is created, so a rule published later never touches it (AC-PD.15, RN-RES-003).
+ */
 export class DemoReservationDiscounts extends ReservationDiscounts {
-  override apply(): readonly AppliedDiscount[] { return []; }
+  constructor(private readonly rules: () => readonly DiscountRule[] = () => []) { super(); }
+  override apply(originalCents: number, context?: DiscountContext): readonly AppliedDiscount[] {
+    if (!context) return [];
+    const ofTour = this.rules().filter((rule) => rule.tourId === context.tourId).map((rule) => ({ ...rule, name: discountValueText(rule), type: 'PERCENTAGE' as const }));
+    return applyDiscounts(originalCents, ofTour, context.at).lines.map((line) => ({ name: line.name, base: line.base, amountCents: line.amountCents }));
+  }
 }
 
 export class DemoReservationsStore extends ReservationsSource {
   /** HU-COM-012 plan D-02: the modification traces of every reservation, in the same store. */
   readonly modifications: ModificationTrace[] = [];
+  /** HU-COM-017 plan D-02: the credit balance lines of these reservations. */
+  creditBalances: readonly CreditBalance[] = [];
+  /** Amendment 2026-10-14 (AC-CB.4, AC-CB.10): the uses of those lines and the refund requests that set part of them aside. */
+  creditApplications: readonly CreditApplication[] = [];
+  creditRequests: readonly CreditRequest[] = [];
   constructor(public items: Reservation[] = []) { super(); }
   override list(): Observable<readonly Reservation[]> { return of([...this.items]); }
 }
@@ -102,7 +125,7 @@ export class DemoReservationsWriter extends ReservationsWriter {
       const created: Reservation = {
         id: `RES-${++this.sequence}`, leadCustomerName: CUSTOMERS.find((x) => x.id === c.leadCustomerId)?.fullName ?? c.leadCustomerId,
         departureId: d.id, tourName: d.tourName, departureDate: d.date, conditions: d.conditions, people: c.people, quote, balanceCents: quote.finalCents,
-        status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false,
+        status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, paymentType: c.paymentType, paymentMethod: c.paymentMethod,
       };
       this.byKey.set(key, created);
       this.store.items = [created, ...this.store.items];
@@ -118,7 +141,8 @@ export function reservationDemoProviders(): Provider[] {
   return [
     { provide: DeparturesSource, useValue: departures },
     { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
-    { provide: ReservationDiscounts, useValue: new DemoReservationDiscounts() },
+    // Optional: a module mounted without the discounts story quotes no discount.
+    { provide: ReservationDiscounts, useFactory: () => { const rules = inject(DiscountRulesSource, { optional: true }) as DemoDiscountRulesStore | null; return new DemoReservationDiscounts(() => rules?.rules ?? []); } },
     { provide: ReservationsSource, useValue: store },
     { provide: ReservationQuoteSource, useFactory: (c: CatalogItemsSource, r: ReservationDiscounts) => new DemoReservationQuotes(departures, c, r), deps: [CatalogItemsSource, ReservationDiscounts] },
     { provide: ReservationsWriter, useFactory: (q: ReservationQuoteSource) => (writer ??= new DemoReservationsWriter(store, departures, q)), deps: [ReservationQuoteSource] },

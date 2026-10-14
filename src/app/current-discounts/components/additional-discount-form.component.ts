@@ -1,15 +1,16 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { defer, finalize } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
 import { AdditionalDiscount, AdditionalDraft, CURRENT_DISCOUNTS_TEXT, EMPTY_ADDITIONAL, additionalCommand,
   validateAdditional } from '../model/current-discounts';
+import { focusFirstError } from '../../shared/focus';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
 
-/** T-03: value, type and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
+/** T-03: percentage (1 to 100, no fixed amount: the mockup defines none) and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
 @Component({
   selector: 'app-additional-discount-form', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -20,11 +21,6 @@ let formSequence = 0;
             [attr.aria-invalid]="messages().value ? 'true' : null" [attr.aria-describedby]="messages().value ? id('value') + '-error' : null"
             (input)="edit('value', $event)">
           @if (messages().value; as reason) { <p role="alert" [id]="id('value') + '-error'">{{ reason }}</p> }
-        </div>
-        <div><label [for]="id('type')">{{ text.type }}</label>
-          <select name="type" [id]="id('type')" [value]="draft().type" [disabled]="pending()" (change)="edit('type', $event)">
-            @for (option of text.types; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
-          </select>
         </div>
         <div class="current-discounts-wide"><label [for]="id('reason')">{{ text.reasonField }}</label>
           <textarea name="reason" [id]="id('reason')" [placeholder]="text.reasonHint" [value]="draft().reason" [disabled]="pending()"
@@ -46,6 +42,7 @@ export class AdditionalDiscountFormComponent {
   protected readonly allowed = inject(PortalCapabilities).canAuthorizeAdditionalDiscount();
   private readonly writer = inject(AdditionalDiscountWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   private key = this.keys.generate(); private fingerprint: string | null = null;
   private readonly prefix = `current-discounts-form-${formSequence++}`;
   protected readonly text = CURRENT_DISCOUNTS_TEXT;
@@ -61,7 +58,7 @@ export class AdditionalDiscountFormComponent {
   protected submit(event: Event): void {
     event.preventDefault(); if (!this.allowed || this.pending()) return;
     this.attempted.set(true); this.failure.set('');
-    if (Object.keys(validateAdditional(this.draft())).length) return;
+    if (Object.keys(validateAdditional(this.draft())).length) { afterNextRender(() => { focusFirstError(event.target as HTMLFormElement); }, { injector: this.injector }); return; }
     const command = additionalCommand(this.serviceId(), this.draft()), fingerprint = JSON.stringify(command);
     if (this.fingerprint !== null && this.fingerprint !== fingerprint) this.key = this.keys.generate();
     this.fingerprint = fingerprint; this.pending.set(true);
