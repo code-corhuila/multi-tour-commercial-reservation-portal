@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
+import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap } from 'rxjs';
-import { IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
@@ -44,7 +44,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
             <div class="crp-finish-main">
               <article class="crp-booking-card crp-finish-holder"><h2>{{ text.holderTitle }}</h2>
                 <div class="crp-finish-grid">@for (field of holder; track field.id) {
-                  <div><label [for]="field.id">{{ field.label }}</label><input [id]="field.id" [name]="field.id" [type]="field.type" [placeholder]="field.placeholder" /></div>
+                  <div><label [for]="field.id">{{ field.label }}</label><input [id]="field.id" [name]="field.id" [type]="field.type" [placeholder]="field.placeholder" disabled aria-describedby="crp-holder-pending" /></div>
                 }</div>
                 <p id="crp-holder-pending" class="crp-self-service-note">{{ text.holderPending }}</p>
               </article>
@@ -69,6 +69,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                 <p id="self-service-method-error" class="crp-self-service-field-error">{{ missing() ? text.methodMissing : '' }}</p>
                 @if (text.methodHint[method()]; as hint) { <p class="crp-self-service-note">{{ hint }}</p> }
               </article>
+              <ng-container *crpSlot="checkout; inputs: { quote: current.quote, method: method(), reservation: created() }" />
               @if (standing === 'OTHER') { <p role="status">{{ text.notCustomer }}</p> }
               @if (asked()) { <p role="status">{{ text.signIn }}</p> }
               @if (refusal()) { <p role="alert">{{ refusal() }}</p> }
@@ -137,6 +138,9 @@ export class ConfirmReservationPageComponent {
   /** Volver a fecha y viajeros: only when the shell can open Reservar tour. */
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly back = this.navigation?.has(RESERVATION_FLOW.reserve) ? this.navigation : null;
+  /** Ver mis reservas after success: only when the shell can open Mis reservas. */
+  protected readonly mine = this.navigation?.has(CLIENT_AREA.reservations) ? this.navigation : null;
+  protected readonly area = CLIENT_AREA;
   protected readonly consents = [
     { key: 'conditions', label: SELF_SERVICE_TEXT.acceptConditions },
     { key: 'terms', label: SELF_SERVICE_TEXT.acceptTerms },
@@ -186,7 +190,7 @@ export class ConfirmReservationPageComponent {
 
   protected confirm(): void {
     const selection = this.selection;
-    if (!selection || this.standing === 'OTHER' || this.pending()) return;
+    if (!selection || this.standing === 'OTHER' || this.pending() || this.created()) return;
     const { conditions, terms } = this.accepted();
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
@@ -198,7 +202,8 @@ export class ConfirmReservationPageComponent {
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({
-      next: (reservation) => { this.created.set(reservation); this.key = this.keys.generate(); },
+      // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
+      next: (reservation) => this.created.set(reservation),
       error: (error: Partial<ApiError> | null) => this.refusal.set(
         error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
     });

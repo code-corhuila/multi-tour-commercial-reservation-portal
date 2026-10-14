@@ -28,6 +28,8 @@ import { DeparturesSource } from './reservations/data/departures-source';
 import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
+import { PaymentsWriter } from './payments/data/payments-writer';
+import { PaymentManagementPageComponent } from './payments/pages/payment-management-page.component';
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
@@ -49,6 +51,8 @@ import { ReschedulingProposalPageComponent } from './rescheduling/pages/reschedu
 import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
+import { CREDIT_BALANCE_AREA, CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
+import { CreditBalancePageComponent } from './credit-balance/pages/credit-balance-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
@@ -82,14 +86,21 @@ export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTA
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
-  { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
-  // 002 plan D-06, AC-PE.7: no menu entry for a role that cannot read establishments (the Colaborador operativo).
-  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent,
+  // HU-COM-001 (mockup PDR v1.9, AC-P1.17): the operator lands on Reservas, and this story owns the order of the sidebar.
+  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
+  // HU-COM-001 admin-catalogos.html (the hub), whose cards open the tour list and, for the Administrator, the establishments.
+  { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
+  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
+    // 002 plan D-06, AC-PE.7: no route for a role that cannot read establishments (the Colaborador operativo).
     isAvailable: (injector) => injector.get(PortalCapabilities).canReadEstablishments() && has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
-    isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
+    isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && has(injector, DiscountRulesSource),
   },
   // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
   { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
@@ -109,23 +120,26 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {
     key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
   },
   {
     key: CLIENT_AREA.reservations, label: 'Mis reservas', component: MyReservationsPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
   },
   // HU-COM-008 reservar-tour.html: opened by "Reservar tour" of the offer with { tour }.
   {
     key: RESERVATION_FLOW.reserve, label: 'Reservar tour', component: ReserveTourPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, CatalogItemsSource, DeparturesSource, SelectionQuoteSource),
   },
   // HU-COM-008 finalizar-reserva.html, opened by "Continuar reserva" with { departure, services, people }.
   // DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
   {
     key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, PaymentMethodsSource, SelectionQuoteSource, ReservationRequester),
   },
+  // HU-COM-009 admin-gestion-pago.html (13): opened by Gestionar pago of 10A and 10C with { reservation }; Reservas stays active.
+  { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent, menu: false, parent: 'reservations',
+    isAvailable: (injector) => has(injector, ReservationsSource, PaymentsWriter, PaymentMethodsSource) },
   // HU-COM-013 admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Reservas stays active (spec G-NAV closed by the base).
   { key: RESERVATION_CHANGE_SCREEN, label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent, menu: false, parent: 'reservations',
     isAvailable: (injector) => injector.get(PortalCapabilities).canRegisterChange() && has(injector, ReservationsSource, CancellationQuote, CancellationWriter) },

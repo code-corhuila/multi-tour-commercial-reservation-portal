@@ -4,7 +4,6 @@ import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
-import { ActorContext } from '../../catalog/data/catalog-api.service';
 import { formatDate } from '../../shared/format';
 import { AdditionalDiscountFormComponent } from '../components/additional-discount-form.component';
 import { CurrentDiscountsValueComponent } from '../components/current-discounts-value.component';
@@ -67,7 +66,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
   `,
 })
 export class CurrentDiscountsPageComponent {
-  protected readonly mayAuthorize = canAuthorizeAdditionalDiscount(inject(ActorContext));
+  protected readonly mayAuthorize = inject(PortalCapabilities).canAuthorizeAdditionalDiscount();
   private readonly source = inject(CurrentDiscountsSource);
   private readonly breakdowns = inject(DiscountBreakdowns);
   protected readonly text = CURRENT_DISCOUNTS_TEXT;

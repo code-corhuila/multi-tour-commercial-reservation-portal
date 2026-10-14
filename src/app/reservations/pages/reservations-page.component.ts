@@ -7,6 +7,7 @@ import { PortalNavigation } from '../../portal-navigation';
 import { RESCHEDULING_AREA } from '../../rescheduling/data/rescheduling-ports';
 import { formatDate } from '../../shared/format';
 import { ReservationFormComponent } from '../components/reservation-form.component';
+import { ReservationViewComponent } from '../components/reservation-view.component';
 import { ReservationsSource } from '../data/reservations-source';
 import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, paymentState, travelers } from '../model/reservation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
@@ -22,7 +23,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
 };
 
 @Component({
-  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
+  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
   template: `
     @let v = view();
     <header class="crp-page-header">
@@ -65,7 +66,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
   `,
 })
 export class ReservationsPageComponent {
-  protected readonly canCreate = canCreateReservations(inject(ActorContext));
+  protected readonly canCreate = inject(PortalCapabilities).canCreateReservations();
   private readonly source = inject(ReservationsSource);
   protected readonly text = RESERVATION_TEXT;
   protected readonly money = money;
@@ -94,8 +95,11 @@ export class ReservationsPageComponent {
   protected readonly detailActions = RESERVATION_DETAIL_ACTIONS;
   protected readonly view = signal<View>({ kind: 'list' });
   private readonly requests = new Subject<void>();
+  /** 001- foundation: a sub-screen opened from 10A returns with { reservation }; its detail opens once listed. */
+  private opening = inject(PortalNavigation, { optional: true })?.params()['reservation'];
   private readonly local = signal<PageState | null>(null);
   private readonly listed = toSignal(this.requests.pipe(switchMap(() => this.source.list().pipe(
+    tap((items) => { const r = items.find((x) => x.id === this.opening); this.opening = undefined; if (r) this.view.set({ kind: 'detail', reservation: r }); }),
     map((items): PageState => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
     catchError((error) => of<PageState>({ kind: 'error', ...readFailure(error) })), startWith<PageState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PageState });
@@ -105,6 +109,6 @@ export class ReservationsPageComponent {
   protected onCreated(created: Reservation): void {
     const current = this.state(), items = current.kind === 'data' ? current.items : [];
     this.local.set({ kind: 'data', items: [created, ...items.filter((r) => r.id !== created.id)] });
-    this.formOpen.set(false); this.selected.set(created);
+    this.view.set({ kind: 'created', reservation: created });
   }
 }

@@ -165,7 +165,7 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     expect(methodCard.nextElementSibling?.tagName).toBe('CRP-TEST-SECOND');
   });
 
-  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES under Notificaciones of 17, which is absent without notices', async () => {
+  it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES in the Notificaciones bell of 17', async () => {
     // HU-COM-014 and HU-COM-018 register CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with their ports: without those ports 17 is as the base left it.
     mountAs([{ provide: MyPaymentsSource, useValue: null }, { provide: MyProposalsSource, useValue: null }], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());

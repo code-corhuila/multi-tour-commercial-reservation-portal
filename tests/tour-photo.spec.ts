@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { demoTourPhoto } from '../src/app/demo/tour-photo-demo';
-import { SITE_PHOTOS, TourImages } from '../src/app/shared/tour-photo';
+import { SITE_PHOTOS, TourImages, establishmentPhoto } from '../src/app/shared/tour-photo';
 import { listSourceFiles, withoutComments } from './source-files';
 
 describe('theProductionImageOfATourComesFromThePortAndStaysOnTheOrigin', () => {

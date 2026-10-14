@@ -12,11 +12,12 @@ import { PortalNavigation } from '../src/app/portal-navigation';
 import { CustomerContext } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import { ReservationSelectionSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
-import { CustomerStanding, RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
+import { RESERVATION_FLOW, ReservationSelection } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
 import { TourImages } from '../src/app/shared/tour-photo';
 import { DemoTourImages, demoTourPhoto as tourPhoto } from '../src/app/demo/tour-photo-demo';
 import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION, selectionAt } from './self-service-reservation.double';
+import { CustomerStanding } from '../src/app/shared/portal-capabilities';
 
 const ALL_AREAS = [...Object.values(CLIENT_AREA), ...Object.values(RESERVATION_FLOW)];
 import { validityOn } from '../src/app/demo/discounts-demo';
@@ -76,7 +77,7 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('greets the customer as panel-cliente.html, with no name because the session carries none', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-eyebrow')).toBe('Portal cliente');
-    expect(p.text('h1')).toBe('Hola, te damos la bienvenida');
+    expect(p.text('h1')).toBe('Hola, bienvenido');
     expect(p.text('.crp-panel-hero > p:not(.crp-panel-eyebrow)')).toBe(
       'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.');
   });
@@ -84,8 +85,8 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('draws the search block with its chips, which open Explorar, Gastronomía and Alojamiento', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-search label')).toBe('Buscar tours o establecimientos asociados');
-    expect(p.host.querySelector('.crp-panel-search input')?.getAttribute('placeholder')).toBe('Buscar tours, alojamiento o experiencias...');
-    expect(p.texts('.crp-panel-chips button')).toEqual(['Gastronomía', 'Tours', 'Alojamiento asociado']);
+    expect(p.host.querySelector('.crp-panel-search input')?.getAttribute('placeholder')).toBe('Buscar tours o experiencias...');
+    expect(p.texts('.crp-panel-chips button')).toEqual(['Restaurantes asociados', 'Tours', 'Alojamiento asociado']);
     await p.click('.crp-panel-chips button', 'Alojamiento asociado');
     expect(p.navigation.selected()).toBe(CLIENT_AREA.lodging);
     await p.click('.crp-panel-search button', 'Buscar');
@@ -143,11 +144,11 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
     expect(p.text('.crp-panel-card')).toContain('Inicia sesión como cliente para ver tus reservas.');
   });
 
-  it('offers only the quick actions of this story: Nueva reserva and Gastronomía', async () => {
+  it('offers only the quick actions of this story: Nueva reserva and Restaurantes asociados', async () => {
     const p = await openPanel();
     expect(p.text('.crp-panel-quick h2')).toBe('Acciones rápidas');
     expect(p.texts('.crp-panel-quick button')).toEqual([
-      'NR Nueva reserva Inicia una nueva reserva', 'GA Gastronomía Explora opciones gastronómicas disponibles.',
+      'NR Nueva reserva Inicia una nueva reserva', 'GA Restaurantes asociados Consulta los datos de contacto de restaurantes asociados.',
     ]);
     expect(p.host.textContent).not.toMatch(/Continuar pago|Mis pagos|Notificaciones|Responder propuesta/);
     await p.click('.crp-panel-quick button', 'NR Nueva reserva Inicia una nueva reserva');
@@ -155,11 +156,11 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   });
 
   it('lists the discounts in force today, or says there are none', async () => {
-    const p = await openPanel({ rules: [rule({}), rule({ id: 'r2', name: 'Vencido', endsOn: '2001-01-01' }), rule({ id: 'r3', name: 'Inactivo', status: 'INACTIVE' }),
-      rule({ id: 'r4', name: 'Valor fijo', type: 'FIXED_AMOUNT', amountCents: 5_000_000, percentageBasisPoints: undefined })] });
+    const p = await openPanel({ rules: [rule({}), rule({ id: 'r2', tourName: 'Vencido', endsOn: '2001-01-01' }), rule({ id: 'r3', tourName: 'Inactivo', status: 'INACTIVE' }),
+      rule({ id: 'r4', tourName: 'Con decimales', percentageBasisPoints: 1250 })] });
     expect(p.text('.crp-panel-discounts h2')).toBe('Descuentos vigentes');
     expect(p.texts('.crp-panel-promo')).toEqual([
-      '20% de descuento Tour Montañas Válido hasta 31 dic 2999', '$50.000 de descuento Valor fijo Válido hasta 31 dic 2999',
+      '20% de descuento Tour Montañas Válido hasta 31 dic 2999', '12,5% de descuento Con decimales Válido hasta 31 dic 2999',
     ]);
     TestBed.resetTestingModule();
     for (const rules of [[], 'none'] as const) {
@@ -175,6 +176,7 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
     const cards = Array.from(p.host.querySelectorAll('.crp-panel-featured li'));
     expect(cards.map((card) => card.querySelector('strong')?.textContent?.trim())).toEqual(['Tour 1', 'Tour 4', 'Tour 5', 'Tour 6']);
     expect(cards[0].querySelector('img')?.getAttribute('src')).toMatch(/^\/assets\/[\w-]+\.jpg$/);
+    expect(cards.map((card) => card.querySelector('img')?.getAttribute('src'))).toEqual(['svc-1', 'svc-4', 'svc-5', 'svc-6'].map(tourPhoto));
     expect(cards[0].querySelector('img')?.getAttribute('alt')).toBe('Tour 1');
     expect(cards[0].textContent?.replace(/\s+/g, ' ')).toContain('Desde $181.000 Ver detalle');
     expect(p.host.textContent).not.toMatch(/9\.000\.000|\$90\.000|capacidad|cupo/i);
@@ -185,6 +187,19 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   it('keeps the panel when the featured tours cannot be read', async () => {
     const p = await openPanel({ catalog: 'fails' });
     expect(p.text('.crp-panel-featured [role="alert"]')).toBe('No pudimos cargar esta información.');
+  });
+
+  it('lays each quick action out as a left-aligned row: icon circle, then title over text, divided like mt-divider-list', async () => {
+    const p = await openPanel();
+    const item = p.host.querySelector('.crp-panel-quick button.crp-panel-quick-item');
+    expect(item?.children[0]?.classList.contains('crp-panel-quick-icon')).toBe(true);
+    expect(item?.children[1]?.classList.contains('crp-panel-quick-copy')).toBe(true);
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const row = css.match(/\.crp-root \.crp-panel-quick \.crp-panel-quick-item \{([^}]*)\}/)?.[1] ?? '';
+    expect(row).toMatch(/justify-content:\s*flex-start/);
+    expect(row).toMatch(/align-items:\s*flex-start/);
+    expect(row).toMatch(/text-align:\s*left/);
+    expect(css).toMatch(/\.crp-root \.crp-panel-quick-copy \{[^}]*display:\s*grid/);
   });
 
   it('draws no link to an area the build does not have', async () => {

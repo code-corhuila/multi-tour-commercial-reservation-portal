@@ -10,13 +10,16 @@ import { ControllableMyReservationsSource, CustomerAs, reservationFor, SELECTION
 // AC3 / RN-RS7: the customer's area offers no modify, cancel or reschedule (RF-014, Phase 1).
 // It is an absence, so it is asserted on the screen and on every source of the feature (plan D-06).
 const CHANGE_ACTIONS = /modif|cancel|reschedul|reprogram|postpone|amend|\bedit|aplazar/i;
+// Not actions: the note of mis-reservas.html that sends changes to the operator, the condition of finalizar-reserva.html that
+// says changes depend on the tour, and the Cancelada state a reservation can be in.
+const INFORMATIVE = /Desde este portal no puedes modificar ni cancelar reservas: para cambios o cancelaciones, comunícate con el operador\.|La modificación o cancelación depende de las condiciones vigentes del tour\.|Cancelada|crp-is-cancelled|CANCELLED/g;
 // RN-RS1 / T-01: no sign-in or registration form of its own, no client, no storage, no token.
 const OWN_SESSION = /password|passwd|contrase|credential|Authorization|Bearer|HttpClient|fetch\s*\(|XMLHttpRequest|localStorage|sessionStorage|https?:\/\//i;
 
 const FEATURE = 'src/app/self-service-reservation/';
 const DEMO = 'src/app/demo/self-service-reservation-demo.ts';
 const featureFiles = () => listSourceFiles().filter((file) => file.startsWith(FEATURE));
-const code = (file: string) => withoutComments(readFileSync(file, 'utf8')).replace(/DestroyRef|takeUntilDestroyed/g, '');
+const code = (file: string) => withoutComments(readFileSync(file, 'utf8')).replace(/DestroyRef|takeUntilDestroyed/g, '').replace(INFORMATIVE, '');
 
 describe('selfServiceSourcesDeclareNoModifyCancelOrRescheduleAction', () => {
   it('finds no change action in any source of the feature or its demo store', () => {
@@ -47,14 +50,16 @@ describe('myReservationsOffersNoModifyCancelOrReschedule', () => {
     ] });
     const fixture = TestBed.createComponent(MyReservationsPageComponent);
     fixture.detectChanges();
-    source.requests[0].reply([reservationFor(), reservationFor(SELECTION, 'demo-res-2')]);
+    source.requests[0].reply([reservationFor(), reservationFor(SELECTION, 'RES-1844')]);
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     const element: HTMLElement = fixture.nativeElement;
     const data = element.querySelector('[data-state="data"]')!;
     expect(data.querySelectorAll('li, tbody tr').length).toBe(2);
-    for (const shown of ['demo-res-1', 'demo-res-2', '360000.00', 'PENDING_PAYMENT', 'SIN_PAGO']) expect(element.textContent).toContain(shown);
+    for (const shown of ['RES-1843', 'RES-1844', '$1.299.000', 'Pendiente de pago']) expect(element.textContent).toContain(shown);
     expect(element.querySelectorAll('button, a, form, input, select, textarea')).toHaveLength(0);
-    expect(element.textContent).not.toMatch(CHANGE_ACTIONS);
+    expect(element.textContent?.replace(INFORMATIVE, '')).not.toMatch(CHANGE_ACTIONS);
+    expect(element.textContent).toContain('Desde este portal no puedes modificar ni cancelar reservas: para cambios o cancelaciones, comunícate con el operador.');
+    expect(element.textContent).toContain('Consulta el estado de tus reservas propias, activas y pasadas, dentro del operador actual: salida, saldo, plazos y comprobantes.');
   });
 });
 

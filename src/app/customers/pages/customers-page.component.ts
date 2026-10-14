@@ -3,12 +3,14 @@ import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { ActorContext, CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/model/catalog-item';
+import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
+import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { CustomerFormComponent } from '../components/customer-form.component';
-import { CUSTOMERS_COPY, PERSON_LABELS, SENSITIVE_LABELS } from '../customers-copy';
+import { formatDate } from '../../shared/format';
+import { CUSTOMERS_COPY, PERSON_LABELS, SENSITIVE_LABELS, companionCount } from '../customers-copy';
 import { CustomersSource, SensitiveDataAccess } from '../data/customers-source';
-import { CustomerGroup, HighRiskField, Person, canViewSensitiveData, customersCapabilitiesOf } from '../model/customer-group';
+import { CustomerGroup, HighRiskField, LEAD_FIELDS, PERSON_FIELDS, Person } from '../model/customer-group';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
 
 type Ready = { kind: 'ready'; group: CustomerGroup | null; activities: readonly CatalogItem[] };
 export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready;
@@ -29,7 +31,10 @@ export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready
         @if (state().kind === 'loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
         @if (state().kind === 'error') { <div role="alert" data-state="error"><crp-read-error [state]="state()" [fallback]="text.failed" />&ngsp;<button type="button" (click)="reload()">{{ text.retry }}</button></div> }
         @if (ready(); as current) {
-          @if (current.group; as group) {
+          @if (caps.canRegister && (!current.group || startingNew())) {
+            @if (!current.group) { <p role="status" data-state="empty">{{ text.empty }}</p> }
+            <app-customer-form kind="lead" [activities]="current.activities" (saved)="onSaved($event)" />
+          } @else if (current.group; as group) {
             <div data-state="data">
               <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ text.leadEyebrow }}</p><h2>{{ text.leadTitle }}</h2>
                 <p class="crp-customers-copy">{{ text.activity }}: <strong>{{ group.activityName }}</strong>
@@ -61,26 +66,18 @@ export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready
               }
             </div>
           } @else { <p role="status" data-state="empty">{{ text.empty }}</p> }
-          @if (caps.canRegister) {
-            @if (!current.group || startingNew()) {
-              <app-customer-form kind="lead" [activities]="current.activities" (saved)="onSaved($event)" />
-            } @else {
-              <button type="button" (click)="startingNew.set(true)">{{ text.newGroup }}</button>
-              <app-customer-form kind="companion" [group]="current.group" (saved)="onSaved($event)" />
-            }
-          }
         }
       </section>
     }
   `,
 })
 export class CustomersPageComponent {
-  private readonly role = inject(ActorContext).role;
-  protected readonly caps = customersCapabilitiesOf(this.role);
-  protected readonly seeSensitive = canViewSensitiveData(this.role, inject(SensitiveDataAccess).granted);
+  private readonly capabilities = inject(PortalCapabilities);
+  protected readonly caps = this.capabilities.customers();
+  protected readonly seeSensitive = this.capabilities.canViewSensitiveData(inject(SensitiveDataAccess).granted);
   private readonly source = inject(CustomersSource); private readonly catalog = inject(CatalogItemsSource);
   protected readonly text = CUSTOMERS_COPY; protected readonly labels = PERSON_LABELS; protected readonly sensitive = SENSITIVE_LABELS;
-  protected readonly columns = ['fullName', 'document', 'contact', 'birthDate'] as const;
+  protected readonly leadColumns = LEAD_FIELDS; protected readonly companionColumns = PERSON_FIELDS; protected readonly count = companionCount;
   protected readonly startingNew = signal(false); private readonly requests = new Subject<void>();
   private readonly local = signal<CustomersPageState | null>(null);
   private readonly loaded = toSignal(this.requests.pipe(switchMap(() => combineLatest([this.source.current(), this.catalog.list()]).pipe(
@@ -93,6 +90,9 @@ export class CustomersPageComponent {
   constructor() { this.reload(); }
   reload(): void { if (this.caps.canRead) { this.local.set(null); this.requests.next(); } }
   protected people(group: CustomerGroup): Person[] { return [group.lead, ...group.companions]; }
+  protected shown(person: Person, field: (typeof LEAD_FIELDS)[number]): string {
+    return field === 'birthDate' ? formatDate(person.birthDate) : person[field] ?? '';
+  }
   protected sensitiveValue(person: Person, field: HighRiskField): string {
     const value = person.highRisk?.[field];
     return field === 'informedConsent' ? (value ? this.text.yes : '') : String(value ?? '');

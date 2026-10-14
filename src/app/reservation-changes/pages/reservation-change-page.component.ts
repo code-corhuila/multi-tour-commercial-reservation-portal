@@ -87,6 +87,9 @@ export class ReservationChangePageComponent {
   protected readonly error = signal(false);
   protected readonly failure = signal<string | null>(null);
   protected readonly pending = signal(false);
+  protected readonly registered = signal<string | null>(null);
+  private readonly delay = inject(RESERVATION_CHANGE_RETURN_DELAY);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly code = this.navigation?.params()['reservation'] ?? '';
   /** The key follows the body: reused on every retry of the same data, new when the cause is corrected (plan D-06). */
@@ -112,7 +115,7 @@ export class ReservationChangePageComponent {
   protected submit(event: Event, q: CancellationQuoteResult): void {
     event.preventDefault();
     const type = this.chosen(), cause = this.cause().trim();
-    if (this.pending() || this.refusal(q) || !type) return;
+    if (this.pending() || this.refusal(q) || !type || type.submittable === false) return;
     this.error.set(!cause);
     if (!cause) { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
     this.pending.set(true);
@@ -120,7 +123,7 @@ export class ReservationChangePageComponent {
     const body = { reservationCode: q.reservation.id, cause, origin: this.origin() };
     type.submit({ ...body, idempotencyKey: this.intention.keyFor(body) }).subscribe({
       next: (outcome) => {
-        if (outcome.kind === 'registered') { this.back(); return; }
+        if (outcome.kind === 'registered') { this.showRegistered(q); return; }
         this.failure.set(outcome.reason); this.pending.set(false);
       },
       error: () => { this.failure.set(this.t.failed); this.pending.set(false); },

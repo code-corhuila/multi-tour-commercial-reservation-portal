@@ -17,7 +17,9 @@ import { SESSION_IDENTITY } from './shared/session-identity';
 @Component({
   selector: 'crp-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogPageComponent, EstablishmentsPageComponent, ConfirmReservationPageComponent, MyReservationsPageComponent],
+  imports: [NgComponentOutlet, PortalSlotOutlet],
+  host: { '(document:keydown.escape)': 'bell.set(false)', '(document:click)': 'closeBellOutside($event)' },
+  providers: [PortalNavigation],
   template: `
     @if (audience === 'customer') {
       <div class="crp-client-shell">

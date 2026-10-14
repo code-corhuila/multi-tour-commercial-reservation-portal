@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { ChangeDetectionStrategy, Component, Injector, Provider, Type, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, firstValueFrom } from 'rxjs';
@@ -91,9 +92,21 @@ async function render<T>(component: Type<T>, list: Provider[], inputs: Record<st
 const screen = <T>(component: Type<T>, o: Parameters<typeof providers>[0] = {}) => { const p = providers(o); return render(component, p.list).then((s) => ({ ...s, ...p })); };
 
 describe('everyRefundScreenShowsOneOfTheFourStates', () => {
-  it.each([RefundManagePageComponent, RefundTreatmentPageComponent])('%o shows loading, error with retry, the unknown refund and data', async (component) => {
+  it('the treatment list shows loading, error with retry, the mockup empty text and data', async () => {
     const source = new ControllableSource();
-    const s = await screen(component as Type<unknown>, { source, id: 'RES-Z' });
+    const s = await screen(RefundTreatmentPageComponent, { source });
+    expect(s.host.querySelector('[data-state="loading"]')?.textContent).toContain('Cargando');
+    source.requests[0].error(new Error('down')); await s.settle();
+    s.button('Reintentar')!.click(); await s.settle();
+    source.requests[1].next([]); await s.settle();
+    expect(s.host.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay valores abonados pendientes de tratamiento.');
+    TestBed.resetTestingModule();
+    expect((await screen(RefundTreatmentPageComponent)).host.querySelector('[data-state="data"]')).toBeTruthy();
+  });
+
+  it('the manage screen shows loading, error with retry, the unknown refund and data', async () => {
+    const source = new ControllableSource();
+    const s = await screen(RefundManagePageComponent, { source, id: 'RES-Z' });
     expect(s.host.querySelector('[data-state="loading"]')?.textContent).toContain('Cargando');
     source.requests[0].error(new Error('down')); await s.settle();
     expect(s.host.querySelector('[data-state="error"]')?.textContent).toContain('No se pudo completar la solicitud.');
@@ -102,13 +115,21 @@ describe('everyRefundScreenShowsOneOfTheFourStates', () => {
     expect(s.host.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No se encontró la solicitud seleccionada.');
   });
 
-  it('the alerts show loading, then error with a retry that asks again', async () => {
+  it('the alerts show loading, error with a retry that asks again, and the empty text when no default applies', async () => {
     const source = new ControllableSource();
     const s = await screen(RefundAlertsComponent, { source });
     expect(s.host.querySelector('[data-state="loading"]')).toBeTruthy();
     source.requests[0].error(new Error('down')); await s.settle();
     s.button('Reintentar')!.click(); await s.settle();
     expect(source.requests).toHaveLength(2);
+    source.requests[1].next([]); await s.settle();
+    expect(s.host.querySelector('[data-state="empty"]')?.textContent?.trim()).toBe('No hay alertas pendientes.');
+  });
+
+  it('the treatment tag and the execution selects keep the compact size of the mockup', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8').replace(/\s+/g, ' ');
+    expect(css).toMatch(/\.crp-refunds-hero > \.crp-operator-status \{[^}]*align-self: start;[^}]*justify-self: end;/);
+    expect(css).toMatch(/\.crp-refunds-form select \{[^}]*font-size: 0\.86rem;/);
   });
 });
 
@@ -157,10 +178,10 @@ describe('manageAndTreatmentShowTheRefundOf10A', () => {
     expect(s.button('Ver detalle y ejecución')).toBeTruthy();
   });
 
-  it('the list opens the manage screen for a refund pending its decision', async () => {
+  it('the list opens the detail for a refund pending its decision, as the current mockup does', async () => {
     const s = await screen(RefundRequestsPageComponent);
     s.host.querySelector<HTMLButtonElement>('tbody tr:first-child td:last-child button')!.click();
-    expect([s.navigation.selected(), s.navigation.params()]).toEqual([REFUND_SCREENS.manage, { refund: 'RES-P' }]);
+    expect([s.navigation.selected(), s.navigation.params()]).toEqual([REFUND_SCREENS.detail, { refund: 'RES-P' }]);
   });
 });
 
@@ -181,27 +202,25 @@ describe('expiredCounterDeterminesTheFullRefundAsAuthorized', () => {
   it('"Registrar devolución del 100 %" records the decision before the counter ends and hands over to the detail', async () => {
     const p = providers({ extra: [contribute(REFUND_TREATMENT_ACTIONS, { component: TreatmentActionDouble, order: 0 })] });
     const s = await render(RefundTreatmentPageComponent, p.list);
-    expect(s.texts('h1, h2, .crp-operator-eyebrow')).toEqual(expect.arrayContaining(['Tratamiento pendiente de devolución', 'Reserva RES-P cancelada por falta de pago',
-      'Valores abonados: $1.200.000', 'Decisión del Administrador del tenant', 'Ejecución']));
+    expect(s.texts('h1')).toEqual(['Tratamiento pendiente de devolución']);
     expect(s.host.querySelector('.crp-operator-status')?.textContent?.trim()).toBe('Quedan 18 h 42 min');
-    expect(s.texts('.crp-form-actions button')).toEqual(['Registrar devolución del 100 %', 'Registrar saldo a favor del 100 %']);
-    expect(s.host.querySelector('i')?.textContent).toBe('RES-P|false');
-    s.button('Registrar devolución del 100 %')!.click(); s.button('Registrar devolución del 100 %')?.click(); await s.settle();
+    expect(s.host.querySelector('article i')?.textContent).toBe('RES-P|false');
+    const area = s.host.querySelector('article')!;
+    area.querySelector('textarea')!.value = 'Devolución (demo)'; area.querySelector('textarea')!.dispatchEvent(new Event('input'));
+    const full = () => Array.from(area.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Registrar devolución del 100 %');
+    full()!.click(); full()?.click(); await s.settle();
     expect(p.d.store.items.find((r) => r.id === 'RES-P')!.refund!.decision).toEqual({ by: 'Ana Torres (demo)', at: NOW });
     expect(await byId(p.d.source, 'RES-P')).toMatchObject({ state: 'PENDIENTE_DE_AUTORIZACION' });
     expect([p.navigation.selected(), p.navigation.params()]).toEqual([REFUND_SCREENS.detail, { refund: 'RES-P' }]);
   });
 
-  it('a contribution that records a credit balance closes "Registrar devolución del 100 %", and a closed treatment offers none', async () => {
+  it('a contribution that records a credit balance closes "Registrar devolución del 100 %" of its card', async () => {
     const extra = [contribute(REFUND_TREATMENT_ACTIONS, { component: TreatmentActionDouble, order: 0 })];
     const s = await screen(RefundTreatmentPageComponent, { extra });
-    s.button('Registrar saldo a favor del 100 %')!.click(); await s.settle();
-    expect(s.button('Registrar devolución del 100 %')).toBeUndefined();
-    expect(s.host.querySelector('i')?.textContent).toBe('RES-P|true');
-    TestBed.resetTestingModule();
-    const expired = await screen(RefundTreatmentPageComponent, { id: 'RES-X', extra });
-    expect(expired.button('Registrar devolución del 100 %')).toBeUndefined();
-    expect(expired.host.querySelector('i')?.textContent).toBe('RES-X|true');
+    const card = s.host.querySelector('article')!;
+    Array.from(card.querySelectorAll('button')).filter((b) => b.textContent?.trim() === 'Registrar saldo a favor del 100 %').at(-1)!.click(); await s.settle();
+    expect(s.host.querySelector('article')!.textContent).not.toContain('Registrar devolución del 100 %');
+    expect(s.host.querySelector('article i')?.textContent).toBe('RES-P|true');
   });
 
   it('the writer refuses the decision from a Collaborator and after the 24 hours', async () => {
@@ -252,7 +271,7 @@ describe('fiveBusinessDaysWithoutExecutionMarkItOverdue', () => {
     TestBed.resetTestingModule();
     const s = await screen(RefundDetailPageComponent, { id: 'RES-V' });
     const state = Array.from(s.host.querySelectorAll('dl div')).find((d) => d.querySelector('dt')?.textContent?.trim() === 'Estado actual');
-    expect(state?.querySelector('dd')?.textContent?.trim()).toBe('Autorizada · Vencida');
+    expect(state?.querySelector('dd')?.textContent?.trim()).toBe('Autorizada · Ejecución vencida');
     expect(s.button('Registrar ejecución de devolución')).toBeTruthy();
   });
 });
@@ -271,7 +290,7 @@ describe('wiresTheDeadlinesInTheDemoBuild', () => {
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
     click('nav button', 'Notificaciones');
     await vi.waitFor(() => expect(host.querySelector('.crp-refunds-alert')).toBeTruthy());
-    expect(host.querySelector('app-notifications-page')?.textContent).toContain('#RES-1820 · Diego Castro (demo) · $1.200.000 · Cancelada por falta de pago');
+    expect(host.querySelector('app-notifications-page')?.textContent).toContain('Diego Castro (demo) · $1.200.000 · pendiente de ejecución');
     click('nav button', 'Reservas');
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     // v1.9 mockup: Cancelada rows stay hidden until "Ver todas las reservas".
