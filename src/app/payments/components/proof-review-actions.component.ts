@@ -8,7 +8,7 @@ import { paymentEntryOf } from '../model/payment';
 import { PAYMENTS_TEXT } from '../payments-copy';
 import { PROOF_REVIEW_TEXT } from '../proof-review-copy';
 
-/** What every "Validar soporte" link shares: the proof to decide of its reservation and the decision page it opens (plan D-06). */
+/** What every "Validar comprobante" link shares: the proof to decide of its reservation and the decision page it opens (plan D-06). */
 @Directive()
 abstract class ProofLink {
   readonly reservation = input.required<Reservation>();
@@ -18,11 +18,11 @@ abstract class ProofLink {
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected open(): void { this.navigation?.open('payments-validate', { reservation: this.reservation().id, payment: this.proof()?.id ?? '' }); }
 }
-/** 10 (admin-reservas.html): " · Validar soporte" after "Ver detalle" on a reservation whose proof is En validación (AC-PV.3). */
+/** 10 (admin-reservas.html): " · Validar comprobante" after "Ver detalle" on a reservation whose proof is En validación (AC-PV.3). */
 @Component({ selector: 'app-proof-row-link', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (proof()) { · <button type="button" (click)="open()">{{ canDecide ? t.validate : t.view }}</button> }` })
 export class ProofRowLinkComponent extends ProofLink {}
-/** 10A (admin-detalle-reserva.html): the action "Validar soporte" in the header while the proof is En validación. */
+/** 10A (admin-detalle-reserva.html): the action "Validar comprobante" in the header while the proof is En validación. */
 @Component({ selector: 'app-proof-detail-action', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (proof()) { <button type="button" class="crp-operator-primary crp-page-header-action" (click)="open()">{{ canDecide ? t.validate : t.view }}</button> }` })
 export class ProofDetailActionComponent extends ProofLink {}
