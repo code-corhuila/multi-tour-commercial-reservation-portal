@@ -11,7 +11,7 @@ const demo = () => {
   const port = <T>(token: unknown) => providers.find(p => p.provide === token)?.useValue as T | undefined;
   return { source: port<DiscountRulesSource>(DiscountRulesSource)!, writer: port<DiscountRulesWriter>(DiscountRulesWriter) };
 };
-const command: DiscountRuleCommand = { tourId: 'demo-tour-1', startsOn: '2026-11-01', endsOn: '2026-11-30', priority: 4,
+const command: DiscountRuleCommand = { tourId: 'demo-svc-1', startsOn: '2026-11-01', endsOn: '2026-11-30', priority: 4,
   calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250, capCents: 8_000_000, stackable: true };
 
 describe('demo build lets the administrator manage discount rules (AC-PD.1, AC-PD.7)', () => {
