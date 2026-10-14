@@ -207,7 +207,7 @@ describe('theOutletsOfTheScreensInDevelop', () => {
 
   // Mis reservas: "Responder propuesta" (018) closes the card (app.js:2694).
   it('draws RESERVATION_CARD_ACTIONS at the end of each card of Mis reservas', async () => {
-    mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 1 })], ['FINAL_CUSTOMER']);
+    mountAs([contribute(RESERVATION_CARD_ACTIONS, { component: BlockDouble, order: 99 })], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     click('.crp-panel-card button', 'Ver mis reservas');
     await vi.waitFor(() => expect(host.querySelector('.self-service-panel [data-state="data"] li')).toBeTruthy());

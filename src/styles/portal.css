@@ -537,6 +537,14 @@
 .crp-root .crp-my-payments-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--crp-soft); font-size: 0.88rem; }
 .crp-root crp-my-payments-card-lines { display: grid; gap: 6px; color: var(--crp-soft); }
 .crp-root crp-my-payments-notices p { margin: 0 0 8px; }
+.crp-root .crp-my-payments-receipts ul, .crp-root .crp-my-payments-credit p { margin: 4px 0 0; color: var(--crp-soft); font-size: 0.88rem; }
+.crp-root .crp-my-payments-credit { display: grid; gap: 4px; margin: 0 0 16px; }
+.crp-root .crp-my-payments-details dl { display: grid; gap: 4px; margin: 8px 0 0; }
+.crp-root .crp-my-payments-details dl div { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.crp-root .crp-my-payments-details dt { font-weight: 600; }
+.crp-root .crp-my-payments-details dd { margin: 0; }
+.crp-root .crp-my-payments-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.crp-root .self-service-card > crp-my-payments-card-actions { grid-column: 1 / -1; }
 /* HU-COM-016 refund screens (admin-solicitudes-devolucion.html hero, admin-detalle-devolucion.html list and forms). */
 .crp-root .crp-refunds-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.7fr); gap: var(--crp-space-5); margin-bottom: 22px; padding: var(--crp-space-5) 28px;
   border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-accent-soft); }
