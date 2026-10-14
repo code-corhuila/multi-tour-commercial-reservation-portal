@@ -87,6 +87,7 @@ const SPECIFIED_TREE = [
   'src/app/reservation-changes/travellers-modification/components/travellers-modification-form.component.ts',
   'src/app/demo/my-payments-demo.ts',
   'src/app/my-payments/my-payments-copy.ts',
+  'src/app/my-payments/economic-rows.ts',
   'src/app/my-payments/data/my-payments-source.ts',
   'src/app/my-payments/pages/my-payments-page.component.ts',
   'src/app/my-payments/components/my-payments-panel.component.ts',
