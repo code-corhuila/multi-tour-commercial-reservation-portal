@@ -3,7 +3,8 @@ import { DiscountRule, DiscountValue } from '../../discounts/model/discount-rule
 import { parsePercentage } from '../../discounts/model/percentage';
 
 /** Only the fields of HU-COM-003's DiscountRule the calculation reads (tasks T-02); no second rule model. */
-export type ApplicableRule = DiscountValue & Pick<DiscountRule, 'name' | 'startsOn' | 'endsOn' | 'priority' | 'calculationBase' | 'status'>;
+export type ApplicableRule = DiscountValue & { readonly name: string } & Pick<DiscountRule, 'startsOn' | 'endsOn' | 'priority' | 'calculationBase' | 'status'>
+  & Partial<Pick<DiscountRule, 'capCents' | 'stackable'>>;
 /** PROPUESTO (G-API): the base value of a service and its rules on the date consulted. */
 export type PricedService = { readonly serviceId: string; readonly serviceName: string; readonly baseCents: number; readonly rules: readonly ApplicableRule[] };
 /** The authorizer is not typed by the person: the service answers it from the session (plan D-06). */
@@ -29,36 +30,7 @@ export const CURRENT_DISCOUNTS_TEXT = {
   bases: { ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior' },
 } as const;
 
-/** RBAC matrix, "Authorize an additional discount": only the Tenant Administrator. */
-export function canAuthorizeAdditionalDiscount(actor: { role: string }): boolean { return actor.role === 'TENANT_ADMINISTRATOR'; }
-
-/** D-04 (DP-CD2 open): integer half-up per line, never more than the subtotal it is applied to. */
-function amountOf(value: DiscountValue, baseCents: number, subtotalCents: number): number {
-  const amount = value.type === 'PERCENTAGE' ? Math.floor((baseCents * value.percentageBasisPoints + 5_000) / 10_000) : value.amountCents;
-  return Math.min(amount, subtotalCents);
-}
-
-/**
- * D-03: the rules in force on `date` by priority (a tie keeps creation order, DP-CD5), each on its
- * declared base, and the additional discount last on the subtotal they left (RN-RES-002).
- */
-export function applyDiscounts(baseCents: number, rules: readonly ApplicableRule[], date: string, additional?: AdditionalDiscount): Breakdown {
-  const lines: DiscountLine[] = [];
-  let subtotal = baseCents;
-  const apply = (name: string, value: DiscountValue, base: DiscountLine['base'], extra: Partial<DiscountLine> = {}) => {
-    const lineBase = base === 'ORIGINAL_VALUE' ? baseCents : subtotal, amountCents = amountOf(value, lineBase, subtotal);
-    subtotal -= amountCents;
-    lines.push({ order: lines.length + 1, name, base, baseCents: lineBase, amountCents, subtotalCents: subtotal, ...extra });
-  };
-  rules.filter((rule) => rule.status === 'ACTIVE' && rule.startsOn <= date && date <= rule.endsOn)
-    .sort((a, b) => a.priority - b.priority).forEach((rule) => apply(rule.name, rule, rule.calculationBase));
-  if (additional) {
-    apply(CURRENT_DISCOUNTS_TEXT.additional, additional, 'PREVIOUS_SUBTOTAL', { reason: additional.reason, authorizedBy: additional.authorizedBy });
-  }
-  return { baseCents, lines, finalCents: subtotal };
-}
-
-export type AdditionalDraft = { value: string; reason: string; type: DiscountValue['type'] };
+export type AdditionalDraft = { value: string; reason: string };
 export type AdditionalMessages = Partial<Record<keyof AdditionalDraft, string>>;
 export const EMPTY_ADDITIONAL: AdditionalDraft = { value: '', reason: '', type: 'PERCENTAGE' };
 

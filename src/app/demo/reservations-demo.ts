@@ -1,10 +1,14 @@
 import { Provider } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { DeparturesSource } from '../reservations/data/departures-source';
-import { LeadCustomersSource, ReservationDiscounts } from '../reservations/data/reservation-integrations';
+import { DiscountContext, LeadCustomersSource, ReservationDiscounts } from '../reservations/data/reservation-integrations';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
 import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
+import { DiscountRule, discountValueText } from '../discounts/model/discount-rule';
+import { DiscountRulesSource } from '../discounts/data/discount-rules-source';
+import { applyDiscounts } from './discount-calculation';
+import { DemoDiscountRulesStore } from './discounts-demo';
 import { DemoReservationQuotes } from './reservation-quote-demo';
 import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, ReservationPayment, capacityMessage, hasCapacity, openDepartures } from '../reservations/model/reservation';
 
@@ -58,9 +62,17 @@ export class DemoLeadCustomers extends LeadCustomersSource {
   override list() { return of(CUSTOMERS); }
 }
 
-/** Zero discounts until HU-COM-004 merges; then its calculation replaces this class. */
+/**
+ * DEMO (HU-COM-003 T-V19-2): the rules of the tour the discounts story stores, through the shared calculation. The lines are
+ * copied into the quote when the reservation is created, so a rule published later never touches it (AC-PD.15, RN-RES-003).
+ */
 export class DemoReservationDiscounts extends ReservationDiscounts {
-  override apply(): readonly AppliedDiscount[] { return []; }
+  constructor(private readonly rules: () => readonly DiscountRule[] = () => []) { super(); }
+  override apply(originalCents: number, context?: DiscountContext): readonly AppliedDiscount[] {
+    if (!context) return [];
+    const ofTour = this.rules().filter((rule) => rule.tourId === context.tourId).map((rule) => ({ ...rule, name: discountValueText(rule), type: 'PERCENTAGE' as const }));
+    return applyDiscounts(originalCents, ofTour, context.at).lines.map((line) => ({ name: line.name, base: line.base, amountCents: line.amountCents }));
+  }
 }
 
 export class DemoReservationsStore extends ReservationsSource {
@@ -102,7 +114,7 @@ export function reservationDemoProviders(): Provider[] {
   return [
     { provide: DeparturesSource, useValue: departures },
     { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
-    { provide: ReservationDiscounts, useValue: new DemoReservationDiscounts() },
+    { provide: ReservationDiscounts, useFactory: (rules: DiscountRulesSource) => new DemoReservationDiscounts(() => (rules as DemoDiscountRulesStore).rules), deps: [DiscountRulesSource] },
     { provide: ReservationsSource, useValue: store },
     { provide: ReservationsWriter, useValue: new DemoReservationsWriter(store, departures) },
   ];

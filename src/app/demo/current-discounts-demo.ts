@@ -2,6 +2,8 @@ import { Provider } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../current-discounts/data/current-discounts-source';
+import { DiscountBreakdowns } from '../current-discounts/data/discount-breakdowns';
+import { DemoDiscountBreakdowns } from './discount-calculation';
 import { AdditionalDiscount, AdditionalDiscountCommand, PricedService } from '../current-discounts/model/current-discounts';
 import { DiscountRule } from '../discounts/model/discount-rule';
 
@@ -37,5 +39,6 @@ export class DemoAdditionalDiscountWriter extends AdditionalDiscountWriter {
 
 export function currentDiscountsProviders(): Provider[] {
   return [{ provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() },
-    { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() }];
+    { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() },
+    { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }];
 }
