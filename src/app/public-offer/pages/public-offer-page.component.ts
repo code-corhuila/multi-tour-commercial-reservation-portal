@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
+import { DeparturesSource, Departure, openDepartures } from '../../reservations/data/departures-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
-import { formatCop, formatDate, formatDateRange } from '../../shared/format';
+import { formatCop, formatDate, formatDateRange, pctOff } from '../../shared/format';
 import { PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
 import { PublicTour, TourValue } from '../model/public-offer';
-import { PUBLIC_OFFER_COPY, matchesSearch } from '../public-offer-copy';
+import { PUBLIC_OFFER_COPY, matchesSearch, sameName } from '../public-offer-copy';
 import { tourPhoto } from '../../shared/tour-photo';
 
 /** The four states of one part of the page (Annex H). */
@@ -24,6 +25,12 @@ export function partOf<A, T>(requests: Subject<A>, read: (arg: A) => Observable<
     catchError(() => of<PartState<T>>({ kind: 'error', retry })),
     startWith<PartState<T>>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PartState<T> });
+}
+
+/** The open departures a port lists, or null without a port or when it fails: the page then draws no departures. */
+function openDeparturesOf(port: DeparturesSource | null): Observable<readonly Departure[] | null> {
+  const read: Observable<readonly Departure[] | null> = port ? port.list() : of(null);
+  return read.pipe(map((all) => (all ? openDepartures(all) : null)), catchError(() => of(null)));
 }
 
 export const unavailable = () => throwError(() => new Error('The container provides no public offer port'));
@@ -66,6 +73,14 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
             <section class="crp-offer-conditions"><h2>{{ copy.conditionsTitle }}</h2>
               <ul>@for (condition of copy.conditions; track condition) { <li>{{ condition }}</li> }</ul>
             </section>
+            @if (departuresOf(priced); as departures) {
+              <section class="crp-offer-departures"><h2>{{ copy.departuresTitle }}</h2>
+                <p>{{ copy.departuresNote }}</p>
+                @if (departures.length) {
+                  <ul>@for (departure of departures; track departure.id) { <li><strong>{{ day(departure.date) }}</strong>&ngsp;<span>{{ seats(departure) }}</span></li> }</ul>
+                } @else { <p>{{ copy.noDepartures }}</p> }
+              </section>
+            }
           </div>
           <aside class="crp-offer-summary">
             <p class="crp-offer-summary-eyebrow">{{ copy.summary }}</p>
@@ -77,7 +92,7 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
             </div>&ngsp;
             <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div></dl>
             @if (priced.tour.validity; as range) { <p class="crp-offer-validity">{{ copy.validFrom }} {{ day(range.from) }} {{ copy.validTo }} {{ day(range.to) }}.</p> }
-            @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" (click)="reserve(priced.tour.serviceId)">{{ copy.reserve }}</button> }
+            @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" [disabled]="!hasSeats(priced)" (click)="reserve(priced.tour.serviceId)">{{ copy.reserve }}</button> }
           </aside>
         </div>
       </article>
@@ -87,7 +102,6 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
         <div class="crp-page-header-main">
           <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
           <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
-          <p class="crp-page-header-desc">{{ copy.description }}</p>
         </div>
         <div class="crp-page-header-action crp-offer-search">
           <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchToursHint" #query (keydown.enter)="search.set(query.value)" />
@@ -143,6 +157,8 @@ export class PublicOfferPageComponent {
   protected readonly search = signal('');
   protected readonly chosen = signal<PricedTour | null>(null);
   private readonly dates = new Subject<string>();
+  /** The open departures of HU-COM-007/008, or null where the container has no departures port or it fails (then no section is drawn). */
+  private readonly departures = toSignal(openDeparturesOf(inject(DeparturesSource, { optional: true })), { initialValue: null });
 
   protected readonly toursState = partOf(this.dates, (date) => (this.offer?.listAvailable(date) ?? unavailable()).pipe(
     // RN-PO2: whatever the port answers, what is not available for the date is not listed.
@@ -165,8 +181,22 @@ export class PublicOfferPageComponent {
 
   protected discounted(priced: PricedTour): boolean { return priced.value.currentValueCents !== priced.value.baseRateCents; }
 
-  /** The label of HU-COM-004's value port; without one, a generic tag (RN-PO4: no percentage is derived here). */
-  protected tag(priced: PricedTour): string { return priced.value.discountLabel ?? this.copy.discountTag; }
+  /** The label of HU-COM-004's value port; without one, N% de descuento from the base and current values, as tours.html writes it. */
+  protected tag(priced: PricedTour): string {
+    return priced.value.discountLabel ?? this.copy.discountTag(pctOff(priced.value.baseRateCents, priced.value.currentValueCents));
+  }
+
+  /** The departures of a tour (the port has no tour id yet, so the name links them), or null when none can be read. */
+  protected departuresOf(priced: PricedTour): readonly Departure[] | null {
+    return this.departures()?.filter((departure) => sameName(departure.tourName, priced.tour.commercialName)) ?? null;
+  }
+
+  /** Without a departures port nothing is known, so the button stays enabled; with one, it needs a departure with seats. */
+  protected hasSeats(priced: PricedTour): boolean { return this.departuresOf(priced)?.some((d) => d.effectiveCapacity > 0) ?? true; }
+
+  protected seats(departure: Departure): string {
+    return departure.effectiveCapacity > 0 ? this.copy.seatsLeft(departure.effectiveCapacity) : this.copy.departureFull;
+  }
 
   protected money(cents: number): string { return formatCop(cents); }
 
