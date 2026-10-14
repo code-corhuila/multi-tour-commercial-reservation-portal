@@ -141,7 +141,7 @@ describe('travellersEntryIsProvidedThroughTheChangeTypesToken', () => {
 
   it('lists Tipo as Cancelación then Modificación de viajeros on the screen of HU-COM-013', async () => {
     const s = await render(ReservationChangePageComponent, pageProviders());
-    expect(Array.from(s.host.querySelectorAll('select option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de viajeros']);
+    expect(Array.from(s.host.querySelectorAll('#crp-rc-type option'), (o) => o.textContent?.trim())).toEqual(['Cancelación', 'Modificación de servicio, salida o viajeros']);
   });
 
   it('is wired in the demo build: from 10A the option answers the tour policy', async () => {
@@ -322,6 +322,17 @@ describe('travellersOptionDrawsNoFieldAndSpanishCopy', () => {
     expect(form.querySelectorAll('input, select, textarea, button, dl, table')).toHaveLength(0);
     expect(form.textContent?.trim()).toBe(ALLOWED);
     expect(s.button('Registrar novedad')!.disabled).toBe(true);
+  });
+
+  it('draws Origen and Tratamiento económico only for the cancellation (admin-cancelar-modificar-reserva.html)', async () => {
+    const s = await render(ReservationChangePageComponent, pageProviders());
+    const drawn = () => [s.host.querySelector('#crp-rc-origin'), s.host.querySelector('#crp-rc-treatment')].map((e) => e !== null);
+    expect(drawn()).toEqual([true, true]);
+    const select = s.host.querySelector<HTMLSelectElement>('#crp-rc-type')!;
+    select.value = TRAVELLERS_MODIFICATION_KEY; select.dispatchEvent(new Event('change')); await s.settle();
+    expect(drawn()).toEqual([false, false]);
+    select.value = 'cancellation'; select.dispatchEvent(new Event('change')); await s.settle();
+    expect(drawn()).toEqual([true, true]);
   });
 
   it('keeps the copy in Spanish without raw codes, and the code free of the mockup script fields', () => {

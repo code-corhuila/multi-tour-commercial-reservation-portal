@@ -31,7 +31,7 @@ export type Reservation = {
   /** HU-COM-009: resolved by the service; registering moves neither (RN-PY1). */
   readonly validatedCents?: number; readonly payments?: readonly ReservationPayment[];
   /** HU-COM-013 D-02 (PROPUESTO): resolved by the service; the cancellation, the decision it opened and the HU-COM-018 mark (DD-4). */
-  readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string }; readonly reschedulingPending?: boolean;
+  readonly cancellation?: { readonly cause: string; readonly by: string; readonly at: string; readonly origin?: 'customer' | 'not-attributable' | 'non-payment' }; readonly reschedulingPending?: boolean;
   readonly financialDecision?: { readonly kind: 'CUSTOMER_CANCELLATION' | 'RESCHEDULING_NOT_ACCEPTED'; readonly baseAmountCents: number; readonly penaltyAmountCents: number | null;
     readonly refundableCents: number | null; readonly recognizedAt: string; readonly outcome: null; readonly origin?: 'HU-COM-018' };
   /** HU-COM-011 D-02 (PROPUESTO): payment_deadlines and payment_followups (ERD-01), kept by the service; ISO with offset. */
