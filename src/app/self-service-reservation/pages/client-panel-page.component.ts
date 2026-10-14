@@ -12,7 +12,7 @@ import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
 import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
 import { tourPhoto } from '../../shared/tour-photo';
-import { CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
+import { CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
 
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
@@ -32,7 +32,6 @@ const PANEL_TEXT = {
   discounts: 'Descuentos vigentes',
   noDiscounts: 'No hay descuentos vigentes en este momento.',
   validUntil: 'Válido hasta',
-  notices: 'Notificaciones',
   featured: 'Experiencias destacadas',
   noFeatured: 'No hay opciones disponibles en este momento.',
   from: 'Desde',
@@ -134,9 +133,6 @@ function discountTag(rule: DiscountRule): string {
         } @else { <p>{{ t.noDiscounts }}</p> }
       </aside>
     </div>
-    @if (noticeSlots) {
-      <section class="crp-panel-notices"><h2>{{ t.notices }}</h2><div class="crp-operator-panel"><ng-container *crpSlot="slots.notices" /></div></section>
-    }
     <section class="crp-panel-featured"><h2>{{ t.featured }}</h2>
       @let f = featured();
       @switch (f.kind) {
@@ -168,11 +164,10 @@ export class ClientPanelPageComponent {
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly chips = CHIPS.filter((chip) => this.has(chip.key));
   protected readonly quick = QUICK.filter((action) => this.has(action.key));
-  /** HU-COM-001 portal foundation of 2026-10-13: what other stories add to Acciones rápidas and Notificaciones; nothing by default. */
-  protected readonly slots = { quick: CLIENT_QUICK_ACTIONS, notices: CLIENT_NOTICES };
+  /** HU-COM-001 portal foundation of 2026-10-13: what other stories add to Acciones rápidas (Notificaciones is the bell of the shell header); nothing by default. */
+  protected readonly slots = { quick: CLIENT_QUICK_ACTIONS };
   private readonly injector = inject(Injector);
   protected readonly quickSlots = slotEntries(CLIENT_QUICK_ACTIONS, this.injector).length;
-  protected readonly noticeSlots = slotEntries(CLIENT_NOTICES, this.injector).length;
   protected readonly isCustomer = inject(CustomerContext).standing === 'FINAL_CUSTOMER';
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
