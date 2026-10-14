@@ -342,6 +342,10 @@
 .crp-root .crp-client-panel-header .crp-client-panel-brand { color: #111111; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
 .crp-root .crp-client-panel-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
 .crp-root .crp-client-panel-header .crp-client-panel-actions > button:not(.crp-client-bell-button) { color: #5a6b70; }
+.crp-root .crp-client-header .crp-client-actions button.crp-client-profile { border-color: #17252b; background: #17252b; color: #ffffff; }
+.crp-root .crp-client-header .crp-client-actions button.crp-client-profile:hover:not(:disabled) { border-color: #000000; background: #000000; color: #ffffff; }
+.crp-root .crp-client-panel-header .crp-client-avatar { min-height: 42px; padding: 0; border: 1px solid #d7e0de; background: #f2f5f3; color: #17252b; cursor: pointer; }
+.crp-root .crp-client-panel-header .crp-client-avatar:hover:not(:disabled) { border-color: #17252b; color: #17252b; }
 .crp-root .crp-client-avatar { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid #d7e0de; border-radius: 999px; background: #f2f5f3; color: #17252b; font-size: 0.82rem; font-weight: 800; }
 .crp-root .crp-client-bell { position: relative; }
 .crp-root .crp-client-panel-header .crp-client-bell-button { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid #d7e0de; border-radius: 50%; background: #ffffff; color: #17252b; }
@@ -688,20 +692,46 @@
 .crp-root .self-service-card-copy strong.crp-status { font-size: 0.72rem; }
 .crp-root .self-service-card > crp-rescheduling-card-action { grid-column: 1 / -1; }
 .crp-root .crp-rescheduling-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
-/* HU-COM-017: the credit balance recorded from the refund treatment (operator-detail-list of the mockup). */
-.crp-root .crp-credit-balance-result { display: grid; gap: var(--crp-space-3); margin-top: var(--crp-space-4); }
-.crp-root .crp-credit-balance-list { display: grid; gap: 11px; margin: 0; }
-.crp-root .crp-credit-balance-list div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--crp-space-4); padding-bottom: 10px; border-bottom: 1px solid var(--crp-line); }
-.crp-root .crp-credit-balance-list div:last-child { padding-bottom: 0; border-bottom: 0; }
-.crp-root .crp-credit-balance-list dt { color: var(--crp-soft); font-size: 0.77rem; }
-.crp-root .crp-credit-balance-list dd { margin: 0; color: var(--crp-text); font-size: 0.82rem; font-weight: 700; text-align: right; }
-.crp-root .crp-credit-balance-note, .crp-root .crp-credit-balance-error { margin: 0; color: var(--crp-soft); } .crp-root .crp-credit-balance-error { color: var(--crp-error); }
-/* HU-COM-017 amendment: admin-saldo-favor.html (mt-stat-row, mt-inline-form and mt-details of the mockup). */
-.crp-root .crp-operator-access-note { margin: 0 0 18px; padding: 12px 14px; border: 1px solid var(--crp-line); border-radius: 10px; background: var(--crp-muted); color: var(--crp-soft); font-size: 0.78rem; line-height: 1.45; }
-.crp-root .crp-credit-balance-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--crp-space-3); margin: 14px 0; }
-.crp-root .crp-summary-metric { display: grid; gap: 2px; padding: 10px 14px; border: 1px solid var(--crp-line); border-radius: 12px; background: var(--crp-surface); }
-.crp-root .crp-summary-metric-value { color: var(--crp-text); font-size: 1.2rem; font-weight: 700; } .crp-root .crp-summary-metric-label { color: var(--crp-soft); font-size: 0.72rem; }
-.crp-root .crp-credit-balance-panel { margin-top: 14px; padding: 16px 18px; } .crp-root .crp-credit-balance-panel h2 { margin: 2px 0 10px; font-size: 0.95rem; }
-.crp-root .crp-credit-balance-form { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; margin: 12px 0 4px; }
-.crp-root .crp-credit-balance-form > div { display: grid; gap: 4px; font-size: 0.8rem; } .crp-root .crp-credit-balance-form input, .crp-root .crp-credit-balance-form select { padding: 6px 8px; font-size: 0.82rem; }
-.crp-root .crp-credit-balance-details { margin-top: 10px; font-size: 0.82rem; } .crp-root .crp-credit-balance-details summary { cursor: pointer; color: var(--crp-text); font-weight: 600; }
+
+/* Client screens refined as the landing (main.css, "Refinamiento a zoom 100 %"): delicate type, soft cards, no heavy shadows. */
+.crp-root .crp-panel-hero h1, .crp-root .self-service-panel .crp-page-header-title { font-size: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.crp-root .self-service-panel .crp-page-header-desc, .crp-root .crp-panel-hero > p { font-size: 0.9rem; line-height: 1.55; }
+.crp-root .crp-panel-layout h2, .crp-root .crp-panel-featured h2, .crp-root .crp-my-payments h2, .crp-root .self-service-panel h2 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
+.crp-root .crp-panel-card, .crp-root .self-service-card, .crp-root .crp-my-payments-card { padding: 16px 18px; border-color: #e3e7e6; border-radius: 14px; box-shadow: 0 2px 10px rgba(23, 37, 43, 0.04); }
+.crp-root .crp-panel-featured li, .crp-root .crp-panel-promo { border-color: #e3e7e6; border-radius: 14px; }
+.crp-root .crp-panel-search { border-color: #e3e7e6; border-radius: 14px; }
+.crp-root .crp-panel-card strong, .crp-root .self-service-card-copy strong { font-size: 1rem; font-weight: 700; }
+.crp-root .self-service-card-copy p, .crp-root .crp-panel-card p { font-size: 0.86rem; }
+.crp-root .crp-my-payments-card-lines small, .crp-root .self-service-card small { font-size: 0.8rem; line-height: 1.45; }
+.crp-root .crp-panel-featured-meta em { font-size: 1.15rem; font-weight: 700; }
+.crp-root .crp-panel-featured-body strong { font-size: 0.95rem; font-weight: 700; }
+.crp-root .crp-panel-promo-tag, .crp-root .crp-panel-card-pill { font-size: 0.72rem; font-weight: 700; }
+.crp-root .self-service-card::after { content: none; }
+.crp-root .crp-my-payments-card-actions .crp-outline { border-color: transparent; background: transparent; color: var(--crp-accent-strong); font-size: 0.8rem; font-weight: 600; }
+.crp-root .crp-my-payments-card-actions button { min-height: 34px; padding: 0 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+
+/* profile.html (Mi perfil, ficha centrada de main.css): top bar, identity card, account fields and the rows of access. */
+.crp-root .crp-profile { display: grid; gap: 18px; width: min(100% - 40px, 920px); margin: 0 auto; padding: 4px 0 48px; font-family: "Manrope", sans-serif; }
+.crp-root .crp-profile-topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 16px 0; }
+.crp-root .crp-profile-topbar h1 { margin: 0; color: #17252b; font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; text-align: center; }
+.crp-root .crp-profile-back { justify-self: start; min-height: 36px; padding: 0 4px; border: 0; background: transparent; color: #5a6b70; font-size: 0.94rem; font-weight: 700; }
+.crp-root .crp-profile-intro { margin: 0; color: #5a6b70; font-size: 0.95rem; line-height: 1.6; }
+.crp-root .crp-profile-card { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 22px; align-items: center; padding: 22px 24px; border: 1px solid #d7e0de; border-radius: 20px; background: #ffffff; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); }
+.crp-root .crp-profile-identity { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.crp-root .crp-profile-identity strong { color: #17252b; font-size: 1.2rem; font-weight: 800; }
+.crp-root .crp-profile-identity p { margin: 0; color: #5a6b70; font-size: 0.95rem; }
+.crp-root .crp-profile-avatar { display: inline-flex; align-items: center; justify-content: center; width: 82px; height: 82px; border-radius: 999px; background: linear-gradient(180deg, #2f6b57, #1f4f57); color: #ffffff; font-size: 1.4rem; font-weight: 800; }
+.crp-root .crp-profile-section { margin: 0 0 14px; color: #17252b; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.crp-root .crp-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.crp-root .crp-profile-field { display: grid; gap: 8px; }
+.crp-root .crp-profile-field > span { color: #45555c; font-size: 0.88rem; font-weight: 700; }
+.crp-root .crp-profile-field input { min-height: 50px; width: 100%; padding: 0 14px; border: 1px solid #d8dfdc; border-radius: 12px; background: #f8faf9; color: #17252b; font: inherit; }
+.crp-root .crp-profile-blocked { margin: 14px 0 0; color: #5a6b70; font-size: 0.88rem; line-height: 1.5; }
+.crp-root .crp-profile-rows { border: 1px solid #d7e0de; border-radius: 18px; background: #ffffff; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.04); overflow: hidden; }
+.crp-root .crp-profile-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; border: 0; background: transparent; text-align: left; }
+.crp-root .crp-profile-row-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #edf4f7; color: #1f4f57; font-size: 0.76rem; font-weight: 800; }
+.crp-root .crp-profile-row-copy { display: grid; gap: 2px; }
+.crp-root .crp-profile-row-copy strong { color: #17252b; font-size: 1rem; }
+.crp-root .crp-profile-row-copy span { color: #5a6b70; font-size: 0.9rem; }
+.crp-root .crp-profile-row-arrow { color: #17252b; font-size: 1.35rem; line-height: 1; text-align: right; }
+@media (max-width: 720px) { .crp-root .crp-profile-card, .crp-root .crp-profile-grid { grid-template-columns: 1fr; } .crp-root .crp-profile-topbar { grid-template-columns: 1fr; justify-items: center; } }
