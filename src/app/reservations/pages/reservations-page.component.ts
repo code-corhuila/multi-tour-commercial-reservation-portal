@@ -2,16 +2,18 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap, tap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
+import { RESCHEDULING_AREA } from '../../rescheduling/data/rescheduling-ports';
 import { formatDate } from '../../shared/format';
 import { ReservationFormComponent } from '../components/reservation-form.component';
 import { ReservationViewComponent } from '../components/reservation-view.component';
 import { ReservationsSource } from '../data/reservations-source';
-import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, travelers } from '../model/reservation';
+import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, paymentState, travelers } from '../model/reservation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PortalSlotOutlet, RESERVATION_DETAIL_ACTIONS, RESERVATION_ROW_ACTIONS } from '../../shared/portal-slots';
 
 type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly Reservation[] };
 type View = { kind: 'list' | 'create' } | { kind: 'created' | 'detail'; reservation: Reservation };
+const archived = (r: Reservation) => r.status === 'FINALIZADA' || r.status === 'CANCELADA';
 /** Eyebrow and title of screens 10, 10B, 10C and 10A. */
 const HEADERS: Record<View['kind'], readonly [string, string]> = {
   list: ['Gestión comercial', 'Reservas'], create: ['Gestión comercial', 'Crear reserva'],
@@ -20,7 +22,8 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
 
 @Component({
   selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
-  styles: [`.crp-reservation-code { display: block; color: #203234; font-weight: 800; } small { display: block; margin-top: 4px; color: #748084; }`],
+  styles: [`.crp-reservation-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; } .crp-reservation-hero p { margin: 6px 0 0; max-width: 520px; }
+    .crp-reservation-code { display: block; color: #203234; font-weight: 800; } small { display: block; margin-top: 4px; color: #748084; }`],
   template: `
     @let v = view();
     <header class="crp-page-header">
@@ -34,8 +37,10 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
       @case ('created') { <app-reservation-view [reservation]="v.reservation" [fresh]="true" (detail)="view.set({ kind: 'detail', reservation: v.reservation })" /> }
       @case ('detail') { <app-reservation-view [reservation]="v.reservation" /> }
       @default {
+        <section class="crp-operator-panel crp-reservation-hero"><div><p class="crp-operator-eyebrow">{{ text.followEyebrow }}</p><h2>{{ text.followTitle }}</h2></div><p>{{ text.followNote }}</p></section>
         <section class="crp-operator-panel">
-          <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.listEyebrow }}</p><h2>{{ text.listTitle }}</h2></div></div>
+          <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.listEyebrow }}</p><h2>{{ text.listTitle }}</h2></div>
+            @if (hasArchived()) { <button type="button" class="crp-operator-outline" [attr.aria-expanded]="showAll()" (click)="showAll.set(!showAll())">{{ showAll() ? text.active : text.all }}</button> }</div>
           @let current = state();
           @switch (current.kind) {
             @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
@@ -44,11 +49,13 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
             @case ('data') {
               <div class="crp-table-wrap" data-state="data"><table class="crp-operator-table">
                 <thead><tr>@for (column of text.columns; track column) { <th>{{ column }}</th> }</tr></thead>
-                <tbody>@for (r of current.items; track r.id) {
+                <tbody>@for (r of shown(current.items); track r.id) {
                   <tr><td><span class="crp-reservation-code">#{{ r.id }}</span><small>{{ date(r.departureDate) }} · {{ travelers(r.people) }}</small></td>
                     <td>{{ r.leadCustomerName }}</td><td>{{ r.tourName }}</td>
-                    <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td>{{ money(r.balanceCents) }}</td>
-                    <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" /></td></tr>
+                    <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td><small>{{ paymentState(r) }}</small><br><strong>{{ money(r.balanceCents) }}</strong></td>
+                    <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" />
+                    @if (payLabel(r); as label) { <span> · </span><button type="button" (click)="open('payment-management', r)">{{ label }}</button> }
+                    @if (reschedulable(r)) { <span> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> }</td></tr>
                 }</tbody>
               </table></div>
             }
@@ -68,6 +75,21 @@ export class ReservationsPageComponent {
   protected readonly status = STATUS_LABEL;
   protected readonly badge = STATUS_CLASS;
   protected readonly headers = HEADERS;
+  protected readonly paymentState = paymentState;
+  protected readonly rescheduling = RESCHEDULING_AREA;
+  private readonly navigation = inject(PortalNavigation, { optional: true });
+  /** Mockup 10: Finalizada and Cancelada stay out of the list until "Ver todas las reservas". */
+  protected readonly showAll = signal(false);
+  protected readonly hasArchived = computed(() => { const c = this.state(); return c.kind === 'data' && c.items.some(archived); });
+  protected shown(items: readonly Reservation[]): readonly Reservation[] { return this.showAll() ? items : items.filter((r) => !archived(r)); }
+  /** Gestionar pago or Ver pago, when the area exists and neither the proof review (a slot) nor the operation takes the cell. */
+  protected payLabel(r: Reservation): string | null {
+    const reviewing = r.payments?.at(-1)?.proofStatus === 'EN_VALIDACION';
+    if (!this.navigation?.has('payment-management') || reviewing || r.status === 'EN_EJECUCION' || r.status === 'FINALIZADA') return null;
+    return r.status === 'CANCELADA' || r.balanceCents === 0 ? this.text.seePay : this.text.pay;
+  }
+  protected reschedulable(r: Reservation): boolean { return !!r.reschedulingPending && !!this.navigation?.has(RESCHEDULING_AREA); }
+  protected open(area: string, r: Reservation): void { this.navigation?.open(area, { reservation: r.id }); }
   /** HU-COM-001 portal foundation of 2026-10-13: the actions other stories add to the Acción cell of 10. */
   protected readonly rowActions = RESERVATION_ROW_ACTIONS;
   protected readonly detailActions = RESERVATION_DETAIL_ACTIONS;
