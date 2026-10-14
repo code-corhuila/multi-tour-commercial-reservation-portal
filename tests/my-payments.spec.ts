@@ -396,11 +396,12 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
 });
 
 describe('clientPagesWithoutContributionsRenderAsBefore', () => {
-  it('without the port of this story, 17 has neither Continuar pago, Mis pagos nor Notificaciones, and Mis reservas no economic line', async () => {
+  it('without the port of this story, 17 has neither Continuar pago nor Mis pagos, its bell has no notifications, and Mis reservas no economic line', async () => {
     const { host, cleanup } = mountDemo([{ provide: MyPaymentsSource, useValue: null }]);
     try {
       await vi.waitFor(() => expect(host.querySelector('app-client-panel-page .crp-panel-card')).toBeTruthy());
-      expect(host.textContent).not.toMatch(/Continuar pago|Mis pagos|Notificaciones/);
+      expect(host.textContent).not.toMatch(/Continuar pago|Mis pagos/);
+      expect(host.querySelector('.crp-client-bell-list')?.textContent?.trim()).toBe('No tienes notificaciones nuevas.');
       await vi.waitFor(() => press(host, 'Ver mis reservas'));
       await vi.waitFor(() => expect(host.querySelector('.self-service-card')).toBeTruthy());
       expect(host.textContent).not.toMatch(/Tipo de pago|Estado del comprobante/);
