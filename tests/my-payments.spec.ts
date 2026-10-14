@@ -360,7 +360,7 @@ describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
       // The proof closes on 22, Comprobante recibido, which does not confirm the reservation; the panel is one click away.
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Comprobante recibido'));
       press(host, 'Volver al panel');
-      await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-panel-notices .crp-operator-panel p'), (p) => flat(p.textContent)).filter((t) => t.includes('En validación'))).toEqual([
+      await vi.waitFor(() => expect(Array.from(host.querySelectorAll('.crp-client-bell-panel .crp-client-bell-list p'), (p) => flat(p.textContent)).filter((t) => t.includes('En validación'))).toEqual([
         'Reserva RES-1842: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.',
         'Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.']));
       press(host, 'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
@@ -374,7 +374,7 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
   it('Mis pagos of the demo build shows Sin comprobante, En validación, Abono recibido, Pago completo and a cancelled reservation', async () => {
     const { host, cleanup } = mountDemo();
     try {
-      await vi.waitFor(() => expect(flat(host.querySelector('.crp-panel-notices .crp-operator-panel')?.textContent))
+      await vi.waitFor(() => expect(flat(host.querySelector('.crp-client-bell-panel .crp-client-bell-list')?.textContent))
         .toContain('Reserva RES-1840: comprobante En validación. La revisión puede tardar hasta 24 horas corridas y la reserva no se confirma hasta que el pago sea validado.'));
       press(host, 'MP Mis pagos Consulta pagos, abonos, saldos, comprobantes y saldo a favor de tus reservas.');
       // The five situations of the mockup come first; HU-COM-018 adds the demo customer's RES-1829 and RES-1828 after them.
@@ -399,11 +399,12 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
 });
 
 describe('clientPagesWithoutContributionsRenderAsBefore', () => {
-  it('without the port of this story, 17 has neither Continuar pago, Mis pagos nor Notificaciones, and Mis reservas no economic line', async () => {
+  it('without the port of this story, 17 has neither Continuar pago nor Mis pagos, its bell has no notifications, and Mis reservas no economic line', async () => {
     const { host, cleanup } = mountDemo([{ provide: MyPaymentsSource, useValue: null }]);
     try {
       await vi.waitFor(() => expect(host.querySelector('app-client-panel-page .crp-panel-card')).toBeTruthy());
-      expect(host.textContent).not.toMatch(/Continuar pago|Mis pagos|Notificaciones/);
+      expect(host.textContent).not.toMatch(/Continuar pago|Mis pagos/);
+      expect(host.querySelector('.crp-client-bell-list')?.textContent?.trim()).toBe('No tienes notificaciones nuevas.');
       await vi.waitFor(() => press(host, 'Ver mis reservas'));
       await vi.waitFor(() => expect(host.querySelector('.self-service-card')).toBeTruthy());
       expect(host.textContent).not.toMatch(/Tipo de pago|Estado del comprobante/);

@@ -244,10 +244,19 @@
 .crp-root .crp-client-content { flex: 1; width: min(100% - 32px, 1680px); margin: 12px auto; padding: 24px 20px 40px; background: var(--crp-surface); }
 /* Compact header of panel-cliente.html and mis-reservas.html, inside the canvas. */
 .crp-root .crp-client-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: -24px -20px 24px; padding: 22px 20px 16px; border-bottom: 1px solid #d7e0de; }
-.crp-root .crp-client-panel-header .crp-client-panel-brand { color: #17252b; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.04em; }
-.crp-root .crp-client-panel-header button:not(.crp-client-panel-brand) { color: #5a6b70; }
+.crp-root .crp-client-panel-header .crp-client-panel-brand { color: #111111; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+.crp-root .crp-client-panel-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+.crp-root .crp-client-panel-header .crp-client-panel-actions > button:not(.crp-client-bell-button) { color: #5a6b70; }
+.crp-root .crp-client-bell { position: relative; }
+.crp-root .crp-client-panel-header .crp-client-bell-button { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid #d7e0de; border-radius: 50%; background: #ffffff; color: #17252b; }
+.crp-root .crp-client-panel-header .crp-client-bell-button:hover:not(:disabled) { background: #eef4f2; color: #17252b; }
+.crp-root .crp-client-bell-panel { position: absolute; top: calc(100% + 10px); right: 0; width: min(380px, 80vmin); max-height: 70vh; overflow-y: auto; padding: 16px; border: 1px solid #d7e0de; border-radius: 14px; background: #ffffff; box-shadow: 0 16px 40px rgba(23, 37, 43, 0.18); }
+.crp-root .crp-client-bell-panel[hidden] { display: none; }
+.crp-root .crp-client-bell-panel h2 { margin: 0 0 10px; font-size: 1rem; font-weight: 800; }
+.crp-root .crp-client-bell-list > p { margin: 0; padding: 10px 0; border-top: 1px solid #e6edeb; font-size: 0.88rem; line-height: 1.45; }
+.crp-root .crp-client-bell-list > p:first-child { border-top: 0; padding-top: 0; }
 .crp-root .crp-client-footer { padding: 48px 0 24px; padding-inline: max(clamp(20px, 4vw, 60px), calc((100% - 1320px) / 2)); background: #0c1a16; color: #9fb3ac; }
-.crp-root .crp-client-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; max-width: 760px; padding-bottom: 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.crp-root .crp-client-footer-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 32px; max-width: 760px; padding-bottom: 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 .crp-root .crp-client-footer-grid p { max-width: 34ch; margin: 0; }
 .crp-root .crp-client-footer-brand { display: block; margin-bottom: 8px; color: #ffffff; font-size: 1.2rem; font-weight: 800; }
 .crp-root .crp-client-footer-col { display: grid; gap: 8px; align-content: start; justify-items: start; }
@@ -376,13 +385,13 @@
 .crp-root .crp-panel-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .crp-root .crp-panel-chips button { min-height: 32px; padding: 0 12px; border-color: #d7e0de; border-radius: 999px; background: #ffffff; color: #45555c; font-size: 0.8rem; }
 .crp-root .crp-panel-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 56px; margin-top: 28px; }
-.crp-root .crp-panel-layout h2, .crp-root .crp-panel-notices h2, .crp-root .crp-panel-featured h2 { margin: 0 0 14px; color: #17252b; font-size: 1.35rem; letter-spacing: -0.03em; }
+.crp-root .crp-panel-layout h2, .crp-root .crp-panel-featured h2 { margin: 0 0 14px; color: #17252b; font-size: 1.35rem; letter-spacing: -0.03em; }
 .crp-root .crp-panel-card { display: grid; gap: 14px; padding: 20px 18px; border: 1px solid #d7e0de; border-radius: 20px; background: #ffffff; box-shadow: 0 16px 30px rgba(28, 35, 38, 0.06); }
 .crp-root .crp-panel-card strong { display: block; color: #17252b; font-size: 1.05rem; }
 .crp-root .crp-panel-card p, .crp-root .crp-panel-discounts p, .crp-root .crp-panel-featured p { margin: 4px 0; color: var(--crp-soft); }
 .crp-root .crp-panel-card small { color: #7a8588; font-size: 0.74rem; }
 .crp-root .crp-panel-card-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid #e7ece9; }
-.crp-root .crp-panel-quick, .crp-root .crp-panel-notices { margin-top: 32px; }
+.crp-root .crp-panel-quick { margin-top: 32px; }
 .crp-root .crp-panel-quick ul, .crp-root .crp-panel-discounts ul, .crp-root .crp-panel-featured ul { margin: 0; padding: 0; list-style: none; }
 .crp-root .crp-panel-quick .crp-panel-quick-item { display: flex; justify-content: flex-start; align-items: flex-start; gap: 16px; width: 100%; min-height: 0; padding: 16px 0; border: 0; border-top: 1px solid #e7ece9; border-radius: 0; background: none; color: var(--crp-soft); font-weight: 400; text-align: left; }
 .crp-root .crp-panel-quick li:first-child .crp-panel-quick-item { border-top: 0; padding-top: 0; }
