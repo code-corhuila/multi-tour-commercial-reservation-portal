@@ -5,18 +5,11 @@ import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
 import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CATALOG_COPY } from '../catalog-copy';
-import { formatCop } from '../../shared/format';
-import { CatalogItem, capabilitiesOf } from '../model/catalog-item';
-
-/**
- * The four states of a screen (RN-P2, D-05) as one value. Three booleans would allow eight
- * combinations for four legal states, and the illegal ones are the blank screens Annex H forbids.
- */
-export type PageState =
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'error'; readonly retry: () => void }
-  | { readonly kind: 'empty' }
-  | { readonly kind: 'data'; readonly items: readonly CatalogItem[] };
+import { formatCop, formatDateRange } from '../../shared/format';
+import { CatalogItem } from '../model/catalog-item';
+import { PageState } from '../../shared/page-state';
+import { PortalCapabilities } from '../../shared/portal-capabilities';
+import { PortalNavigation } from '../../portal-navigation';
 
 /** The one form the page may show: registering (no item) or changing the given item. */
 interface FormTarget {
@@ -41,11 +34,16 @@ function reasonOf(error: unknown): string {
     <header class="crp-page-header">
       <div class="crp-page-header-main">
         <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
-        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
       </div>
+      <span class="crp-page-header-action crp-header-actions">
       @if (caps.canRegister && current.kind !== 'loading' && current.kind !== 'error') {
-        <button class="crp-operator-primary crp-page-header-action" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
+        <button class="crp-operator-primary" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
       }
+      @if (navigation) {
+        <button class="crp-operator-outline" type="button" (click)="navigation.open('catalog')">{{ copy.backToCatalogs }}</button>
+      }
+      </span>
     </header>
     <section class="crp-operator-panel" [attr.aria-label]="copy.panelTitle">
     <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ copy.panelEyebrow }}</p><h2>{{ copy.panelTitle }}</h2></div></div>
@@ -79,12 +77,13 @@ function reasonOf(error: unknown): string {
     } @else if (current.kind === 'data') {
       <div class="crp-table-wrap">
       <table class="crp-operator-table" data-state="data" [attr.aria-label]="copy.panelTitle">
-        <thead><tr><th scope="col">{{ copy.columns.service }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
+        <thead><tr><th scope="col">{{ copy.columns.service }}</th><th scope="col">{{ copy.columns.rate }}</th><th scope="col">{{ copy.columns.validity }}</th><th scope="col">{{ copy.columns.status }}</th><th scope="col">{{ copy.columns.actions }}</th></tr></thead>
         <tbody>
         @for (item of current.items; track item.serviceId) {
           <tr>
-            <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.serviceType] }}</small></td>
+            <td>{{ item.commercialName }}</td>
             <td>{{ cop(item.baseRateCents) }}</td>
+            <td>{{ validity(item) }}</td>
             <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.catalogStatus === 'ACTIVE'" [class.crp-is-pending]="item.catalogStatus === 'INACTIVE'">{{ copy.statuses[item.catalogStatus] }}</span></td>
             <td class="crp-row-actions">
             @if (canEdit) {
@@ -116,6 +115,7 @@ function reasonOf(error: unknown): string {
 export class CatalogPageComponent {
   protected readonly copy = CATALOG_COPY;
   protected readonly cop = formatCop;
+  protected readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly source = inject(CatalogItemsSource);
   private readonly writer = inject(CatalogItemsWriter);
   private readonly destroyRef = inject(DestroyRef);
@@ -146,7 +146,11 @@ export class CatalogPageComponent {
         // arrives to overwrite a newer one (RN-P3, D-06).
         switchMap(() =>
           this.source.list().pipe(
-            map((items): PageState<CatalogItem> => (items.length === 0 ? { kind: 'empty' } : { kind: 'data', items })),
+            // Tours only: transport belongs to operations-cost (spec A.2 row 2).
+            map((all): PageState<CatalogItem> => {
+              const items = all.filter((each) => each.serviceType === 'TOUR');
+              return items.length === 0 ? { kind: 'empty' } : { kind: 'data', items };
+            }),
             catchError(() => of<PageState<CatalogItem>>({ kind: 'error', retry: () => this.reload() })),
             startWith<PageState<CatalogItem>>({ kind: 'loading' }),
           ),
@@ -155,6 +159,15 @@ export class CatalogPageComponent {
       )
       .subscribe((next) => this.state.set(next));
     this.reload();
+    // "Nuevo servicio" of the hub opens the tour creation (spec A.2 row 7).
+    if (this.navigation?.params()['create'] === '1' && this.caps.canRegister) {
+      this.formTarget.set({ item: undefined });
+    }
+  }
+
+  /** The validity range of the offer, or a dash when the contract returns none (gap G-B). */
+  protected validity(item: CatalogItem): string {
+    return item.validFrom && item.validTo ? formatDateRange(item.validFrom, item.validTo) : this.copy.noValidity;
   }
 
   reload(): void {

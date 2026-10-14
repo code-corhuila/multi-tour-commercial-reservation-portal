@@ -1,4 +1,5 @@
 import { AbstractType, InjectionToken, Injector, Type } from '@angular/core';
+import { CatalogHubPageComponent } from './catalog/pages/catalog-hub-page.component';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
 import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
@@ -78,13 +79,35 @@ export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTA
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
-  { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
-  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent,
+  // HU-COM-001 (mockup PDR v1.9, AC-P1.17): the operator lands on Reservas, and this story owns the order of the sidebar.
+  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
+  // HU-COM-001 admin-catalogos.html (the hub), whose cards open the tour list and, for the Administrator, the establishments.
+  { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
+  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
     isAvailable: (injector) => has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
+  },
+  // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
+  { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
+    isAvailable: (injector) => has(injector, CurrentDiscountsSource) },
+  // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
+  { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicOfferSource) },
+  { key: CLIENT_AREA.lodging, label: 'Alojamiento', component: LodgingOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
+  { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer',
+    isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
+  {
+    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
+    // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
+    isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
   },
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {

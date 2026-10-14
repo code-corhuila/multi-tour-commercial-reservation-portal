@@ -66,7 +66,8 @@ describe('theTourListShowsTheMockupColumnsAndTheValidityRange', () => {
   });
 
   it('shows a tour the contract returned without validity as a dash instead of inventing dates', async () => {
-    const { host } = await openList([itemNamed('Sin vigencia')]);
+    const { validFrom: _from, validTo: _to, ...bare } = itemNamed('Sin vigencia');
+    const { host } = await openList([bare]);
     expect(host.querySelectorAll('tbody tr td')[2].textContent?.trim()).toBe('—');
   });
 });

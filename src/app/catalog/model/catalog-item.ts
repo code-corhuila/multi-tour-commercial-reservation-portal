@@ -18,6 +18,9 @@ export interface CatalogItem {
   readonly configuredCapacity: number | null;
   readonly transportRequired: boolean;
   readonly highRisk: boolean;
+  /** Validity of the offer, RFC 3339 dates; PROPOSED (mockup PDR v1.9, gap G-B): absent while the contract does not return it. */
+  readonly validFrom?: string;
+  readonly validTo?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -34,6 +37,9 @@ export interface CreateCatalogItemCommand {
   readonly configuredCapacity: number | null;
   readonly transportRequired: boolean;
   readonly highRisk: boolean;
+  /** The validity the form requires (G-B: the container adapter drops it until the contract has the fields). */
+  readonly validFrom?: string;
+  readonly validTo?: string;
 }
 
 /**

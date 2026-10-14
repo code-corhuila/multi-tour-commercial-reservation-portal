@@ -7,6 +7,8 @@ import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstab
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
 import { ESTABLISHMENTS_COPY } from '../src/app/establishments/establishments-copy';
+import { PortalAudience } from '../src/app/portal-audience';
+import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { actorAs } from './actor-context.double';
 
@@ -24,33 +26,35 @@ async function openPortal(role: 'TENANT_ADMINISTRATOR' | 'READ_ONLY' = 'TENANT_A
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
   await settle();
   const host: HTMLElement = fixture.nativeElement;
-  const establishmentsPage = async () => {
-    Array.from(host.querySelectorAll('nav button')).find((button) => button.textContent === 'Establishments')!
-      .dispatchEvent(new MouseEvent('click'));
-    await settle();
-  };
-  return { host, settle, establishmentsPage };
+  // The sidebar opens the Catálogos hub; the lists are sub-screens it opens (HU-COM-001 v1.9).
+  const show = async (area: string) => { fixture.debugElement.injector.get(PortalNavigation).open(area); await settle(); };
+  const establishmentsPage = () => show('establishments');
+  const catalogPage = () => show('catalog-tours');
+  return { host, settle, establishmentsPage, catalogPage };
 }
 
 describe('landingComposition', () => {
   it('uses the landing shell, page header, access note, panel and a semantic catalog table', async () => {
-    const { host } = await openPortal();
+    const { host, catalogPage } = await openPortal();
+    await catalogPage();
     expect(host.querySelector('.crp-operator-shell .crp-operator-content')).not.toBeNull();
     const header = host.querySelector('.crp-page-header')!;
-    expect(header.querySelector('.crp-page-header-main .crp-page-header-eyebrow')?.textContent).toBe(CATALOG_COPY.eyebrow);
-    expect(header.querySelector('h1.crp-page-header-title.crp-h1')?.textContent).toBe(CATALOG_COPY.title.all);
-    expect(header.querySelector('button.crp-primary.crp-page-header-action')?.textContent).toBe(CATALOG_COPY.newItem);
-    expect(host.querySelector('.crp-access-note')?.textContent).toBe(CATALOG_COPY.accessNote);
-    expect(host.querySelector('.crp-operator-panel .crp-operator-panel-head h2')?.textContent).toBe(CATALOG_COPY.panelTitle);
-    const table = host.querySelector('.crp-table-wrap table.crp-table')!;
-    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(Object.values(CATALOG_COPY.columns));
+    expect(header.querySelector('.crp-page-header-main .crp-page-header-eyebrow')?.textContent).toBe('Catálogos');
+    expect(header.querySelector('h1.crp-page-header-title.crp-h1')?.textContent).toBe('Gestionar catálogo de tours');
+    expect(header.querySelector('.crp-page-header-action button.crp-operator-primary')?.textContent).toBe('Crear tour');
+    const panel = host.querySelector('.crp-operator-panel')!;
+    expect(panel.querySelector('.crp-operator-panel-head .crp-operator-eyebrow')?.textContent).toBe('Tours y atractivos');
+    expect(panel.querySelector('.crp-operator-panel-head h2')?.textContent).toBe('Oferta, salidas y tarifas base');
+    expect(panel.querySelector('.crp-operator-copy')?.textContent).toBe(CATALOG_COPY.panelCopy);
+    const table = host.querySelector('.crp-table-wrap table.crp-operator-table')!;
+    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Tour', 'Tarifa base', 'Vigencia', 'Estado', 'Acción']);
     expect(table.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
     for (const row of Array.from(table.querySelectorAll('tbody tr'))) {
       const cells = row.querySelectorAll('td');
-      expect(Object.values(CATALOG_COPY.types)).toContain(cells[1].textContent?.trim());
-      expect(cells[2].textContent?.trim()).toMatch(/^\$\s?\d{1,3}(\.\d{3})*$/);
-      expect(row.querySelector('.crp-status')?.textContent?.trim()).toMatch(/^(ACTIVE|INACTIVE)$/);
-      expect(row.querySelector('button.crp-row-manage, button.crp-row-toggle')).not.toBeNull();
+      expect(cells[1].textContent?.trim()).toMatch(/^\$\d{1,3}(\.\d{3})*$/);
+      expect(row.querySelector('.crp-operator-status')?.textContent?.trim()).toMatch(/^(Activo|Inactivo)$/);
+      expect(Array.from(row.querySelectorAll('button'), (button) => button.textContent?.trim())).toEqual(
+        ['Gestionar', row.querySelector('.crp-is-confirmed') ? 'Inactivar' : 'Reactivar']);
     }
   });
 
@@ -69,13 +73,13 @@ describe('landingComposition', () => {
   });
 
   it('retains the same composition in read-only mode without creation or row actions', async () => {
-    const { host, establishmentsPage } = await openPortal('READ_ONLY');
-    for (const show of [async () => undefined, establishmentsPage]) {
+    const { host, catalogPage, establishmentsPage } = await openPortal('READ_ONLY');
+    for (const show of [catalogPage, establishmentsPage]) {
       await show();
       expect(host.querySelector('.crp-page-header h1')).not.toBeNull();
-      expect(host.querySelector('.crp-page-header-action')).toBeNull();
-      expect(host.querySelector('.crp-table tbody button')).toBeNull();
-      expect(host.querySelectorAll('.crp-table tbody tr').length).toBeGreaterThan(0);
+      expect(host.querySelector('.crp-operator-primary, .crp-operator-panel-head button')).toBeNull();
+      expect(host.querySelector('.crp-operator-table tbody button')).toBeNull();
+      expect(host.querySelectorAll('.crp-operator-table tbody tr').length).toBeGreaterThan(0);
     }
   });
 });

@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogHubPageComponent } from '../src/app/catalog/pages/catalog-hub-page.component';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
@@ -74,9 +75,16 @@ async function openShell(role: ActorRole, withDiscounts = true, extra: PortalAre
 describe('portalAreasRegistry', () => {
   it('declares the areas in order with Spanish labels and their page components', () => {
     expect(PORTAL_AREAS.map(({ key, label, component }) => ({ key, label, component }))).toEqual([
-      { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent },
+      { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent },
+      { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent },
+      { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
+      { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
+      { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
+      { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
+      { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
+      { key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent },
       { key: 'client-panel', label: 'Mis reservas', component: ClientPanelPageComponent },
       { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
@@ -115,18 +123,18 @@ describe('operatorShellSidebar', () => {
     expect(host.querySelector('.crp-operator-shell > main.crp-operator-content')).not.toBeNull();
     expect(host.querySelector('.crp-operator-brand')?.textContent?.trim()).toBe('MULTITOUR');
     expect(host.querySelector('.crp-operator-role')?.textContent?.trim()).toBe('Administrador del tenant');
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Descuentos']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Descuentos']);
     expect(items()[0].classList.contains('crp-is-active')).toBe(true);
     expect(items()[0].getAttribute('aria-current')).toBe('page');
-    expect(host.querySelector('app-catalog-page')).not.toBeNull();
+    expect(host.querySelector('app-catalog-hub-page')).not.toBeNull();
   });
 
   it('renders the selected area and moves the active state with it', async () => {
-    const { host, items, open } = await openShell('TENANT_ADMINISTRATOR');
-    await open('Establecimientos');
+    const { host, items, open, settle, navigation } = await openShell('TENANT_ADMINISTRATOR');
+    navigation().open('establishments'); await settle();
     expect(host.querySelector('app-establishments-page')).not.toBeNull();
-    expect(host.querySelector('app-catalog-page')).toBeNull();
-    expect(items().filter((b) => b.classList.contains('crp-is-active')).map((b) => b.textContent?.trim())).toEqual(['Establecimientos']);
+    expect(host.querySelector('app-catalog-hub-page')).toBeNull();
+    expect(items().filter((b) => b.classList.contains('crp-is-active')).map((b) => b.textContent?.trim())).toEqual(['Catálogos']);
     await open('Descuentos');
     expect(host.querySelector('app-discounts-page')).not.toBeNull();
   });
@@ -134,17 +142,17 @@ describe('operatorShellSidebar', () => {
   it('hides Descuentos from a role that cannot manage discounts', async () => {
     const { host, items } = await openShell('OPERATIONAL_COLLABORATOR');
     expect(host.querySelector('.crp-operator-role')?.textContent?.trim()).toBe('Colaborador operativo');
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos']);
   });
 
   it('hides Descuentos when the build supplies no discount source', async () => {
     const { items } = await openShell('TENANT_ADMINISTRATOR', false);
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos']);
   });
 
   it('shows the operator no customer area', async () => {
     const { host, items } = await openShell('TENANT_ADMINISTRATOR', true, [CUSTOMER_AREA]);
-    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Establecimientos', 'Descuentos']);
+    expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos', 'Descuentos']);
     expect(host.querySelector('.crp-client-header')).toBeNull();
   });
 });
