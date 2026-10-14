@@ -37,7 +37,8 @@ export type Reservation = {
   /** HU-COM-018 D-02 (PROPUESTO): the rescheduling episode, on the same reservation; fields follow rescheduling_records (G-B). */
   readonly reschedulingEpisode?: ReschedulingEpisode;
   /** HU-COM-011 D-02 (PROPUESTO): payment_deadlines and payment_followups (ERD-01), kept by the service; ISO with offset. */
-  readonly deadline?: { readonly dueAt: string; readonly extendedUntil?: string };
+  readonly deadline?: { readonly dueAt: string; readonly extendedUntil?: string;
+    /** RN-RES-006: the single extension, with who granted it and when (PROPUESTO). */ readonly extension?: { readonly hours: number; readonly actorLabel: string; readonly grantedAt: string } };
   readonly followups?: readonly { readonly note: string; readonly actorLabel: string; readonly contactedAt: string }[];
   /** HU-COM-016 D-02 (PROPUESTO): the refund of this reservation's money as facts; RefundsSource resolves its amount and state (DD-1). */
   readonly refund?: { readonly origin: 'NON_PAYMENT' | 'LOWER_VALUE' | 'CUSTOMER_CANCELLATION' | 'NOT_ATTRIBUTABLE' | 'RESCHEDULING'; readonly reason: string;
@@ -61,6 +62,7 @@ export type RefundAct = { readonly by: string; readonly at: string };
 export type ReservationPayment = {
   readonly id: string; readonly method: string; readonly amountCents: number; readonly proofName: string | null;
   readonly proofStatus: 'EN_VALIDACION' | 'SIN_COMPROBANTE' | 'APROBADO' | 'RECHAZADO'; readonly registeredBy: string;
+  /** What the payment applied to the balance (cash is validated when registered); the excess over the balance is not applied. */ readonly appliedCents?: number;
   readonly presentedAt?: string; readonly review?: { readonly decision: 'APROBADO' | 'RECHAZADO'; readonly verifiedAmountCents: number | null; readonly reason: string;
     readonly actorLabel: string; readonly decidedAt: string;
     /** RN-RES-006A: what the approval did with the verified amount (applied, excess as credit, value of a cancelled reservation left untreated). */

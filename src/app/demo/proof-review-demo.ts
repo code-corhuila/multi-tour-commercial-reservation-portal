@@ -13,8 +13,8 @@ import type { DemoReservationsStore } from './reservations-demo';
 const DAY = 24 * 60 * 60 * 1000;
 const refuse = (status: number, userMessage: string) => throwError(() => ({ status, userMessage }));
 /** DP-PV1 NO DEFINIDO: the demo minimum partial is one third of the final value ($100.000 of $300.000). DP-PV2: below it, Parcial. */
-const minimumPartial = (r: Reservation) => Math.ceil(r.quote.finalCents / 3);
-const situation = (r: Reservation, validated: number, balance: number): Reservation['financialStatus'] =>
+export const minimumPartial = (r: Reservation) => Math.ceil(r.quote.finalCents / 3);
+export const situation = (r: Reservation, validated: number, balance: number): Reservation['financialStatus'] =>
   balance === 0 ? 'PAGO_COMPLETO' : r.status === 'CONFIRMADA' && r.paymentType === 'PARTIAL' ? 'ABONO_RECIBIDO' : validated > 0 ? 'PARCIAL' : 'SIN_PAGO';
 
 /** DD-PV3: the demo clock, ?demoNow on the area address (e2e README 2.3). */

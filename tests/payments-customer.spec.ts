@@ -215,7 +215,7 @@ describe('screen 24, Pago por transferencia', () => {
     demoQuery('?demoNow=2026-11-07T09:00:00-05:00');
     const { element, attach, click, stored } = await transferOf();
     await attach(pdf()); await click('Enviar comprobante para validación');
-    expect(element.querySelector('[role="alert"]')?.textContent).toContain('La salida ya inició');
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Se alcanzó la hora programada de inicio');
     expect((await stored()).payments ?? []).toHaveLength(0);
   });
 

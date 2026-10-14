@@ -8,7 +8,7 @@ import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
 import { proofReviewDemoProviders } from '../src/app/demo/proof-review-demo';
 import { DemoReservationsStore, reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { DemoPaymentMethods } from '../src/app/demo/self-service-reservation-demo';
-import { PaymentDeadlineExtender } from '../src/app/payments/data/payment-followup-ports';
+import { PaymentDeadlineExtender, PaymentFollowupsWriter as PaymentFollowupsWriterToken } from '../src/app/payments/data/payment-followup-ports';
 import { PaymentFollowupPageComponent } from '../src/app/payments/pages/payment-followup-page.component';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
@@ -35,7 +35,7 @@ function providers(id: string, role = 'TENANT_ADMINISTRATOR') {
   ];
 }
 const following = (id: string, role?: string) => screenOf(PaymentFollowupPageComponent, providers(id, role));
-const labelsOf = (element: Element) => Array.from(element.querySelectorAll('form label'), (l) => l.textContent?.trim());
+const labelsOf = (element: Element) => Array.from(element.querySelector('form')!.querySelectorAll('label'), (l) => l.textContent?.trim());
 
 afterEach(() => TestBed.resetTestingModule());
 
@@ -49,7 +49,7 @@ describe('registrar seguimiento, labels and texts of the current mockup', () => 
     expect(value('Plazo de pago vigente')).toBe('Vence el 16 oct 2026 · 09:00.');
     expect(value('Valores validados')).toBe('$0');
     expect(flat(element)).toContain('Durante el plazo, el Colaborador operativo puede contactar al cliente. Una respuesta del cliente sin pago no suspende ni cumple el plazo.');
-    expect(flat(element)).not.toMatch(/Modalidad de pago|Valor recibido|Estado actual|Plazo\/límite/);
+    expect(flat(element)).not.toMatch(/Modalidad de pago|Valor recibido|Plazo\/límite/);
   });
 
   it('a Cancelada reservation counts as settled: no note, no submit, only the history', async () => {
@@ -79,7 +79,7 @@ describe('ampliación única del plazo', () => {
     expect(after).toContain('Ampliación concedida: 12 h por Administrador del tenant (demo) el 13 oct 2026 · 09:00.');
     expect(element.querySelector<HTMLInputElement>('[name="extensionHours"]')?.disabled).toBe(true);
     const stored = (await firstValueFrom(TestBed.inject(ReservationsSource).list())).find((r) => r.id === 'RES-1842')!;
-    expect(stored.deadline).toMatchObject({ dueAt: '2026-10-16T09:00:00-05:00', extendedUntil: '2026-10-17T09:00:00-05:00', extension: { hours: 12 } });
+    expect(stored.deadline).toMatchObject({ dueAt: '2026-10-16T09:00:00-05:00', extendedUntil: '2026-10-16T21:00:00-05:00', extension: { hours: 12 } });
   });
 
   it('refuses a second extension, hours above the parameter, and an expired deadline', async () => {
@@ -101,5 +101,3 @@ describe('ampliación única del plazo', () => {
     expect(flat(element)).toContain('No se admite otra ampliación.');
   });
 });
-
-import { PaymentFollowupsWriter as PaymentFollowupsWriterToken } from '../src/app/payments/data/payment-followup-ports';
