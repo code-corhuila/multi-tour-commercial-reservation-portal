@@ -1,7 +1,8 @@
 import { firstValueFrom, of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
-import { hasCapacity, openDepartures, validateReservation } from '../src/app/reservations/model/reservation';
+import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
+import { openDepartures, validateReservation } from '../src/app/reservations/model/reservation';
 import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
 import { AppliedDiscount } from '../src/app/reservations/model/reservation';
 import { ReservationDiscounts } from '../src/app/reservations/data/reservation-integrations';
@@ -16,6 +17,7 @@ const quoteOver = (rateCents: number, people: number, transportPerPersonCents: n
     new StubCatalog([serviceOf('Kayak', rateCents)]), new (class extends ReservationDiscounts { override apply(o: number) { return apply(o); } })())
     .quote({ departureId: 'dep-1', serviceIds: ['svc-Kayak'], people }));
 
+const capacity = new DemoDepartureCapacity();
 describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
   it('keeps only departures that are Programada and open for reservations', () => {
     const all = [departureOf(1), departureOf(2, { state: 'CANCELADA' }), departureOf(3, { openForReservations: false }), departureOf(4, { state: 'FINALIZADA' })];
@@ -47,18 +49,17 @@ describe('projectedValueAddsServicesAndPerPersonTransportInCents', () => {
 describe('missing mandatory data and capacity, as rules', () => {
   const blank = { leadCustomerId: '', departureId: '', serviceId: '', people: '', paymentType: '', paymentMethod: '', accepted: false };
   it('names each missing datum', () => {
-    expect(Object.keys(validateReservation(blank, undefined)).sort()).toEqual(['accepted', 'departureId', 'leadCustomerId', 'paymentMethod', 'paymentType', 'people', 'serviceId']);
+    expect(Object.keys(validateReservation(blank, undefined, capacity)).sort()).toEqual(['accepted', 'departureId', 'leadCustomerId', 'paymentMethod', 'paymentType', 'people', 'serviceId']);
   });
   it('refuses zero, decimals and words as a number of people', () => {
     for (const people of ['0', '2.5', 'two', '-1']) {
-      expect(validateReservation({ ...blank, people }, departureOf(1)).people).toBeDefined();
+      expect(validateReservation({ ...blank, people }, departureOf(1), capacity).people).toBeDefined();
     }
   });
   it('refuses more people than the effective capacity, and accepts exactly the capacity', () => {
     const full = { leadCustomerId: 'c', departureId: 'dep-1', serviceId: 's', people: '3', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER', accepted: true };
-    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 2 })).people).toContain('No hay cupo suficiente');
-    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 3 }))).toEqual({});
-    expect(hasCapacity(departureOf(1, { effectiveCapacity: 3 }), 4)).toBe(false);
+    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 2 }), capacity).people).toContain('No hay cupo suficiente');
+    expect(validateReservation(full, departureOf(1, { effectiveCapacity: 3 }), capacity)).toEqual({});
   });
 });
 

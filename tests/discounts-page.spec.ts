@@ -11,6 +11,7 @@ import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-pag
 import { actorAs } from './actor-context.double';
 import { ControllableDiscountRulesSource, discountNamed } from './discount-rules-source.double';
 import { ControllableDiscountRulesWriter } from './discount-rules-writer.double';
+import { validityOn } from '../src/app/demo/discounts-demo';
 import { ActorRole } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
 import { DISCOUNTS_PAGE_PANELS, contribute } from '../src/app/shared/portal-slots';
@@ -41,10 +42,10 @@ describe('discount list states and newest request', () => {
   });
   it('draws screen 12: header, hero, numbered panel, promotions and Spanish badges', async () => {
     const p = await openDiscounts('TENANT_ADMINISTRATOR', [{ provide: DiscountRulesWriter, useValue: new ControllableDiscountRulesWriter() }]);
-    const rule = (name: string, startsOn: string, endsOn: string, priority: number) => ({ ...discountNamed(name, priority), startsOn, endsOn });
+    const rule = (name: string, startsOn: string, endsOn: string, priority: number, status: 'ACTIVE' | 'INACTIVE' = 'ACTIVE') => ({ ...discountNamed(name, priority), startsOn, endsOn, status, validity: validityOn({ status, startsOn, endsOn }, '2026-10-14') });
     const capped = { ...rule('Tope', '2000-01-01', '2999-12-31', 5), capCents: 8_000_000, stackable: true, calculationBase: 'PREVIOUS_SUBTOTAL' as const };
     p.source.requests[0].reply([rule('En curso', '2000-01-01', '2999-12-31', 1), rule('Futuro', '2999-01-01', '2999-12-31', 2),
-      rule('Pasado', '2000-01-01', '2000-12-31', 3), { ...rule('Apagado', '2000-01-01', '2999-12-31', 4), status: 'INACTIVE' },
+      rule('Pasado', '2000-01-01', '2000-12-31', 3), rule('Apagado', '2000-01-01', '2999-12-31', 4, 'INACTIVE'),
       capped]);
     await p.settle(); const e = p.element;
     expect(e.querySelector('.crp-page-header-eyebrow')?.textContent).toBe('Reglas comerciales');
