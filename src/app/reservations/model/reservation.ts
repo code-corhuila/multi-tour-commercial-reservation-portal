@@ -38,7 +38,16 @@ export type Reservation = {
   /** HU-COM-016 D-02 (PROPUESTO): the refund of this reservation's money as facts; RefundsSource resolves its amount and state (DD-1). */
   readonly refund?: { readonly origin: 'NON_PAYMENT' | 'LOWER_VALUE' | 'CUSTOMER_CANCELLATION' | 'NOT_ATTRIBUTABLE' | 'RESCHEDULING'; readonly reason: string;
     readonly amountCents: number; readonly recognizedAt: string; readonly decision?: RefundAct; readonly authorization?: RefundAct & { readonly reason: string };
-    readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string } };
+    readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string };
+    /** v1.9 (PROPUESTO): the administrative note, the justified rejection, and the 100 % kept as a credit balance (decision or execution without outflow). */
+    readonly note?: string; readonly rejection?: RefundAct & { readonly reason: string }; readonly creditBalance?: RefundAct & { readonly reason?: string } };
+  /** HU-COM-018 D-02 (PROPUESTO): the rescheduling episode, on the same reservation; fields follow rescheduling_records (G-B). */
+  readonly reschedulingEpisode?: ReschedulingEpisode;
+};
+export type ReschedulingEpisode = {
+  readonly originDepartureId: string; readonly originAt: string;
+  readonly proposal?: { readonly departureId: string; readonly sentAt: string; readonly heldSeats: number };
+  readonly answer?: { readonly decision: 'ACCEPTED' | 'REJECTED' | 'NO_ALTERNATIVE'; readonly at: string; readonly by: string };
 };
 /** HU-COM-016: who acted and when (G-USR: a label until the session carries the user). */
 export type RefundAct = { readonly by: string; readonly at: string };
