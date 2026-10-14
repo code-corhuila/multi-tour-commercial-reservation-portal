@@ -23,7 +23,7 @@ export const ESTABLISHMENTS_COPY = {
   newEstablishment: 'Agregar establecimiento',
   inactivate: 'Inactivar',
   reactivate: 'Reactivar',
-  filters: { type: 'Tipo de establecimiento', status: 'Estado de la asociación', allStatuses: 'Todos los estados', clear: 'Limpiar filtros' },
+  filters: { type: 'Tipo de establecimiento', status: 'Estado de la asociación', allTypes: 'Todos los tipos', allStatuses: 'Todos los estados', clear: 'Limpiar filtros' },
   loading: 'Cargando',
   empty: 'Sin resultados',
   requestFailed: 'La solicitud falló.',
