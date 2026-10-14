@@ -202,6 +202,13 @@ describe('screen 24, Pago por transferencia', () => {
     expect(open.mock.calls[0]).toEqual(['payment-received', { reservation: 'RES-1842' }]);
   });
 
+  it.each(['abc', '-5', '0', '1.5', '', '9007199254740993', '1e3'])('refuses to send an amount that is not a positive safe integer (%j) and says so beside the field', async (amount) => {
+    const { element, attach, click, stored } = await transferOf({ reservation: 'RES-1842', type: 'TOTAL', amount });
+    await attach(pdf()); await click('Enviar comprobante para validación');
+    expect((await stored()).payments ?? []).toHaveLength(0);
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Registra un monto mayor a $0.');
+  });
+
   it('a double click sends one proof under one key', async () => {
     const { element, attach, settle, stored } = await transferOf();
     await attach(pdf());
