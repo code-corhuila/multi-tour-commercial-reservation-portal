@@ -5,6 +5,6 @@
  */
 export type PageState<T = unknown> =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'error'; readonly retry: () => void }
+  | { readonly kind: 'error'; readonly retry: () => void; readonly userMessage?: string; readonly traceId?: string }
   | { readonly kind: 'empty' }
   | { readonly kind: 'data'; readonly items: readonly T[] };

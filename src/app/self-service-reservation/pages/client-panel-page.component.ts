@@ -1,11 +1,13 @@
 import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, Injector, afterNextRender, inject } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
 import { CatalogItem } from '../../catalog/model/catalog-item';
 import { DiscountRulesSource } from '../../discounts/data/discount-rules-source';
-import { DiscountRule } from '../../discounts/model/discount-rule';
+import { DiscountRule, discountValueText } from '../../discounts/data/discount-rules-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
@@ -14,7 +16,8 @@ import { ReservationSelectionSource } from '../data/reservation-confirmation-por
 import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
 import { SESSION_TEXT } from '../../shared/session-copy';
 import { SESSION_IDENTITY } from '../../shared/session-identity';
-import { tourPhoto } from '../../shared/tour-photo';
+import { TourImages } from '../../shared/tour-photo';
+import { CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
 
 /** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
 const PANEL_TEXT = {
@@ -53,7 +56,7 @@ const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 type Part<T> = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly T[] };
 const partOf = <T>(read: Observable<readonly T[]>) => read.pipe(
   map((items): Part<T> => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-  catchError(() => of<Part<T>>({ kind: 'error' })),
+  catchError((error) => of<Part<T>>({ kind: 'error', ...readFailure(error) })),
   startWith<Part<T>>({ kind: 'loading' }),
 );
 
@@ -69,15 +72,11 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
   };
 }
 
-/** "20% de descuento" or "$50.000 de descuento", from the rule of HU-COM-003. */
-function discountTag(rule: DiscountRule): string {
-  const value = rule.type === 'PERCENTAGE' ? `${String(rule.percentageBasisPoints / 100).replace('.', ',')}%` : formatCop(rule.amountCents);
-  return `${value} de descuento`;
-}
 
 /** panel-cliente.html: the landing of the final customer and the Mis reservas link of the client header. It changes nothing. */
 @Component({
   selector: 'app-client-panel-page',
+  imports: [ReadErrorComponent, PortalSlotOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="crp-panel-hero" aria-labelledby="crp-panel-title">
@@ -103,7 +102,7 @@ function discountTag(rule: DiscountRule): string {
               @let s = reservations();
               @switch (s.kind) {
                 @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-                @case ('error') { <div role="alert" data-state="error">{{ text.failed }} <button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
+                @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="text.failed" />&ngsp;<button type="button" class="crp-outline" (click)="reload()">{{ text.retry }}</button></div> }
                 @default {
                   @let summary = summarize(s.kind === 'data' ? s.items : []);
                   <div class="crp-panel-card-main" [attr.data-state]="s.kind"><div><strong>{{ summary.title }}</strong><p>{{ summary.detail }}</p>
@@ -139,7 +138,7 @@ function discountTag(rule: DiscountRule): string {
       @let f = featured();
       @switch (f.kind) {
         @case ('loading') { <p role="status">{{ text.loading }}</p> }
-        @case ('error') { <p role="alert">{{ text.failed }}</p> }
+        @case ('error') { <p role="alert"><crp-read-error [state]="f" [fallback]="text.failed" /></p> }
         @case ('empty') { <p role="status">{{ t.noFeatured }}</p> }
         @case ('data') {
           <ul>@for (item of f.items; track item.serviceId; let i = $index) {
@@ -160,10 +159,11 @@ export class ClientPanelPageComponent {
   /** HU-FRT-001 (003-): the display name of the session as text, or the generic greeting when there is none. */
   protected readonly greeting = ((name) => (name ? SESSION_TEXT.greeting(name) : SESSION_TEXT.anonymousGreeting))(inject(SESSION_IDENTITY).name);
   protected readonly area = CLIENT_AREA;
-  protected readonly photos = PHOTOS;
+  private readonly images = inject(TourImages);
+  protected photo(serviceId: string | undefined): string | null { return this.images.urlOf(serviceId); }
   protected readonly cop = formatCop;
   protected readonly date = formatDate;
-  protected readonly tag = discountTag;
+  protected readonly tag = discountValueText;
   protected readonly summarize = activeSummary;
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly chips = CHIPS.filter((chip) => this.has(chip.key));
@@ -176,10 +176,9 @@ export class ClientPanelPageComponent {
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   protected readonly reservations = toSignal(this.requests.pipe(switchMap(() => partOf(this.source.listMine()))), { initialValue: { kind: 'loading' } as Part<CustomerReservation> });
-  private readonly today = tenantDay(inject(Clock).now());
   // Read-only: the rules of HU-COM-003 in force today. Without the port, or if it fails, there is nothing in force to show.
   protected readonly discounts = toSignal((inject(DiscountRulesSource, { optional: true })?.list() ?? of<readonly DiscountRule[]>([])).pipe(
-    map((rules) => rules.filter((rule) => rule.status === 'ACTIVE' && rule.startsOn <= this.today && this.today <= rule.endsOn)),
+    map((rules) => rules.filter((rule) => rule.validity.inForce)),
     catchError(() => of<readonly DiscountRule[]>([])),
   ), { initialValue: [] as readonly DiscountRule[] });
   // The base value of up to four active tours of the catalog of HU-COM-001; never a cost or a capacity.

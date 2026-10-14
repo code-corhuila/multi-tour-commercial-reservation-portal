@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap, tap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -20,7 +22,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
 };
 
 @Component({
-  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
+  selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
   styles: [`.crp-reservation-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; } .crp-reservation-hero p { margin: 6px 0 0; max-width: 520px; }
     .crp-reservation-code { display: block; color: #203234; font-weight: 800; } small { display: block; margin-top: 4px; color: #748084; }`],
   template: `
@@ -43,7 +45,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = {
           @let current = state();
           @switch (current.kind) {
             @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
-            @case ('error') { <div role="alert" data-state="error">{{ text.failed }}<button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
+            @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" /><button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
             @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
             @case ('data') {
               <div class="crp-table-wrap" data-state="data"><table class="crp-operator-table">
@@ -97,7 +99,7 @@ export class ReservationsPageComponent {
   private readonly local = signal<PageState | null>(null);
   private readonly listed = toSignal(this.requests.pipe(switchMap(() => this.source.list().pipe(
     map((items): PageState => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError(() => of<PageState>({ kind: 'error' })), startWith<PageState>({ kind: 'loading' }),
+    catchError((error) => of<PageState>({ kind: 'error', ...readFailure(error) })), startWith<PageState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PageState });
   readonly state = computed(() => this.local() ?? this.listed());
   constructor() { this.reload(); }

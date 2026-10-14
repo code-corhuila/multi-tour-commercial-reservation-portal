@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ReadErrorComponent } from '../../shared/read-error.component';
+import { readFailure } from '../../shared/read-failure';
 import { PortalNavigation } from '../../portal-navigation';
 import { formatCop } from '../../shared/format';
 import { PageState } from '../../shared/page-state';
@@ -10,7 +12,7 @@ type State = PageState<CreditOverview>;
 
 /** admin-saldo-favor.html (HU-COM-017 amendment, AC-CB.11): sub-screen of 13 with no sidebar item; the figures are the port's, the view formats only (pillar 2). */
 @Component({
-  selector: 'app-credit-balance-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [CreditCustomerPanelComponent],
+  selector: 'app-credit-balance-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, CreditCustomerPanelComponent],
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.title }}</h1></div>
       @if (navigation?.has('payments')) { <button type="button" class="crp-operator-outline crp-page-header-action" (click)="navigation?.open('payments')">{{ t.back }}</button> }</header>
@@ -18,7 +20,7 @@ type State = PageState<CreditOverview>;
     @let s = state();
     @switch (s.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
-      @case ('error') { <div role="alert" data-state="error">{{ t.failed }} <button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
+      @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
       @default {
         @let o = overview();
         <div class="crp-credit-balance-summary" data-credit-summary>@for (m of metrics(); track m.label) { <div class="crp-summary-metric"><span class="crp-summary-metric-value">{{ m.value }}</span><span class="crp-summary-metric-label">{{ m.label }}</span></div> }</div>
@@ -56,7 +58,7 @@ export class CreditBalancePageComponent {
     const mine = ++this.reads;
     this.source.list().subscribe({
       next: (o) => { if (mine === this.reads) this.state.set(o.customers.length ? { kind: 'data', items: [o] } : { kind: 'empty' }); },
-      error: () => { if (mine === this.reads) this.state.set({ kind: 'error', retry: () => { this.state.set({ kind: 'loading' }); this.load(); } }); },
+      error: (error) => { if (mine === this.reads) this.state.set({ kind: 'error', ...readFailure(error), retry: () => { this.state.set({ kind: 'loading' }); this.load(); } }); },
     });
   }
 }
