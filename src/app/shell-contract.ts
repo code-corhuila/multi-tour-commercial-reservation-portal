@@ -1,3 +1,5 @@
+import { InjectionToken } from '@angular/core';
+
 /**
  * What the multi-tour-front container guarantees to every portal: a failed request
  * reaches the portal as this shape, never as a raw transport error, and
@@ -34,6 +36,20 @@ export interface MountSession {
   close(): void;
 }
 
+/**
+ * An area of a portal, possibly another one than the caller; the container owns the address (HU-FRT-001 spec 003-, plan D-04).
+ * Local copy of `PortalTarget` of its `core/client/types.ts`: the portal never imports the container (norm 5.4.1, pillar 10).
+ */
+export interface PortalTarget {
+  /** Key of the portal in the container's federation manifest. */
+  readonly portal: string;
+  /** Area key declared by that portal. */
+  readonly area: string;
+}
+
+/** profile.html (26) belongs to the identity-audit domain (authorized-screens.md): this portal only asks the container to open it. */
+export const PROFILE_TARGET: PortalTarget = { portal: 'identity-audit-portal', area: 'profile' };
+
 /** What the container hands to `mount` (ADR-006 F4); mirrors multi-tour-front `core/client/types.ts`. */
 export interface MountProps {
   identifier?: string;
@@ -41,6 +57,11 @@ export interface MountProps {
   session: MountSession;
   /** PROPUESTO for ADR-007 (008- H-D10): parameters the container keeps across a remount, e.g. a selection in progress. */
   initialParams?: Readonly<Record<string, string>>;
+  /** Asks the container to open an area of another portal; absent, the Perfil button and the avatar link are not drawn. */
+  navigate?: (target: PortalTarget) => void;
 }
+
+/** The container's `navigate` as the screens read it; null when the container does not offer it. */
+export const CONTAINER_NAVIGATION = new InjectionToken<((target: PortalTarget) => void) | null>('CONTAINER_NAVIGATION', { factory: () => null });
 
 export type PortalApiClient = MountProps['apiClient'];
