@@ -277,7 +277,7 @@ describe('customerShellHeader', () => {
 
 describe('customerPanelChrome', () => {
   const texts = (host: HTMLElement, selector: string) => Array.from(host.querySelectorAll(selector)).map((e) => e.textContent?.trim());
-  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button)';
+  const link = '.crp-client-panel-header button:not(.crp-client-panel-brand):not(.crp-client-bell-button):not(.crp-client-avatar)';
 
   it('draws the compact header of panel-cliente.html inside the canvas, with Ver catálogo, no avatar and no footer', async () => {
     const { host, settle } = await openShell('READ_ONLY', true, CLIENT_AREAS);
