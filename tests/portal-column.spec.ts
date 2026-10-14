@@ -26,7 +26,7 @@ describe('portalCssHasNoViewportBleedNoFixedPositionAndNoZIndex', () => {
 
   it('centres the client header and footer content in 1320px while their background stays in the portal element', () => {
     for (const selector of ['.crp-root .crp-client-header', '.crp-root .crp-client-footer']) {
-      expect(rule(selector), selector).toMatch(/padding-inline:\s*max\(clamp\(20px, 4vw, 60px\), calc\(\(100% - 1320px\) \/ 2\)\)/);
+      expect(rule(selector), selector).toMatch(/padding-inline:\s*max\(24px, calc\(\(100% - 1320px\) \/ 2\)\)/);
     }
   });
 
