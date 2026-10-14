@@ -257,7 +257,7 @@ describe('customer payment wiring', () => {
       method.value = 'CASH_AT_OFFICE'; method.dispatchEvent(new Event('change'));
       await vi.waitFor(() => expect(host.querySelector('.crp-checkout-payment')?.textContent)
         .toContain('Elegir efectivo registra solo una promesa de pago'));
-      expect(host.querySelector('.self-service-created')).toBeNull();
+      expect(host.querySelector('.crp-self-service-created')).toBeNull();
     } finally { cleanup(); host.remove(); }
   });
 
@@ -279,7 +279,7 @@ describe('customer payment wiring', () => {
       method.value = 'BANK_TRANSFER'; method.dispatchEvent(new Event('change'));
       host.querySelector<HTMLInputElement>('[name="conditions"]')!.click(); host.querySelector<HTMLInputElement>('[name="terms"]')!.click();
       press('Confirmar reserva');
-      await vi.waitFor(() => expect(host.querySelector('.self-service-created')?.textContent).toContain('RES-1843'));
+      await vi.waitFor(() => expect(host.querySelector('.crp-self-service-created')?.textContent).toContain('RES-1843'));
       await vi.waitFor(() => press('Continuar al pago'));
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Pago por transferencia'));
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;

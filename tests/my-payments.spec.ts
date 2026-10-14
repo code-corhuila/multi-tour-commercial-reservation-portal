@@ -220,11 +220,11 @@ describe('myReservationsCardAddsTheEconomicLines', () => {
     const { host, cleanup } = mountDemo();
     try {
       await vi.waitFor(() => press(host, 'Ver mis reservas'));
-      await vi.waitFor(() => expect(host.querySelector('.self-service-card crp-my-payments-card-lines small')).toBeTruthy());
-      expect(flat(host.querySelector('.self-service-card-copy')?.textContent)).toContain(
+      await vi.waitFor(() => expect(host.querySelector('.crp-self-service-card crp-my-payments-card-lines small')).toBeTruthy());
+      expect(flat(host.querySelector('.crp-self-service-card-copy')?.textContent)).toContain(
         'Tipo de pago: Pago total · Medio de pago: Transferencia Estado del comprobante: Sin comprobante · Situación financiera: Sin pago Saldo: $850.000 Plazo de pago');
       expect(host.textContent).not.toMatch(/RES-1841|RES-1839/);
-      const cancelled = Array.from(host.querySelectorAll('.self-service-card-copy')).find((c) => c.textContent?.startsWith('RES-1831'))!;
+      const cancelled = Array.from(host.querySelectorAll('.crp-self-service-card-copy')).find((c) => c.textContent?.startsWith('RES-1831'))!;
       expect(flat(cancelled.querySelector('p')?.textContent)).toBe('Salida: 22 sep 2026 · 06:30 · 2 viajeros');
       expect(Array.from(cancelled.querySelectorAll('small'), (line) => flat(line.textContent))).toEqual(['Tipo de pago: Abono · Medio de pago: Transferencia',
         'Estado del comprobante: Aprobado · Situación financiera: Parcial', 'Cancelada por falta de pago']);
@@ -406,7 +406,7 @@ describe('clientPagesWithoutContributionsRenderAsBefore', () => {
       expect(host.textContent).not.toMatch(/Continuar pago|Mis pagos/);
       expect(host.querySelector('.crp-client-bell-list')?.textContent?.trim()).toBe('No tienes notificaciones nuevas.');
       await vi.waitFor(() => press(host, 'Ver mis reservas'));
-      await vi.waitFor(() => expect(host.querySelector('.self-service-card')).toBeTruthy());
+      await vi.waitFor(() => expect(host.querySelector('.crp-self-service-card')).toBeTruthy());
       expect(host.textContent).not.toMatch(/Tipo de pago|Estado del comprobante/);
     } finally { cleanup(); }
   });

@@ -101,10 +101,10 @@ describe('reservations list (admin-reservas)', () => {
 
   it('hides Finalizada and Cancelada until "Ver todas las reservas" and switches the toggle back', async () => {
     const { element, click, button } = await listed();
-    expect(texts(element, 'tbody .crp-reservation-code')).toEqual(['#RES-1']);
+    expect(texts(element, 'tbody .crp-reservations-code')).toEqual(['#RES-1']);
     expect(button('Ver todas las reservas')!.getAttribute('aria-expanded')).toBe('false');
     await click('Ver todas las reservas');
-    expect(texts(element, 'tbody .crp-reservation-code')).toEqual(['#RES-1', '#RES-3', '#RES-4']);
+    expect(texts(element, 'tbody .crp-reservations-code')).toEqual(['#RES-1', '#RES-3', '#RES-4']);
     expect(button('Ver reservas activas')!.getAttribute('aria-expanded')).toBe('true');
     await click('Ver reservas activas');
     expect(element.querySelectorAll('tbody tr')).toHaveLength(1);
@@ -146,9 +146,9 @@ describe('reservation detail (admin-detalle-reserva)', () => {
 
   it('shows the hero, the access note and the holder block as the mockup writes them', async () => {
     const { element } = await detail();
-    expect(texts(element, '.crp-reservation-hero .crp-operator-eyebrow')).toEqual(['#RES-1843']);
-    expect(element.querySelector('.crp-reservation-hero h2')?.textContent).toBe('Ruta Andina');
-    expect(element.querySelector('.crp-reservation-hero p:not(.crp-operator-eyebrow)')?.textContent).toBe('Salida: 18 sep 2026 · 06:30 · 2 viajeros');
+    expect(texts(element, '.crp-reservations-hero .crp-operator-eyebrow')).toEqual(['#RES-1843']);
+    expect(element.querySelector('.crp-reservations-hero h2')?.textContent).toBe('Ruta Andina');
+    expect(element.querySelector('.crp-reservations-hero p:not(.crp-operator-eyebrow)')?.textContent).toBe('Salida: 18 sep 2026 · 06:30 · 2 viajeros');
     expect(element.textContent).toContain('Consulta disponible únicamente dentro del operador activo.');
     expect(valueOf(element, 'Viajeros registrados')).toBe('2 personas');
     expect(valueOf(element, 'Acompañantes registrados')).toBe('1 acompañante');

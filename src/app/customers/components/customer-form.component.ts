@@ -19,12 +19,12 @@ let formSequence = 0;
     <ng-template #fields let-list>
       @for (c of asControls(list); track c.field) {
         @if (c.type === 'checkbox') {
-          <div class="customers-field customers-wide"><label class="customers-check" [for]="id(c.field)"><input type="checkbox" [id]="id(c.field)" [name]="c.field"
+          <div class="crp-customers-field crp-customers-wide"><label class="crp-customers-check" [for]="id(c.field)"><input type="checkbox" [id]="id(c.field)" [name]="c.field"
               [disabled]="pending()" [checked]="draft()[c.field] === 'true'" [attr.aria-invalid]="messages()[c.field] ? 'true' : null"
               [attr.aria-describedby]="errorId(c.field)" (change)="edit(c.field, $event)"> {{ c.label }}</label>
-            @if (messages()[c.field]; as reason) { <p role="alert" class="customers-error" [id]="id(c.field) + '-error'">{{ reason }}</p> }</div>
+            @if (messages()[c.field]; as reason) { <p role="alert" class="crp-customers-error" [id]="id(c.field) + '-error'">{{ reason }}</p> }</div>
         } @else {
-          <div class="customers-field" [class.customers-wide]="c.field === 'physicalRestrictions'"><label [for]="id(c.field)">{{ c.label }}</label>
+          <div class="crp-customers-field" [class.crp-customers-wide]="c.field === 'physicalRestrictions'"><label [for]="id(c.field)">{{ c.label }}</label>
             @if (c.type === 'select') {
               <select [id]="id(c.field)" [name]="c.field" [disabled]="pending()" [attr.aria-invalid]="messages()[c.field] ? 'true' : null"
                 [attr.aria-describedby]="errorId(c.field)" (change)="edit(c.field, $event)">
@@ -34,28 +34,28 @@ let formSequence = 0;
               <input [type]="c.type" [id]="id(c.field)" [name]="c.field" [disabled]="pending()" [value]="draft()[c.field] ?? ''" [attr.placeholder]="c.placeholder ?? null"
                 [attr.aria-invalid]="messages()[c.field] ? 'true' : null" [attr.aria-describedby]="errorId(c.field)" (input)="edit(c.field, $event)">
             }
-            @if (messages()[c.field]; as reason) { <p role="alert" class="customers-error" [id]="id(c.field) + '-error'">{{ reason }}</p> }</div>
+            @if (messages()[c.field]; as reason) { <p role="alert" class="crp-customers-error" [id]="id(c.field) + '-error'">{{ reason }}</p> }</div>
         }
       }
     </ng-template>
-    <form novalidate class="customers-form" [attr.aria-busy]="pending()" (submit)="submit($event)">
+    <form novalidate class="crp-customers-form" [attr.aria-busy]="pending()" (submit)="submit($event)">
       @if (kind() === 'lead') {
         <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ text.leadEyebrow }}</p><h2>{{ text.leadTitle }}</h2>
-          <div class="customers-grid"><ng-container *ngTemplateOutlet="fields; context: { $implicit: personControls() }" /></div></section>
+          <div class="crp-customers-grid"><ng-container *ngTemplateOutlet="fields; context: { $implicit: personControls() }" /></div></section>
         @if (highRisk()) {
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ text.riskEyebrow }}</p><h2>{{ text.riskTitle }}</h2>
-            <p class="customers-copy">{{ text.riskCopy }}</p>
-            <article class="customers-risk-card"><strong>{{ text.lead }}</strong>
-              <div class="customers-grid"><ng-container *ngTemplateOutlet="fields; context: { $implicit: riskControls() }" /></div></article></section>
+            <p class="crp-customers-copy">{{ text.riskCopy }}</p>
+            <article class="crp-customers-risk-card"><strong>{{ text.lead }}</strong>
+              <div class="crp-customers-grid"><ng-container *ngTemplateOutlet="fields; context: { $implicit: riskControls() }" /></div></article></section>
         }
       } @else {
-        <article class="customers-card"><strong>{{ text.companion }} {{ position() }}</strong>
-          <div class="customers-grid"><ng-container *ngTemplateOutlet="fields; context: { $implicit: personControls() }" />
+        <article class="crp-customers-card"><strong>{{ text.companion }} {{ position() }}</strong>
+          <div class="crp-customers-grid"><ng-container *ngTemplateOutlet="fields; context: { $implicit: personControls() }" />
             @if (highRisk()) { <ng-container *ngTemplateOutlet="fields; context: { $implicit: riskControls() }" /> }</div></article>
       }
       <div class="crp-form-actions">
         @if (pending()) { <p role="status">{{ text.saving }}</p> }
-        @if (refused()) { <p role="alert" class="customers-error">{{ refused() }}</p> }
+        @if (refused()) { <p role="alert" class="crp-customers-error">{{ refused() }}</p> }
         <button type="submit" [disabled]="pending()">{{ kind() === 'lead' ? text.registerLead : text.addCompanion }}</button>
       </div>
     </form>

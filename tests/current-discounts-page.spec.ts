@@ -31,7 +31,7 @@ describe('theAdditionalDiscountIsLastWithItsReasonAndAuthor', () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toContain('Season');
     for (const text of ['Descuento adicional', 'Loyal customer', 'Autorizado por Laura Demo', '$90.000', '-$4.500', '$85.500']) expect(lines[1]).toContain(text);
-    expect(page.element.querySelector('.current-discounts-final')?.textContent).toContain('$85.500');
+    expect(page.element.querySelector('.crp-current-discounts-final')?.textContent).toContain('$85.500');
   });
 
   it('takes the authorizer from the stored answer, never from a field the person types', async () => {
@@ -157,7 +157,7 @@ describe('theScreenFollowsTheAuthorizedMockup', () => {
     expect(page.submitButton().textContent?.trim()).toBe('Aplicar descuento');
     expect(page.element.querySelector('select[name="type"]')).toBeNull();
     expect(page.field('reason').getAttribute('placeholder')).toBe('Describe el motivo del descuento adicional (por ejemplo, fidelización)');
-    expect(page.element.querySelector('.current-discounts-note')?.textContent).toBe('El motivo y el responsable quedan asociados a la reserva.');
+    expect(page.element.querySelector('.crp-current-discounts-note')?.textContent).toBe('El motivo y el responsable quedan asociados a la reserva.');
   });
 
   it('offers the outline Cancelar of the mockup, which clears the form without sending', async () => {
@@ -180,8 +180,8 @@ describe('theScreenFollowsTheAuthorizedMockup', () => {
 
   it('shows the values block with formatted money and dates, and numbers each discount once', async () => {
     const page = await withData();
-    expect(text(page.element, '.current-discounts-summary span')).toEqual(['Valor proyectado', 'Descuentos aplicables', 'Valor final']);
-    expect(text(page.element, '.current-discounts-summary strong')).toEqual(['$100.000', '-$10.000', '$90.000']);
+    expect(text(page.element, '.crp-current-discounts-summary span')).toEqual(['Valor proyectado', 'Descuentos aplicables', 'Valor final']);
+    expect(text(page.element, '.crp-current-discounts-summary strong')).toEqual(['$100.000', '-$10.000', '$90.000']);
     expect(page.element.querySelector('ol [data-line]')).not.toBeNull();
     expect(page.lines()[0].replace(/\s+/g, ' ').trim()).toBe('Season · sobre el valor original $100.000 · -$10.000 · Subtotal $90.000');
     expect(page.element.textContent).toMatch(/Vigentes al \d{2} [a-z]{3} \d{4}/);

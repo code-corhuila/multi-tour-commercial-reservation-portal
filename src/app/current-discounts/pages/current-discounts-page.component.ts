@@ -27,7 +27,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
     <section class="crp-operator-panel">
       <p class="crp-operator-eyebrow">{{ text.valuesStep }}</p>
       <h2>{{ text.valuesTitle }}</h2>
-      <div class="current-discounts-date">
+      <div class="crp-current-discounts-date">
         <label for="current-discounts-date">{{ text.date }}</label>
         <input id="current-discounts-date" type="date" [value]="date()" (change)="pick($event)">
         <p>{{ text.validOn }} {{ formatDate(date()) }}</p>
@@ -41,7 +41,7 @@ export type CurrentDiscountsState = { kind: 'loading' | 'empty' | 'error' } | { 
         }
         @case ('empty') { <p role="status" data-state="empty">{{ text.empty }}</p> }
         @case ('data') {
-          <ul data-state="data" class="current-discounts-services">
+          <ul data-state="data" class="crp-current-discounts-services">
             @for (row of rows(); track row.service.serviceId) {
               <li><h3>{{ row.service.serviceName }}</h3><app-current-discounts-value [breakdown]="row.breakdown" /></li>
             }

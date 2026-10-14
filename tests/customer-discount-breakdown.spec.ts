@@ -33,13 +33,13 @@ async function confirm(quote: SelectionQuote) {
 
 describe('theCustomerBreakdownShowsEveryLineInApplicationOrder', () => {
   it('lists each line with its order, base, amount and subtotal under Descuentos aplicables', async () => {
-    const lines = Array.from((await confirm(QUOTED)).querySelectorAll('.self-service-breakdown li'), (li) => flat(li.textContent));
+    const lines = Array.from((await confirm(QUOTED)).querySelectorAll('.crp-self-service-breakdown li'), (li) => flat(li.textContent));
     expect(lines).toEqual(['1. 10% de descuento · sobre el valor original · -$10.000 · Subtotal $90.000',
       '2. 50% de descuento · sobre el subtotal anterior · -$45.000 · Subtotal $45.000']);
   });
   it('draws no list when the quote carries no line, and keeps the total row', async () => {
     const page = await confirm({ ...QUOTE, discountLines: undefined });
-    expect(page.querySelector('.self-service-breakdown')).toBeNull(); expect(page.textContent).toContain('Descuentos aplicables');
+    expect(page.querySelector('.crp-self-service-breakdown')).toBeNull(); expect(page.textContent).toContain('Descuentos aplicables');
   });
   it('shows in 21 the same lines, in the same order, as the quote of 10B for the same selection', async () => {
     TestBed.configureTestingModule({ providers: sourceProviders(undefined as never) });

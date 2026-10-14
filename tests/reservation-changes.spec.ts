@@ -436,11 +436,11 @@ describe('wiresTheScreenAndTheBlocksInTheDemoBuild', () => {
     cause.value = 'El cliente desiste del viaje'; cause.dispatchEvent(new Event('input'));
     host.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
     await vi.waitFor(() => expect(host.querySelector('.crp-reservation-changes-feedback[role="status"]')?.textContent).toContain('Cancelación registrada.'));
-    await vi.waitFor(() => expect(host.querySelector('app-reservations-page .reservation-detail')).toBeTruthy(), { timeout: 4000 });
+    await vi.waitFor(() => expect(host.querySelector('app-reservations-page .crp-reservations-detail')).toBeTruthy(), { timeout: 4000 });
     const detail = host.querySelector('app-reservations-page')!;
     expect(detail.querySelector('h1')?.textContent).toBe('Detalle de reserva');
-    expect(detail.querySelector('.crp-reservation-hero')?.textContent).toContain('#RES-1839');
-    expect(detail.querySelector('.crp-reservation-hero .crp-operator-status')?.textContent?.trim()).toBe('Cancelada');
+    expect(detail.querySelector('.crp-reservations-hero')?.textContent).toContain('#RES-1839');
+    expect(detail.querySelector('.crp-reservations-hero .crp-operator-status')?.textContent?.trim()).toBe('Cancelada');
     expect(detail.textContent).toContain('Devolución pendiente de gestionar');
     expect(detail.querySelector('header')?.textContent).not.toContain('Cancelar o modificar reserva');
   });

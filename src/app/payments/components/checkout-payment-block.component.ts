@@ -30,16 +30,16 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
           <label for="crp-checkout-deposit">{{ text.deposit }}</label>
           <input id="crp-checkout-deposit" name="deposit" type="text" inputmode="decimal" autocomplete="off" [placeholder]="text.depositPlaceholder" [value]="deposit()"
             (input)="deposit.set($any($event.target).value)" [attr.aria-invalid]="invalid() ? 'true' : null" aria-describedby="crp-checkout-deposit-error" />
-          <p id="crp-checkout-deposit-error" class="self-service-field-error">{{ invalid() ? text.depositInvalid : '' }}</p>
-          <p class="self-service-note">{{ text.depositHint }}</p>
+          <p id="crp-checkout-deposit-error" class="crp-self-service-field-error">{{ invalid() ? text.depositInvalid : '' }}</p>
+          <p class="crp-self-service-note">{{ text.depositHint }}</p>
         }
-        <div class="crp-checkout-deadline">@for (line of text.deadline; track line) { <p class="self-service-note">{{ line }}</p> }
-          @if (chosen(options) === 'PARTIAL') { <p class="self-service-note">{{ text.balanceRule }}</p> }</div>
+        <div class="crp-checkout-deadline">@for (line of text.deadline; track line) { <p class="crp-self-service-note">{{ line }}</p> }
+          @if (chosen(options) === 'PARTIAL') { <p class="crp-self-service-note">{{ text.balanceRule }}</p> }</div>
         @let r = reservation(); @let medium = r?.paymentMethod ?? method();
         @if (medium === 'BANK_TRANSFER') {
-          <p class="self-service-note">{{ text.transferHint }}</p>
+          <p class="crp-self-service-note">{{ text.transferHint }}</p>
           @if (r) { <button type="button" class="crp-primary" (click)="pay(r, chosen(options))">{{ text.continue }}</button> }
-        } @else if (medium) { <p class="self-service-note">{{ text.cashHint }}</p> }
+        } @else if (medium) { <p class="crp-self-service-note">{{ text.cashHint }}</p> }
       }
     </article>
   `,

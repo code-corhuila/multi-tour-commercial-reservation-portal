@@ -58,7 +58,7 @@ describe('createdReservationIsPendienteDePagoSinPagoWithNoSeatHeld', () => {
     const { element, create, click } = await overDemo();
     await create();
     expect(element.querySelector('form')).toBeNull();
-    const result = element.querySelector('.reservation-result')!.textContent!;
+    const result = element.querySelector('.crp-reservations-result')!.textContent!;
     for (const text of ['Pendiente de pago', 'Sin pago', 'sin cupo apartado hasta su primer pago']) expect(result).toContain(text);
     await click('Volver a reservas');
     expect(element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength(1);
@@ -69,12 +69,12 @@ describe('detailShowsTheValuesAndDiscountsFixedAtCreation', () => {
   it('keeps the projected value, the final value and the discount after the discount is inactivated', async () => {
     const { element, create, discounts, click, settle } = await overDemo();
     await create(); await click('Ver detalle');
-    const before = element.querySelector('.reservation-detail')!.textContent;
+    const before = element.querySelector('.crp-reservations-detail')!.textContent;
     discounts.lines = [];
     await click('Volver a reservas');
-    expect(element.querySelector('.reservation-detail')).toBeNull();
+    expect(element.querySelector('.crp-reservations-detail')).toBeNull();
     element.querySelector<HTMLButtonElement>('[data-state="data"] tbody button')!.click(); await settle();
-    const detail = element.querySelector('.reservation-detail');
+    const detail = element.querySelector('.crp-reservations-detail');
     expect(detail?.textContent).toBe(before);
     expect(detail?.textContent).toContain('Early bird (sobre el valor original)');
   });

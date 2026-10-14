@@ -15,20 +15,20 @@ let formSequence = 0;
   selector: 'app-additional-discount-form', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (allowed) {
-      <form novalidate class="current-discounts-form" [attr.aria-busy]="pending()" (submit)="submit($event)">
+      <form novalidate class="crp-current-discounts-form" [attr.aria-busy]="pending()" (submit)="submit($event)">
         <div><label [for]="id('value')">{{ text.value }}</label>
           <input type="text" name="value" inputmode="decimal" [id]="id('value')" [value]="draft().value" [disabled]="pending()"
             [attr.aria-invalid]="messages().value ? 'true' : null" [attr.aria-describedby]="messages().value ? id('value') + '-error' : null"
             (input)="edit('value', $event)">
           @if (messages().value; as reason) { <p role="alert" [id]="id('value') + '-error'">{{ reason }}</p> }
         </div>
-        <div class="current-discounts-wide"><label [for]="id('reason')">{{ text.reasonField }}</label>
+        <div class="crp-current-discounts-wide"><label [for]="id('reason')">{{ text.reasonField }}</label>
           <textarea name="reason" [id]="id('reason')" [placeholder]="text.reasonHint" [value]="draft().reason" [disabled]="pending()"
             [attr.aria-invalid]="messages().reason ? 'true' : null" [attr.aria-describedby]="messages().reason ? id('reason') + '-error' : null"
             (input)="edit('reason', $event)"></textarea>
           @if (messages().reason; as reason) { <p role="alert" [id]="id('reason') + '-error'">{{ reason }}</p> }
         </div>
-        <p class="current-discounts-note">{{ text.note }}</p>
+        <p class="crp-current-discounts-note">{{ text.note }}</p>
         @if (failure()) { <p role="alert">{{ failure() }}</p> }
         <div class="crp-form-actions"><button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="clear()">{{ text.cancel }}</button>
           <button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ text.apply }}</button></div>

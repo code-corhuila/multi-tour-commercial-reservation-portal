@@ -169,7 +169,7 @@ describe('confirmsTheSelectionAndCreatesAPendingPaymentReservation', () => {
     expect(p.requester.calls[0].selection).toEqual(SELECTION);
     expect(p.requester.calls[0].paymentMethod).toBe('BANK_TRANSFER');
     p.requester.calls[0].reply(reservationFor()); await p.settle();
-    const created = p.element.querySelector('.self-service-created')!;
+    const created = p.element.querySelector('.crp-self-service-created')!;
     for (const shown of [T.created, 'RES-1843', '$1.299.000', 'Pendiente de pago']) expect(created.textContent).toContain(shown);
     expect(created.querySelector('.crp-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
     for (const raw of ['PENDING_PAYMENT', 'SIN_PAGO', '1299000.00']) expect(p.element.textContent).not.toContain(raw);
@@ -237,7 +237,7 @@ describe('aCreatedReservationCannotBeConfirmedAgain (audit S23, AC-RS.6)', () =>
   it('shows the success state with Ver mis reservas, which opens Mis reservas', async () => {
     const p = await openConfirm({ areas: [CLIENT_AREA.reservations] }); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].reply(reservationFor()); await p.settle();
-    expect(p.element.querySelector('[role="status"].self-service-created')?.textContent).toContain('RES-1843');
+    expect(p.element.querySelector('[role="status"].crp-self-service-created')?.textContent).toContain('RES-1843');
     buttonNamed(p.element, 'Ver mis reservas')!.click(); await p.settle();
     expect(TestBed.inject(PortalNavigation).selected()).toBe(CLIENT_AREA.reservations);
   });
@@ -308,11 +308,11 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     ]);
     const consents = Array.from(p.element.querySelectorAll('input[type="checkbox"]'), (box) => box.closest('label')?.textContent?.trim());
     expect(consents).toEqual(['Confirmo que acepto las condiciones aplicables a esta reserva.', 'Acepto los términos y condiciones.']);
-    const summary = p.element.querySelector('.crp-finish-aside .self-service-summary')!;
+    const summary = p.element.querySelector('.crp-finish-aside .crp-self-service-summary')!;
     expect(summary.querySelector('h2')?.textContent?.trim()).toBe('Resumen de reserva');
     // demo-svc-1 is the Tatacoa desert: the sunset photo, the same as in the public offer.
     expect(summary.querySelector('.crp-finish-media img')?.getAttribute('src')).toBe('/assets/mountain-hero.jpg');
-    expect(summary.querySelector('.self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
+    expect(summary.querySelector('.crp-self-service-summary-copy')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ruta Andina 18 sep 2026 2 viajeros');
     const rows = Array.from(summary.querySelectorAll('dt'), (dt) => (dt.textContent?.trim() ?? '') + ' ' + (dt.nextElementSibling?.textContent?.trim() ?? ''));
     expect(rows).toEqual(['Precio base $2.598.000', 'Descuentos aplicables -$519.600', 'Valor final $2.078.400']);
     expect(text('.crp-finish-help')).toBe('¿Necesitas ayuda? Asistencia comercial El equipo del operador puede ayudarte a continuar el proceso de reserva y pago; no es un medio de pago.');
@@ -350,7 +350,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     expect(p.element.querySelector('.crp-page-header-eyebrow')?.textContent?.trim()).toBe('Portal cliente');
     expect(p.element.querySelector('h1')?.textContent?.trim()).toBe('Mis reservas');
     expect(p.element.querySelector('h2')?.textContent?.trim()).toBe('Historial de reservas');
-    const card = p.element.querySelector('.self-service-card')!;
+    const card = p.element.querySelector('.crp-self-service-card')!;
     expect(card.querySelector('strong')?.textContent?.trim()).toBe('RES-1843 · Ruta Andina');
     expect(card.textContent).toContain('Salida: 18 sep 2026 · 06:30 · 2 viajeros');
     expect(card.querySelector('.crp-status.crp-is-pending')?.textContent?.trim()).toBe('Pendiente de pago');
@@ -361,17 +361,17 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const c = await openConfirm(); await c.showMethods();
     expect(c.element.querySelector('[class*="crp-operator"]')).toBeNull();
     expect(c.element.querySelector('form .crp-finish-layout > .crp-finish-main > .crp-booking-card')).not.toBeNull();
-    expect(c.element.querySelector('form .crp-finish-layout > aside.crp-finish-aside > .crp-booking-card.self-service-summary')).not.toBeNull();
+    expect(c.element.querySelector('form .crp-finish-layout > aside.crp-finish-aside > .crp-booking-card.crp-self-service-summary')).not.toBeNull();
     expect(c.element.querySelector('form .crp-booking-bar button[type="submit"].crp-primary')).not.toBeNull();
   });
   it('the confirmation stacks top bar, two-column body and bottom bar, never under a generic form grid', async () => {
     const c = await openConfirm(); await c.showMethods();
-    const form = c.element.querySelector('form.self-service-confirm')!;
+    const form = c.element.querySelector('form.crp-self-service-confirm')!;
     expect(Array.from(form.children, (child) => child.classList[0])).toEqual(['crp-booking-topbar', 'crp-finish-content', 'crp-booking-bar']);
     expect(Array.from(form.querySelectorAll('.crp-finish-layout > *'), (column) => column.classList[0])).toEqual(['crp-finish-main', 'crp-finish-aside']);
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
-    expect(rule('.crp-root .self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
+    expect(rule('.crp-root .crp-self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
     // The column and its bar without the 144px/210px room for a fixed bar (001- amendment HC-3): portal-column.spec.ts.
     expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 1\.6fr\) minmax\(260px, 1fr\)/);
   });
@@ -424,11 +424,11 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
   it('Mis reservas sizes its header as mis-reservas.html: 48px title without margins, small dark-green eyebrow, 1rem description', () => {
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
-    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-size:\s*3rem/);
-    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-weight:\s*800/);
-    expect(rule('.crp-root .self-service-panel .crp-page-header-eyebrow')).toMatch(/color:\s*#1f4d3d/);
-    expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/margin:\s*0;/);
-    expect(rule('.crp-root .self-service-panel .crp-page-header-desc')).toMatch(/font-size:\s*1rem;\s*line-height:\s*1\.65/);
-    expect(rule('.crp-root .self-service-panel .crp-page-header-desc + .crp-page-header-desc')).toMatch(/margin-top:\s*8px;\s*color:\s*#17252b/);
+    expect(rule('.crp-root .crp-self-service-panel .crp-page-header-title')).toMatch(/font-size:\s*3rem/);
+    expect(rule('.crp-root .crp-self-service-panel .crp-page-header-title')).toMatch(/font-weight:\s*800/);
+    expect(rule('.crp-root .crp-self-service-panel .crp-page-header-eyebrow')).toMatch(/color:\s*#1f4d3d/);
+    expect(rule('.crp-root .crp-self-service-panel .crp-page-header-title')).toMatch(/margin:\s*0;/);
+    expect(rule('.crp-root .crp-self-service-panel .crp-page-header-desc')).toMatch(/font-size:\s*1rem;\s*line-height:\s*1\.65/);
+    expect(rule('.crp-root .crp-self-service-panel .crp-page-header-desc + .crp-page-header-desc')).toMatch(/margin-top:\s*8px;\s*color:\s*#17252b/);
   });
 });

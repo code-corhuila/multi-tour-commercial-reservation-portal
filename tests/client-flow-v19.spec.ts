@@ -52,7 +52,7 @@ describe('finalizar-reserva.html v1.9 (screen 21)', () => {
     const p = await confirm();
     expect(p.text('.crp-finish-pill')).toBe('Tu reserva se crea Pendiente de pago. Elige por separado el tipo de pago y el medio de pago habilitados.');
     expect(p.text('.crp-booking-back')).toBe('← Volver a salida y viajeros');
-    expect(p.text('.crp-finish-conditions .self-service-note')).toBe('Reservas únicamente el tour y la salida seleccionada. La alimentación indicada forma parte del paquete cuando corresponda; el hospedaje y los restaurantes asociados no se reservan en Multitour.');
+    expect(p.text('.crp-finish-conditions .crp-self-service-note')).toBe('Reservas únicamente el tour y la salida seleccionada. La alimentación indicada forma parte del paquete cuando corresponda; el hospedaje y los restaurantes asociados no se reservan en Multitour.');
     expect(p.text('.crp-finish-help')).toContain('El equipo del operador puede ayudarte a continuar el proceso de reserva y pago; no es un medio de pago.');
   });
 
