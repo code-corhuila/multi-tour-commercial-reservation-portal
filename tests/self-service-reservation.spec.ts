@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
+import { resolvedPortalCss } from './css-tokens';
 import { describe, expect, it } from 'vitest';
 import { IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
@@ -363,8 +364,8 @@ describe('theScreensAreSeparateAsInTheMockups (finalizar-reserva, mis-reservas; 
     expect(p.element.textContent).not.toContain('Volver al panel');
   });
 
-  it('Mis reservas sizes its header as mis-reservas.html: 48px title, small dark-green eyebrow', () => {
-    const css = readFileSync('src/styles/portal.css', 'utf8');
+  it('Mis reservas sizes its header as mis-reservas.html: 48px title without margins, small dark-green eyebrow, 1rem description', () => {
+    const css = resolvedPortalCss();
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-size:\s*3rem/);
     expect(rule('.crp-root .self-service-panel .crp-page-header-title')).toMatch(/font-weight:\s*800/);

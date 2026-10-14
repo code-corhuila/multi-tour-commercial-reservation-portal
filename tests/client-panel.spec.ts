@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { readFileSync } from 'node:fs';
+import { resolvedPortalCss } from './css-tokens';
 import { of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
@@ -110,7 +112,7 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
   });
 
   it('sizes the panel as panel-cliente.html: big greeting, full-width search, two wide featured cards, grey quick texts', () => {
-    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const css = resolvedPortalCss();
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .crp-panel-hero h1')).toMatch(/font-size:\s*3\.1rem/);
     expect(rule('.crp-root .crp-panel-hero h1')).toMatch(/font-weight:\s*800/);
