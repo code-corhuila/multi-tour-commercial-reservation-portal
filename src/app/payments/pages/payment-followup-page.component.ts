@@ -81,6 +81,7 @@ export class PaymentFollowupPageComponent {
   protected readonly hours = signal(String(PAYMENT_FOLLOWUP_TEXT.extension.suggested)); protected readonly extensionFeedback = signal('');
   /** One key per intention: a retry of the same note reuses it; another note, or the next one after a success, takes a new key. */
   private key = ''; private keyFor: string | null = null; private readonly requests = new Subject<void>();
+  private extendKey = ''; private extendKeyFor: string | null = null;
   private readonly loaded = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => this.reader.deadlineOf(this.params['reservation'] ?? '').pipe(switchMap((deadline) => forkJoin({ all: this.source.list(), labels: paymentLabels(this.methods),
       departures: this.departures?.list().pipe(catchError(() => of([]))) ?? of([]) }).pipe(
     map(({ all, labels, departures }): State => { const reservation = all.find((r) => r.id === this.params['reservation']);
@@ -119,8 +120,10 @@ export class PaymentFollowupPageComponent {
   protected extend(r: Reservation): void {
     if (this.pending()) return;
     this.pending.set(true);
-    this.extender!.extend({ reservationId: r.id, hours: Number(this.hours()) }, this.keys.generate()).subscribe({
-      next: () => { this.extensionFeedback.set(this.t.extension.done); this.saved.set(null); this.requests.next(); this.pending.set(false); },
+    const hours = Number(this.hours()), fingerprint = `${r.id}|${hours}`;
+    if (this.extendKeyFor !== fingerprint) { this.extendKey = this.keys.generate(); this.extendKeyFor = fingerprint; }
+    this.extender!.extend({ reservationId: r.id, hours }, this.extendKey).subscribe({
+      next: () => { this.extendKeyFor = null; this.extensionFeedback.set(this.t.extension.done); this.saved.set(null); this.requests.next(); this.pending.set(false); },
       error: (e: { userMessage?: string }) => { this.extensionFeedback.set(e?.userMessage || this.common.failed); this.pending.set(false); },
     });
   }

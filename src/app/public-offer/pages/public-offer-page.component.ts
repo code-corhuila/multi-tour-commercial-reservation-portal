@@ -1,4 +1,5 @@
 import { ReadErrorComponent } from '../../shared/read-error.component';
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -160,7 +161,7 @@ export class PublicOfferPageComponent {
   private readonly images = inject(TourImages);
   // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });
-  protected readonly date = signal(new Date().toLocaleDateString('en-CA'));
+  protected readonly date = signal(tenantDay(inject(Clock).now()));
   protected readonly search = signal('');
   protected readonly chosen = signal<PricedTour | null>(null);
   private readonly dates = new Subject<string>();

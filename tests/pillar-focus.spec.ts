@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { listSourceFiles } from './source-files';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, render, screen } from '@testing-library/angular';
@@ -87,5 +89,14 @@ describe('openingAnAreaFocusesItsHeading', () => {
     const { host } = await openShell();
     expect(host.querySelector('crp-test-first-area h1')).not.toBeNull();
     expect(host.contains(document.activeElement)).toBe(false);
+  });
+});
+
+describe('everyFormWithAnInvalidFieldFocusesTheFirstError', () => {
+  it('references focusFirstError in each page or component that marks a field aria-invalid', () => {
+    const marking = listSourceFiles().filter((f) => /\/(pages|components)\/[^/]+\.ts$/.test(f) && !f.startsWith('src/app/demo/'))
+      .filter((f) => readFileSync(f, 'utf8').includes('aria-invalid'));
+    expect(marking.length).toBeGreaterThanOrEqual(16);
+    expect(marking.filter((f) => !readFileSync(f, 'utf8').includes('focusFirstError('))).toEqual([]);
   });
 });

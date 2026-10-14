@@ -1,3 +1,4 @@
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
@@ -71,7 +72,7 @@ export class CurrentDiscountsPageComponent {
   protected readonly text = CURRENT_DISCOUNTS_TEXT;
   protected readonly formatDate = formatDate;
   /** DP-CD1 open: the demo checks validity against the date the person picks. */
-  protected readonly date = signal(new Date().toLocaleDateString('en-CA'));
+  protected readonly date = signal(tenantDay(inject(Clock).now()));
   private readonly additional = signal<Readonly<Record<string, AdditionalDiscount>>>({});
   private readonly chosen = signal('');
   private readonly requests = new Subject<string>();

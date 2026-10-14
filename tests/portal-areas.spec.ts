@@ -168,6 +168,15 @@ describe('operatorShellSidebar', () => {
     expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos']);
   });
 
+  // HU-COM-002 plan D-06, AC-PE.7: no route and no menu entry for a role that cannot read establishments.
+  for (const role of ['OPERATIONAL_COLLABORATOR', 'ACCOUNTANT'] as const) {
+    it(`collaboratorGetsNoRouteAndNoMenuEntry: ${role} has no Establecimientos item`, async () => {
+      const { items, navigation } = await openShell(role);
+      expect(items().map((b) => b.textContent?.trim())).not.toContain('Establecimientos');
+      expect(navigation().open('establishments')).toBe(false);
+    });
+  }
+
   it('hides Descuentos when the build supplies no discount source', async () => {
     const { items } = await openShell('TENANT_ADMINISTRATOR', false);
     expect(items().map((b) => b.textContent?.trim())).toEqual(['Catálogos']);

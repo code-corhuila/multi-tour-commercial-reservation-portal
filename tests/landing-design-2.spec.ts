@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { resolvedPortalCss } from './css-tokens';
 import { describe, expect, it } from 'vitest';
 import { lastValueFrom } from 'rxjs';
 import { DemoCurrentDiscountsStore, currentDiscountsProviders } from '../src/app/demo/current-discounts-demo';
@@ -6,7 +6,7 @@ import { TourValueSource } from '../src/app/public-offer/data/public-offer-sourc
 import { PublicTour } from '../src/app/public-offer/model/public-offer';
 
 /** Cards, agreement note, page background and back chevron look as tours.html / alojamiento.html (main.css, refinement block). */
-const css = readFileSync('src/styles/portal.css', 'utf8');
+const css = resolvedPortalCss();
 const ruleOf = (selector: string) => {
   const start = css.indexOf(`\n${selector} {`);
   return start < 0 ? '' : css.slice(start, css.indexOf('}', start));
@@ -70,7 +70,7 @@ describe('agreementNoteIsADarkLeftBorderNote', () => {
 
 describe('pageBackgroundAndBackChevron', () => {
   it('leaves the client shell white around the canvas', () => {
-    expect(ruleOf('.crp-root .crp-client-shell')).toMatch(/background:\s*var\(--crp-surface\);/);
+    expect(ruleOf('.crp-root .crp-client-shell')).toMatch(/background:\s*#ffffff;/);
   });
 
   it('draws the Volver arrow as a chevron without a data URI', () => {

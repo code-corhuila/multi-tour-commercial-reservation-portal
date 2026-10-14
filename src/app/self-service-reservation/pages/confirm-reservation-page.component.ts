@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
+import { focusFirstError } from '../../shared/focus';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop, formatDate } from '../../shared/format';
@@ -114,6 +115,8 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
   `,
 })
 export class ConfirmReservationPageComponent {
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
+  private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   protected readonly text = SELF_SERVICE_TEXT;
   protected readonly cop = formatCop;
   protected readonly date = formatDate;
@@ -191,8 +194,8 @@ export class ConfirmReservationPageComponent {
     const { conditions, terms } = this.accepted();
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
-    if (this.missing() || this.unaccepted()) return;
-    if (this.standing === 'NO_SESSION') { this.asked.set(true); this.customer.requestSignIn(); return; }
+    if (this.missing() || this.unaccepted()) { this.focusFirstErrorOnRender(); return; }
+    if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
     defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method() }))).pipe(
