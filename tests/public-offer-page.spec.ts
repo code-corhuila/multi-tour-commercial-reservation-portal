@@ -266,7 +266,19 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
   it('writes the chosen date as the screens do, never as an ISO date', async () => {
     const page = await openPage();
     await page.chooseDate('2026-11-22');
-    expect(text(page.host.querySelector('[data-date]'))).toBe('Disponibles el 22 nov 2026');
+    expect(within(page.host).getByLabelText<HTMLInputElement>('Fecha').value).toBe('2026-11-22');
+    expect(page.host.textContent).not.toContain('2026-11-22');
+  });
+
+  it('keeps the photo of a card at 140px (main.css refinement) and the search row narrow, with the buttons at the size of the mockup', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
+    expect(rule('.crp-root .crp-tour-media')).toMatch(/position:\s*relative;\s*overflow:\s*hidden;\s*height:\s*140px;/);
+    expect(rule('.crp-root .crp-tour-media img')).toMatch(/position:\s*absolute;\s*inset:\s*0;.*width:\s*100%;\s*height:\s*100%;\s*object-fit:\s*cover;/);
+    expect(rule('.crp-root .crp-offer-search')).toMatch(/display:\s*flex;.*width:\s*auto;\s*max-width:\s*100%;\s*align-self:\s*flex-end;/);
+    expect(rule('.crp-root .crp-offer-search input[type="search"]')).toMatch(/flex:\s*0 1 180px;/);
+    expect(rule('.crp-root .crp-tour-meta button')).toMatch(/font-size:\s*0\.8rem;/);
+    expect(rule('.crp-root .crp-offer-reserve')).toMatch(/font-size:\s*0\.88rem;/);
   });
 
   it('draws a tour card as tours.html: photo, tag of the value port, struck base, from-value in green and Ver detalle', async () => {
@@ -324,6 +336,43 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     fireEvent.click(within(page.host).getByRole('button', { name: /Volver a tours/ }));
     await page.settle();
     expect(page.cards('tours')).toHaveLength(1);
+  });
+
+  it('writes the validity the offer port gives as detalle-tour.html: a range and Vigente del … al …', async () => {
+    const page = await openPage();
+    page.tours.requests[0].reply([tourNamed('Suaza', { validity: { from: '2026-09-01', to: '2026-09-30' } })]);
+    await page.settle();
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    const detail = page.host.querySelector('[data-part="detail"]')!;
+    expect(text(detail.querySelector('.crp-offer-facts'))).toBe('Vigencia 01 sep 2026 - 30 sep 2026');
+    expect(text(detail.querySelector('.crp-offer-summary .crp-offer-facts'))).toBe('Vigencia 01 sep 2026 - 30 sep 2026');
+    expect(text(detail.querySelector('.crp-offer-validity'))).toBe('Vigente del 01 sep 2026 al 30 sep 2026.');
+  });
+
+  it('draws Reservar tour only when the shell can open Reservar tour of HU-COM-008, and opens it on the tour', async () => {
+    const page = await openPage({ areas: [CLIENT_AREA.tours, 'reserve'] });
+    page.tours.requests[0].reply([tourNamed('Suaza')]);
+    await page.settle();
+    expect(page.host.textContent).not.toContain('Elegir salida y reservar');
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    const reserve = within(page.host).getByRole('button', { name: 'Elegir salida y reservar' });
+    expect(reserve.classList).toContain('crp-primary');
+    expect(reserve.closest('.crp-offer-summary')).not.toBeNull();
+    fireEvent.click(reserve);
+    expect(TestBed.inject(PortalNavigation).selected()).toBe('reserve');
+    expect(TestBed.inject(PortalNavigation).params()).toEqual({ tour: 'tour-Suaza' });
+  });
+
+  it('lays the cards of tours.html out in four columns with 140px photos and the price beside Ver detalle', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8').replace(/\s+/g, ' ');
+    expect(css).toContain('.crp-root .crp-offer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));');
+    expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*height: 140px;/);
+    expect(css).toMatch(/\.crp-root \.crp-tour-meta \{[^}]*flex-wrap: nowrap;/);
+    expect(css).toMatch(/\.crp-root \.crp-tour-card \.crp-tour-body strong \{[^}]*white-space: nowrap;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 1rem; font-weight: 400;[^}]*text-transform: none;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 2rem; font-weight: 700;/);
   });
 
   it('shows Volver al panel cliente only when the shell can open the panel, and opens it', async () => {

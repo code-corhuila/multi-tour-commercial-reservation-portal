@@ -81,3 +81,28 @@ describe('pageBackgroundAndBackChevron', () => {
     expect(chevron).toMatch(/border-(?:left|bottom)/);
   });
 });
+
+describe('clientScreensAreDelicateAsTheLanding', () => {
+  it('writes the tour detail title at 1.6-2.1rem weight 700 and the conditions as a soft grey card', () => {
+    const title = ruleOf('.crp-root .crp-offer-detail h1');
+    expect(title).toMatch(/font-weight:\s*700;/);
+    expect(title).not.toMatch(/letter-spacing:\s*-0\.04em/);
+    const conditions = ruleOf('.crp-root .crp-offer-conditions');
+    expect(conditions).toMatch(/background:\s*#f7f9f8;/);
+    expect(conditions).toMatch(/padding:\s*4px 18px 14px;/);
+    expect(conditions).toMatch(/border-radius:\s*12px;/);
+  });
+
+  it('draws the summary card flat and the reserve button dark, as the landing', () => {
+    expect(ruleOf('.crp-root .crp-offer-summary')).toMatch(/box-shadow:\s*0 4px 16px rgba\(23, 37, 43, 0\.06\);/);
+    const reserve = ruleOf('.crp-root .crp-offer-reserve');
+    expect(reserve).toMatch(/background:\s*#17252b;/);
+    expect(reserve).toMatch(/min-height:\s*42px;/);
+  });
+
+  it('softens the panel, Mis reservas and Mis pagos cards and their type', () => {
+    expect(css).toMatch(/\.crp-root \.crp-panel-card, \.crp-root \.self-service-card, \.crp-root \.crp-my-payments-card \{[^}]*border-radius:\s*14px;[^}]*box-shadow:\s*0 2px 10px/);
+    expect(css).toMatch(/\.crp-root \.crp-panel-hero h1[^{]*\{[^}]*font-weight:\s*700;/);
+    expect(css).toMatch(/\.crp-root \.crp-my-payments-card-lines small[^{]*\{[^}]*font-size:\s*0\.8rem;/);
+  });
+});
