@@ -101,7 +101,7 @@ describe('clientScreensAreDelicateAsTheLanding', () => {
   });
 
   it('softens the panel, Mis reservas and Mis pagos cards and their type', () => {
-    expect(css).toMatch(/\.crp-root \.crp-panel-card, \.crp-root \.crp-self-service-card, \.crp-root \.crp-my-payments-card \{[^}]*border-radius:\s*14px;[^}]*box-shadow:\s*0 2px 10px/);
+    expect(css).toMatch(/\.crp-root \.crp-panel-card, \.crp-root \.self-service-card, \.crp-root \.crp-my-payments-card \{[^}]*border-radius:\s*14px;[^}]*box-shadow:\s*0 2px 10px/);
     expect(css).toMatch(/\.crp-root \.crp-panel-hero h1[^{]*\{[^}]*font-weight:\s*700;/);
     expect(css).toMatch(/\.crp-root \.crp-my-payments-card-lines small[^{]*\{[^}]*font-size:\s*0\.8rem;/);
   });
