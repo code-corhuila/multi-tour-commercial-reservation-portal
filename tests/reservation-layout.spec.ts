@@ -25,7 +25,7 @@ describe('theFormIsOneColumnOfFullWidthCards', () => {
 
   it('draws the cards one under the other: intro, 01, 02, 03, 04 and the summary', async () => {
     const { element } = await screenOf(ReservationFormComponent, reservationProviders());
-    const cards = Array.from(element.querySelectorAll('form.crp-reservations-form > section'));
+    const cards = Array.from(element.querySelectorAll('form.crp-reservations-form section.crp-reservations-intro, form.crp-reservations-form section.crp-operator-panel'));
     expect(cards.map((c) => c.querySelector('.crp-operator-eyebrow')?.textContent?.trim())).toEqual(
       ['Nueva reserva', '01. Cliente titular', '02. Tour, salida y viajeros', '03. Acompañantes', '04. Condiciones y pago', 'Valores calculados']);
     expect(cards[0].classList).toContain('crp-reservations-intro');
