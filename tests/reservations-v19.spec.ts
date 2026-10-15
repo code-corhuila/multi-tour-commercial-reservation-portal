@@ -27,7 +27,7 @@ describe('create reservation (admin-crear-reserva): one tour, its scheduled depa
     expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')[0]).toBe('02. Tour, salida y viajeros');
     expect(field('serviceId').tagName).toBe('SELECT');
     expect(element.querySelector('fieldset')).toBeNull();
-    expect(optionsOf(element, 'serviceId')).toEqual(['Selecciona una opción', 'Kayak · $20 por persona', 'Lunch · $25 por persona']);
+    expect(optionsOf(element, 'serviceId')).toEqual(['Selecciona un tour', 'Kayak', 'Lunch']);
     expect(optionsOf(element, 'departureId')).toContain('Tour 1 · 07 nov 2026 · 10 cupos disponibles');
     for (const label of ['Tour', 'Salida programada', 'Cantidad total de viajeros', 'Vehículo(s) de la salida']) {
       expect(texts(element, 'label'), label).toContain(label);
@@ -64,10 +64,11 @@ describe('create reservation (admin-crear-reserva): one tour, its scheduled depa
   it('keeps Registrar reserva disabled, with the feedback, until every mandatory datum and the acceptance are given', async () => {
     const { element, button, choose, tick, type, payWith } = await screenOf(ReservationFormComponent, reservationProviders());
     expect(button('Registrar reserva')!.disabled).toBe(true);
-    expect(element.textContent).toContain('Completa los campos obligatorios para registrar la reserva.');
+    expect(element.textContent).toContain('Selecciona un tour para consultar sus requisitos y valores.');
     expect(element.textContent).toContain('Confirmo que el cliente acepta las condiciones aplicables a esta reserva.');
     await choose('leadCustomerId', 'cus-1'); await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2');
     expect(button('Registrar reserva')!.disabled).toBe(true);
+    expect(element.textContent).toContain('Completa los campos obligatorios para registrar la reserva.');
     await payWith();
     expect(button('Registrar reserva')!.disabled).toBe(false);
     expect(element.textContent).not.toContain('Completa los campos obligatorios');
