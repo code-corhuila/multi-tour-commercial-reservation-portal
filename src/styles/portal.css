@@ -157,6 +157,7 @@
 
 /* Operator shell: light 226 px sidebar (brand, role, menu) and content up to 1420 px. */
 .crp-root .crp-operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); flex: 1 0 auto; color: var(--crp-shade-1c292b); background: var(--crp-bg); }
+.crp-root .crp-operator-shell.crp-no-sidebar { grid-template-columns: minmax(0, 1fr); }
 .crp-root .crp-operator-sidebar { display: flex; flex-direction: column; padding: 22px 14px 18px; background: var(--crp-surface); border-right: 1px solid var(--crp-line); color: var(--crp-text); }
 .crp-root .crp-operator-brand { margin: 0; font-size: 0.9rem; font-weight: 800; letter-spacing: 0.12em; }
 .crp-root .crp-operator-role { margin: 10px 0 26px; color: var(--crp-soft); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -318,7 +319,7 @@
   .crp-root .crp-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 860px) {
-  .crp-root .crp-operator-shell { grid-template-columns: 1fr; }
+  .crp-root .crp-operator-shell, .crp-root .crp-operator-shell.crp-no-sidebar { grid-template-columns: minmax(0, 1fr); }
   .crp-root .crp-operator-sidebar { padding: 16px; border-right: 0; border-bottom: 1px solid var(--crp-line); }
   .crp-root .crp-operator-role { margin: 6px 0 12px; }
   .crp-root .crp-operator-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
