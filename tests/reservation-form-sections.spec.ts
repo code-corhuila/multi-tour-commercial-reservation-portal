@@ -62,7 +62,7 @@ describe('theTitularIsRegisteredFromTheFiveFieldsOrChosenFromTheSearch', () => {
     expect(field<HTMLInputElement>('holderDocument').value).toBe('DOC 1001');
     expect(field<HTMLInputElement>('holderEmail').value).toBe('camila@example.test');
     expect(field<HTMLInputElement>('holderPhone').value).toBe('300 000 0001');
-    expect(field<HTMLInputElement>('holderBirth').value).toBe('1990-05-01');
+    expect(field<HTMLInputElement>('holderBirth').value).toBe('01/05/1990');
     expect(element.textContent).toContain('Reserva vinculada al cliente existente Camila Ortega (camila@example.test).');
     await ready('1'); await submit();
     expect(writer.calls[0].command.leadCustomerId).toBe('cus-1');
@@ -124,6 +124,34 @@ describe('theOperatorCompanionHasThreeFieldsAndTheCustomerCompanionHasFive', () 
     await ready('3'); await party(); await submit();
     expect(writer.calls[0].command.companions).toEqual([
       { fullName: 'Acompañante Ficticio 1', document: 'DOC 9101', birthDate: '1995-03-04' }, { fullName: 'Acompañante Ficticio 2', document: 'DOC 9102', birthDate: '1995-03-04' }]);
+  });
+});
+
+describe('theBirthDateIsTypedAsDdMmAaaaAndTravelsAsIso', () => {
+  it('shows a text field with the placeholder dd/mm/aaaa for the titular and for each companion', async () => {
+    const { field } = await openForm();
+    for (const name of ['holderBirth', 'companionBirth-0']) {
+      expect(field<HTMLInputElement>(name).type, name).toBe('text');
+      expect(field<HTMLInputElement>(name).placeholder, name).toBe('dd/mm/aaaa');
+    }
+  });
+
+  it('sends the dates as ISO, and accepts a date in the future (that is AC-PC.13)', async () => {
+    const { ready, party, type, submit, writer } = await openForm();
+    await ready('2'); await party(); await type('holderBirth', '15/03/1990'); await type('companionBirth-0', '01/01/2999'); await submit();
+    expect(writer.calls[0].command.lead!.birthDate).toBe('1990-03-15');
+    expect(writer.calls[0].command.companions![0].birthDate).toBe('2999-01-01');
+  });
+
+  it('refuses a date that does not exist or is not dd/mm/aaaa, beside the field, and sends nothing', async () => {
+    const { element, ready, party, type, submit, writer } = await openForm();
+    await ready('2'); await party();
+    for (const bad of ['31/02/1990', '1990-03-15', '15/13/1990', 'abc', '1/1/90']) {
+      await type('holderBirth', bad); await type('companionBirth-0', bad); await submit();
+      expect(errorBeside(element, 'holderBirth'), bad).toBe('Escribe una fecha válida (dd/mm/aaaa).');
+      expect(errorBeside(element, 'companionBirth-0'), bad).toBe('Escribe una fecha válida (dd/mm/aaaa).');
+    }
+    expect(writer.calls).toHaveLength(0);
   });
 });
 
