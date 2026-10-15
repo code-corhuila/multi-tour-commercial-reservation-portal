@@ -607,13 +607,16 @@
 .crp-root .crp-customers-field { display: grid; gap: 7px; align-content: start; color: #334547; font-size: 0.8rem; font-weight: 800; }
 .crp-root .crp-customers-wide { grid-column: 1 / -1; }
 .crp-root .crp-customers-check { display: flex; gap: 10px; align-items: center; font-weight: 600; }
-.crp-root .crp-customers-card, .crp-root .crp-customers-risk-card { display: grid; gap: 14px; margin-top: 16px; padding: 18px; border: 1px solid #dce8e1; border-radius: 12px; background: #fbfdfb; }
-.crp-root .crp-customers-details dt { color: #748084; font-size: 0.72rem; font-weight: 800; }
-.crp-root .crp-customers-details dd { margin: 4px 0 0; color: #203234; }
+.crp-root .crp-customers-card, .crp-root .crp-customers-risk-card, .crp-root .crp-customers-companion { display: grid; gap: 14px; margin-top: 16px; padding: 18px; border: 1px solid var(--crp-line-green); border-radius: 12px; background: var(--crp-shade-fbfdfb); }
+.crp-root .crp-customers-details dt { color: var(--crp-shade-748084); font-size: 0.72rem; font-weight: 800; }
+.crp-root .crp-customers-details dd { margin: 4px 0 0; color: var(--crp-ink-slate); }
 .crp-root .crp-customers-form { display: block; margin: 0; }
 .crp-root .crp-customers-form .crp-form-actions { margin-top: 18px; }
 @media (max-width: 720px) { .crp-root .crp-customers-grid { grid-template-columns: 1fr; } }
 .crp-root .crp-customers-error { margin: 0; color: var(--crp-error); }
+.crp-root .crp-customers-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 18px; margin: 8px 0 12px; }
+.crp-root .crp-customers-results > p, .crp-root .crp-customers-results > div { grid-column: 1 / -1; margin: 0; }
+.crp-root .crp-customers-linked { margin: 0 0 12px; color: var(--crp-success); font-weight: 700; }
 /* HU-COM-008 panel-cliente.html: greeting, search, reservations summary, quick actions, discounts and featured tours. */
 .crp-root .crp-panel-hero { display: grid; gap: 12px; }
 .crp-root .crp-panel-hero > p { max-width: 640px; margin: 0; color: var(--crp-soft); }

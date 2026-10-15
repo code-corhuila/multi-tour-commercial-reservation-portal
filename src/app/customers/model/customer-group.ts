@@ -18,6 +18,12 @@ export interface CustomerGroup {
   readonly lead: Person; readonly companions: readonly Person[];
 }
 
+/** A customer found by the search of 10B (HU-COM-005 amendment A.2 row 2): the five fields of the titular and whether the e-mail is verified. */
+export interface CustomerMatch {
+  readonly id: string; readonly fullName: string; readonly document: string; readonly email: string; readonly phone: string;
+  readonly birthDate: string; readonly verified: boolean;
+}
+
 export const HIGH_RISK_FIELDS = ['informedConsent', 'bloodType', 'emergencyContact', 'physicalRestrictions'] as const;
 export type HighRiskField = (typeof HIGH_RISK_FIELDS)[number];
 export const PERSON_FIELDS = ['fullName', 'document', 'contact', 'birthDate'] as const;
@@ -29,6 +35,7 @@ export type PersonKind = 'lead' | 'companion';
 
 const blank = (value: string | undefined) => !value?.trim();
 const normalized = (document: string) => document.replace(/\s+/g, '').toLowerCase();
+export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** The extra fields missing for a high-risk activity; none when the activity is ordinary. */
 export function missingHighRiskData(draft: PersonDraft, highRisk: boolean): HighRiskField[] {

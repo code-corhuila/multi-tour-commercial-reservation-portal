@@ -3,7 +3,8 @@ import { Observable, map, of, take, tap } from 'rxjs';
 import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { CustomersSource, SensitiveDataAccess } from '../customers/data/customers-source';
 import { CustomersWriter } from '../customers/data/customers-writer';
-import { CustomerGroup, LeadCommand, Person, PersonCommand } from '../customers/model/customer-group';
+import { CustomerGroup, CustomerMatch, LeadCommand, Person, PersonCommand } from '../customers/model/customer-group';
+import type { LeadFields } from '../customers/model/party-rules';
 
 // DEMO (spec DD-1): invented people only (RN-PC9). Debt: replace with sources over props.apiClient when G-B is closed.
 /** PROPUESTO (spec DP-PC1): how the container would report "Consultar datos sensibles" is not decided. */
@@ -11,7 +12,18 @@ export const SENSITIVE_DATA_PERMISSION = 'CONSULT_SENSITIVE_DATA';
 const extra = (bloodType: string, physicalRestrictions: string) =>
   ({ informedConsent: true, bloodType, emergencyContact: 'Contacto Demo 000-0000', physicalRestrictions });
 
+/** The three customers of the first draft of 10B, now the seeds of the one directory behind the search (amendment V19-D1). */
+export const DEMO_CUSTOMERS: readonly CustomerMatch[] = [
+  { id: 'demo-cus-1', fullName: 'Camila Ortega (demo)', document: 'DEMO-1001', email: 'camila.ortega@example.test', phone: '300 000 1001', birthDate: '1990-03-14', verified: true },
+  { id: 'demo-cus-2', fullName: 'Andrés Pinto (demo)', document: 'DEMO-1002', email: 'andres.pinto@example.test', phone: '300 000 1002', birthDate: '1987-11-02', verified: true },
+  { id: 'demo-cus-3', fullName: 'Laura Gómez (demo)', document: 'DEMO-1003', email: 'laura.gomez@example.test', phone: '300 000 1003', birthDate: '1994-06-25', verified: false },
+];
+/** Dots, spaces and case do not make a document different (RN-RES-005). */
+const documentKey = (text: string) => text.replace(/[^0-9a-z]/gi, '').toLowerCase();
+
 export class DemoCustomersStore extends CustomersSource {
+  private readonly directory: CustomerMatch[] = [...DEMO_CUSTOMERS];
+  private sequence = DEMO_CUSTOMERS.length;
   group: CustomerGroup | null = {
     groupId: 'demo-group-0', serviceId: 'demo-svc-3', activityName: 'Canotaje en el Rio Suaza', highRisk: true,
     lead: { personId: 'demo-person-a', fullName: 'Lucia Demo Ficticia', document: 'DEMO-0001', contact: 'lucia.demo@example.test',
@@ -20,6 +32,21 @@ export class DemoCustomersStore extends CustomersSource {
       birthDate: '2012-08-30', highRisk: extra('A-', 'Usa lentes') }],
   };
   override current(): Observable<CustomerGroup | null> { return of(this.group); }
+  /** Name, e-mail or document (without dots or spaces), as the mockup searches. */
+  override search(text: string): Observable<readonly CustomerMatch[]> {
+    const query = text.trim().toLowerCase(), document = documentKey(query);
+    return of(this.directory.filter((c) => c.fullName.toLowerCase().includes(query) || c.email.toLowerCase().includes(query) || (!!document && documentKey(c.document).includes(document))));
+  }
+  /** A titular typed by hand is registered with the reservation (A.2 row 2); the same document is the same customer. */
+  register(lead: LeadFields): string {
+    const known = this.directory.find((c) => documentKey(c.document) === documentKey(lead.document));
+    if (known) return known.id;
+    const created: CustomerMatch = { id: `demo-cus-${++this.sequence}`, ...lead, verified: false };
+    this.directory.push(created);
+    return created.id;
+  }
+  all(): readonly CustomerMatch[] { return this.directory; }
+  nameOf(id: string): string | undefined { return this.directory.find((c) => c.id === id)?.fullName; }
 }
 
 /** Answers a repeated Idempotency-Key with the first result, as the service will (AC-PC.8). */

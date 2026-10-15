@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, output, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -6,23 +6,25 @@ import { Subject, catchError, defer, distinctUntilChanged, finalize, forkJoin, m
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
 import { formatDate } from '../../shared/format';
 import { ApiError, COMMERCIAL_NAME } from '../../shell-contract';
+import { ReservationParty } from '../../customers/data/reservation-party';
+import { PortalSlotOutlet, RESERVATION_FORM_AFTER_OFFER, RESERVATION_FORM_SECTIONS } from '../../shared/portal-slots';
 import { DeparturesSource } from '../data/departures-source';
-import { LeadCustomersSource } from '../data/reservation-integrations';
 import { QuoteRequest, ReservationQuoteSource } from '../data/reservation-quote-source';
 import { DepartureCapacity } from '../data/departure-capacity';
 import { ReservationsWriter } from '../data/reservations-writer';
 import { ReservationBreakdownComponent } from './reservation-breakdown.component';
 import {
-  Departure, LeadCustomer, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, Reservation, ReservationDraft, ServiceOption,
+  Departure, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, Reservation, ReservationDraft, ServiceOption,
   money, openDepartures, peopleOf, seats, validateReservation,
 } from '../model/reservation';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 
-type Options = { departures: readonly Departure[]; customers: readonly LeadCustomer[]; services: readonly ServiceOption[] };
+type Options = { departures: readonly Departure[]; services: readonly ServiceOption[] };
 type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; options: Options };
 
+/** Screen 10B: sections 02 and 04 and the calculated values are drawn here; 01 and 03 are contributed by HU-COM-005 through RESERVATION_FORM_SECTIONS. */
 @Component({
-  selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationBreakdownComponent],
+  selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationBreakdownComponent, PortalSlotOutlet], providers: [ReservationParty],
   template: `
     @if (commercialName) { <section class="crp-reservations-tenant-context"><span>{{ text.tenantLabel }}</span><strong>{{ commercialName }}</strong><p>{{ text.tenantNote }}</p></section> }
     @let current = state();
@@ -32,17 +34,10 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
       @case ('empty') { <p role="status" data-state="empty">{{ text.noDepartures }}</p> }
       @case ('data') { @let o = current.options; @let e = errors(); @let q = preview();         <form class="crp-reservations-form" data-state="data" novalidate (submit)="submit($event, o)">
           <section class="crp-reservations-hero-card"><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>{{ text.heroTitle }}</h2><p>{{ text.heroNote }}</p></section>
+          <ng-container *crpSlot="sections; until: afterOffer" />
           <section class="crp-operator-panel">
             <p class="crp-operator-eyebrow">{{ text.offerEyebrow02 }}</p><h2>{{ text.offerTitle }}</h2>
             <div class="crp-reservations-grid">
-              <div class="crp-reservations-field">
-                <label for="reservation-customer">{{ text.customer }}</label>
-                <select id="reservation-customer" name="leadCustomerId" (change)="set('leadCustomerId', $event)" [attr.aria-invalid]="e.leadCustomerId ? true : null" [attr.aria-describedby]="e.leadCustomerId ? 'reservation-customer-error' : null">
-                  <option value="">{{ text.choose }}</option>
-                  @for (c of o.customers; track c.id) { <option [value]="c.id" [selected]="c.id === draft().leadCustomerId">{{ c.fullName }}</option> }
-                </select>
-                @if (e.leadCustomerId) { <p id="reservation-customer-error" class="crp-reservations-error">{{ e.leadCustomerId }}</p> }
-              </div>
               <div class="crp-reservations-field">
                 <label for="reservation-service">{{ text.tour }}</label>
                 <select id="reservation-service" name="serviceId" (change)="set('serviceId', $event)" [attr.aria-invalid]="e.serviceId ? true : null" [attr.aria-describedby]="e.serviceId ? 'reservation-service-error' : null">
@@ -69,6 +64,7 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
               @if (chosen; as dep) { <p class="crp-reservations-hint" aria-live="polite">{{ seatsNote(dep) }}</p> }
             </div>
           </section>
+          <ng-container *crpSlot="sections; from: afterOffer" />
           <section class="crp-operator-panel">
             <p class="crp-operator-eyebrow">{{ text.payEyebrow }}</p><h2>{{ text.conditionsTitle }}</h2>
             <p class="crp-operator-copy">{{ text.payIntro }}</p>
@@ -120,7 +116,7 @@ export class ReservationFormComponent {
   private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
   readonly created = output<Reservation>();
   readonly cancelled = output<void>();
-  private readonly departures = inject(DeparturesSource); private readonly customers = inject(LeadCustomersSource);
+  private readonly departures = inject(DeparturesSource); private readonly party = inject(ReservationParty);
   private readonly catalog = inject(CatalogItemsSource); private readonly quotes = inject(ReservationQuoteSource);
   private readonly seatRule = inject(DepartureCapacity);
   private readonly writer = inject(ReservationsWriter); private readonly lifetime = inject(DestroyRef);
@@ -128,22 +124,23 @@ export class ReservationFormComponent {
   private readonly intention = new IntentionKey(inject(IdempotencyKeys));
   protected readonly text = RESERVATION_TEXT;
   protected readonly commercialName = inject(COMMERCIAL_NAME);
+  protected readonly sections = RESERVATION_FORM_SECTIONS; protected readonly afterOffer = RESERVATION_FORM_AFTER_OFFER;
   protected readonly money = money;
   protected readonly date = formatDate;
   protected readonly paymentTypes = Object.entries(PAYMENT_TYPE_LABEL);
   protected readonly paymentMethods = Object.entries(PAYMENT_METHOD_LABEL);
   protected readonly seatsOf = (d: Departure) => seats(d.effectiveCapacity);
-  protected readonly draft = signal<ReservationDraft>({ leadCustomerId: '', departureId: '', serviceId: '', people: '4', paymentType: '', paymentMethod: '', accepted: false });
+  protected readonly draft = signal<ReservationDraft>({ departureId: '', serviceId: '', people: '4', paymentType: '', paymentMethod: '', accepted: false });
   protected readonly pending = signal(false); protected readonly failure = signal('');
   private readonly tried = signal(false); private readonly refusedForCapacity = signal('');
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => forkJoin({
-    departures: this.departures.list().pipe(take(1)), customers: this.customers.list().pipe(take(1)), items: this.catalog.list().pipe(take(1)),
+    departures: this.departures.list().pipe(take(1)), items: this.catalog.list().pipe(take(1)),
   }).pipe(
-    map(({ departures, customers, items }): OptionsState => {
+    map(({ departures, items }): OptionsState => {
       const open = openDepartures(departures);
       const services = items.filter((i) => i.catalogStatus === 'ACTIVE').map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents }));
-      return open.length ? { kind: 'data', options: { departures: open, customers, services } } : { kind: 'empty' };
+      return open.length ? { kind: 'data', options: { departures: open, services } } : { kind: 'empty' };
     }),
     catchError((error) => of<OptionsState>({ kind: 'error', ...readFailure(error) })), startWith<OptionsState>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as OptionsState });
@@ -153,9 +150,13 @@ export class ReservationFormComponent {
     const errors = validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId), this.seatRule);
     return this.refusedForCapacity() && !errors.people ? { ...errors, people: this.refusedForCapacity() } : errors;
   });
-  constructor() { this.reload(); }
+  constructor() {
+    // The number of travelers decides how many companions section 03 asks for (HU-COM-005); the form only tells it.
+    effect(() => this.party.travelers.set(peopleOf(this.draft().people) ?? 0));
+    this.reload();
+  }
   reload(): void { this.requests.next(); }
-  protected set(field: 'leadCustomerId' | 'serviceId' | 'departureId' | 'people' | 'paymentType' | 'paymentMethod', event: Event): void {
+  protected set(field: 'serviceId' | 'departureId' | 'people' | 'paymentType' | 'paymentMethod', event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
     this.draft.update((d) => ({ ...d, [field]: value }));
   }
@@ -178,7 +179,7 @@ export class ReservationFormComponent {
   /** The submit button enables when nothing mandatory is missing (mockup data-register-reservation). */
   protected readonly complete = computed(() => {
     const current = this.state();
-    return current.kind === 'data' && !Object.keys(validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId), this.seatRule)).length;
+    return current.kind === 'data' && !Object.keys(validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId), this.seatRule)).length && this.party.valid();
   });
   /** Mockup data-reservation-feedback: what is missing first, then that the reservation is ready. */
   protected readonly feedback = computed(() => (!this.draft().serviceId ? this.text.feedbackNoTour : !this.draft().departureId ? this.text.feedbackNoDeparture
@@ -197,11 +198,11 @@ export class ReservationFormComponent {
   protected submit(event: Event, o: Options): void {
     event.preventDefault();
     if (this.pending()) return;
-    this.tried.set(true); this.refusedForCapacity.set(''); this.failure.set('');
+    this.tried.set(true); this.party.attempted.set(true); this.refusedForCapacity.set(''); this.failure.set('');
     const d = this.draft(), departure = o.departures.find((x) => x.id === d.departureId), q = this.preview();
-    if (Object.keys(validateReservation(d, departure, this.seatRule)).length || !departure || !q) return;
+    if (Object.keys(validateReservation(d, departure, this.seatRule)).length || !this.party.valid() || !departure || !q) { this.party.rejected.update((n) => n + 1); this.focusFirstErrorOnRender(); return; }
     // 007- H-D8: the command carries no value; the service quotes again and is the authority.
-    const command = { leadCustomerId: d.leadCustomerId, departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod };
+    const command = { ...this.party.command(), departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod };
     this.pending.set(true);
     defer(() => this.writer.create(command, this.intention.keyFor(command))).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
       next: (reservation) => this.created.emit(reservation),
