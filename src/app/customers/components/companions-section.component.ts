@@ -15,7 +15,7 @@ const FIELDS: readonly { key: keyof CompanionFields; name: string; type: string;
   template: `
     <section class="crp-operator-panel" data-companions-section>
       <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.companionsEyebrow }}</p><h2>{{ text.companionsTitle }}</h2></div>
-        <span data-companion-count>{{ party.required() ? count(party.required()) : text.noCompanions }}</span></div>
+        <span class="crp-customers-count" data-companion-count>{{ party.required() ? count(party.required()) : text.noCompanions }}</span></div>
       <p class="crp-customers-copy">{{ text.companionsNote }}</p>
       @for (companion of party.companions(); track $index; let i = $index) {
         <article class="crp-customers-companion"><strong>{{ text.companionTitle }} {{ i + 1 }}</strong>
