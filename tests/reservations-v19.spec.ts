@@ -24,7 +24,7 @@ const optionsOf = (element: Element, name: string) => texts(element, `[name="${n
 describe('create reservation (admin-crear-reserva): one tour, its scheduled departure, and payment type and method apart', () => {
   it('draws Tour, Salida programada, travelers and the vehicles line of section 02', async () => {
     const { element, field } = await screenOf(ReservationFormComponent, reservationProviders());
-    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')[0]).toBe('02. Tour, salida y viajeros');
+    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')[1]).toBe('02. Tour, salida y viajeros');
     expect(field('serviceId').tagName).toBe('SELECT');
     expect(element.querySelector('fieldset')).toBeNull();
     expect(optionsOf(element, 'serviceId')).toEqual(['Selecciona un tour', 'Kayak', 'Lunch']);
@@ -62,11 +62,11 @@ describe('create reservation (admin-crear-reserva): one tour, its scheduled depa
   });
 
   it('keeps Registrar reserva disabled, with the feedback, until every mandatory datum and the acceptance are given', async () => {
-    const { element, button, choose, tick, type, payWith } = await screenOf(ReservationFormComponent, reservationProviders());
+    const { element, button, choose, tick, type, payWith, party } = await screenOf(ReservationFormComponent, reservationProviders());
     expect(button('Registrar reserva')!.disabled).toBe(true);
     expect(element.textContent).toContain('Selecciona un tour para consultar sus requisitos y valores.');
     expect(element.textContent).toContain('Confirmo que el cliente acepta las condiciones aplicables a esta reserva.');
-    await choose('leadCustomerId', 'cus-1'); await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2');
+    await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2'); await party();
     expect(button('Registrar reserva')!.disabled).toBe(true);
     expect(element.textContent).toContain('Completa los campos obligatorios para registrar la reserva.');
     await payWith();

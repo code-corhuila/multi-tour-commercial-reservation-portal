@@ -59,14 +59,14 @@ describe('theTextsOfSections02And04FollowTheMockup', () => {
   });
 
   it('asks for the departure, then for the rest, then says the reservation is ready', async () => {
-    const { element, tick, choose, payWith } = await openForm();
+    const { element, tick, choose, payWith, party } = await openForm();
     await tick('svc-Kayak');
     expect(texts(element, '[name="departureId"] option')[0]).toBe('Selecciona una salida programada');
     expect(texts(element, '[name="paymentType"] option')[0]).toBe('Selecciona el tipo de pago');
     expect(element.querySelector('[data-feedback]')?.textContent).toContain('Selecciona la salida programada: la reserva pertenece a una única salida.');
-    await choose('departureId', 'dep-1'); await choose('leadCustomerId', 'cus-1');
+    await choose('departureId', 'dep-1');
     expect(element.querySelector('[data-feedback]')?.textContent).toContain('Completa los campos obligatorios para registrar la reserva.');
-    await payWith();
+    await party(); await payWith();
     expect(element.querySelector('[data-feedback]')?.textContent).toContain('La reserva cumple las validaciones y está lista para registrarse. Quedará Pendiente de pago hasta cumplir la condición de confirmación.');
   });
 });
