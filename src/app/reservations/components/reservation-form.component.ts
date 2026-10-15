@@ -33,7 +33,7 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
       @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="current" [fallback]="text.failed" /><button type="button" (click)="reload()">{{ text.retry }}</button></div> }
       @case ('empty') { <p role="status" data-state="empty">{{ text.noDepartures }}</p> }
       @case ('data') { @let o = current.options; @let e = errors(); @let q = preview();         <form class="crp-reservations-form" data-state="data" novalidate (submit)="submit($event, o)">
-          <section class="crp-reservations-hero-card"><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>{{ text.heroTitle }}</h2><p>{{ text.heroNote }}</p></section>
+          <section class="crp-reservations-intro"><div><p class="crp-operator-eyebrow">{{ text.heroEyebrow }}</p><h2>{{ text.heroTitle }}</h2></div><p>{{ text.heroNote }}</p></section>
           <ng-container *crpSlot="sections; until: afterOffer" />
           <section class="crp-operator-panel">
             <p class="crp-operator-eyebrow">{{ text.offerEyebrow02 }}</p><h2>{{ text.offerTitle }}</h2>
@@ -88,11 +88,11 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
             </div>
             <p class="crp-operator-copy" data-payment-note>{{ paymentNote() }}</p>
             <div class="crp-reservations-conditions" data-conditions><strong>{{ text.conditions }}</strong><p>{{ chosen?.conditions ?? (draft().serviceId ? text.chooseDeparture : text.chooseTourConditions) }}</p><p>{{ text.noSeat }}</p></div>
-            <label><input type="checkbox" name="accepted" [checked]="draft().accepted" (change)="toggleAccepted()"> {{ text.accept }}</label>
+            <label class="crp-reservations-check"><input type="checkbox" name="accepted" [checked]="draft().accepted" (change)="toggleAccepted()"> {{ text.accept }}</label>
             @if (e.accepted) { <p class="crp-reservations-error">{{ e.accepted }}</p> }
           </section>
-          <section class="crp-operator-panel">
-            <p class="crp-operator-eyebrow">{{ text.valuesEyebrow }}</p><h2>{{ text.valuesTitle }}</h2><p>{{ text.valuesNote }}</p>
+          <section class="crp-operator-panel crp-reservations-summary">
+            <div><p class="crp-operator-eyebrow">{{ text.valuesEyebrow }}</p><h2>{{ text.valuesTitle }}</h2><p>{{ text.valuesNote }}</p></div>
             <div class="crp-reservations-values">
               <div><span>{{ text.projected }}</span><strong>{{ money(q?.projectedCents ?? 0) }}</strong></div>
               <div><span>{{ text.applicable }}</span><strong>{{ money(q ? -q.discountCents : 0) }}</strong></div>
