@@ -46,8 +46,11 @@ describe('theTextsOfSections02And04FollowTheMockup', () => {
     expect(texts(element, '[name="serviceId"] option')[0]).toBe('Selecciona un tour');
     expect(texts(element, '[name="departureId"] option')[0]).toBe('Selecciona primero un tour');
     expect(field<HTMLSelectElement>('departureId').disabled).toBe(true);
-    expect(texts(element, '[name="paymentType"] option')[0]).toBe('Selecciona primero un tour');
-    expect(texts(element, '[name="paymentMethod"] option')[0]).toBe('Selecciona primero un tour');
+    // The mockup (renderPaymentOptions) empties both selects and disables them until a tour is chosen.
+    expect(texts(element, '[name="paymentType"] option')).toEqual(['Selecciona el tipo de pago']);
+    expect(texts(element, '[name="paymentMethod"] option')).toEqual(['Selecciona el medio de pago']);
+    expect(field<HTMLSelectElement>('paymentType').disabled).toBe(true);
+    expect(field<HTMLSelectElement>('paymentMethod').disabled).toBe(true);
     expect(element.querySelector('[data-conditions]')?.textContent).toContain('Selecciona un tour para consultar las condiciones parametrizadas.');
     expect(element.querySelector('[data-feedback]')?.textContent).toContain('Selecciona un tour para consultar sus requisitos y valores.');
     expect(texts(element, '[name="serviceId"] option').slice(1)).toEqual(['Kayak', 'Lunch']);
