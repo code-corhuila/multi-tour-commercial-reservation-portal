@@ -14,7 +14,7 @@ export class CatalogApiSource extends CatalogItemsSource {
 export class CatalogApiWriter extends CatalogItemsWriter {
   constructor(private readonly client: PortalApiClient) { super(); }
   override create(command: CreateCatalogItemCommand, idempotencyKey: string): Observable<CatalogItem> {
-    const { validFrom: _from, validTo: _to, ...body } = command;
+    const { validFrom: _from, validTo: _to, operationalRestrictions: _restrictions, route: _route, ...body } = command;
     return call(this.client, catalogPath(), { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } });
   }
   override update(serviceId: string, command: UpdateCatalogItemCommand | UpdateDescriptionCommand): Observable<CatalogItem> {

@@ -40,6 +40,9 @@ export interface CreateCatalogItemCommand {
   /** The validity the form requires (G-B: the container adapter drops it until the contract has the fields). */
   readonly validFrom?: string;
   readonly validTo?: string;
+  /** Nuevo servicio of the mockup; PROPOSED like the validity: the container adapter drops them until the contract has the fields (G-B). */
+  readonly operationalRestrictions?: string;
+  readonly route?: string;
 }
 
 /**

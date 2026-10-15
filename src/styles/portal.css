@@ -232,6 +232,17 @@
 .crp-root .crp-catalog-grid strong { color: var(--crp-accent); font-size: 1.24rem; letter-spacing: -0.04em; }
 .crp-root .crp-catalog-grid p { margin: 0; color: var(--crp-soft); font-size: 0.84rem; line-height: 1.5; }
 .crp-root .crp-catalog-link { width: max-content; border: 0; padding: 0; background: transparent; color: var(--crp-accent); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
+/* Nuevo servicio (admin-nuevo-servicio.html): two full-width stacked cards, two-column fields, tall controls. */
+.crp-root .crp-operator-shell .crp-catalog-new-service { grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 0; }
+.crp-root .crp-catalog-new-service .crp-operator-panel { margin-top: 0; }
+.crp-root .crp-catalog-new-service h2 { margin: 6px 0 14px; font-size: 1.16rem; letter-spacing: -0.035em; }
+.crp-root .crp-catalog-field { display: grid; align-content: start; gap: 7px; }
+.crp-root .crp-catalog-field label { margin: 0; color: var(--crp-shade-334547); font-size: 0.8rem; font-weight: 800; }
+.crp-root .crp-catalog-new-service input:not([type="checkbox"]), .crp-root .crp-catalog-new-service select, .crp-root .crp-catalog-new-service textarea { max-width: none; min-height: 44px; padding: 0 12px; border-radius: 9px; background: var(--crp-shade-fffefa); font-size: 0.86rem; font-weight: 500; }
+.crp-root .crp-catalog-new-service textarea { min-height: 92px; padding: 10px 12px; }
+.crp-root .crp-catalog-wide { grid-column: 1 / -1; }
+.crp-root .crp-catalog-error { margin: 0; color: var(--crp-error); font-size: 0.78rem; }
+.crp-root .crp-catalog-note { margin: 0; color: var(--crp-soft-copy); font-size: 0.8rem; }
 
 /* Landing form composition of the operator screens (client forms keep their own layout): labels and errors stay attached to their controls. */
 .crp-root .crp-operator-shell form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
