@@ -17,7 +17,7 @@ const FIELDS: readonly { key: keyof LeadFields; name: string; type: string; labe
   { key: 'document', name: 'holderDocument', type: 'text', label: PERSON_LABELS.document, placeholder: PLACEHOLDERS.document },
   { key: 'email', name: 'holderEmail', type: 'email', label: PERSON_LABELS.email, placeholder: PLACEHOLDERS.email },
   { key: 'phone', name: 'holderPhone', type: 'tel', label: PERSON_LABELS.contact, placeholder: PLACEHOLDERS.phone },
-  { key: 'birthDate', name: 'holderBirth', type: 'date', label: PERSON_LABELS.birthDate, placeholder: null },
+  { key: 'birthDate', name: 'holderBirth', type: 'text', label: PERSON_LABELS.birthDate, placeholder: PLACEHOLDERS.birthDate },
 ];
 
 /** Section 01 of 10B, "Cliente titular" (HU-COM-005): found by search or typed; contributed to the form through RESERVATION_FORM_SECTIONS. */
@@ -64,7 +64,6 @@ export class TitularSectionComponent {
   constructor() {
     effect(() => { if (this.party.rejected()) afterNextRender(() => { if (!document.activeElement?.matches('[aria-invalid="true"]')) focusFirstError(this.host); }, { injector: this.injector }); });
   }
-  /** The newest search wins: switchMap drops an older answer that arrives late (pillar 8). */
   protected readonly search = toSignal(this.queries.pipe(switchMap((text): Observable<Search> => text.length < MIN_SEARCH ? of<Search>({ kind: 'idle' }) :
     defer(() => this.source.search(text)).pipe(map((matches): Search => (matches.length ? { kind: 'data', matches } : { kind: 'empty' })),
       catchError((error) => of<Search>({ kind: 'error', ...readFailure(error) })), startWith<Search>({ kind: 'loading' })))), { initialValue: { kind: 'idle' } as Search });
