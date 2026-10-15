@@ -5,7 +5,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { Subject, catchError, defer, distinctUntilChanged, finalize, forkJoin, map, of, startWith, switchMap, take } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
 import { formatDate } from '../../shared/format';
-import { ApiError } from '../../shell-contract';
+import { ApiError, COMMERCIAL_NAME } from '../../shell-contract';
 import { DeparturesSource } from '../data/departures-source';
 import { LeadCustomersSource } from '../data/reservation-integrations';
 import { QuoteRequest, ReservationQuoteSource } from '../data/reservation-quote-source';
@@ -24,6 +24,7 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
 @Component({
   selector: 'app-reservation-form', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReservationBreakdownComponent],
   template: `
+    @if (commercialName) { <section class="crp-reservations-tenant-context"><span>{{ text.tenantLabel }}</span><strong>{{ commercialName }}</strong><p>{{ text.tenantNote }}</p></section> }
     @let current = state();
     @switch (current.kind) {
       @case ('loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
@@ -45,17 +46,18 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
               <div class="crp-reservations-field">
                 <label for="reservation-service">{{ text.tour }}</label>
                 <select id="reservation-service" name="serviceId" (change)="set('serviceId', $event)" [attr.aria-invalid]="e.serviceId ? true : null" [attr.aria-describedby]="e.serviceId ? 'reservation-service-error' : null">
-                  <option value="">{{ text.choose }}</option>
-                  @for (s of o.services; track s.id) { <option [value]="s.id" [selected]="s.id === draft().serviceId">{{ s.name }} · {{ money(s.rateCents) }} {{ text.perPerson }}</option> }
+                  <option value="">{{ text.chooseTour }}</option>
+                  @for (s of o.services; track s.id) { <option [value]="s.id" [selected]="s.id === draft().serviceId">{{ s.name }}</option> }
                 </select>
                 @if (e.serviceId) { <p id="reservation-service-error" class="crp-reservations-error">{{ e.serviceId }}</p> }
               </div>
               <div class="crp-reservations-field">
                 <label for="reservation-departure">{{ text.scheduled }}</label>
                 <select id="reservation-departure" name="departureId" [disabled]="!draft().serviceId" (change)="set('departureId', $event)" [attr.aria-invalid]="e.departureId ? true : null" [attr.aria-describedby]="e.departureId ? 'reservation-departure-error' : null">
-                  <option value="">{{ text.choose }}</option>
+                  <option value="">{{ draft().serviceId ? text.chooseScheduled : text.chooseTourFirst }}</option>
                   @for (d of o.departures; track d.id) { <option [value]="d.id" [selected]="d.id === draft().departureId">{{ d.tourName }} · {{ date(d.date) }} · {{ seatsOf(d) }}</option> }
                 </select>
+                <small data-departure-hint>{{ draft().serviceId ? text.departureHint : text.chooseTourFirst }}</small>
                 @if (e.departureId) { <p id="reservation-departure-error" class="crp-reservations-error">{{ e.departureId }}</p> }
               </div>
               <div class="crp-reservations-field">
@@ -69,11 +71,12 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
           </section>
           <section class="crp-operator-panel">
             <p class="crp-operator-eyebrow">{{ text.payEyebrow }}</p><h2>{{ text.conditionsTitle }}</h2>
+            <p class="crp-operator-copy">{{ text.payIntro }}</p>
             <div class="crp-reservations-grid">
               <div class="crp-reservations-field">
                 <label for="reservation-pay-type">{{ text.payType }}</label>
                 <select id="reservation-pay-type" name="paymentType" [disabled]="!draft().serviceId" (change)="set('paymentType', $event)" [attr.aria-invalid]="e.paymentType ? true : null" [attr.aria-describedby]="e.paymentType ? 'reservation-pay-type-error' : null">
-                  <option value="">{{ text.chooseType }}</option>
+                  <option value="">{{ draft().serviceId ? text.chooseType : text.chooseTourFirst }}</option>
                   @for (t of paymentTypes; track t[0]) { <option [value]="t[0]" [selected]="t[0] === draft().paymentType">{{ t[1] }}</option> }
                 </select>
                 @if (e.paymentType) { <p id="reservation-pay-type-error" class="crp-reservations-error">{{ e.paymentType }}</p> }
@@ -81,14 +84,14 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
               <div class="crp-reservations-field">
                 <label for="reservation-pay-method">{{ text.payMethod }}</label>
                 <select id="reservation-pay-method" name="paymentMethod" [disabled]="!draft().serviceId" (change)="set('paymentMethod', $event)" [attr.aria-invalid]="e.paymentMethod ? true : null" [attr.aria-describedby]="e.paymentMethod ? 'reservation-pay-method-error' : null">
-                  <option value="">{{ text.chooseMethod }}</option>
+                  <option value="">{{ draft().serviceId ? text.chooseMethod : text.chooseTourFirst }}</option>
                   @for (m of paymentMethods; track m[0]) { <option [value]="m[0]" [selected]="m[0] === draft().paymentMethod">{{ m[1] }}</option> }
                 </select>
                 @if (e.paymentMethod) { <p id="reservation-pay-method-error" class="crp-reservations-error">{{ e.paymentMethod }}</p> }
               </div>
             </div>
             <p class="crp-operator-copy" data-payment-note>{{ paymentNote() }}</p>
-            <div class="crp-reservations-conditions" data-conditions><strong>{{ text.conditions }}</strong><p>{{ chosen?.conditions ?? text.chooseDeparture }}</p><p>{{ text.noSeat }}</p></div>
+            <div class="crp-reservations-conditions" data-conditions><strong>{{ text.conditions }}</strong><p>{{ chosen?.conditions ?? (draft().serviceId ? text.chooseDeparture : text.chooseTourConditions) }}</p><p>{{ text.noSeat }}</p></div>
             <label><input type="checkbox" name="accepted" [checked]="draft().accepted" (change)="toggleAccepted()"> {{ text.accept }}</label>
             @if (e.accepted) { <p class="crp-reservations-error">{{ e.accepted }}</p> }
           </section>
@@ -101,7 +104,7 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
             </div>
             @if (q) { <app-reservation-breakdown [quote]="q" /> }
           </section>
-          @if (!complete()) { <p class="crp-operator-form-feedback" aria-live="polite">{{ text.feedback }}</p> }
+          <p class="crp-operator-form-feedback" data-feedback [class.crp-is-valid]="complete()" aria-live="polite">{{ feedback() }}</p>
           @if (failure()) { <p role="alert">{{ failure() }}</p> }
           <div class="crp-form-actions crp-reservations-actions">
             <button type="button" class="crp-operator-outline" [disabled]="pending()" (click)="cancelled.emit()">{{ text.cancel }}</button>
@@ -124,12 +127,13 @@ export class ReservationFormComponent {
   /** The key follows the body: reused by every retry of the same data, new when the person corrects it (AC-RC.8). */
   private readonly intention = new IntentionKey(inject(IdempotencyKeys));
   protected readonly text = RESERVATION_TEXT;
+  protected readonly commercialName = inject(COMMERCIAL_NAME);
   protected readonly money = money;
   protected readonly date = formatDate;
   protected readonly paymentTypes = Object.entries(PAYMENT_TYPE_LABEL);
   protected readonly paymentMethods = Object.entries(PAYMENT_METHOD_LABEL);
   protected readonly seatsOf = (d: Departure) => seats(d.effectiveCapacity);
-  protected readonly draft = signal<ReservationDraft>({ leadCustomerId: '', departureId: '', serviceId: '', people: '', paymentType: '', paymentMethod: '', accepted: false });
+  protected readonly draft = signal<ReservationDraft>({ leadCustomerId: '', departureId: '', serviceId: '', people: '4', paymentType: '', paymentMethod: '', accepted: false });
   protected readonly pending = signal(false); protected readonly failure = signal('');
   private readonly tried = signal(false); private readonly refusedForCapacity = signal('');
   private readonly requests = new Subject<void>();
@@ -176,6 +180,9 @@ export class ReservationFormComponent {
     const current = this.state();
     return current.kind === 'data' && !Object.keys(validateReservation(this.draft(), current.options.departures.find((d) => d.id === this.draft().departureId), this.seatRule)).length;
   });
+  /** Mockup data-reservation-feedback: what is missing first, then that the reservation is ready. */
+  protected readonly feedback = computed(() => (!this.draft().serviceId ? this.text.feedbackNoTour : !this.draft().departureId ? this.text.feedbackNoDeparture
+    : this.complete() ? this.text.feedbackReady : this.text.feedback));
   /** What is quoted: a departure on offer, at least one service and a valid number of people; else nothing. */
   private readonly request = computed((): QuoteRequest | null => {
     const current = this.state(), d = this.draft(), people = peopleOf(d.people);
