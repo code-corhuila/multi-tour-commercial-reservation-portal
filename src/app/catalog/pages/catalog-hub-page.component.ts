@@ -39,7 +39,7 @@ interface HubCard {
           <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
         </div>
         @if (canRegister) {
-          <button class="crp-operator-primary crp-page-header-action" type="button" (click)="open('catalog-tours', { create: '1' })">{{ copy.newService }}</button>
+          <button class="crp-operator-primary crp-page-header-action" type="button" (click)="open('catalog-new-service', {})">{{ copy.newService }}</button>
         }
       </header>
       <p class="crp-access-note">{{ copy.accessNote }}</p>

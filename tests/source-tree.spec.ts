@@ -36,6 +36,7 @@ const SPECIFIED_TREE = [
   'src/app/portal-shell.component.ts',
   'src/app/catalog/catalog-copy.ts',
   'src/app/catalog/catalog-hub-copy.ts',
+  'src/app/catalog/catalog-new-service-copy.ts',
   'src/app/catalog/catalog.routes.ts',
   'src/app/catalog/components/catalog-item-form.component.ts',
   'src/app/catalog/components/catalog-new-service-form.component.ts',

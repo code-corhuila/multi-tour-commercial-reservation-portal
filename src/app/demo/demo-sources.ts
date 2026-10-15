@@ -37,7 +37,8 @@ export class DemoCatalogWriter extends CatalogItemsWriter {
   private sequence = 100;
   constructor(private readonly store: DemoCatalogStore) { super(); }
   override create(command: CreateCatalogItemCommand): Observable<CatalogItem> {
-    return this.store.add({ ...command, serviceId: `demo-svc-${++this.sequence}`, catalogStatus: 'ACTIVE', createdAt: NOW, updatedAt: NOW });
+    const { operationalRestrictions: _restrictions, route: _route, ...stored } = command;
+    return this.store.add({ ...stored, serviceId: `demo-svc-${++this.sequence}`, catalogStatus: 'ACTIVE', createdAt: NOW, updatedAt: NOW });
   }
   override update(serviceId: string, command: UpdateCatalogItemCommand | UpdateDescriptionCommand): Observable<CatalogItem> {
     return this.store.replace({ ...this.store.find(serviceId), ...command });

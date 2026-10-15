@@ -13,9 +13,9 @@ import { PageState } from '../../shared/page-state';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PortalNavigation } from '../../portal-navigation';
 
-/** The one form the page may show: registering (no item) or changing the given item. */
+/** The one form the page may show: the one that changes the given item (registering is the Nuevo servicio screen). */
 interface FormTarget {
-  readonly item: CatalogItem | undefined;
+  readonly item: CatalogItem;
 }
 
 /** The reason the service gave, or a generic one when the failure has no ApiError shape. */
@@ -40,7 +40,7 @@ function reasonOf(error: unknown): string {
       </div>
       <span class="crp-page-header-action crp-header-actions">
       @if (caps.canRegister && current.kind !== 'loading' && current.kind !== 'error') {
-        <button class="crp-operator-primary" type="button" [disabled]="saving()" (click)="openForm(undefined)">{{ copy.newItem }}</button>
+        <button class="crp-operator-primary" type="button" [disabled]="saving()" (click)="navigation?.open('catalog-new-service')">{{ copy.newItem }}</button>
       }
       @if (navigation) {
         <button class="crp-operator-outline" type="button" (click)="navigation.open('catalog')">{{ copy.backToCatalogs }}</button>
@@ -53,7 +53,7 @@ function reasonOf(error: unknown): string {
     <!-- Outside the states: a reload must not take away a form whose save is in flight. -->
     @if (formTarget(); as target) {
       <div class="crp-form-section">
-      <h2>{{ target.item ? copy.editItem : copy.newItem }}</h2>
+      <h2>{{ copy.editItem }}</h2>
       <!-- Keyed, so another item or a new one starts a fresh form instead of reusing the old state. -->
       @for (key of [formKey()]; track key) {
         <app-catalog-item-form
@@ -137,7 +137,7 @@ export class CatalogPageComponent {
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
   /** Null when no form is open: a single value, so two forms can never be open together. */
   protected readonly formTarget = signal<FormTarget | null>(null);
-  protected readonly formKey = computed(() => this.formTarget()?.item?.serviceId ?? 'new');
+  protected readonly formKey = computed(() => this.formTarget()?.item.serviceId ?? '');
   /** True while the open form has a save in flight; nothing may replace or close that form then. */
   protected readonly saving = signal(false);
 
@@ -161,10 +161,6 @@ export class CatalogPageComponent {
       )
       .subscribe((next) => this.state.set(next));
     this.reload();
-    // "Nuevo servicio" of the hub opens the tour creation (spec A.2 row 7).
-    if (this.navigation?.params()['create'] === '1' && this.caps.canRegister) {
-      this.formTarget.set({ item: undefined });
-    }
   }
 
   /** The validity range of the offer, or a dash when the contract returns none (gap G-B). */
@@ -184,10 +180,9 @@ export class CatalogPageComponent {
     this.requests.next();
   }
 
-  /** Opens the form to register (no item) or to change one; it replaces any form already open, never one that is saving. */
-  protected openForm(item: CatalogItem | undefined): void {
-    const allowed = item === undefined ? this.caps.canRegister : this.canEdit;
-    if (allowed && !this.saving()) {
+  /** Opens the form to change an item; it replaces any form already open, never one that is saving. */
+  protected openForm(item: CatalogItem): void {
+    if (this.canEdit && !this.saving()) {
       this.formTarget.set({ item });
     }
   }
@@ -198,23 +193,13 @@ export class CatalogPageComponent {
   }
 
   /**
-   * Shows what the service stored without asking for the list again (AC-P1.3): a new item goes on
-   * top, the most recent first, and a changed one takes the place of the old one.
+   * Shows what the service stored without asking for the list again (AC-P1.3): the changed item
+   * takes the place of the old one.
    */
   protected onSaved(stored: CatalogItem): void {
-    const registered = this.formTarget()?.item === undefined;
-    this.state.update((current) => {
-      if (current.kind === 'empty' && registered) {
-        return { kind: 'data', items: [stored] };
-      }
-      if (current.kind !== 'data') {
-        return current;
-      }
-      const items = registered
-        ? [stored, ...current.items]
-        : current.items.map((each) => (each.serviceId === stored.serviceId ? stored : each));
-      return { kind: 'data', items };
-    });
+    this.state.update((current) =>
+      current.kind === 'data' ? { kind: 'data', items: current.items.map((each) => (each.serviceId === stored.serviceId ? stored : each)) } : current,
+    );
     this.closeForm();
   }
 

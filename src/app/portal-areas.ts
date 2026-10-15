@@ -1,5 +1,6 @@
 import { AbstractType, InjectionToken, Injector, Type } from '@angular/core';
 import { CatalogHubPageComponent } from './catalog/pages/catalog-hub-page.component';
+import { CatalogNewServicePageComponent } from './catalog/pages/catalog-new-service-page.component';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
 import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
@@ -21,7 +22,7 @@ import { ReserveTourPageComponent } from './self-service-reservation/pages/reser
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
 import { PortalCapabilities } from './shared/portal-capabilities';
-import { CatalogItemsSource } from './catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from './catalog/data/catalog-api.service';
 import { AssociatedEstablishmentsSource } from './establishments/data/associated-establishments-source';
 import { PublicEstablishmentsSource, PublicOfferSource } from './public-offer/data/public-offer-sources';
 import { DeparturesSource } from './reservations/data/departures-source';
@@ -83,9 +84,19 @@ export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTA
 
 /** The sidebar, in order. A new story appends ONE entry here; the shell is not edited. */
 export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
-  { key: 'catalog', label: 'Catálogos', component: CatalogPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
-  // 002 plan D-06, AC-PE.7: no menu entry for a role that cannot read establishments (the Colaborador operativo).
-  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent,
+  // HU-COM-001 (mockup PDR v1.9, AC-P1.17): the operator lands on Reservas, and this story owns the order of the sidebar.
+  // Only in a build that supplies reservations (no API contract for them yet, gap G-B).
+  { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent, isAvailable: (injector) => has(injector, ReservationsSource, ReservationQuoteSource) },
+  // HU-COM-001 admin-catalogos.html (the hub), whose cards open the tour list and, for the Administrator, the establishments.
+  { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  // HU-COM-001 admin-nuevo-servicio.html, opened by "Nuevo servicio" of the hub and "Crear tour" of the list; only who may register is offered it.
+  { key: 'catalog-new-service', label: 'Nuevo servicio', component: CatalogNewServicePageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => injector.get(PortalCapabilities).catalog().canRegister && has(injector, CatalogItemsSource, CatalogItemsWriter) },
+  // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
+  { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
+    // 002 plan D-06, AC-PE.7: no route for a role that cannot read establishments (the Colaborador operativo).
     isAvailable: (injector) => injector.get(PortalCapabilities).canReadEstablishments() && has(injector, AssociatedEstablishmentsSource) },
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
