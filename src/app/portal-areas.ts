@@ -113,7 +113,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer',
     isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
   {
-    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
+    // Amendment 2026-10-14 (A.1, AC-PC.16): the content lives in sections 01 and 03 of 10B, so the area stays as code with no sidebar item.
+    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent, menu: false,
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
     isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
   },

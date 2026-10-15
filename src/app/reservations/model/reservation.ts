@@ -16,8 +16,12 @@ export type Quote = {
   readonly services: readonly { readonly name: string; readonly cents: number }[]; readonly transportCents: number;
   readonly projectedCents: number; readonly discounts: readonly AppliedDiscount[]; readonly discountCents: number; readonly finalCents: number;
 };
+/** The titular typed in section 01 of 10B and each companion of section 03; the shape HU-COM-005 hands to the form (structural, no import of its model). */
+export type ReservationLead = { readonly fullName: string; readonly document: string; readonly email: string; readonly phone: string; readonly birthDate: string };
+export type ReservationCompanion = { readonly fullName: string; readonly document: string; readonly birthDate: string };
 export type CreateReservationCommand = {
-  readonly leadCustomerId: string; readonly departureId: string; readonly serviceIds: readonly string[]; readonly people: number;
+  readonly leadCustomerId?: string; readonly lead?: ReservationLead; readonly companions?: readonly ReservationCompanion[];
+  readonly departureId: string; readonly serviceIds: readonly string[]; readonly people: number;
   /** v1.9 (mockup 04, PROPUESTO until the contract, G-B): the expected type and method, chosen apart; codes of PaymentMethodsSource. */
   readonly paymentType?: string; readonly paymentMethod?: string;
 };
@@ -68,15 +72,15 @@ export type ReservationPayment = {
 };
 export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCION' | 'FINALIZADA' | 'CANCELADA';
 /** RN-RES-010: one tour (a catalog service) per reservation. */
-export type ReservationDraft = { leadCustomerId: string; departureId: string; serviceId: string; people: string; paymentType: string; paymentMethod: string; accepted: boolean };
+export type ReservationDraft = { departureId: string; serviceId: string; people: string; paymentType: string; paymentMethod: string; accepted: boolean };
 export type ReservationMessages = Partial<Record<keyof ReservationDraft, string>>;
 
 export const RESERVATION_TEXT = {
   eyebrow: 'Gestión comercial', title: 'Reservas', create: 'Crear reserva', save: 'Registrar reserva', cancel: 'Cancelar', back: 'Volver a reservas', view: 'Ver detalle',
   listEyebrow: 'Reservas activas', listTitle: 'Seguimiento de reservas', columns: ['Reserva', 'Cliente', 'Servicio y salida', 'Estado', 'Saldo', 'Acción'],
   loading: 'Cargando…', empty: 'Aún no hay reservas registradas.', noDepartures: 'No hay salidas abiertas para reservas.', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
-  offerEyebrow: '02. Servicios y viajeros', offerTitle: 'Oferta seleccionada', customer: 'Cliente titular', departure: 'Salida concreta', services: 'Servicios',
-  people: 'Cantidad total de viajeros', choose: 'Selecciona una opción',
+  offerEyebrow: '02. Servicios y viajeros', offerTitle: 'Oferta seleccionada', departure: 'Salida concreta', services: 'Servicios',
+  people: 'Cantidad total de viajeros',
   conditionsEyebrow: '04. Condiciones', conditionsTitle: 'Reglas aplicables', conditions: 'Condiciones de reserva', chooseDeparture: 'Selecciona una salida para consultar sus condiciones.',
   chooseTourConditions: 'Selecciona un tour para consultar las condiciones parametrizadas.',
   valuesEyebrow: 'Valores calculados', valuesTitle: 'Resumen de la reserva', valuesNote: 'Se recalcula con el tour, las personas, el transporte del tour y los descuentos vigentes del operador activo, que quedan fijados en la reserva al crearla.',
@@ -139,7 +143,6 @@ export function peopleOf(text: string): number | null {
 /** The seat rule (RN-RES-007) is the port's: `capacity` answers whether the departure holds the people and with what text it refuses. */
 export function validateReservation(draft: ReservationDraft, departure: Departure | undefined, capacity: DepartureCapacity): ReservationMessages {
   const errors: ReservationMessages = {}, people = peopleOf(draft.people);
-  if (!draft.leadCustomerId) errors.leadCustomerId = 'El cliente titular es obligatorio.';
   if (!departure) errors.departureId = 'La salida es obligatoria.';
   if (!draft.serviceId) errors.serviceId = 'El tour es obligatorio.';
   if (!draft.paymentType) errors.paymentType = 'El tipo de pago esperado es obligatorio.';

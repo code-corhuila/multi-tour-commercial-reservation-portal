@@ -216,7 +216,7 @@ describe('theOperatorLandsOnReservationsAndTheMenuFollowsTheMockupOrder', () => 
   it('lists the sidebar in the order of the mockup, opening on Reservas, without "Establecimientos"', () => {
     const menu = operator.filter((area) => area.menu !== false).map((area) => area.label);
     expect(menu[0]).toBe('Reservas');
-    expect(menu).toEqual(['Reservas', 'Catálogos', 'Descuentos', 'Descuentos vigentes', 'Titular y acompañantes', 'Pagos', 'Notificaciones']);
+    expect(menu).toEqual(['Reservas', 'Catálogos', 'Descuentos', 'Descuentos vigentes', 'Pagos', 'Notificaciones']);
   });
 
   it('registers the hub as Catálogos and the lists as sub-screens of it', () => {
