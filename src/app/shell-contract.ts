@@ -47,6 +47,8 @@ export interface MountProps {
   navigate?: (target: PortalTarget) => void;
   /** The commercial name of the company (multi-tour-front `core/client/types.ts`, tenant mounts only; absent when blank): the strip "Operador activo" of 10B. */
   commercialName?: string;
+  /** Who draws the navigation chrome: 'container' means the container draws the sidebar and the portal only shows its content; absent, the portal draws its own. */
+  chrome?: 'container';
 }
 
 /** The container's `navigate` as the screens read it; null when the container does not offer it. */
@@ -54,5 +56,11 @@ export const CONTAINER_NAVIGATION = new InjectionToken<((target: PortalTarget) =
 
 /** The commercial name the container sent, or null; screens draw their strip only when it is there (007- V3, amended). */
 export const COMMERCIAL_NAME = new InjectionToken<string | null>('COMMERCIAL_NAME', { factory: () => null });
+
+/** true when the container draws the navigation (MountProps.chrome === 'container'): the operator shell then omits its sidebar. */
+export const CONTAINER_CHROME = new InjectionToken<boolean>('CONTAINER_CHROME', { factory: () => false });
+
+/** The area the container asked to open at mount (MountProps.initialParams.area), or null. */
+export const INITIAL_AREA = new InjectionToken<string | null>('INITIAL_AREA', { factory: () => null });
 
 export type PortalApiClient = MountProps['apiClient'];
