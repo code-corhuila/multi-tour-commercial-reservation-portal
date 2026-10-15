@@ -24,8 +24,8 @@ async function overDemo(people = '2') {
     departures: new StubDepartures(() => of(departures.items)) }));
   const create = async () => {
     await view.click('Crear reserva');
-    await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);
-    await view.tick('svc-Kayak'); await view.type('people', people); await view.payWith();
+    await view.choose('departureId', open.id);
+    await view.tick('svc-Kayak'); await view.type('people', people); await view.party(); await view.payWith();
     await view.click('Registrar reserva');
   };
   return { ...view, open, create };
@@ -85,14 +85,14 @@ describe('the form is screen 10B', () => {
     const view = await screenOf(ReservationFormComponent, reservationProviders({ discounts: Object.assign(new StubDiscounts(), {
       lines: [{ name: 'Temporada baja', base: 'ORIGINAL_VALUE', amountCents: 1500 }] }) }));
     const { element, choose, tick, type, field } = view;
-    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')).toEqual(['02. Tour, salida y viajeros', '04. Condiciones y pago', 'Valores calculados']);
-    expect(texts(element, '.crp-operator-panel h2')).toEqual(['Oferta seleccionada', 'Reglas aplicables', 'Resumen de la reserva']);
-    for (const name of ['leadCustomerId', 'serviceId', 'departureId', 'people', 'paymentType', 'paymentMethod']) {
+    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')).toEqual(['01. Cliente titular', '02. Tour, salida y viajeros', '03. Acompañantes', '04. Condiciones y pago', 'Valores calculados']);
+    expect(texts(element, '.crp-operator-panel h2')).toEqual(['Datos para asociar la reserva', 'Oferta seleccionada', 'Datos individuales requeridos', 'Reglas aplicables', 'Resumen de la reserva']);
+    for (const name of ['holderName', 'serviceId', 'departureId', 'people', 'paymentType', 'paymentMethod']) {
       const control = field(name), label = element.querySelector(`label[for="${control.id}"]`)!;
       expect(label.parentElement, name).toBe(control.parentElement);
     }
     expect(texts(element, '[name="departureId"] option')).toContain('Tour 1 · 07 nov 2026 · 10 cupos disponibles');
-    await choose('leadCustomerId', 'cus-1'); await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '3');
+    await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '3');
     expect(element.querySelector('[data-conditions]')?.textContent).toContain('Changes up to 72 hours before (demo).');
     const values = element.querySelector('.crp-reservations-values')!;
     expect(texts(values, 'span')).toEqual(['Valor proyectado', 'Descuentos aplicables', 'Valor final']);

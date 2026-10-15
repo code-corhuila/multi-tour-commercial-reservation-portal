@@ -6,6 +6,9 @@ import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { DeparturesSource } from '../src/app/reservations/data/departures-source';
 import { LeadCustomersSource, ReservationDiscounts } from '../src/app/reservations/data/reservation-integrations';
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
+import { CustomersSource } from '../src/app/customers/data/customers-source';
+import { CustomerMatch } from '../src/app/customers/model/customer-group';
+import { RESERVATION_FORM_CONTRIBUTIONS } from '../src/app/customers/components/reservation-form-sections';
 import { ReservationsWriter } from '../src/app/reservations/data/reservations-writer';
 import { ReservationQuoteSource } from '../src/app/reservations/data/reservation-quote-source';
 import { DepartureCapacity } from '../src/app/reservations/data/departure-capacity';
@@ -45,6 +48,17 @@ export class StubDepartures extends DeparturesSource {
 export class StubCustomers extends LeadCustomersSource {
   override list() { return of([{ id: 'cus-1', fullName: 'Lead Demo' }]); }
 }
+/** The directory of the customers the operator can find (HU-COM-005 search); it records what was searched. */
+export const PEOPLE: readonly CustomerMatch[] = [
+  { id: 'cus-1', fullName: 'Camila Ortega', document: 'DOC 1001', email: 'camila@example.test', phone: '300 000 0001', birthDate: '1990-05-01', verified: true },
+  { id: 'cus-2', fullName: 'Camilo Pinto', document: 'DOC 1002', email: 'camilo@example.test', phone: '300 000 0002', birthDate: '1988-02-10', verified: false },
+];
+export class StubCustomersDirectory extends CustomersSource {
+  readonly searches: string[] = [];
+  answer: (text: string) => Observable<readonly CustomerMatch[]> = (text) => of(PEOPLE.filter((p) => p.fullName.toLowerCase().includes(text.toLowerCase())));
+  override current() { return of(null); }
+  override search(text: string) { this.searches.push(text); return this.answer(text); }
+}
 export class StubDiscounts extends ReservationDiscounts {
   lines: AppliedDiscount[] = [];
   readonly bases: number[] = [];
@@ -73,12 +87,15 @@ export const DEFAULT_SERVICES = [serviceOf('Kayak', 1999), serviceOf('Lunch', 25
 
 /** Providers every reservation screen needs; a test overrides only what it controls. */
 export function reservationProviders(over: { role?: string; departures?: DeparturesSource; writer?: ReservationsWriter;
-  reservations?: ReservationsSource; discounts?: ReservationDiscounts; keys?: IdempotencyKeys } = {}) {
+  reservations?: ReservationsSource; discounts?: ReservationDiscounts; keys?: IdempotencyKeys; quotes?: ReservationQuoteSource;
+  customers?: CustomersSource } = {}) {
   return [
     { provide: ActorContext, useValue: actorAs((over.role ?? 'OPERATIONAL_COLLABORATOR') as never) },
     { provide: DepartureCapacity, useValue: new DemoDepartureCapacity() },
     { provide: DeparturesSource, useValue: over.departures ?? new StubDepartures(() => of(DEFAULT_DEPARTURES)) },
     { provide: LeadCustomersSource, useValue: new StubCustomers() },
+    { provide: CustomersSource, useValue: over.customers ?? new StubCustomersDirectory() },
+    ...RESERVATION_FORM_CONTRIBUTIONS,
     { provide: CatalogItemsSource, useValue: new StubCatalog(DEFAULT_SERVICES) },
     { provide: ReservationDiscounts, useValue: over.discounts ?? new StubDiscounts() },
     { provide: ReservationsWriter, useValue: over.writer ?? new ControllableReservationsWriter() },
@@ -99,10 +116,24 @@ export async function screenOf<T>(component: Type<T>, providers: unknown[]) {
   const type = async (name: string, value: string) => {
     const input = field<HTMLInputElement>(name); input.value = value; input.dispatchEvent(new Event('input')); await settle();
   };
-  const tick = async (serviceId: string) => { element.querySelector<HTMLInputElement>(`input[value="${serviceId}"]`)!.click(); await settle(); };
+  /** v1.9: one tour per reservation, chosen from a select (RN-RES-010). */
+  const tick = (serviceId: string) => choose('serviceId', serviceId);
+  /** The payment type and method, apart (mockup 04), and the acceptance of the conditions. */
+  const payWith = async (type = 'TOTAL', method = 'BANK_TRANSFER') => {
+    await choose('paymentType', type); await choose('paymentMethod', method);
+    field<HTMLInputElement>('accepted').click(); await settle();
+  };
+  /** Types the titular's five fields and, for each companion asked for, the three of the mockup; documents differ, so it is a valid party. */
+  const party = async (document = 'DOC 9001') => {
+    for (const [name, value] of [['holderName', 'Titular Ficticio'], ['holderDocument', document], ['holderEmail', 'titular@example.test'], ['holderPhone', '300 000 9001'], ['holderBirth', '1990-01-01']]) await type(name, value);
+    const count = element.querySelectorAll('[name^="companionName-"]').length;
+    for (let i = 0; i < count; i++) {
+      await type(`companionName-${i}`, `Acompañante Ficticio ${i + 1}`); await type(`companionDocument-${i}`, `DOC 910${i + 1}`); await type(`companionBirth-${i}`, '1995-03-04');
+    }
+  };
   const button = (text: string) => Array.from(element.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
   const click = async (text: string) => { button(text)!.click(); await settle(); };
   const submit = async () => { element.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true })); await settle(); };
   await settle();
-  return { fixture, element, settle, field, choose, type, tick, button, click, submit };
+  return { fixture, element, settle, field, choose, type, tick, payWith, party, button, click, submit };
 }

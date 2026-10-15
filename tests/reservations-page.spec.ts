@@ -43,9 +43,9 @@ async function overDemo() {
     writer: new DemoReservationsWriter(store, departures), departures: new StubDepartures(() => of(departures.items)) }));
   const create = async () => {
     await view.click(NEW);
-    await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', open.id);
-    await view.tick('svc-Kayak'); await view.type('people', '2');
-    await view.click('Create reservation');
+    await view.choose('departureId', open.id);
+    await view.tick('svc-Kayak'); await view.type('people', '2'); await view.party(); await view.payWith();
+    await view.click('Registrar reserva');
   };
   return { ...view, discounts, open, create };
 }
