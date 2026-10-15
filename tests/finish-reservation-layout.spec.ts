@@ -42,7 +42,7 @@ describe('theFinishCardsAndColumnsFollowTheMockup', () => {
   });
 
   it('gives the main column the room the mockup gives it and the summary the narrow side', () => {
-    const rule = ruleOf(`${FINISH} .crp-finish-layout`);
+    const rule = ruleOf(".crp-root .crp-finish-layout");
     expect(rule).toMatch(/grid-template-columns:\s*minmax\(0, 2\.4fr\) minmax\(260px, 1fr\);/);
     expect(rule).toMatch(/gap:\s*20px;/);
   });

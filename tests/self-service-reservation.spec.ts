@@ -369,7 +369,7 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .crp-self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
     // The column and its bar without the 144px/210px room for a fixed bar (001- amendment HC-3): portal-column.spec.ts. The 2.4fr main column is the mockup 720px of 1040px (finish-reservation-layout.spec.ts).
-    expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 2.4fr\) minmax\(260px, 1fr\)/);
+    expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 2\.4fr\) minmax\(260px, 1fr\)/);
   });
   it('Mis reservas uses the client classes in every state, never the operator ones', async () => {
     const p = await openPanel(); p.source.requests[0].fail(); await p.settle();
