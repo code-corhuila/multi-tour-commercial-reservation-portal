@@ -227,7 +227,7 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
     saved.writer.calls[0].reply(renamed);
     await saved.settle();
     expect(saved.button(CATALOG_COPY.newItem).disabled).toBe(false);
-    expect(saved.editOf('Alpha').disabled).toBe(false);
+    expect(saved.editOf('Canyon walk').disabled).toBe(false);
   });
 });
 

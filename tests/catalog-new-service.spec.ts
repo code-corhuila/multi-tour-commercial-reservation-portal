@@ -33,9 +33,9 @@ async function openScreen(role: ActorRole = 'TENANT_ADMINISTRATOR', areas: reado
   const type = (label: string, value: string) => fireEvent.input(ui.getByLabelText(label), { target: { value } });
   const choose = (label: string, value: string) => fireEvent.change(ui.getByLabelText(label), { target: { value } });
   const click = async (name: string) => { fireEvent.click(ui.getByRole('button', { name })); await settle(); };
-  const fillValid = () => {
+  const fillValid = (rateLabel = 'Tarifa base') => {
     type('Nombre comercial', 'Cañón del Suaza');
-    type('Tarifa base', '520000');
+    type(rateLabel, '520000');
     type('Costo operativo base', '300000');
     type('Vigencia desde', '2026-09-01');
     type('Vigencia hasta', '2026-09-30');
@@ -173,11 +173,10 @@ describe('newServiceCreatesWithTheSpecFieldsKept', () => {
     const { writer, type, choose, click, settle, fillValid } = await openScreen();
     choose('Tipo', 'transport');
     await settle();
-    fillValid();
-    type('Tarifa por persona', '40000');
+    fillValid('Tarifa por persona');
     type('Trayecto (origen - destino o descripción)', 'Neiva - Tatacoa');
     await click('Guardar y publicar');
-    expect(writer.calls[0]).toMatchObject({ command: { serviceType: 'TRANSPORTATION', baseRateCents: 4_000_000, route: 'Neiva - Tatacoa' } });
+    expect(writer.calls[0]).toMatchObject({ command: { serviceType: 'TRANSPORTATION', baseRateCents: 52_000_000, route: 'Neiva - Tatacoa' } });
   });
 
   it('keeps what the person typed when the service refuses, and shows the reason beside the field', async () => {
