@@ -59,9 +59,14 @@ export interface MountProps {
   initialParams?: Readonly<Record<string, string>>;
   /** Asks the container to open an area of another portal; absent, the Perfil button and the avatar link are not drawn. */
   navigate?: (target: PortalTarget) => void;
+  /** The commercial name of the company (multi-tour-front `core/client/types.ts`, tenant mounts only; absent when blank): the strip "Operador activo" of 10B. */
+  commercialName?: string;
 }
 
 /** The container's `navigate` as the screens read it; null when the container does not offer it. */
 export const CONTAINER_NAVIGATION = new InjectionToken<((target: PortalTarget) => void) | null>('CONTAINER_NAVIGATION', { factory: () => null });
+
+/** The commercial name the container sent, or null; screens draw their strip only when it is there (007- V3, amended). */
+export const COMMERCIAL_NAME = new InjectionToken<string | null>('COMMERCIAL_NAME', { factory: () => null });
 
 export type PortalApiClient = MountProps['apiClient'];

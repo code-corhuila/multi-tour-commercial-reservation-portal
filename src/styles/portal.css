@@ -818,7 +818,14 @@
 .crp-root .crp-reservations-lines dd { margin: 0; font-weight: 700; color: var(--crp-ink-slate); text-align: right; }
 .crp-root .crp-reservations-success-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--crp-shade-e3f4ea); color: var(--crp-shade-1f7a4a); font-weight: 800; }
 .crp-root .crp-reservations-breakdown { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 16px 0 0; font-size: 0.86rem; }
+.crp-root .crp-reservations-tenant-context { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; padding: 11px 14px; border: 1px solid var(--crp-line-green); border-radius: var(--crp-radius-control); background: var(--crp-muted-green); }
+.crp-root .crp-reservations-tenant-context span { color: var(--crp-soft-copy); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.crp-root .crp-reservations-tenant-context strong { color: var(--crp-success); font-size: 0.82rem; }
+.crp-root .crp-reservations-tenant-context p { margin: 0 0 0 auto; color: var(--crp-soft-copy); font-size: 0.76rem; }
+.crp-root .crp-reservations-field small { color: var(--crp-soft-copy); font-size: 0.78rem; }
 .crp-root .crp-reservations-breakdown dd { margin: 0; text-align: right; font-weight: 700; color: var(--crp-ink-slate); }
 @media (max-width: 720px) {
   .crp-root .crp-reservations-grid, .crp-root .crp-reservations-values, .crp-root .crp-reservations-panels { grid-template-columns: 1fr; }
+  .crp-root .crp-reservations-tenant-context { align-items: flex-start; flex-direction: column; }
+  .crp-root .crp-reservations-tenant-context p { margin-left: 0; }
 }
