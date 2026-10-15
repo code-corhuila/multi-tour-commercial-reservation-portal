@@ -6,7 +6,7 @@ import { PortalNavigation } from './portal-navigation';
 import { focusHeading } from './shared/focus';
 import { CLIENT_NOTICES, PortalSlotOutlet, slotEntries } from './shared/portal-slots';
 import { PortalCapabilities } from './shared/portal-capabilities';
-import { CONTAINER_NAVIGATION, PROFILE_TARGET } from './shell-contract';
+import { CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, PROFILE_TARGET } from './shell-contract';
 import { SESSION_TEXT } from './shared/session-copy';
 import { SESSION_IDENTITY } from './shared/session-identity';
 
@@ -82,7 +82,8 @@ import { SESSION_IDENTITY } from './shared/session-identity';
         }
       </div>
     } @else {
-      <div class="crp-operator-shell">
+      <div class="crp-operator-shell" [class.crp-no-sidebar]="hideSidebar">
+        @if (!hideSidebar) {
         <aside class="crp-operator-sidebar">
           <p class="crp-operator-brand">MULTITOUR</p>
           <p class="crp-operator-role">{{ roleLabel }}</p>
@@ -93,6 +94,7 @@ import { SESSION_IDENTITY } from './shared/session-identity';
             }
           </nav>
         </aside>
+        }
         <main class="crp-operator-content">
           @for (s of [screen()]; track s) { @if (s.area; as area) { <ng-container *ngComponentOutlet="area.component" /> } }
         </main>
@@ -121,6 +123,8 @@ export class PortalShellComponent {
   private readonly navigateTo = inject(CONTAINER_NAVIGATION);
   /** Perfil belongs to the identity-audit portal: drawn only when the container offers navigate. */
   protected readonly openProfile = this.navigateTo ? () => this.navigateTo?.(PROFILE_TARGET) : null;
+  /** The container draws the navigation (MountProps.chrome): the operator shell keeps its content and drops the sidebar. */
+  protected readonly hideSidebar = inject(CONTAINER_CHROME);
   protected readonly roleLabel = inject(PortalCapabilities).roleLabel();
   private readonly drawn = (links: readonly ClientLink[]) => links.filter((link) => this.areas.some((area) => area.key === link.key));
   protected readonly headerNav = this.drawn(CLIENT_LINKS.nav);
@@ -143,6 +147,9 @@ export class PortalShellComponent {
   constructor() {
     this.navigation.register(this.areas.map((area) => area.key), () =>
       afterNextRender(() => focusHeading(this.host.querySelector('main') ?? this.host), { injector: this.injector }));
+    // The container may ask for an area at mount; an unknown or unavailable one (or a sub-screen) keeps the default landing.
+    const asked = inject(INITIAL_AREA);
+    if (asked && this.menu.some((area) => area.key === asked)) { this.navigation.selected.set(asked); }
   }
 
   protected closeBellOutside(event: Event): void { if (!(event.target as Element | null)?.closest('.crp-client-bell')) { this.bell.set(false); } }
