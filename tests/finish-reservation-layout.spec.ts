@@ -101,6 +101,17 @@ describe('theSummaryHasThePictureOnTopAndTheFinalValueHighlighted', () => {
   });
 });
 
+describe('theFinishFormStacksOnPhones', () => {
+  it('puts the holder fields one per row below 760px, after the two-column rule that would override it', () => {
+    const media = css.slice(css.indexOf('/* HU-COM-008 amendment 2026-10-15'));
+    expect(media).toMatch(/@media \(max-width: 760px\) \{[^@]*\.crp-finish-content \.crp-finish-grid \{ grid-template-columns: 1fr; \}/);
+  });
+
+  it('keeps the pricing rows touching so the final value highlight is one band', () => {
+    expect(ruleOf(`${FINISH} .crp-self-service-pricing`)).toMatch(/gap:\s*8px 0;/);
+  });
+});
+
 describe('theBottomBarIsCompact', () => {
   it('uses the 14px bar with a 40px, 8px-radius button', () => {
     expect(ruleOf(`${CONFIRM} .crp-booking-bar`)).toMatch(/border-radius:\s*var\(--crp-radius-card\);/);
