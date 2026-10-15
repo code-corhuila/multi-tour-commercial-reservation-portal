@@ -36,8 +36,8 @@ describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
 
 describe('missingMandatoryDataIsNamedBesideEachFieldAndNothingIsSent', () => {
   it('names the customer, the departure, the services and the people beside their fields', async () => {
-    const { element, submit, writer } = await openForm();
-    await submit();
+    const { element, submit, writer, type } = await openForm();
+    await type('people', ''); await submit();
     expect(errorBeside(element, 'leadCustomerId')).toContain('El cliente titular es obligatorio');
     expect(errorBeside(element, 'departureId')).toContain('La salida es obligatoria');
     expect(errorBeside(element, 'people')).toContain('La cantidad de viajeros es obligatoria');
