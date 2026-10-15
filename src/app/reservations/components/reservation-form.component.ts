@@ -78,16 +78,16 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
               <div class="crp-reservations-field">
                 <label for="reservation-pay-type">{{ text.payType }}</label>
                 <select id="reservation-pay-type" name="paymentType" [disabled]="!draft().serviceId" (change)="set('paymentType', $event)" [attr.aria-invalid]="e.paymentType ? true : null" [attr.aria-describedby]="e.paymentType ? 'reservation-pay-type-error' : null">
-                  <option value="">{{ draft().serviceId ? text.chooseType : text.chooseTourFirst }}</option>
-                  @for (t of paymentTypes; track t[0]) { <option [value]="t[0]" [selected]="t[0] === draft().paymentType">{{ t[1] }}</option> }
+                  <option value="">{{ text.chooseType }}</option>
+                  @if (draft().serviceId) { @for (t of paymentTypes; track t[0]) { <option [value]="t[0]" [selected]="t[0] === draft().paymentType">{{ t[1] }}</option> } }
                 </select>
                 @if (e.paymentType) { <p id="reservation-pay-type-error" class="crp-reservations-error">{{ e.paymentType }}</p> }
               </div>
               <div class="crp-reservations-field">
                 <label for="reservation-pay-method">{{ text.payMethod }}</label>
                 <select id="reservation-pay-method" name="paymentMethod" [disabled]="!draft().serviceId" (change)="set('paymentMethod', $event)" [attr.aria-invalid]="e.paymentMethod ? true : null" [attr.aria-describedby]="e.paymentMethod ? 'reservation-pay-method-error' : null">
-                  <option value="">{{ draft().serviceId ? text.chooseMethod : text.chooseTourFirst }}</option>
-                  @for (m of paymentMethods; track m[0]) { <option [value]="m[0]" [selected]="m[0] === draft().paymentMethod">{{ m[1] }}</option> }
+                  <option value="">{{ text.chooseMethod }}</option>
+                  @if (draft().serviceId) { @for (m of paymentMethods; track m[0]) { <option [value]="m[0]" [selected]="m[0] === draft().paymentMethod">{{ m[1] }}</option> } }
                 </select>
                 @if (e.paymentMethod) { <p id="reservation-pay-method-error" class="crp-reservations-error">{{ e.paymentMethod }}</p> }
               </div>
