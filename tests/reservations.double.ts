@@ -125,10 +125,10 @@ export async function screenOf<T>(component: Type<T>, providers: unknown[]) {
   };
   /** Types the titular's five fields and, for each companion asked for, the three of the mockup; documents differ, so it is a valid party. */
   const party = async (document = 'DOC 9001') => {
-    for (const [name, value] of [['holderName', 'Titular Ficticio'], ['holderDocument', document], ['holderEmail', 'titular@example.test'], ['holderPhone', '300 000 9001'], ['holderBirth', '1990-01-01']]) await type(name, value);
+    for (const [name, value] of [['holderName', 'Titular Ficticio'], ['holderDocument', document], ['holderEmail', 'titular@example.test'], ['holderPhone', '300 000 9001'], ['holderBirth', '01/01/1990']]) await type(name, value);
     const count = element.querySelectorAll('[name^="companionName-"]').length;
     for (let i = 0; i < count; i++) {
-      await type(`companionName-${i}`, `Acompañante Ficticio ${i + 1}`); await type(`companionDocument-${i}`, `DOC 910${i + 1}`); await type(`companionBirth-${i}`, '1995-03-04');
+      await type(`companionName-${i}`, `Acompañante Ficticio ${i + 1}`); await type(`companionDocument-${i}`, `DOC 910${i + 1}`); await type(`companionBirth-${i}`, '04/03/1995');
     }
   };
   const button = (text: string) => Array.from(element.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
