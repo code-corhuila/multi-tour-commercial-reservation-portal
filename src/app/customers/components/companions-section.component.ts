@@ -7,10 +7,9 @@ import { CompanionFields } from '../model/party-rules';
 const FIELDS: readonly { key: keyof CompanionFields; name: string; type: string; label: string; placeholder: string | null }[] = [
   { key: 'fullName', name: 'companionName', type: 'text', label: PERSON_LABELS.fullName, placeholder: PLACEHOLDERS.companionName },
   { key: 'document', name: 'companionDocument', type: 'text', label: PERSON_LABELS.document, placeholder: PLACEHOLDERS.companionDocument },
-  { key: 'birthDate', name: 'companionBirth', type: 'date', label: PERSON_LABELS.birthDate, placeholder: null },
+  { key: 'birthDate', name: 'companionBirth', type: 'text', label: PERSON_LABELS.birthDate, placeholder: PLACEHOLDERS.birthDate },
 ];
 
-/** Section 03 of 10B, "Acompañantes" (HU-COM-005): one card of three fields per traveler beyond the titular. */
 @Component({
   selector: 'app-companions-section', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
