@@ -1,4 +1,4 @@
-import { Provider, inject } from '@angular/core';
+import { Optional, Provider, inject } from '@angular/core';
 import { Observable, map, of, throwError } from 'rxjs';
 import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { DeparturesSource } from '../reservations/data/departures-source';
@@ -11,6 +11,8 @@ import { DiscountRulesSource } from '../discounts/data/discount-rules-source';
 import { applyDiscounts } from './discount-calculation';
 import { DemoDiscountRulesStore } from './discounts-demo';
 import { DemoReservationQuotes } from './reservation-quote-demo';
+import { CustomersSource } from '../customers/data/customers-source';
+import { DEMO_CUSTOMERS, DemoCustomersStore } from './customers-demo';
 import type { ModificationTrace } from '../reservation-changes/travellers-modification/data/modification-ports';
 import { tourImagesProviders } from './tour-photo-demo';
 import { DemoDepartureCapacity, departureCapacityProviders } from './departure-capacity-demo';
@@ -24,8 +26,6 @@ const seatRule = new DemoDepartureCapacity();
 const CONDITIONS = 'Cambios hasta 72 horas antes de la salida; cancelación según la política del tour (texto de demostración, DP-RC4).';
 const departure = (n: number, tourName: string, date: string, state: Departure['state'], open: boolean, effectiveCapacity: number, transport: number): Departure =>
   ({ id: `demo-dep-${n}`, tourName, date, state, openForReservations: open, effectiveCapacity, transportPerPersonCents: transport, conditions: CONDITIONS });
-const CUSTOMERS = [{ id: 'demo-cus-1', fullName: 'Camila Ortega (demo)' }, { id: 'demo-cus-2', fullName: 'Andrés Pinto (demo)' },
-  { id: 'demo-cus-3', fullName: 'Laura Gómez (demo)' }];
 /** Two reservations already registered, so the list shows screen 10 with data. */
 const SEEDED: Reservation[] = [
   { id: 'RES-1842', leadCustomerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa al atardecer', departureDate: '2026-11-07', conditions: CONDITIONS, people: 2,
@@ -81,10 +81,6 @@ export class DemoDeparturesStore extends DeparturesSource {
   override list(): Observable<readonly Departure[]> { return of([...this.items]); }
 }
 
-export class DemoLeadCustomers extends LeadCustomersSource {
-  override list() { return of(CUSTOMERS); }
-}
-
 /**
  * DEMO (HU-COM-003 T-V19-2): the rules of the tour the discounts story stores, through the shared calculation. The lines are
  * copied into the quote when the reservation is created, so a rule published later never touches it (AC-PD.15, RN-RES-003).
@@ -96,6 +92,12 @@ export class DemoReservationDiscounts extends ReservationDiscounts {
     const ofTour = this.rules().filter((rule) => rule.tourId === context.tourId).map((rule) => ({ ...rule, name: discountValueText(rule), type: 'PERCENTAGE' as const }));
     return applyDiscounts(originalCents, ofTour, context.at).lines.map((line) => ({ name: line.name, base: line.base, amountCents: line.amountCents }));
   }
+}
+
+/** The same directory as the search of 10B (amendment V19-D1): one store behind both ports. */
+export class DemoLeadCustomers extends LeadCustomersSource {
+  constructor(private readonly directory: DemoCustomersStore | null = null) { super(); }
+  override list() { return of((this.directory?.all() ?? DEMO_CUSTOMERS).map(({ id, fullName }) => ({ id, fullName }))); }
 }
 
 export class DemoReservationsStore extends ReservationsSource {
@@ -115,7 +117,13 @@ export class DemoReservationsWriter extends ReservationsWriter {
   private readonly byKey = new Map<string, Reservation>();
   private sequence = 1842;
   constructor(private readonly store: DemoReservationsStore, private readonly departures: DemoDeparturesStore,
-    private readonly quotes: ReservationQuoteSource) { super(); }
+    private readonly quotes: ReservationQuoteSource, private readonly customers?: DemoCustomersStore) { super(); }
+  /** The titular typed by hand joins the directory with the reservation, in the same command (V19-D3); a chosen one is named from it. */
+  private leadName(c: CreateReservationCommand): string {
+    if (c.lead) { this.customers?.register(c.lead); return c.lead.fullName; }
+    const id = c.leadCustomerId ?? '';
+    return this.customers?.nameOf(id) ?? DEMO_CUSTOMERS.find((x) => x.id === id)?.fullName ?? id;
+  }
   override create(c: CreateReservationCommand, key: string): Observable<Reservation> {
     const known = this.byKey.get(key);
     if (known) return of(known);
@@ -126,7 +134,7 @@ export class DemoReservationsWriter extends ReservationsWriter {
       const again = this.byKey.get(key);
       if (again) return again;
       const created: Reservation = {
-        id: `RES-${++this.sequence}`, leadCustomerName: CUSTOMERS.find((x) => x.id === c.leadCustomerId)?.fullName ?? c.leadCustomerId,
+        id: `RES-${++this.sequence}`, leadCustomerName: this.leadName(c),
         departureId: d.id, tourName: d.tourName, departureDate: d.date, conditions: d.conditions, people: c.people, quote, balanceCents: quote.finalCents,
         status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, paymentType: c.paymentType, paymentMethod: c.paymentMethod,
       };
@@ -144,11 +152,12 @@ export function reservationDemoProviders(): Provider[] {
   return [
     { provide: DeparturesSource, useValue: departures },
     ...departureCapacityProviders(), ...tourImagesProviders(),
-    { provide: LeadCustomersSource, useValue: new DemoLeadCustomers() },
     // Optional: a module mounted without the discounts story quotes no discount.
     { provide: ReservationDiscounts, useFactory: () => { const rules = inject(DiscountRulesSource, { optional: true }) as DemoDiscountRulesStore | null; return new DemoReservationDiscounts(() => rules?.rules ?? []); } },
+    { provide: LeadCustomersSource, useFactory: (customers: CustomersSource | null) => new DemoLeadCustomers(customers as DemoCustomersStore | null), deps: [[new Optional(), CustomersSource]] },
     { provide: ReservationsSource, useValue: store },
     { provide: ReservationQuoteSource, useFactory: (c: CatalogItemsSource, r: ReservationDiscounts) => new DemoReservationQuotes(departures, c, r), deps: [CatalogItemsSource, ReservationDiscounts] },
-    { provide: ReservationsWriter, useFactory: (q: ReservationQuoteSource) => (writer ??= new DemoReservationsWriter(store, departures, q)), deps: [ReservationQuoteSource] },
+    { provide: ReservationsWriter, useFactory: (q: ReservationQuoteSource, customers: CustomersSource | null) => (writer ??= new DemoReservationsWriter(store, departures, q, customers as DemoCustomersStore | undefined)),
+      deps: [ReservationQuoteSource, [new Optional(), CustomersSource]] },
   ];
 }

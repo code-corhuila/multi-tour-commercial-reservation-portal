@@ -16,8 +16,21 @@ export const CUSTOMERS_COPY = {
   newGroup: 'Nuevo grupo', cancel: 'Cancelar', registerLead: 'Registrar titular', addCompanion: 'Agregar acompañante',
   saving: 'Guardando…', refused: 'No se pudo registrar la persona.',
   activity: 'Tour', chooseActivity: 'Selecciona un tour',
+  linked: 'Reserva vinculada al cliente existente',
+  searchLabel: 'Buscar cliente existente (nombre, documento o correo)', searchPlaceholder: 'Escribe al menos 2 caracteres',
+  searching: 'Buscando clientes…', noMatches: 'Sin coincidencias: se registrará como cliente nuevo.', searchFailed: 'No se pudo buscar clientes.',
+  unverified: 'correo sin verificar', noDocument: 'sin documento',
+  required: 'Obligatorio.', invalidEmail: 'Escribe un correo válido.', duplicate: 'Este documento ya está en la reserva.',
+  companionsNote: 'La cantidad total de viajeros determina los acompañantes que deben registrarse. Los documentos no pueden repetirse dentro de la misma reserva.',
+  noCompanions: 'No requiere acompañantes', companionTitle: 'Acompañante',
   terms: 'Confirmo que el cliente acepta las condiciones aplicables a esta reserva.', yes: 'Registrado',
 } as const;
+
+/** `1 acompañante requerido`, `3 acompañantes requeridos`: section 03 of 10B. */
+export const requiredCompanions = (count: number): string => `${count} acompañante${count === 1 ? ' requerido' : 's requeridos'}`;
+
+/** The placeholders of section 01 and 03 (mockup 10B). */
+export const PLACEHOLDERS = { fullName: 'Ej. Laura Gómez', document: 'Ej. 1.234.567.890', email: 'correo@ejemplo.com', phone: 'Ej. 300 000 0000', companionName: 'Nombre completo', companionDocument: 'Documento' } as const;
 
 /** `1 acompañante registrado`, `2 acompañantes registrados`, `Sin acompañantes registrados`. */
 export function companionCount(count: number): string {

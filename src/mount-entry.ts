@@ -27,6 +27,7 @@ import { provideTravellersModification } from './app/reservation-changes/travell
 import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
 import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
 import { RESCHEDULING_CONTRIBUTIONS } from './app/rescheduling/components/rescheduling-contributions.component';
+import { RESERVATION_FORM_CONTRIBUTIONS } from './app/customers/components/reservation-form-sections';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -103,6 +104,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       ...RESCHEDULING_CONTRIBUTIONS,
       // HU-COM-017 amendment: the link to admin-saldo-favor.html from 13 (the one from 10A is pending, second branch).
       contribute(PAYMENTS_PAGE_PANELS, CREDIT_BALANCE_PAYMENTS_LINK),
+      // HU-COM-005 amendment: sections 01 (Cliente titular) and 03 (Acompañantes) of 10B, drawn only with the customers directory.
+      ...RESERVATION_FORM_CONTRIBUTIONS,
     ],
   }).then((created) => {
     app = created;
