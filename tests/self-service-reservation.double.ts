@@ -1,18 +1,20 @@
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { CustomerContext } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import {
   PaymentMethodsSource,
   ReservationRequester,
   ReservationSelectionSource,
+  SelectionQuoteSource,
 } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import {
   CustomerReservation,
-  CustomerStanding,
   PaymentMethod,
   ReservationSelection,
+  SelectionQuote,
 } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ApiError } from '../src/app/shell-contract';
+import { CustomerStanding } from '../src/app/shared/portal-capabilities';
 
 type Pending<T> = { reply: (value: T) => void; fail: (error?: unknown) => void; isOpen: () => boolean };
 
@@ -27,15 +29,22 @@ function controllable<T>(requests: Pending<T>[]): Observable<T> {
 }
 
 export const SELECTION: ReservationSelection = { departureId: 'demo-dep-7', serviceIds: ['demo-svc-1', 'demo-svc-2'], people: 2 };
+export const TYPES: readonly PaymentMethod[] = [{ code: 'TOTAL', label: 'Pago total' }, { code: 'PARTIAL', label: 'Abono' }];
 export const METHODS: readonly PaymentMethod[] = [
-  { code: 'BANK_TRANSFER', label: 'Bank transfer' },
-  { code: 'CASH_AT_OFFICE', label: 'Cash at the office' },
+  { code: 'BANK_TRANSFER', label: 'Transferencia' },
+  { code: 'CASH_AT_OFFICE', label: 'Efectivo' },
 ];
 
-export function reservationFor(selection: ReservationSelection = SELECTION, id = 'demo-res-1'): CustomerReservation {
+// The values of the service, in cents: $2.598.000 base, -$519.600 of discounts, $2.078.400 final.
+export const QUOTE: SelectionQuote = {
+  tourName: 'Ruta Andina', departureAt: '2026-09-18T06:30:00', baseValueCents: 259_800_000, discountCents: 51_960_000, finalValueCents: 207_840_000,
+};
+
+export function reservationFor(selection: ReservationSelection = SELECTION, id = 'RES-1843'): CustomerReservation {
   return {
-    reservationId: id, departureId: selection.departureId, serviceIds: selection.serviceIds, people: selection.people,
-    projectedValueCents: 36_000_000, finalValueCents: 36_000_000, reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'SIN_PAGO',
+    reservationId: id, tourName: 'Ruta Andina', departureAt: '2026-09-18T06:30:00',
+    departureId: selection.departureId, serviceIds: selection.serviceIds, people: selection.people,
+    projectedValueCents: 129_900_000, finalValueCents: 129_900_000, reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'SIN_PAGO',
   };
 }
 
@@ -51,6 +60,8 @@ export class ControllableMyReservationsSource extends MyReservationsSource {
 export class ControllablePaymentMethods extends PaymentMethodsSource {
   readonly requests: Pending<readonly PaymentMethod[]>[] = [];
   override listEnabled(): Observable<readonly PaymentMethod[]> { return controllable(this.requests); }
+  override listTypes(): Observable<readonly PaymentMethod[]> { return of(TYPES); }
+  override bankAccount() { return of({ bank: 'Banco de prueba', accountType: 'Ahorros', accountNumber: '111', holder: 'Operador de prueba' }); }
 }
 
 export class RecordingRequester extends ReservationRequester {
@@ -63,6 +74,11 @@ export class RecordingRequester extends ReservationRequester {
       return inner;
     });
   }
+}
+
+/** Answers at once: the confirmation waits for the methods, which the tests control. */
+export function quoteOf(quote: SelectionQuote = QUOTE): SelectionQuoteSource {
+  return new (class extends SelectionQuoteSource { override quote() { return of(quote); } })();
 }
 
 export function selectionAt(selection: ReservationSelection | null): ReservationSelectionSource {

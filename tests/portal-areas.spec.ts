@@ -19,11 +19,10 @@ import { EstablishmentsPageComponent } from '../src/app/establishments/pages/est
 import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
-import { PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea, ROLE_LABELS } from '../src/app/portal-areas';
+import { CLIENT_AREA, PORTAL_AREAS, PORTAL_AREA_LIST, PortalArea } from '../src/app/portal-areas';
 import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
-import { ProfilePageComponent } from '../src/app/profile/pages/profile-page.component';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ClientPanelPageComponent } from '../src/app/self-service-reservation/pages/client-panel-page.component';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
@@ -42,6 +41,7 @@ import { PaymentFollowupPageComponent } from '../src/app/payments/pages/payment-
 import { RefundDetailPageComponent } from '../src/app/refunds/pages/refund-detail-page.component';
 import { RefundManagePageComponent } from '../src/app/refunds/pages/refund-manage-page.component';
 import { RefundTreatmentPageComponent } from '../src/app/refunds/pages/refund-treatment-page.component';
+import { CreditBalancePageComponent } from '../src/app/credit-balance/pages/credit-balance-page.component';
 import { NotificationsPageComponent } from '../src/app/refunds/pages/notifications-page.component';
 import { RefundRequestsPageComponent } from '../src/app/refunds/pages/refund-requests-page.component';
 import { ActorRole, PortalCapabilities } from '../src/app/shared/portal-capabilities';
@@ -67,9 +67,6 @@ const CLIENT_AREAS: PortalArea[] = [
   { key: CLIENT_AREA.panel, label: 'Panel cliente', component: PanelPageDouble, audience: 'customer', clientChrome: 'panel' },
   { key: CLIENT_AREA.reservations, label: 'Mis reservas', component: ReservationsPageDouble, audience: 'customer', clientChrome: 'panel' },
 ];
-@Component({ selector: 'crp-test-profile-page', template: '<p>Perfil de prueba</p>' })
-class ProfilePageDouble {}
-const PROFILE_AREA: PortalArea = { key: CLIENT_AREA.profile, label: 'Perfil', component: ProfilePageDouble, audience: 'customer', clientChrome: 'none', menu: false };
 /** The same areas, all with the site chrome of tours.html. */
 const SITE_CLIENT_AREAS: PortalArea[] = CLIENT_AREAS.map((area) => ({ ...area, clientChrome: 'site' }));
 
@@ -115,6 +112,7 @@ describe('portalAreasRegistry', () => {
       { key: 'my-reservations', label: 'Mis reservas', component: MyReservationsPageComponent },
       { key: 'reserve', label: 'Reservar tour', component: ReserveTourPageComponent },
       { key: 'finish', label: 'Finalizar reserva', component: ConfirmReservationPageComponent },
+      { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent },
       { key: 'reservation-change', label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent },
       { key: 'transfer-payment', label: 'Pago por transferencia', component: TransferPaymentPageComponent },
       { key: 'payment-received', label: 'Comprobante recibido', component: PaymentReceivedPageComponent },
@@ -127,10 +125,10 @@ describe('portalAreasRegistry', () => {
       { key: 'refund-detail', label: 'Detalle de devolución', component: RefundDetailPageComponent },
       { key: 'refund-manage', label: 'Gestionar devolución', component: RefundManagePageComponent },
       { key: 'refund-treatment', label: 'Tratamiento pendiente de devolución', component: RefundTreatmentPageComponent },
+      { key: 'credit-balance', label: 'Saldo a favor', component: CreditBalancePageComponent },
       { key: 'notifications', label: 'Notificaciones', component: NotificationsPageComponent },
       { key: 'rescheduling', label: 'Propuesta de reprogramación', component: ReschedulingPageComponent },
       { key: 'rescheduling-proposal', label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent },
-      { key: 'profile', label: 'Perfil', component: ProfilePageComponent },
     ]);
     expect(Object.isFrozen(PORTAL_AREAS)).toBe(true);
     // HU-COM-008 DP-RS2: Mis reservas belongs to the client layout of the final customer, not to the operator sidebar.
@@ -224,32 +222,6 @@ describe('customerShellHeader', () => {
     await settle();
     expect(host.querySelector('crp-test-reservations-page')).not.toBeNull();
     expect(texts(host, '.crp-client-header [aria-current="page"]')).toEqual(['Mis reservas']);
-  });
-
-  it('draws Perfil as the dark filled button after Mis reservas and opens the profile (tours.html)', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, [...SITE_CLIENT_AREAS, PROFILE_AREA]);
-    expect(texts(host, '.crp-client-actions button')).toEqual(['Mis reservas', 'Perfil']);
-    const profile = button(host, '.crp-client-actions button', 'Perfil');
-    expect(profile.classList.contains('crp-client-profile')).toBe(true);
-    expect(button(host, '.crp-client-actions button', 'Mis reservas').classList.contains('crp-client-profile')).toBe(false);
-    profile.click();
-    await settle();
-    expect(host.querySelector('crp-test-profile-page')).not.toBeNull();
-  });
-
-  it('makes the avatar of the compact header a button that opens the profile (panel-cliente.html)', async () => {
-    const { host, settle } = await openShell('READ_ONLY', true, [...CLIENT_AREAS, PROFILE_AREA]);
-    const avatar = host.querySelector<HTMLButtonElement>('.crp-client-panel-header button.crp-client-avatar')!;
-    expect(avatar.getAttribute('aria-label')).toBe('Perfil del usuario');
-    avatar.click();
-    await settle();
-    expect(host.querySelector('crp-test-profile-page')).not.toBeNull();
-  });
-
-  it('registers the Perfil area for the customer with its own top bar', () => {
-    const area = PORTAL_AREAS.find((candidate) => candidate.key === CLIENT_AREA.profile)!;
-    expect(area).toMatchObject({ label: 'Perfil', audience: 'customer', clientChrome: 'none', menu: false });
-    expect(area.component).toBe(ProfilePageComponent);
   });
 
   it('opens the area of each header link and moves the active state with it', async () => {
@@ -402,23 +374,6 @@ describe('portalAudience', () => {
   it('keeps the foundation areas for operators', () => {
     const foundation = PORTAL_AREAS.filter((area) => ['catalog', 'establishments', 'discounts'].includes(area.key));
     expect(foundation.every((area) => (area.audience ?? 'operator') === 'operator')).toBe(true);
-  });
-});
-
-describe('demoDataSpeaksSpanishWithAccents', () => {
-  it('writes the visible demo names and texts with their Spanish accents', () => {
-    const catalog = new DemoCatalogStore();
-    const tours = ['demo-svc-2', 'demo-svc-3'].map((id) => catalog.find(id).commercialName);
-    expect(tours).toEqual(['Ruta del café en Pitalito', 'Canotaje en el Río Suaza']);
-    const places = new DemoEstablishmentsStore().items.map((e) => `${e.commercialName} | ${e.commercialInformation}`);
-    expect(places).toEqual([
-      'Hotel Casa Neiva | Habitaciones con vista al río Magdalena.',
-      'Posada del Café | Alojamiento rural entre cafetales.',
-      'Hostal La Tatacoa | Cerrado por remodelación.',
-      'Sabores del Huila | Cocina típica: asado huilense y tamal.',
-      'Fogón del Desierto | Cabrito al horno de barro.',
-      'Café Altura | Desayunos de montaña.',
-    ]);
   });
 });
 

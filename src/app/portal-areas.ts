@@ -29,6 +29,8 @@ import { DeparturesSource } from './reservations/data/departures-source';
 import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
+import { PaymentsWriter } from './payments/data/payments-writer';
+import { PaymentManagementPageComponent } from './payments/pages/payment-management-page.component';
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_SCREEN } from './reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from './reservation-changes/pages/reservation-change-page.component';
@@ -50,7 +52,8 @@ import { ReschedulingProposalPageComponent } from './rescheduling/pages/reschedu
 import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.component';
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
-import { ProfilePageComponent } from './profile/pages/profile-page.component';
+import { CREDIT_BALANCE_AREA, CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
+import { CreditBalancePageComponent } from './credit-balance/pages/credit-balance-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
 /** Re-exported for the registry's readers; it lives in portal-navigation.ts so a page can import it without a cycle. */
@@ -101,7 +104,7 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   {
     key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent,
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
-    isAvailable: (injector) => canManageDiscounts(injector.get(ActorContext)) && injector.get(DiscountRulesSource, null) !== null,
+    isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && has(injector, DiscountRulesSource),
   },
   // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
   { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
@@ -122,23 +125,26 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-008: panel-cliente.html, the landing of the customer and the Mis reservas link of the client header.
   {
     key: CLIENT_AREA.panel, label: 'Mis reservas', component: ClientPanelPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
   },
   {
     key: CLIENT_AREA.reservations, label: 'Mis reservas', component: MyReservationsPageComponent, audience: 'customer', clientChrome: 'panel',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyReservationsSource),
   },
   // HU-COM-008 reservar-tour.html: opened by "Reservar tour" of the offer with { tour }.
   {
     key: RESERVATION_FLOW.reserve, label: 'Reservar tour', component: ReserveTourPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, CatalogItemsSource, DeparturesSource, SelectionQuoteSource),
   },
   // HU-COM-008 finalizar-reserva.html, opened by "Continuar reserva" with { departure, services, people }.
   // DP-RS2: the final customer, or a visitor without a session who is asked to sign in on confirming.
   {
     key: RESERVATION_FLOW.finish, label: 'Finalizar reserva', component: ConfirmReservationPageComponent, audience: 'customer', clientChrome: 'none',
-    isAvailable: (injector) => injector.get(CustomerContext).standing !== 'OTHER',
+    isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, PaymentMethodsSource, SelectionQuoteSource, ReservationRequester),
   },
+  // HU-COM-009 admin-gestion-pago.html (13): opened by Gestionar pago of 10A and 10C with { reservation }; Reservas stays active.
+  { key: 'payment-management', label: 'Gestión de pago', component: PaymentManagementPageComponent, menu: false, parent: 'reservations',
+    isAvailable: (injector) => has(injector, ReservationsSource, PaymentsWriter, PaymentMethodsSource) },
   // HU-COM-013 admin-cancelar-modificar-reserva.html, opened from 10A with { reservation }; Reservas stays active (spec G-NAV closed by the base).
   { key: RESERVATION_CHANGE_SCREEN, label: 'Cancelar o modificar reserva', component: ReservationChangePageComponent, menu: false, parent: 'reservations',
     isAvailable: (injector) => injector.get(PortalCapabilities).canRegisterChange() && has(injector, ReservationsSource, CancellationQuote, CancellationWriter) },
@@ -179,16 +185,14 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-018 propuesta-reprogramacion.html (24A): opened by Responder propuesta of Mis reservas and of 17 with { reservation }; its own top bar.
   { key: PROPOSAL_AREA, label: 'Propuesta de reprogramación', component: ReschedulingProposalPageComponent, audience: 'customer', clientChrome: 'none', menu: false,
     isAvailable: (injector) => isCustomerOrVisitor(injector) && has(injector, MyProposalsSource, ProposalAnswerWriter) },
-  // profile.html: the Perfil button and the avatar; it reads the session identity, so it needs no port.
-  { key: CLIENT_AREA.profile, label: 'Perfil', component: ProfilePageComponent, audience: 'customer', clientChrome: 'none', menu: false },
 ]);
 
 export interface ClientLink { readonly key: string; readonly label: string }
 
-/** Links of tours.html (header center, header right Mis reservas and Perfil, footer Explorar) and of the compact header: panel, other panel areas. */
+/** Links of tours.html (header center, header right Mis reservas (Perfil is the container's, see PROFILE_TARGET), footer Explorar) and of the compact header: panel, other panel areas. */
 export const CLIENT_LINKS: Readonly<Record<'nav' | 'account' | 'footer' | 'panel', readonly ClientLink[]>> = Object.freeze({
   nav: [{ key: CLIENT_AREA.tours, label: 'Explorar' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
-  account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }, { key: CLIENT_AREA.profile, label: 'Perfil' }],
+  account: [{ key: CLIENT_AREA.reservations, label: 'Mis reservas' }],
   panel: [{ key: CLIENT_AREA.tours, label: 'Ver catálogo' }, { key: CLIENT_AREA.panel, label: 'Volver al panel' }],
   footer: [{ key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento' }, { key: CLIENT_AREA.gastronomy, label: 'Gastronomía' }],
 });

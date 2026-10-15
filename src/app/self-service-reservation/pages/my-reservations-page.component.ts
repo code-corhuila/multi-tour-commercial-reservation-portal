@@ -7,6 +7,7 @@ import { formatCop } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { CustomerReservation, SELF_SERVICE_TEXT, departureLine, reservationState, travelers } from '../model/self-service-reservation';
+import { PortalSlotOutlet, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS } from '../../shared/portal-slots';
 
 type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; items: readonly CustomerReservation[] };
 
@@ -37,11 +38,13 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
                   <div class="crp-self-service-card-copy">
                     <strong>{{ r.reservationId }} · {{ r.tourName }}</strong>
                     <p>{{ text.departure }}: {{ departure(r.departureAt) }} · {{ travelers(r.people) }}</p>
+                    <ng-container *crpSlot="cardExtras; inputs: { reservationId: r.reservationId }" />
                   </div>
                   <div class="crp-self-service-card-status">
                     <span class="crp-status {{ badge(r)[1] }}">{{ badge(r)[0] }}</span>
                     <strong>{{ text.value }}: {{ cop(r.finalValueCents) }}</strong>
                   </div>
+                  <ng-container *crpSlot="cardActions; inputs: { reservationId: r.reservationId }" />
                 </li>
               }
             </ul>

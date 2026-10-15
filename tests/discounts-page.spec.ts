@@ -1,11 +1,11 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, it } from 'vitest';
-import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
 import { PORTAL_ROUTES, CATALOG_ROUTES } from '../src/app/catalog/catalog.routes';
-import { ActorRole } from '../src/app/catalog/model/catalog-item';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
+import { DiscountRulesWriter } from '../src/app/discounts/data/discount-rules-writer';
 import { DISCOUNT_ROUTES } from '../src/app/discounts/discounts.routes';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { actorAs } from './actor-context.double';
@@ -31,7 +31,7 @@ describe('discount list states and newest request', () => {
   it('shows loading, error with retry, empty, and priority ordered data including inactive rules', async () => {
     const p = await openDiscounts(); expect(p.state()).toBe('loading');
     p.source.requests[0].fail(); await p.settle(); expect(p.state()).toBe('error');
-    Array.from(p.element.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Retry')!.click(); await p.settle();
+    Array.from(p.element.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Reintentar')!.click(); await p.settle();
     expect(p.state()).toBe('loading'); p.source.requests[1].reply([]); await p.settle(); expect(p.state()).toBe('empty');
     p.fixture.componentInstance.reload(); p.source.requests[2].reply([discountNamed('Second', 2), { ...discountNamed('First'), status: 'INACTIVE', validity: { label: 'Inactivo', tone: 'pending', inForce: false } }]);
     await p.settle(); expect(p.state()).toBe('data');
@@ -110,11 +110,25 @@ describe('discount route fails closed', () => {
     TestBed.configureTestingModule({ providers: [provideRouter(PORTAL_ROUTES), { provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') },
       { provide: DiscountRulesSource, useValue: source }] });
     const h = await RouterTestingHarness.create(); await h.navigateByUrl('/discounts', DiscountsPageComponent);
-    expect(h.routeNativeElement?.textContent).toContain('Discount rules'); expect(source.requests).toHaveLength(1);
+    expect(h.routeNativeElement?.textContent).toContain('Descuentos'); expect(source.requests).toHaveLength(1);
     expect(CATALOG_ROUTES.some(r => r.path === 'discounts')).toBe(false);
   });
   it('an absent container actor also denies the address', async () => {
     TestBed.configureTestingModule({ providers: [provideRouter(PORTAL_ROUTES)] });
     const h = await RouterTestingHarness.create(); await expect(h.navigateByUrl('/discounts')).rejects.toThrow('Cannot match any routes');
+  });
+});
+
+@Component({ selector: 'app-stub-panel', template: '<section data-stub-panel>Decisiones excepcionales</section>' })
+class StubPanelComponent {}
+describe('theDiscountsPageDrawsTheContributedPanels', () => {
+  it('draws what another story contributes after the list, and nothing when nobody does', async () => {
+    const bare = await openDiscounts(); bare.source.requests[0].reply([discountNamed()]); await bare.settle();
+    expect(bare.element.querySelector('[data-stub-panel]')).toBeNull();
+    TestBed.resetTestingModule();
+    const p = await openDiscounts('TENANT_ADMINISTRATOR', [contribute(DISCOUNTS_PAGE_PANELS, { component: StubPanelComponent, order: 1 })]);
+    p.source.requests[0].reply([discountNamed()]); await p.settle();
+    const panel = p.element.querySelector('[data-stub-panel]')!, list = p.element.querySelector('.crp-discount-list')!;
+    expect(panel.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 });

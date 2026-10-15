@@ -1,7 +1,10 @@
+import { firstValueFrom } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DemoCurrentDiscountsStore } from '../src/app/demo/current-discounts-demo';
 import * as entry from '../src/mount-entry';
 import { apiError } from './catalog-items-writer.double';
 import { openCurrentDiscounts, ruleNamed, serviceNamed } from './current-discounts.double';
+import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
 // HU-COM-004 spec section 3, AC-CD.5 to AC-CD.9 (tasks T-03 and T-04).
 const withData = async (role?: Parameters<typeof openCurrentDiscounts>[0]) => {
@@ -33,7 +36,7 @@ describe('theAdditionalDiscountIsLastWithItsReasonAndAuthor', () => {
 
   it('takes the authorizer from the stored answer, never from a field the person types', async () => {
     const page = await withData();
-    expect(Array.from(page.element.querySelectorAll('form label'), (label) => label.textContent?.trim())).toEqual(['Value', 'Reason', 'Value type']);
+    expect(Array.from(page.element.querySelectorAll('form label'), (label) => label.textContent?.trim())).toEqual(['Descuento adicional (%)', 'Motivo (obligatorio)']);
   });
 });
 
@@ -41,17 +44,17 @@ describe('anEmptyReasonOrValueIsRefusedBesideItsField', () => {
   it('shows each error beside its field and sends nothing', async () => {
     const page = await withData();
     await submit(page);
-    expect(page.errorFor('reason')).toContain('Reason required');
-    expect(page.errorFor('value')).toContain('positive value');
-    for (const value of ['0', '-3', 'abc']) {
+    expect(page.errorFor('reason')).toContain('El motivo es obligatorio');
+    expect(page.errorFor('value')).toContain('valor positivo');
+    for (const value of ['0', '0.5', '100.5', '-3', 'abc']) {
       await fillAdditional(page, value, 'Loyal customer');
       await submit(page);
-      expect(page.errorFor('value')).toContain('positive value');
+      expect(page.errorFor('value')).toContain('valor positivo');
       expect(page.errorFor('reason')).toBeFalsy();
     }
     await fillAdditional(page, '5', '   ');
     await submit(page);
-    expect(page.errorFor('reason')).toContain('Reason required');
+    expect(page.errorFor('reason')).toContain('El motivo es obligatorio');
     expect(page.writer.calls).toHaveLength(0);
   });
 });
@@ -115,21 +118,21 @@ describe('theValueViewShowsOneOfTheFourStates', () => {
     expect(page.state()).toBe('loading');
     page.source.requests[0].fail(); await page.settle();
     expect(page.state()).toBe('error');
-    Array.from(page.element.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Retry')!.click(); await page.settle();
+    Array.from(page.element.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Reintentar')!.click(); await page.settle();
     expect(page.state()).toBe('loading');
     page.source.requests[1].reply([]); await page.settle();
     expect(page.state()).toBe('empty');
     page.fixture.componentInstance.reload(); page.source.requests[2].reply([serviceNamed('Tatacoa')]); await page.settle();
     expect(page.state()).toBe('data');
-    expect(page.element.textContent).toContain('100000.00');
+    expect(page.element.textContent).toContain('$100.000');
   });
 
   it('shows only the base value for a service with no rule in force', async () => {
     const page = await openCurrentDiscounts('ANALYST');
     page.source.requests[0].reply([serviceNamed('Pitalito', [ruleNamed('Old', 1, { endsOn: '2020-01-01' })])]); await page.settle();
     expect(page.lines()).toEqual([]);
-    expect(page.element.textContent).toContain('100000.00');
-    expect(page.element.textContent).not.toContain('Final value');
+    expect(page.element.textContent).toContain('$100.000');
+    expect(page.element.textContent).not.toContain('Valor final');
   });
 
   it('asks the source again for the date the person picks (DP-CD1)', async () => {
@@ -225,9 +228,9 @@ describe('currentDiscountsAreWiredInTheMountEntry', () => {
   it('opens the area from the navigation with the in-memory demo data', async () => {
     host = document.createElement('div'); document.body.append(host);
     const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 1 } }));
-    cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } });
+    cleanup = entry.mountWith(host, { apiClient: { request } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } }, demoSources);
     await vi.waitFor(() => expect(host.querySelector('nav')).toBeTruthy());
-    Array.from(host.querySelectorAll('nav button')).find((b) => b.textContent === 'Current discounts')!.dispatchEvent(new Event('click'));
+    Array.from(host.querySelectorAll('nav button')).find((b) => b.textContent?.trim() === 'Descuentos vigentes')!.dispatchEvent(new Event('click'));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-line]').length).toBeGreaterThan(0));
     expect(host.querySelector('form')).not.toBeNull();
   });

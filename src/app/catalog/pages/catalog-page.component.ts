@@ -5,7 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemFormComponent } from '../components/catalog-item-form.component';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CATALOG_COPY } from '../catalog-copy';
 import { formatCop, formatDateRange } from '../../shared/format';
 import { CatalogItem } from '../model/catalog-item';

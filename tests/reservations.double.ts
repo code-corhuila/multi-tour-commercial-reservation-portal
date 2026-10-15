@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of } from 'rxjs';
-import { ActorContext, CatalogItemsSource, IdempotencyKeys } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { DeparturesSource } from '../src/app/reservations/data/departures-source';
 import { LeadCustomersSource, ReservationDiscounts } from '../src/app/reservations/data/reservation-integrations';
@@ -18,6 +18,8 @@ import { AppliedDiscount, CreateReservationCommand, Departure, Reservation } fro
 import { actorAs } from './actor-context.double';
 import { itemNamed } from './catalog-items-source.double';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
+import { ActorContext } from '../src/app/shared/actor-context';
+import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 
 /** An invented departure: Programada, open, 10 seats, 5.00 of transport per person, unless a test says otherwise. */
 export const departureOf = (n: number, over: Partial<Departure> = {}): Departure => ({
@@ -27,8 +29,8 @@ export const departureOf = (n: number, over: Partial<Departure> = {}): Departure
 export const serviceOf = (name: string, baseRateCents: number, over: Partial<CatalogItem> = {}): CatalogItem =>
   ({ ...itemNamed(name), serviceId: `svc-${name}`, baseRateCents, ...over });
 export const reservationOf = (id: string, over: Partial<Reservation> = {}): Reservation => ({
-  id, leadCustomerName: 'Lead Demo', departureLabel: 'Tour 1 · 2026-11-07', conditions: 'Demo conditions', people: 2,
-  quote: { services: [{ name: 'Kayak', cents: 4000 }], transportCents: 1000, projectedCents: 5000, discounts: [], finalCents: 5000 },
+  id, leadCustomerName: 'Lead Demo', tourName: 'Tour 1', departureDate: '2026-11-07', conditions: 'Demo conditions', people: 2,
+  quote: { services: [{ name: 'Kayak', cents: 4000 }], transportCents: 1000, projectedCents: 5000, discounts: [], discountCents: 0, finalCents: 5000 }, balanceCents: 5000,
   status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, ...over,
 });
 
@@ -101,6 +103,9 @@ export function reservationProviders(over: { role?: string; departures?: Departu
     { provide: ReservationsWriter, useValue: over.writer ?? new ControllableReservationsWriter() },
     { provide: ReservationsSource, useValue: over.reservations ?? new ControllableReservations() },
     { provide: IdempotencyKeys, useValue: over.keys ?? new ControllableIdempotencyKeys() },
+    // The demo quote over the same stubs, as the service would quote (007- H-D7).
+    over.quotes ? { provide: ReservationQuoteSource, useValue: over.quotes } : { provide: ReservationQuoteSource, useFactory: (d: DeparturesSource, c: CatalogItemsSource, r: ReservationDiscounts) =>
+      new DemoReservationQuotes(d, c, r), deps: [DeparturesSource, CatalogItemsSource, ReservationDiscounts] },
   ];
 }
 

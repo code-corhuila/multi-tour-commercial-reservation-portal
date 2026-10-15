@@ -5,11 +5,11 @@ import { listSourceFiles } from './source-files';
 // Adding or removing a file of src/ is a decision, so it must change this list in the same commit.
 const SPECIFIED_TREE = [
   'src/app/discounts/model/discount-rule.ts',
-  'src/app/discounts/model/percentage.ts',
   'src/app/discounts/data/discount-rules-writer.ts',
   'src/app/discounts/components/discount-rule-form.component.ts',
   'src/app/discounts/data/discount-rules-source.ts',
   'src/app/discounts/discounts.routes.ts',
+  'src/app/discounts/discounts-copy.ts',
   'src/app/discounts/pages/discounts-page.component.ts',
   'src/app/app.component.ts',
   'src/app/app.config.ts',
@@ -80,8 +80,6 @@ const SPECIFIED_TREE = [
   'src/app/public-offer/pages/establishments-offer-page.component.ts',
   'src/app/public-offer/pages/public-offer-page.component.ts',
   'src/app/public-offer/public-offer-copy.ts',
-  'src/app/profile/profile-copy.ts',
-  'src/app/profile/pages/profile-page.component.ts',
   'src/app/customers/customers-copy.ts',
   'src/app/customers/model/customer-group.ts',
   'src/app/customers/data/customers-source.ts',
@@ -179,6 +177,14 @@ const SPECIFIED_TREE = [
   'src/app/rescheduling/components/rescheduling-entry.component.ts',
   'src/app/rescheduling/pages/rescheduling-proposal-page.component.ts',
   'src/app/rescheduling/components/rescheduling-contributions.component.ts',
+  'src/app/demo/credit-balance-demo.ts',
+  'src/app/credit-balance/credit-balance-copy.ts',
+  'src/app/credit-balance/data/credit-balance-ports.ts',
+  'src/app/credit-balance/components/credit-balance-action.component.ts',
+  'src/app/credit-balance/components/credit-balance-links.component.ts',
+  'src/app/credit-balance/components/credit-customer-panel.component.ts',
+  'src/app/credit-balance/pages/credit-balance-page.component.ts',
+  'src/app/demo/credit-overview-demo.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {

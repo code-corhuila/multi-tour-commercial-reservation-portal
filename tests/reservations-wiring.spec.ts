@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
 import type { MountProps } from '../src/app/shell-contract';
+import { sourceProviders as demoSources } from '../src/app/sources.demo';
 
 // The container client, faked: catalog reads go through it; reservations use their demo stores (gap G-B).
 const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 1 } }));
@@ -9,12 +10,12 @@ let cleanup: (() => void) | undefined;
 const mountAs = (roles: string[]) => {
   host = document.createElement('div');
   document.body.append(host);
-  cleanup = entry.mount(host, { apiClient: { request } as never, session: { roles, open: () => undefined, close: () => undefined } } as MountProps);
+  cleanup = entry.mountWith(host, { apiClient: { request } as never, session: { roles, open: () => undefined, close: () => undefined } } as MountProps, demoSources);
 };
 const goToReservations = async () => {
   await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
-  Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Reservations')!.click();
-  await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Reservations'));
+  Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Reservas')!.click();
+  await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Reservas'));
 };
 
 afterEach(() => { cleanup?.(); host.remove(); request.mockClear(); });
@@ -24,15 +25,15 @@ describe('the reservations area is wired into the shell', () => {
     mountAs(['OPERATIONAL_COLLABORATOR']);
     await goToReservations();
     await vi.waitFor(() => expect(host.querySelector('[data-state="empty"], [data-state="data"]')).toBeTruthy());
-    expect(host.textContent).toContain('New reservation');
+    expect(host.textContent).toContain('Crear reserva');
   });
 
   it('leaves an unknown role in the client layout, with no operator Reservas area and no create action', async () => {
-    // The operator shell (#21) sends an unknown role to the client layout (fail closed), so there is no operator nav.
+    // The operator shell sends an unknown role to the client layout (fail closed), so there is no operator nav.
     mountAs(['SOMETHING_ELSE']);
-    await vi.waitFor(() => expect(host.querySelector('.crp-client-shell')).toBeTruthy());
+    await vi.waitFor(() => expect(host.querySelector('.crp-client-header')).toBeTruthy());
     expect(host.querySelector('.crp-operator-sidebar')).toBeNull();
     expect(Array.from(host.querySelectorAll('button'), (b) => b.textContent?.trim()).includes('Reservas')).toBe(false);
-    expect(host.textContent).not.toContain('New reservation');
+    expect(host.textContent).not.toContain('Crear reserva');
   });
 });

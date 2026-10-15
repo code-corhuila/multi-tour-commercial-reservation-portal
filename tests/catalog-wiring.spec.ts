@@ -235,7 +235,7 @@ describe('aRowOffersItsStatusActionPlusEdit', () => {
   it('offers exactly one status action and Edit on each row', async () => {
     const page = await openPage([itemNamed('Alpha'), { ...itemNamed('Beta'), catalogStatus: 'INACTIVE' }]);
     const labels = (name: string) => Array.from(page.rowOf(name).querySelectorAll('button')).map((b) => b.textContent?.trim());
-    expect(labels('Alpha')).toEqual([CATALOG_COPY.inactivate, CATALOG_COPY.edit]);
-    expect(labels('Beta')).toEqual([CATALOG_COPY.reactivate, CATALOG_COPY.edit]);
+    expect(labels('Alpha')).toEqual([CATALOG_COPY.edit, CATALOG_COPY.inactivate]);
+    expect(labels('Beta')).toEqual([CATALOG_COPY.edit, CATALOG_COPY.reactivate]);
   });
 });

@@ -1,7 +1,8 @@
-import { formatMoney, parseMoney } from '../../catalog/model/money';
-import { formatCop } from '../../shared/format';
-import { parsePercentage } from './percentage';
-/** PROPUESTO (DP-03): field names await the published API contract. */
+import { formatCop, formatDate } from '../../shared/format';
+import { formatMoney, parseCop } from '../../shared/money';
+import { parsePercentage } from '../../shared/percentage';
+import { DISCOUNT_CONTROLS, DISCOUNT_TEXT } from '../discounts-copy';
+/** An amount or a percentage off; the additional discount of HU-COM-004 still reads it (the rules of HU-COM-003 are percentages only). */
 export type DiscountValue = { type: 'PERCENTAGE'; percentageBasisPoints: number; amountCents?: never }
   | { type: 'FIXED_AMOUNT'; amountCents: number; percentageBasisPoints?: never };
 /** PROPUESTO (G-B): `tourId`, `tourName`, `capCents` and `stackable` await the published API contract (amendment A.5, pillar 11). */
@@ -37,17 +38,17 @@ function percentageOf(text: string): number | null { const v = parsePercentage(t
 function capOf(text: string): number | null { const v = parseCop(text); return v.kind === 'valid' && v.minorUnits > 0 ? v.minorUnits : null; }
 export function validateDiscount(d: DiscountDraft): DiscountMessages {
   const errors: DiscountMessages = {};
-  if (!d.name.trim()) errors.name = 'El nombre es obligatorio.';
+  if (!d.tourId) errors.tourId = 'Elige el tour al que aplica el descuento.';
   for (const field of ['startsOn', 'endsOn'] as const) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d[field]) || !Number.isFinite(Date.parse(d[field]))
       || new Date(d[field]).toISOString().slice(0, 10) !== d[field]) errors[field] = 'Ingresa una fecha completa.';
   }
   if (!errors.startsOn && !errors.endsOn && d.startsOn > d.endsOn) errors.startsOn = errors.endsOn = 'El inicio de la vigencia no puede ser posterior a su fin.';
   if (!/^\d+$/.test(d.priority) || !Number.isSafeInteger(Number(d.priority)) || Number(d.priority) < 1) errors.priority = 'La prioridad debe ser un entero positivo.';
-  if (!DISCOUNT_SELECTS[0].options.some(o => o.value === d.calculationBase)) errors.calculationBase = 'Elige la base de cálculo.';
-  if (!DISCOUNT_SELECTS[1].options.some(o => o.value === d.type)) errors.type = 'Elige el tipo de valor.';
-  const value = d.type === 'PERCENTAGE' ? parsePercentage(d.value) : parseMoney(d.value);
-  if (value.kind === 'invalid' || value.minorUnits < 1) errors.value = 'Ingresa un valor positivo con máximo dos decimales; un porcentaje no supera 100.';
+  if (!isOption('calculationBase', d.calculationBase)) errors.calculationBase = 'Elige la base de cálculo.';
+  if (!isOption('stackable', d.stackable)) errors.stackable = 'Elige si el descuento es acumulable.';
+  if (percentageOf(d.percentage) === null) errors.percentage = 'Ingresa un porcentaje entre 1 y 100, con máximo dos decimales.';
+  if (d.cap.trim() && capOf(d.cap) === null) errors.cap = 'El tope debe ser un valor en pesos mayor a cero (por ejemplo $50.000) o dejarse vacío.';
   return errors;
 }
 export function discountCommand(d: DiscountDraft): DiscountRuleCommand {

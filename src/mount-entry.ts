@@ -3,7 +3,7 @@ import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
 import { COMMERCIAL_NAME, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
-import { selfServiceDemoProviders } from './app/demo/self-service-reservation-demo';
+import { SensitiveDataAccess, sensitiveDataAccessFor } from './app/customers/data/customers-source';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
 import { ReservationSelectionSource, selectionSourceFor } from './app/self-service-reservation/data/reservation-confirmation-ports';
 import { roleOf } from './app/shared/portal-capabilities';

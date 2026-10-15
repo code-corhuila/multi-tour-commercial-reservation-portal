@@ -17,7 +17,9 @@ import { SESSION_IDENTITY } from './shared/session-identity';
 @Component({
   selector: 'crp-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogPageComponent, EstablishmentsPageComponent, ConfirmReservationPageComponent, MyReservationsPageComponent],
+  imports: [NgComponentOutlet, PortalSlotOutlet],
+  host: { '(document:keydown.escape)': 'bell.set(false)', '(document:click)': 'closeBellOutside($event)' },
+  providers: [PortalNavigation],
   template: `
     @if (audience === 'customer') {
       <div class="crp-client-shell">
@@ -29,8 +31,9 @@ import { SESSION_IDENTITY } from './shared/session-identity';
                 (click)="open(link.key)">{{ link.label }}</button> }
           </nav>
           <div class="crp-client-actions">
-            @for (link of headerAccount; track link.key) { <button type="button" [class.crp-client-profile]="link.key === profileKey" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
+            @for (link of headerAccount; track link.key) { <button type="button" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
                 (click)="open(link.key)">{{ link.label }}</button> }
+            @if (openProfile) { <button type="button" class="crp-client-profile" (click)="openProfile()">{{ profileLabel }}</button> }
           </div>
         </header>
         }
@@ -53,7 +56,8 @@ import { SESSION_IDENTITY } from './shared/session-identity';
                     </div>
                   </div>
                 }
-                <button type="button" class="crp-client-avatar" [attr.aria-label]="avatarLabel" (click)="open(profileKey)">{{ initials }}</button>
+                @if (openProfile) { <button type="button" class="crp-client-avatar" [attr.aria-label]="avatarLabel" (click)="openProfile()">{{ initials }}</button> }
+                @else { <span class="crp-client-avatar" role="img" [attr.aria-label]="avatarLabel">{{ initials }}</span> }
               </div>
             </header>
           }

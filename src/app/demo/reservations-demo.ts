@@ -30,18 +30,18 @@ const departure = (n: number, tourName: string, date: string, state: Departure['
 const SEEDED: Reservation[] = [
   { id: 'RES-1842', leadCustomerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa al atardecer', departureDate: '2026-11-07', conditions: CONDITIONS, people: 2,
     quote: { services: [{ name: 'Guianza (demo)', cents: 80_000_000 }], transportCents: 5_000_000, projectedCents: 85_000_000, discounts: [], discountCents: 0, finalCents: 85_000_000 }, balanceCents: 85_000_000,
-    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false },
+    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'demo-dep-1', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' },
   { id: 'RES-1841', leadCustomerName: 'Mateo Ríos (demo)', tourName: 'Ruta del café en Pitalito', departureDate: '2026-11-14', conditions: CONDITIONS, people: 1,
     quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], discountCents: 0, finalCents: 41_800_000 }, balanceCents: 41_800_000,
-    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false },
+    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'demo-dep-2', paymentType: 'PARTIAL', paymentMethod: 'CASH_AT_OFFICE' },
 ];
 /** HU-COM-014: the demo customer's situations of the mockup's demo data (app.js 2621-2626), coded below the writer's sequence. */
 const ownAs = (id: string, tourName: string, departureDate: string, finalCents: number, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, tourName,
   departureDate, departureId: undefined, seatHeld: true, balanceCents: finalCents, ...over,
   quote: { services: [{ name: 'Guianza (demo)', cents: finalCents }], transportCents: 0, projectedCents: finalCents, discounts: [], discountCents: 0, finalCents } });
-const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus']): ReservationPayment[] =>
-  [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)' }];
-SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION') }),
+const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus'], presentedAt?: string): ReservationPayment[] =>
+  [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)', ...(presentedAt ? { presentedAt } : {}) }];
+SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION', '2026-10-13T08:30:00-05:00') }),
   ownAs('RES-1832', 'Tour de ejemplo', '2026-09-20T07:00:00', 30_000_000, { status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', paymentType: 'PARTIAL',
     validatedCents: 10_000_000, balanceCents: 20_000_000, payments: proofOf('RES-1832', 10_000_000, 'APROBADO') }),
   ownAs('RES-1831', 'Ruta Andina', '2026-09-22T06:30:00', 120_000_000, { status: 'CANCELADA', seatHeld: false, financialStatus: 'PARCIAL', paymentType: 'PARTIAL',
@@ -73,9 +73,10 @@ SEEDED.push(inState('RES-1822', 'CONFIRMADA', { leadCustomerName: 'Paula Rojas (
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [
     departure(1, 'Desierto de la Tatacoa al atardecer', '2026-11-07', 'PROGRAMADA', true, 10, 2_500_000),
-    departure(2, 'Ruta del cafe en Pitalito', '2026-11-14', 'PROGRAMADA', true, 2, 1_800_000),
-    departure(3, 'Canotaje en el Rio Suaza', '2026-11-21', 'PROGRAMADA', false, 8, 2_000_000),
+    departure(2, 'Ruta del café en Pitalito', '2026-11-14', 'PROGRAMADA', true, 2, 1_800_000),
+    departure(3, 'Canotaje en el río Suaza', '2026-11-21', 'PROGRAMADA', false, 8, 2_000_000),
     departure(4, 'Caminata al Nevado del Huila', '2026-10-30', 'CANCELADA', true, 12, 3_000_000),
+    ...RESCHEDULING_DEPARTURES,
   ];
   override list(): Observable<readonly Departure[]> { return of([...this.items]); }
 }
@@ -111,7 +112,7 @@ export class DemoReservationsStore extends ReservationsSource {
   override list(): Observable<readonly Reservation[]> { return of([...this.items]); }
 }
 
-/** Checks the departure and its capacity without holding a seat; one reservation per Idempotency-Key. */
+/** Checks the departure and its capacity without holding a seat, quotes as the service would; one reservation per Idempotency-Key. */
 export class DemoReservationsWriter extends ReservationsWriter {
   private readonly byKey = new Map<string, Reservation>();
   private sequence = 1842;
@@ -146,7 +147,8 @@ export class DemoReservationsWriter extends ReservationsWriter {
 
 /** The reservation ports over the demo stores; mount-entry adds them until the -api exists (gap G-B). */
 export function reservationDemoProviders(): Provider[] {
-  const departures = new DemoDeparturesStore(), store = new DemoReservationsStore();
+  const departures = new DemoDeparturesStore(), store = new DemoReservationsStore([...SEEDED]);
+  let writer: DemoReservationsWriter | undefined;
   return [
     { provide: DeparturesSource, useValue: departures },
     ...departureCapacityProviders(), ...tourImagesProviders(),

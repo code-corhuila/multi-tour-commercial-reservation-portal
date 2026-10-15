@@ -26,7 +26,7 @@ const errorBeside = (element: HTMLElement, name: string) => {
 describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
   it('offers one departure at a time, only Programada and open, among labelled fields', async () => {
     const { element } = await openForm();
-    const select = within(element).getByLabelText('Departure') as HTMLSelectElement;
+    const select = within(element).getByLabelText('Salida programada') as HTMLSelectElement;
     expect(select.multiple).toBe(false);
     expect(Array.from(select.options).map((o) => o.value).filter(Boolean)).toEqual(['dep-1', 'dep-4']);
     for (const label of ['Correo electrónico', 'Tour', 'Cantidad total de viajeros']) expect(within(element).getByLabelText(label)).toBeTruthy();
@@ -58,7 +58,7 @@ describe('notEnoughCapacityCreatesNothingAndSaysSo', () => {
   it('blocks the submit when the people exceed the effective capacity of the departure', async () => {
     const { element, fill, submit, writer } = await openForm();
     await fill('3', 'dep-4'); await submit();
-    expect(errorBeside(element, 'people')).toContain('Not enough capacity');
+    expect(errorBeside(element, 'people')).toContain('No hay cupo suficiente');
     expect(writer.calls).toHaveLength(0);
   });
 
@@ -66,7 +66,7 @@ describe('notEnoughCapacityCreatesNothingAndSaysSo', () => {
     const { element, fill, submit, writer, settle, created } = await openForm();
     await fill(); await submit();
     writer.calls[0].fail(apiError({ status: 409, code: 'insufficient-capacity' })); await settle();
-    expect(errorBeside(element, 'people')).toContain('Not enough capacity');
+    expect(errorBeside(element, 'people')).toContain('No hay cupo suficiente');
     expect(created).toHaveLength(0);
   });
 });
@@ -80,9 +80,9 @@ describe('eachDiscountLineNamesItsBaseInTheOrderApplied', () => {
     expect(breakdown.textContent).toContain('Kayak'); expect(breakdown.textContent).toContain('$60');
     expect(breakdown.textContent).toContain('Transporte por persona'); expect(breakdown.textContent).toContain('$15');
     expect(Array.from(breakdown.querySelectorAll('[data-discount]')).map((d) => d.textContent?.trim()))
-      .toEqual(['Early bird (on the original value)', 'Group (on the previous subtotal)']);
-    expect(breakdown.querySelector('[data-value="projected"]')!.textContent).toContain('74.97');
-    expect(breakdown.querySelector('[data-value="final"]')!.textContent).toContain('59.97');
+      .toEqual(['Early bird (sobre el valor original)', 'Group (sobre el subtotal anterior)']);
+    expect(breakdown.querySelector('[data-value="projected"]')!.textContent).toContain('$75');
+    expect(breakdown.querySelector('[data-value="final"]')!.textContent).toContain('$60');
     expect(discounts.bases.at(-1)).toBe(7497);
   });
 });
@@ -121,14 +121,14 @@ describe('everyScreenShowsOneOfTheFourStates (form)', () => {
     expect(element.querySelector('[data-state="loading"]')).not.toBeNull();
     answers.error(new Error('down')); await settle();
     expect(element.querySelector('[data-state="error"]')).not.toBeNull();
-    answers = new Subject(); await click('Retry');
+    answers = new Subject(); await click('Reintentar');
     answers.next([departureOf(1)]); answers.complete(); await settle();
     expect(element.querySelector('form[data-state="data"]')).not.toBeNull();
   });
 
   it('shows the empty state when no departure is open, and the error state when the source throws', async () => {
     const empty = await openForm({ departures: new StubDepartures(() => of([departureOf(1, { state: 'CANCELADA' })])) });
-    expect(empty.element.querySelector('[data-state="empty"]')?.textContent).toContain('No departure is open');
+    expect(empty.element.querySelector('[data-state="empty"]')?.textContent).toContain('No hay salidas abiertas para reservas');
     TestBed.resetTestingModule();
     const failing = await openForm({ departures: new StubDepartures(() => throwError(() => new Error('x'))) });
     expect(failing.element.querySelector('[data-state="error"] button')).not.toBeNull();

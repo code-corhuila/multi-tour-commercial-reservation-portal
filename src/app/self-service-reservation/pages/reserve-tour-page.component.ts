@@ -4,7 +4,7 @@ import { readFailure } from '../../shared/read-failure';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/model/catalog-item';
+import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { DeparturesSource } from '../../reservations/data/departures-source';
 import { DepartureCapacity } from '../../reservations/data/departure-capacity';
@@ -93,8 +93,8 @@ export class ReserveTourPageComponent {
   protected readonly travelers = travelers;
   protected readonly Math = Math;
   private readonly navigation = inject(PortalNavigation, { optional: true });
-  /** DP-RS1: the tour "Reservar tour" opened this area with, else the one of the URL. */
-  private readonly tourId = this.navigation?.params()['tour'] ?? new URLSearchParams(globalThis.location?.search ?? '').get('tour') ?? '';
+  /** DP-RS1, 008- H-D10: the tour "Reservar tour" opened this area with; the portal reads no address. */
+  private readonly tourId = this.navigation?.params()['tour'] ?? '';
   private readonly catalog = inject(CatalogItemsSource);
   private readonly departures = inject(DeparturesSource);
   protected readonly seatRule = inject(DepartureCapacity);

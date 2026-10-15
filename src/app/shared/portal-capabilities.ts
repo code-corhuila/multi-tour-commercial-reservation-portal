@@ -47,6 +47,8 @@ interface Row {
   readonly manageDiscounts: boolean;
   readonly authorizeAdditionalDiscount: boolean;
   readonly createReservations: boolean;
+  /** HU-COM-009: RBAC row Register a payment. */
+  readonly registerPayment: boolean;
   /** HU-COM-013: RBAC row Create, modify or cancel a reservation; register a change from 10A. */
   readonly changeReservation: boolean;
   /** HU-COM-010: RBAC row Validate or reject a transfer proof; the Collaborator only with Validar comprobantes (HU-SEC-006, G-PERM). */
@@ -126,6 +128,7 @@ export class PortalCapabilities {
   canManageDiscounts(): boolean { return this.row.manageDiscounts; }
   canAuthorizeAdditionalDiscount(): boolean { return this.row.authorizeAdditionalDiscount; }
   canCreateReservations(): boolean { return this.row.createReservations; }
+  canRegisterPayment(): boolean { return this.row.registerPayment; }
   canRegisterChange(): boolean { return this.row.changeReservation; }
   canAuthorizeRefund(): boolean { return this.row.refund === 'authorize'; }
   canExecuteRefund(): boolean { return this.row.refund !== 'never'; }

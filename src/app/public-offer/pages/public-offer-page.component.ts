@@ -1,8 +1,10 @@
 import { ReadErrorComponent } from '../../shared/read-error.component';
+import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
+import { DeparturesSource, Departure, openDepartures } from '../../reservations/data/departures-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop, formatDate, formatDateRange } from '../../shared/format';
 import { PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
@@ -29,13 +31,31 @@ export function partOf<A, T>(requests: Subject<A>, read: (arg: A) => Observable<
   ))), { initialValue: { kind: 'loading' } as PartState<T> });
 }
 
+/** The open departures a port lists, or null without a port or when it fails: the page then draws no departures. */
+function openDeparturesOf(port: DeparturesSource | null): Observable<readonly Departure[] | null> {
+  const read: Observable<readonly Departure[] | null> = port ? port.list() : of(null);
+  return read.pipe(map((all) => (all ? openDepartures(all) : null)), catchError(() => of(null)));
+}
+
 export const unavailable = () => throwError(() => new Error('The container provides no public offer port'));
 
-/** "Volver al panel cliente", drawn only when the shell can open the panel (HU-COM-008). */
-export function backToPanel(): (() => void) | null {
+/** Opens a client area through the shell, or null when the shell cannot show it. */
+export function openerOf(key: string): (() => void) | null {
   const navigation = inject(PortalNavigation, { optional: true });
-  return navigation?.has(CLIENT_AREA.panel) ? () => navigation.open(CLIENT_AREA.panel) : null;
+  return navigation?.has(key) ? () => navigation.open(key) : null;
 }
+
+/** The key under which HU-COM-008 registers Reservar tour (reservar-tour.html); it reads { tour } from PortalNavigation. */
+export const RESERVE_TOUR_AREA = 'reserve';
+
+/** Opens Reservar tour on a tour, or null when the shell cannot show it. */
+export function reserverOf(): ((tourId: string) => void) | null {
+  const navigation = inject(PortalNavigation, { optional: true });
+  return navigation?.has(RESERVE_TOUR_AREA) ? (tourId) => { navigation.open(RESERVE_TOUR_AREA, { tour: tourId }); } : null;
+}
+
+/** "Volver al panel cliente", drawn only when the shell can open the panel (HU-COM-008). */
+export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA.panel); }
 
 /** tours.html and detalle-tour.html. Read-only for everyone (plan D-07): it reads no actor and offers no reservation. */
 @Component({
@@ -52,35 +72,48 @@ export function backToPanel(): (() => void) | null {
             <h1 class="crp-page-header-title crp-h1">{{ priced.tour.commercialName }}</h1>
             <h2>{{ copy.validityTitle }}</h2>
             <dl class="crp-offer-facts">
-              <div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ copy.availableOnDay }} {{ day(date()) }}</dd></div>
+              <div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div>
               @if (priced.tour.transportIncluded) { &ngsp;<div><dt>{{ copy.transport }}</dt>&ngsp;<dd>{{ copy.transportIncluded }}</dd></div> }
             </dl>
             <section class="crp-offer-conditions"><h2>{{ copy.conditionsTitle }}</h2>
               <ul>@for (condition of copy.conditions; track condition) { <li>{{ condition }}</li> }</ul>
             </section>
+            @if (departuresOf(priced); as departures) {
+              <section class="crp-offer-departures"><h2>{{ copy.departuresTitle }}</h2>
+                <p>{{ copy.departuresNote }}</p>
+                @if (departures.length) {
+                  <ul>@for (departure of departures; track departure.id) { <li><strong>{{ day(departure.date) }}</strong>&ngsp;<span>{{ seats(departure) }}</span></li> }</ul>
+                } @else { <p>{{ copy.noDepartures }}</p> }
+              </section>
+            }
           </div>
           <aside class="crp-offer-summary">
             <p class="crp-offer-summary-eyebrow">{{ copy.summary }}</p>
-            @if (discounted(priced)) {
-              &ngsp;<span class="crp-tour-discount-tag">{{ tag(priced) }}</span>&ngsp;<p>{{ copy.before }} {{ money(priced.value.baseRateCents) }}</p>&ngsp;
-            }
-            <p class="crp-offer-from">{{ copy.from }}: <span data-value="current">{{ money(priced.value.currentValueCents) }}</span></p>
+            <div class="crp-offer-summary-price">
+              @if (discounted(priced)) {
+                &ngsp;<span class="crp-tour-discount-tag">{{ tag(priced) }}</span>&ngsp;<small>{{ copy.before }} {{ money(priced.value.baseRateCents) }}</small>&ngsp;
+              }
+              <p class="crp-offer-from">{{ copy.from }}: <span data-value="current">{{ money(priced.value.currentValueCents) }}</span></p>
+            </div>&ngsp;
+            <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div></dl>
+            @if (priced.tour.validity; as range) { <p class="crp-offer-validity">{{ copy.validFrom }} {{ day(range.from) }} {{ copy.validTo }} {{ day(range.to) }}.</p> }
+            @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" [disabled]="!hasSeats(priced)" (click)="reserve(priced.tour.serviceId)">{{ copy.reserve }}</button> }
           </aside>
         </div>
       </article>
     } @else {
       @if (back) { <button type="button" class="crp-offer-back" (click)="back()"><span aria-hidden="true">←</span>&ngsp;<span>{{ copy.back }}</span></button> }
-      <header class="crp-page-header">
+      <header class="crp-page-header crp-offer-head">
         <div class="crp-page-header-main">
           <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
           <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
-          <p class="crp-page-header-desc">{{ copy.description }}</p>
         </div>
         <div class="crp-page-header-action crp-offer-search">
-          <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchTours" #query (keydown.enter)="search.set(query.value)" />
+          <svg class="crp-offer-search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input type="search" [attr.aria-label]="copy.searchTours" [placeholder]="copy.searchToursHint" #query (keydown.enter)="search.set(query.value)" />
           <button type="button" class="crp-primary" (click)="search.set(query.value)">{{ copy.search }}</button>
-          <label class="crp-offer-date"><span>{{ copy.date }}</span><input type="date" [value]="date()" (change)="choose($event)" /></label>
         </div>
+        <label class="crp-offer-date"><span>{{ copy.date }}</span><input type="date" [value]="date()" (change)="choose($event)" /></label>
       </header>
       <section class="crp-offer-section" data-part="tours" [attr.aria-label]="copy.toursList">
         @let tours = toursState();
@@ -99,8 +132,7 @@ export function backToPanel(): (() => void) | null {
                     @if (discounted(priced)) { <span class="crp-tour-discount-tag">{{ tag(priced) }}</span> }
                   </div>
                   <div class="crp-tour-body">
-                    <strong>{{ priced.tour.commercialName }}</strong>
-                    @if (priced.tour.transportIncluded) { <p class="crp-tour-transport">{{ copy.transportIncluded }}</p> }
+                    <strong [title]="priced.tour.commercialName">{{ priced.tour.commercialName }}</strong>
                     <div class="crp-tour-meta">
                       <div class="crp-tour-price">
                         @if (discounted(priced)) { <small>{{ copy.before }} <del data-value="base">{{ money(priced.value.baseRateCents) }}</del></small>&ngsp; }
@@ -122,6 +154,8 @@ export function backToPanel(): (() => void) | null {
 export class PublicOfferPageComponent {
   protected readonly copy = PUBLIC_OFFER_COPY;
   protected readonly back = backToPanel();
+  /** "Reservar tour" opens Reservar tour of HU-COM-008 on the tour, drawn only when the shell has it (AC-PO.7: no form here). */
+  protected readonly reserve = reserverOf();
   private readonly offer = inject(PublicOfferSource, { optional: true });
   private readonly capacity = inject(DepartureCapacity, { optional: true });
   private readonly images = inject(TourImages);
@@ -131,6 +165,8 @@ export class PublicOfferPageComponent {
   protected readonly search = signal('');
   protected readonly chosen = signal<PricedTour | null>(null);
   private readonly dates = new Subject<string>();
+  /** The open departures of HU-COM-007/008, or null where the container has no departures port or it fails (then no section is drawn). */
+  private readonly departures = toSignal(openDeparturesOf(inject(DeparturesSource, { optional: true })), { initialValue: null });
 
   protected readonly toursState = partOf(this.dates, (date) => (this.offer?.listAvailable(date) ?? unavailable()).pipe(
     // RN-PO2: whatever the port answers, what is not available for the date is not listed.
@@ -174,6 +210,12 @@ export class PublicOfferPageComponent {
   protected money(cents: number): string { return formatCop(cents); }
 
   protected day(isoDate: string): string { return formatDate(isoDate); }
+
+  /** The validity the offer port declares, or the consulted date when it declares none. */
+  protected validity(priced: PricedTour): string {
+    const range = priced.tour.validity;
+    return range ? formatDateRange(range.from, range.to) : `${this.copy.availableOnDay} ${formatDate(this.date())}`;
+  }
 
   private valueOf(tour: PublicTour, date: string): TourValue {
     return this.value?.valueOf(tour, date) ?? { baseRateCents: tour.baseRateCents, currentValueCents: tour.baseRateCents };

@@ -36,6 +36,20 @@ export interface MountSession {
   close(): void;
 }
 
+/**
+ * An area of a portal, possibly another one than the caller; the container owns the address (HU-FRT-001 spec 003-, plan D-04).
+ * Local copy of `PortalTarget` of its `core/client/types.ts`: the portal never imports the container (norm 5.4.1, pillar 10).
+ */
+export interface PortalTarget {
+  /** Key of the portal in the container's federation manifest. */
+  readonly portal: string;
+  /** Area key declared by that portal. */
+  readonly area: string;
+}
+
+/** profile.html (26) belongs to the identity-audit domain (authorized-screens.md): this portal only asks the container to open it. */
+export const PROFILE_TARGET: PortalTarget = { portal: 'identity-audit-portal', area: 'profile' };
+
 /** What the container hands to `mount` (ADR-006 F4); mirrors multi-tour-front `core/client/types.ts`. */
 export interface MountProps {
   identifier?: string;

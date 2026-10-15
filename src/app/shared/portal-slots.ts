@@ -51,6 +51,9 @@ export const RESERVATION_CARD_ACTIONS: PortalSlotToken = new InjectionToken('RES
  * Inputs: reservationId, decided (the refund or its default closed it), changed (called after a contribution records a decision). */
 export const REFUND_TREATMENT_ACTIONS: PortalSlotToken = new InjectionToken('REFUND_TREATMENT_ACTIONS');
 
+/** 12 (admin-descuentos): panels after the list of promotions, such as "Decisiones excepcionales"; empty until another story contributes. */
+export const DISCOUNTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('DISCOUNTS_PAGE_PANELS');
+
 /** The available contributions of a slot, by order. */
 export function slotEntries(slot: PortalSlotToken, injector: Injector, from = -Infinity, until = Infinity): readonly Type<unknown>[] {
   return [...(injector.get(slot, null, { optional: true }) ?? [])].filter((entry) => entry.order >= from && entry.order < until && (entry.isAvailable?.(injector) ?? true))

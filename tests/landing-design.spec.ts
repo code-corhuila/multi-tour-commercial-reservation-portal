@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
-import { ActorContext, CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from '../src/app/establishments/data/associated-establishments-writer';
@@ -11,6 +11,7 @@ import { PortalAudience } from '../src/app/portal-audience';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { PortalShellComponent } from '../src/app/portal-shell.component';
 import { actorAs } from './actor-context.double';
+import { ActorContext } from '../src/app/shared/actor-context';
 
 async function openPortal(role: 'TENANT_ADMINISTRATOR' | 'READ_ONLY' = 'TENANT_ADMINISTRATOR') {
   const catalog = new DemoCatalogStore();
@@ -21,6 +22,8 @@ async function openPortal(role: 'TENANT_ADMINISTRATOR' | 'READ_ONLY' = 'TENANT_A
     { provide: CatalogItemsWriter, useValue: new DemoCatalogWriter(catalog) },
     { provide: AssociatedEstablishmentsSource, useValue: establishments },
     { provide: AssociatedEstablishmentsWriter, useValue: new DemoEstablishmentsWriter(establishments) },
+    // The operator pages, also for a read-only operator.
+    { provide: PortalAudience, useValue: { audience: 'operator' } },
   ] });
   const fixture = TestBed.createComponent(PortalShellComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
@@ -38,6 +41,7 @@ describe('landingComposition', () => {
     const { host, catalogPage } = await openPortal();
     await catalogPage();
     expect(host.querySelector('.crp-operator-shell .crp-operator-content')).not.toBeNull();
+    expect(host.querySelector('.crp-operator-shell .crp-operator-sidebar .crp-operator-nav')).not.toBeNull();
     const header = host.querySelector('.crp-page-header')!;
     expect(header.querySelector('.crp-page-header-main .crp-page-header-eyebrow')?.textContent).toBe('Catálogos');
     expect(header.querySelector('h1.crp-page-header-title.crp-h1')?.textContent).toBe('Gestionar catálogo de tours');
@@ -56,20 +60,26 @@ describe('landingComposition', () => {
       expect(Array.from(row.querySelectorAll('button'), (button) => button.textContent?.trim())).toEqual(
         ['Gestionar', row.querySelector('.crp-is-confirmed') ? 'Inactivar' : 'Reactivar']);
     }
+    expect(table.textContent).not.toMatch(/ACTIVE|TOUR|TRANSPORTATION/);
   });
 
   it('keeps establishments filters and actions in the landing composition with both status pills', async () => {
     const { host, establishmentsPage } = await openPortal();
     await establishmentsPage();
-    expect(host.querySelector('.crp-page-header h1')?.textContent).toBe(ESTABLISHMENTS_COPY.title.all);
-    expect(host.querySelector('.crp-page-header-action')?.textContent).toBe(ESTABLISHMENTS_COPY.newEstablishment);
-    expect(host.querySelector('.crp-access-note')?.textContent).toBe(ESTABLISHMENTS_COPY.accessNote);
-    expect(host.querySelector('.crp-operator-panel-head h2')?.textContent).toBe(ESTABLISHMENTS_COPY.panelTitle);
+    expect(host.querySelector('.crp-page-header-eyebrow')?.textContent).toBe('Catálogos');
+    expect(host.querySelector('.crp-page-header h1')?.textContent).toBe('Establecimientos asociados');
+    expect(host.querySelector('.crp-access-note')?.textContent).toBe('El Colaborador operativo no tiene acceso a esta gestión. '
+      + 'Estos registros son convenios informativos y no contienen cupos, tarifas ni inventario reservable.');
+    const head = host.querySelector('.crp-operator-panel-head')!;
+    expect(head.querySelector('.crp-operator-eyebrow')?.textContent).toBe('Directorio asociado');
+    expect(head.querySelector('h2')?.textContent).toBe('Activar, inactivar o reactivar');
+    expect(head.querySelector('button.crp-operator-primary')?.textContent).toBe('Agregar establecimiento');
     expect(host.querySelectorAll('.crp-filters select')).toHaveLength(2);
-    const table = host.querySelector('.crp-table')!;
-    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(Object.values(ESTABLISHMENTS_COPY.columns));
-    expect(table.querySelector('.crp-status.crp-is-confirmed')?.textContent).toBe('ACTIVE');
-    expect(table.querySelector('.crp-status.crp-is-pending')?.textContent).toBe('INACTIVE');
+    const table = host.querySelector('.crp-operator-table')!;
+    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado', 'Acción']);
+    expect(table.querySelector('.crp-operator-status.crp-is-confirmed')?.textContent).toBe('Activo');
+    expect(table.querySelector('.crp-operator-status.crp-is-pending')?.textContent).toBe('Inactivo');
+    expect(table.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);
   });
 
   it('retains the same composition in read-only mode without creation or row actions', async () => {
@@ -77,8 +87,7 @@ describe('landingComposition', () => {
     for (const show of [catalogPage, establishmentsPage]) {
       await show();
       expect(host.querySelector('.crp-page-header h1')).not.toBeNull();
-      // "Volver a catálogos" is navigation (admin-gestionar-hospedaje.html), not a creation action.
-      expect(host.querySelector('.crp-page-header-action.crp-operator-primary, .crp-operator-panel-head button')).toBeNull();
+      expect(host.querySelector('.crp-operator-primary, .crp-operator-panel-head button')).toBeNull();
       expect(host.querySelector('.crp-operator-table tbody button')).toBeNull();
       expect(host.querySelectorAll('.crp-operator-table tbody tr').length).toBeGreaterThan(0);
     }
@@ -104,11 +113,52 @@ describe('landingStylesStayInsideThePortal', () => {
       }
     };
     check(style.sheet!.cssRules);
+    expect(css).toMatch(/grid-template-columns:\s*226px/);
+    expect(css).toContain('"Manrope"');
+    for (const token of ['--crp-radius-shell: 20px', '--crp-radius-card: 14px', '--crp-space-1: 4px', '--crp-space-8: 64px', '--crp-success: #17685f', '--crp-success-soft: #ddf0e7']) {
+      expect(css).toContain(token);
+    }
     for (const name of ['operator-shell', 'operator-content', 'operator-panel', 'operator-panel-head',
       'operator-eyebrow', 'table', 'table-wrap', 'status', 'primary', 'outline', 'access-note',
       'page-header', 'page-header-main', 'page-header-eyebrow', 'page-header-title',
-      'page-header-desc', 'page-header-action', 'h1', 'is-confirmed', 'is-pending', 'is-cancelled']) {
+      'page-header-desc', 'page-header-action', 'h1', 'is-confirmed', 'is-pending', 'is-cancelled',
+      'operator-sidebar', 'operator-brand', 'operator-role', 'operator-nav', 'is-active', 'is-execution', 'is-finalized',
+      'operator-primary', 'operator-outline', 'operator-table', 'operator-status']) {
       expect(css).toContain(`.crp-${name}`);
     }
+  });
+});
+
+// The header and footer stay in the portal column (001- amendment HC-3): portal-column.spec.ts.
+describe('customerHeaderLinks', () => {
+  const ruleOf = (css: string, selector: string) => {
+    const start = css.indexOf(`\n${selector} {`);
+    return start < 0 ? '' : css.slice(start, css.indexOf('}', start));
+  };
+
+  it('draws the client canvas of panel-cliente.html and header links without a box, the focus ring only from the keyboard', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    expect(ruleOf(css, '.crp-root .crp-client-content')).toMatch(/width:\s*min\(100% - 32px, 1680px\);\s*margin:\s*12px auto;/);
+    const links = ruleOf(css, '.crp-root .crp-client-header button, .crp-root .crp-client-panel-header button');
+    expect(links).toMatch(/border:\s*0;/);
+    expect(links).toMatch(/background:\s*transparent;/);
+    expect(ruleOf(css, '.crp-root .crp-client-header button:focus:not(:focus-visible), .crp-root .crp-client-panel-header button:focus:not(:focus-visible)'))
+      .toMatch(/outline: none; box-shadow: none;/);
+    expect(ruleOf(css, '.crp-root .crp-client-header button.crp-is-active')).not.toMatch(/text-decoration|border|background/);
+  });
+});
+
+describe('formGridStaysInTheOperatorShell', () => {
+  it('lays forms in two columns only inside the operator shell, never in a client form', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    expect(css).not.toMatch(/\.crp-root form\s*[{>,]/);
+    expect(css).toMatch(/\n\.crp-root \.crp-operator-shell form \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  });
+});
+
+describe('discountScreenStacksAtPhoneWidth', () => {
+  it('stacks the operator forms and the discount grid in one column without touching a client form', () => {
+    const css = readFileSync('src/styles/portal.css', 'utf8');
+    expect(css).toMatch(/\n {2}\.crp-root \.crp-operator-shell form, \.crp-root \.crp-discount-grid, \.crp-root \.crp-discount-hero \{ grid-template-columns: 1fr; \}/);
   });
 });

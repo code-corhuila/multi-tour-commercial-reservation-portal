@@ -3,7 +3,6 @@ import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
-import { PortalNavigation } from '../../portal-navigation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
@@ -30,11 +29,11 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
     } @else {
       <header class="crp-page-header">
       <div class="crp-page-header-main">
-        <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
-        <h1 class="crp-page-header-title crp-h1">{{ copy.title.all }}</h1>
+        <p class="crp-page-header-eyebrow">{{ fixedType ? copy.eyebrowOf[fixedType] : copy.eyebrow }}</p>
+        <h1 class="crp-page-header-title crp-h1">{{ copy.title[fixedType ?? 'all'] }}</h1>
       </div>
       @if (navigation?.has('catalog')) {
-        <button class="crp-operator-outline crp-page-header-action" type="button" (click)="navigation?.open('catalog')">{{ copy.back }}</button>
+        <button class="crp-operator-outline crp-page-header-action" type="button" (click)="navigation?.open('catalog')">{{ copy.backToCatalogs }}</button>
       }
       </header>
       <p class="crp-access-note">{{ fixedType ? copy.noteOf[fixedType] : copy.accessNote }}</p>
@@ -118,7 +117,6 @@ export class EstablishmentsPageComponent {
   // Without the container's writer this slice stays readable; no local adapter is substituted.
   private readonly writer = inject(AssociatedEstablishmentsWriter, { optional: true });
   private readonly capabilities = inject(PortalCapabilities);
-  protected readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly canWrite = !!this.writer && this.capabilities.canRegisterEstablishments();
   protected readonly formOpen = signal(false);
   protected readonly formKey = signal(0);
@@ -130,10 +128,9 @@ export class EstablishmentsPageComponent {
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly statuses = ASSOCIATION_STATUSES;
   /** The hub opens the area with { type } (admin-catalogos.html cards); anything else shows both types. */
-  private readonly openedType = inject(PortalNavigation, { optional: true })?.params()['type'];
-  protected readonly filters = signal<EstablishmentFilters>(
-    ESTABLISHMENT_TYPES.find((type) => type === this.openedType) ? { establishmentType: this.openedType as EstablishmentType } : {},
-  );
+  protected readonly navigation = inject(PortalNavigation, { optional: true });
+  protected readonly fixedType = ESTABLISHMENT_TYPES.find((type) => type === this.navigation?.params()['type']);
+  protected readonly filters = signal<EstablishmentFilters>(this.fixedType ? { establishmentType: this.fixedType } : {});
   private readonly requests = new Subject<EstablishmentFilters>();
   private readonly listed = toSignal(this.requests.pipe(
     // RN-PE3: only the most recent request may supply the screen's next state.

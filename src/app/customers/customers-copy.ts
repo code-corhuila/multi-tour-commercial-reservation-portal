@@ -1,5 +1,6 @@
 import { HighRiskField, PersonField } from './model/customer-group';
 
+/** Texts of screen 10B (`admin-crear-reserva.html`, sections 01, 03 and the high-risk panel). */
 export const CUSTOMERS_COPY = {
   entry: 'Gestión comercial', title: 'Titular y acompañantes',
   description: 'Registra el cliente titular y los acompañantes que se asociarán a la reserva.',
@@ -37,9 +38,10 @@ export function companionCount(count: number): string {
 }
 
 export const PERSON_LABELS: Record<Exclude<PersonField, 'serviceId' | 'acceptedTerms'>, string> = {
-  fullName: 'Full name', document: 'Document', contact: 'Contact', birthDate: 'Birth date',
-  informedConsent: 'Informed consent', bloodType: 'Blood type', emergencyContact: 'Emergency contact', physicalRestrictions: 'Physical restrictions',
+  fullName: 'Nombre completo', document: 'Documento de identidad', email: 'Correo electrónico', contact: 'Teléfono de contacto',
+  birthDate: 'Fecha de nacimiento', bloodType: 'Tipo de sangre', emergencyContact: 'Contacto de emergencia',
+  physicalRestrictions: 'Restricciones físicas o movilidad reducida', informedConsent: 'Consentimiento informado o exoneración registrado.',
 };
 
-export const SENSITIVE_LABELS: readonly [HighRiskField, string][] = (['bloodType', 'physicalRestrictions', 'emergencyContact', 'informedConsent'] as const)
+export const SENSITIVE_LABELS: readonly [HighRiskField, string][] = (['bloodType', 'emergencyContact', 'physicalRestrictions', 'informedConsent'] as const)
   .map((field) => [field, PERSON_LABELS[field]]);

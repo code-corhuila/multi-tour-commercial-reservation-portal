@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { demoTourPhoto } from '../src/app/demo/tour-photo-demo';
-import { SITE_PHOTOS, TourImages } from '../src/app/shared/tour-photo';
+import { SITE_PHOTOS, TourImages, establishmentPhoto } from '../src/app/shared/tour-photo';
 import { listSourceFiles, withoutComments } from './source-files';
 
 describe('theProductionImageOfATourComesFromThePortAndStaysOnTheOrigin', () => {
@@ -40,5 +40,12 @@ describe('aTourKeepsOnePhotoByItsIdInTheDemo', () => {
     let hash = 0;
     for (const char of 'tour-Pitalito') hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
     expect(demoTourPhoto('tour-Pitalito')).toBe(photos[hash % photos.length]);
+  });
+});
+
+describe('anEstablishmentKeepsThePhotoOfItsType', () => {
+  it('shows a hotel for lodging and a restaurant for gastronomy, as alojamiento.html and gastronomia.html', () => {
+    expect(establishmentPhoto('HOTEL')).toBe('/assets/alojamiento-asociado.jpg');
+    expect(establishmentPhoto('RESTAURANT')).toBe('/assets/restaurante-asociado.jpg');
   });
 });

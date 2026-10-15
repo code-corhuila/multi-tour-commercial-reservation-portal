@@ -1,8 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it } from 'vitest';
-import { ActorContext } from '../src/app/catalog/data/catalog-api.service';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '../src/app/public-offer/data/public-offer-sources';
 import { PublicTour, TourValue } from '../src/app/public-offer/model/public-offer';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
@@ -28,6 +27,8 @@ interface Options {
   readonly page?: 'tours' | 'lodging' | 'gastronomy';
   /** The shell's navigation, with the areas it can open; absent outside the shell. */
   readonly areas?: readonly string[];
+  /** The departures port of HU-COM-007/008; absent where the container does not provide it. */
+  readonly departures?: readonly Departure[];
 }
 const PAGES = { tours: PublicOfferPageComponent, lodging: LodgingOfferPageComponent, gastronomy: GastronomyOfferPageComponent };
 
@@ -74,6 +75,15 @@ describe('onlyWhatIsAvailableForTheDateAppears (AC-PO.2, RN-PO2)', () => {
     expect(page.host.textContent).not.toContain('Nevado');
   });
 
+  it('starts on the local date, not the UTC one, so a Colombian night still asks for today', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 12, 23, 30));
+    try {
+      const page = await openPage();
+      expect(page.tours.requests[0].date).toBe('2026-10-12');
+    } finally { vi.useRealTimers(); }
+  });
+
   it('asks again for the chosen date and only the newest answer reaches the screen', async () => {
     const page = await openPage();
     expect(page.tours.requests[0].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -112,9 +122,17 @@ describe('aTourWithTransportSaysSo (AC-PO.3)', () => {
     const page = await openPage();
     page.tours.requests[0].reply([tourNamed('Suaza', { transportIncluded: true }), tourNamed('Pitalito')]);
     await page.settle();
-    const [suaza, pitalito] = page.cards('tours');
-    expect(suaza.textContent).toContain(PUBLIC_OFFER_COPY.transportIncluded);
-    expect(pitalito.textContent).not.toContain(PUBLIC_OFFER_COPY.transportIncluded);
+    const detailOf = async (position: number) => {
+      fireEvent.click(within(page.cards('tours')[position]).getByRole('button', { name: 'Ver detalle' }));
+      await page.settle();
+      const shown = page.host.querySelector('[data-part="detail"]')?.textContent ?? '';
+      fireEvent.click(within(page.host).getByRole('button', { name: /Volver a tours/ }));
+      await page.settle();
+      return shown;
+    };
+    expect(page.cards('tours').map((card) => card.textContent).join(' ')).not.toContain(PUBLIC_OFFER_COPY.transportIncluded);
+    expect(await detailOf(0)).toContain(PUBLIC_OFFER_COPY.transportIncluded);
+    expect(await detailOf(1)).not.toContain(PUBLIC_OFFER_COPY.transportIncluded);
   });
 });
 
@@ -125,7 +143,7 @@ describe('theValueComesFromTheValuePort (AC-PO.4, RN-PO4)', () => {
     const page = await openPage();
     page.tours.requests[0].reply([tourNamed('Tatacoa', { baseRateCents: 18_000_000 })]);
     await page.settle();
-    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('180000.00');
+    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('$180.000');
     expect(card(page).querySelector('[data-value="base"]')).toBeNull();
   });
 
@@ -138,8 +156,8 @@ describe('theValueComesFromTheValuePort (AC-PO.4, RN-PO4)', () => {
     await page.chooseDate('2026-11-22');
     page.tours.requests[1].reply([tourNamed('Tatacoa', { baseRateCents: 18_000_000 })]);
     await page.settle();
-    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('162000.00');
-    expect(card(page).querySelector('[data-value="base"]')?.textContent).toContain('180000.00');
+    expect(card(page).querySelector('[data-value="current"]')?.textContent).toContain('$162.000');
+    expect(card(page).querySelector('[data-value="base"]')?.textContent).toContain('$180.000');
     expect(asked.at(-1)?.[1]).toBe('2026-11-22');
   });
 
@@ -160,7 +178,7 @@ describe('onlyActiveEstablishmentsAppear (AC-PO.5, RN-PO5)', () => {
     const page = await openPage({ page: 'lodging' });
     page.places.requests[0].reply(offer);
     await page.settle();
-    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Contacto de Casa Neiva')]);
+    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Casa Neiva')]);
     expect(page.host.textContent).not.toContain('Hostal La Tatacoa');
   });
 
@@ -168,7 +186,7 @@ describe('onlyActiveEstablishmentsAppear (AC-PO.5, RN-PO5)', () => {
     const page = await openPage({ page: 'gastronomy' });
     page.places.requests[0].reply(offer);
     await page.settle();
-    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Contacto de Sabores del Huila')]);
+    expect(page.cards('establishments').map((card) => card.textContent)).toEqual([expect.stringContaining('Sabores del Huila')]);
   });
 
   it('shows loading, error with retry, empty and data for the establishments', async () => {
@@ -214,7 +232,9 @@ describe('theOfferIsReadOnlyAndLeaksNothing (AC-PO.1, AC-PO.6, AC-PO.7, RN-PO7)'
     const page = await fullPage();
     fireEvent.click(within(page.host).getByRole('button', { name: PUBLIC_OFFER_COPY.detail }));
     await page.settle();
-    expect(page.host.textContent ?? '').not.toMatch(/ACTIVE|INACTIVE|cost|costo|capacity|capacidad|cupo/i);
+    const shown = page.host.cloneNode(true) as HTMLElement;
+    shown.querySelectorAll('h2').forEach((title) => title.remove());
+    expect(shown.textContent ?? '').not.toMatch(/ACTIVE|INACTIVE|cost|costo|capacity|capacidad|cupo/i);
   });
 
   it('renders the same view for an internal role, an unknown role and no actor at all', async () => {
@@ -239,6 +259,8 @@ describe('theOfferIsReadOnlyAndLeaksNothing (AC-PO.1, AC-PO.6, AC-PO.7, RN-PO7)'
   });
 });
 
+const UNIFIED = 'La plataforma no crea reservas de habitación ni de mesa, ni gestiona tarifas, disponibilidad o inventario. Las condiciones de reserva, cambio o cancelación se acuerdan entre tú y el establecimiento.';
+
 describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, alojamiento.html, gastronomia.html, restaurantes.html; PR #361)', () => {
   const discounted = (label?: string) => new (class extends TourValueSource {
     override valueOf(tour: PublicTour): TourValue {
@@ -259,13 +281,17 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     const page = await openPage();
     expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Catálogo de experiencias');
     expect(text(page.host.querySelector('h1'))).toBe('Tours');
-    expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Explora los tours disponibles y consulta sus detalles.');
+    expect(page.host.querySelector('.crp-page-header-desc')).toBeNull();
+    expect(page.host.textContent).not.toContain('Explora los tours disponibles');
     expect(within(page.host).getByLabelText('Buscar tours por nombre o destino').getAttribute('placeholder')).toBe('Buscar tours por nombre o destino...');
     const header = page.host.querySelector('header.crp-offer-head')!;
     const action = header.querySelector('.crp-page-header-action.crp-offer-search')!;
-    expect(Array.from(action.children, (child) => child.tagName)).toEqual(['INPUT', 'BUTTON', 'LABEL']);
-    expect(text(action.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
-    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBe(action);
+    // The pill of tours.html: magnifier, field and the dark Buscar on the right; the date filter is a separate, discreet control.
+    expect(Array.from(action.children, (child) => child.tagName.toLowerCase())).toEqual(['svg', 'input', 'button']);
+    expect(action.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(text(header.querySelector('label.crp-offer-date > span'))).toBe('Fecha');
+    expect(within(page.host).getByLabelText('Fecha').closest('.crp-offer-search')).toBeNull();
+    expect(within(page.host).getByLabelText('Fecha').closest('header.crp-offer-head')).toBe(header);
     expect(page.host.querySelector('.crp-offer-when, [data-date]')).toBeNull();
     expect(page.host.textContent).not.toMatch(/Disponibles el|Fecha de consulta/);
     expect(page.part('tours').getAttribute('aria-label')).toBe('Listado de tours disponibles');
@@ -273,7 +299,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(page.host.querySelector('.crp-operator-panel, .crp-operator-panel-head')).toBeNull();
   });
 
-  it('writes the chosen date as the screens do, never as an ISO date', async () => {
+  it('keeps the chosen date in the compact Fecha control and never writes it as an ISO date', async () => {
     const page = await openPage();
     await page.chooseDate('2026-11-22');
     expect(within(page.host).getByLabelText<HTMLInputElement>('Fecha').value).toBe('2026-11-22');
@@ -297,12 +323,19 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     const photo = suaza.querySelector('.crp-tour-media img');
     expect(photo?.getAttribute('src')).toMatch(/^\/assets\/[\w-]+\.jpg$/);
     expect(photo?.getAttribute('alt')).toBe('Suaza');
+    // The photo follows the tour id, not the card position, so the tour looks the same in Reservar tour and Finalizar reserva.
+    expect(photo?.getAttribute('src')).toBe(tourPhoto('tour-Suaza'));
+    expect(pitalito.querySelector('.crp-tour-media img')?.getAttribute('src')).toBe(tourPhoto('tour-Pitalito'));
     expect(text(suaza.querySelector('.crp-tour-media .crp-tour-discount-tag'))).toBe('20% de descuento');
     expect(text(suaza.querySelector('.crp-tour-body strong'))).toBe('Suaza');
     expect(text(suaza.querySelector('.crp-tour-price'))).toBe('Antes: $1.299.000 Desde $1.039.200');
     expect(suaza.querySelector('.crp-tour-price del')?.textContent).toBe('$1.299.000');
-    expect(text(suaza.querySelector('.crp-tour-transport'))).toBe('Transporte incluido');
-    expect(suaza.querySelector('button.crp-outline')?.textContent?.trim()).toBe('Ver detalle');
+    expect(suaza.querySelector('.crp-tour-transport')).toBeNull();
+    expect(suaza.textContent).not.toContain('Transporte incluido');
+    const meta = suaza.querySelector('.crp-tour-meta')!;
+    expect(Array.from(meta.children, (child) => child.className)).toEqual(['crp-tour-price', 'crp-outline']);
+    expect(meta.querySelector('button.crp-outline')?.textContent?.trim()).toBe('Ver detalle');
+    expect(suaza.querySelector('.crp-tour-body strong')?.getAttribute('title')).toBe('Suaza');
     expect(text(pitalito.querySelector('.crp-tour-price'))).toBe('Desde $18.000');
     expect(pitalito.querySelector('.crp-tour-discount-tag')).toBeNull();
     expect(pitalito.querySelector('.crp-tour-media img')?.getAttribute('src')).not.toBe(photo?.getAttribute('src'));
@@ -317,9 +350,9 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
 
   it('filters the tours by name with Buscar, without asking the port again', async () => {
     const page = await withTours();
-    await page.search('Buscar tours por nombre', 'pita');
+    await page.search('Buscar tours por nombre o destino', 'pita');
     expect(page.cards('tours').map((card) => text(card.querySelector('strong')))).toEqual(['Pitalito']);
-    await page.search('Buscar tours por nombre', 'nevado');
+    await page.search('Buscar tours por nombre o destino', 'nevado');
     expect(page.stateOf('tours')).toBe('empty');
     expect(page.tours.requests).toHaveLength(1);
   });
@@ -334,14 +367,15 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     const detail = page.host.querySelector('[data-part="detail"]')!;
     expect(text(detail.querySelector('.crp-page-header-eyebrow'))).toBe('Detalle del tour');
     expect(text(detail.querySelector('h1'))).toBe('Suaza');
-    expect(Array.from(detail.querySelectorAll('h2'), (h) => text(h))).toEqual(['Vigencia y restricciones', 'Condiciones de reserva']);
+    expect(Array.from(detail.querySelectorAll('h2'), (h) => text(h))).toEqual(['Vigencia, capacidad y restricciones', 'Condiciones de reserva']);
     expect(text(detail.querySelector('.crp-offer-facts'))).toBe('Vigencia Disponible el 22 nov 2026 Transporte Transporte incluido');
     expect(Array.from(detail.querySelectorAll('.crp-offer-conditions li'), (li) => text(li))).toEqual([
       'La modificación o cancelación depende de las condiciones vigentes del tour.',
       'La disponibilidad y los valores se validan antes de registrar la reserva.',
     ]);
     const summary = detail.querySelector('.crp-offer-summary')!;
-    expect(text(summary)).toBe('Resumen comercial 20% de descuento Antes: $1.299.000 Desde: $1.039.200');
+    expect(text(summary)).toBe('Resumen comercial 20% de descuento Antes: $1.299.000 Desde: $1.039.200 Vigencia Disponible el 22 nov 2026');
+    expect(summary.querySelector('.crp-offer-summary-price .crp-tour-discount-tag')).not.toBeNull();
     expect(detail.textContent).not.toMatch(/Reservar/);
     fireEvent.click(within(page.host).getByRole('button', { name: /Volver a tours/ }));
     await page.settle();
@@ -381,8 +415,8 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(css).toMatch(/\.crp-root \.crp-tour-media \{[^}]*height: 140px;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-meta \{[^}]*flex-wrap: nowrap;/);
     expect(css).toMatch(/\.crp-root \.crp-tour-card \.crp-tour-body strong \{[^}]*white-space: nowrap;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 1rem; font-weight: 400;[^}]*text-transform: none;/);
-    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 2rem; font-weight: 700;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-eyebrow \{[^}]*font-size: 0.92rem; [^}]*font-weight: 400;[^}]*text-transform: none;/);
+    expect(css).toMatch(/\.crp-root \.crp-offer-head \.crp-page-header-title \{[^}]*font-size: 1.84rem; font-weight: 700;/);
   });
 
   it('shows Volver al panel cliente only when the shell can open the panel, and opens it', async () => {
@@ -395,22 +429,29 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
 
   it('draws Alojamiento as alojamiento.html: header, agreement and a card with photo and contact', async () => {
     const page = await openPage({ page: 'lodging' });
-    page.places.requests[0].reply([placeNamed('Casa Neiva'), placeNamed('Posada', { commercialInformation: '' })]);
+    page.places.requests[0].reply([
+      placeNamed('Casa Neiva', { region: 'Región Andina', contact: { email: 'reservas@casaneiva.co', phone: '+57 300 555 0184', address: 'Vía principal, km 8' } }),
+      placeNamed('Posada', { commercialInformation: 'Alojamiento rural entre cafetales.' }),
+    ]);
     await page.settle();
     expect(text(page.host.querySelector('.crp-page-header-eyebrow'))).toBe('Establecimientos asociados');
     expect(text(page.host.querySelector('h1'))).toBe('Alojamiento');
-    expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Consulta datos de contacto de establecimientos asociados al operador.');
+    expect(text(page.host.querySelector('.crp-page-header-desc'))).toBe('Hoteles asociados al operador, con sus datos de contacto para que coordines directamente con ellos.');
     expect(text(page.host.querySelector('.crp-offer-agreement'))).toBe('Información del convenio Coordina directamente con el establecimiento '
-      + 'Multitour no genera reservas de habitación, no administra tarifas, disponibilidad ni inventario. La coordinación se realiza directamente con cada establecimiento.');
+      + 'Multitour no genera reservas de habitación ni administra tarifas, disponibilidad o inventario. Las condiciones de reserva, cambio o cancelación se acuerdan directamente entre tú y el hotel.');
     const [hotel, posada] = page.cards('establishments');
     // The photo follows the TYPE of the establishment (a hotel for every card of Alojamiento), as alojamiento.html.
     expect(hotel.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
     expect(posada.querySelector('img')?.getAttribute('src')).toBe('/assets/alojamiento-asociado.jpg');
     expect(hotel.querySelector('img')?.getAttribute('alt')).toBe('Casa Neiva');
     expect(text(hotel.querySelector('strong'))).toBe('Casa Neiva');
-    expect(text(hotel.querySelector('.crp-establishment-type'))).toBe('Establecimiento asociado');
-    expect(text(hotel.querySelector('.crp-establishment-contact'))).toBe('Contacto: Contacto de Casa Neiva: 300 000 0000');
+    expect(text(hotel.querySelector('.crp-establishment-type'))).toBe('Alojamiento asociado · Región Andina');
+    expect(text(hotel.querySelector('.crp-establishment-contact'))).toBe('Contacto: reservas@casaneiva.co +57 300 555 0184 Vía principal, km 8');
+    expect(Array.from(hotel.querySelectorAll('.crp-establishment-contact span'), (line) => text(line))).toEqual(['reservas@casaneiva.co', '+57 300 555 0184', 'Vía principal, km 8']);
+    expect(text(posada.querySelector('.crp-establishment-type'))).toBe('Alojamiento asociado');
+    expect(text(posada.querySelector('.crp-establishment-info'))).toBe('Alojamiento rural entre cafetales.');
     expect(posada.querySelector('.crp-establishment-contact')).toBeNull();
+    expect(posada.textContent).not.toContain('Contacto:');
     expect(page.host.querySelector('input')).toBeNull();
   });
 
@@ -445,7 +486,7 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
 
   it('says No hay restaurantes asociados activos en este momento when there is none, and the same for hotels', async () => {
     const page = await openPage({ page: 'gastronomy' });
-    page.places.requests[0].reply([placeNamed('Sabores del Huila', { establishmentType: 'RESTAURANT' }), placeNamed('Fogón', { establishmentType: 'RESTAURANT' })]);
+    page.places.requests[0].reply([placeNamed('Fogón', { establishmentType: 'RESTAURANT', active: false })]);
     await page.settle();
     expect(text(page.host.querySelector('[data-state="empty"]'))).toBe('No hay restaurantes asociados activos en este momento.');
     TestBed.resetTestingModule();

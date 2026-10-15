@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { defer, finalize } from 'rxjs';
-import { ActorContext, IdempotencyKeys } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
 import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
 import { AdditionalDiscount, AdditionalDraft, CURRENT_DISCOUNTS_TEXT, EMPTY_ADDITIONAL, additionalCommand,
@@ -11,7 +10,7 @@ import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
 
-/** T-03: value, type and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
+/** T-03: percentage (1 to 100, no fixed amount: the mockup defines none) and reason; the authorizer is the session's actor, answered by the service (plan D-06). */
 @Component({
   selector: 'app-additional-discount-form', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -31,7 +30,8 @@ let formSequence = 0;
         </div>
         <p class="crp-current-discounts-note">{{ text.note }}</p>
         @if (failure()) { <p role="alert">{{ failure() }}</p> }
-        <div class="crp-form-actions"><button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ text.apply }}</button></div>
+        <div class="crp-form-actions"><button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="clear()">{{ text.cancel }}</button>
+          <button class="crp-operator-primary" type="submit" [disabled]="pending()">{{ text.apply }}</button></div>
       </form>
     }
   `,
@@ -39,7 +39,7 @@ let formSequence = 0;
 export class AdditionalDiscountFormComponent {
   readonly serviceId = input.required<string>();
   readonly saved = output<AdditionalDiscount>();
-  protected readonly allowed = canAuthorizeAdditionalDiscount(inject(ActorContext));
+  protected readonly allowed = inject(PortalCapabilities).canAuthorizeAdditionalDiscount();
   private readonly writer = inject(AdditionalDiscountWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
   private readonly injector = inject(Injector);
@@ -54,6 +54,7 @@ export class AdditionalDiscountFormComponent {
   protected edit(field: keyof AdditionalDraft, event: Event): void {
     if (!this.pending()) this.draft.update((d) => ({ ...d, [field]: (event.target as HTMLInputElement).value }));
   }
+  protected clear(): void { this.attempted.set(false); this.failure.set(''); this.draft.set(EMPTY_ADDITIONAL); }
   protected submit(event: Event): void {
     event.preventDefault(); if (!this.allowed || this.pending()) return;
     this.attempted.set(true); this.failure.set('');

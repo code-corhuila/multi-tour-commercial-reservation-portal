@@ -1,4 +1,3 @@
-import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
@@ -58,7 +57,8 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
           }</ul>
         }
       }
-      </section> }
+      </section>
+      <ng-container *crpSlot="panels" /> }
     } @else { <p role="alert" data-state="denied">{{ text.denied }}</p> }
   `,
 })

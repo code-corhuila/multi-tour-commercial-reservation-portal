@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
 import { ControllableReservations, StubDepartures, StubDiscounts, reservationOf, reservationProviders, screenOf } from './reservations.double';
+import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
+import { DEFAULT_SERVICES, StubCatalog } from './reservations.double';
 
-const NEW = 'New reservation';
+const NEW = 'Crear reserva';
 
 describe('everyScreenShowsOneOfTheFourStates (list)', () => {
   it('goes from loading to error with retry, to empty, and to data', async () => {
@@ -14,8 +16,8 @@ describe('everyScreenShowsOneOfTheFourStates (list)', () => {
     expect(element.querySelector('[data-state="loading"]')).not.toBeNull();
     reservations.inner.requests[0].fail(); await settle();
     expect(element.querySelector('[data-state="error"]')).not.toBeNull();
-    await click('Retry'); reservations.inner.requests[1].reply([]); await settle();
-    expect(element.querySelector('[data-state="empty"]')?.textContent).toContain('No results');
+    await click('Reintentar'); reservations.inner.requests[1].reply([]); await settle();
+    expect(element.querySelector('[data-state="empty"]')?.textContent).toContain('Aún no hay reservas registradas');
   });
 });
 
@@ -40,7 +42,8 @@ async function overDemo() {
   discounts.lines = [{ name: 'Early bird', base: 'ORIGINAL_VALUE', amountCents: 1000 }];
   const open = departures.items.find((d) => d.state === 'PROGRAMADA' && d.openForReservations)!;
   const view = await screenOf(ReservationsPageComponent, reservationProviders({ reservations: store, discounts,
-    writer: new DemoReservationsWriter(store, departures), departures: new StubDepartures(() => of(departures.items)) }));
+    writer: new DemoReservationsWriter(store, departures, new DemoReservationQuotes(departures, new StubCatalog(DEFAULT_SERVICES), discounts)),
+    departures: new StubDepartures(() => of(departures.items)) }));
   const create = async () => {
     await view.click(NEW);
     await view.choose('departureId', open.id);
@@ -52,7 +55,7 @@ async function overDemo() {
 
 describe('createdReservationIsPendienteDePagoSinPagoWithNoSeatHeld', () => {
   it('closes the form and shows the reservation in Pendiente de pago, Sin pago, with no seat held and the tour conditions', async () => {
-    const { element, create, open } = await overDemo();
+    const { element, create, click } = await overDemo();
     await create();
     expect(element.querySelector('form')).toBeNull();
     const result = element.querySelector('.crp-reservations-result')!.textContent!;
@@ -73,6 +76,6 @@ describe('detailShowsTheValuesAndDiscountsFixedAtCreation', () => {
     element.querySelector<HTMLButtonElement>('[data-state="data"] tbody button')!.click(); await settle();
     const detail = element.querySelector('.crp-reservations-detail');
     expect(detail?.textContent).toBe(before);
-    expect(detail?.textContent).toContain('Early bird (on the original value)');
+    expect(detail?.textContent).toContain('Early bird (sobre el valor original)');
   });
 });

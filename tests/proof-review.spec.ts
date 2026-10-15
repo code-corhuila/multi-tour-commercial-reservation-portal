@@ -125,6 +125,7 @@ describe('the frame: areas, four states and texts (T-01)', () => {
     // The mockup always draws the badge of Pagos pendientes, also when no proof waits.
     expect(empty.element.querySelector('.crp-operator-panel-head .crp-operator-status')?.textContent?.trim()).toBe('0 pendientes');
     TestBed.resetTestingModule();
+    // HU-COM-018 seeds RES-1827 with a proof En validación (AC-RP.4).
     const seeded = await screenOf(PaymentsPageComponent, providers());
     expect(seeded.element.querySelectorAll('[data-state="data"] tbody tr')).toHaveLength((await proofRows()).length);
     TestBed.resetTestingModule();
@@ -529,7 +530,7 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
       contribute(PAYMENTS_ROW_ACTIONS, { component: RowDouble, order: 1 }), contribute(PAYMENTS_PAGE_PANELS, { component: PanelDouble, order: 1 })] }));
     const cells = Array.from(element.querySelectorAll('tbody tr td:last-child button + crp-test-row')).map((cell) => cell.textContent?.trim());
     expect(cells.sort()).toEqual((await waitingIds()).map((id) => `Fila ${id}`).sort());
-    expect(cells).toEqual(expect.arrayContaining([`Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]));
+    expect(cells).toEqual(expect.arrayContaining(['Fila RES-1827', `Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]));
     expect(element.querySelector('section.crp-operator-panel:has(table) + crp-test-panel')).not.toBeNull();
   });
 
