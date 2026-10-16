@@ -21,6 +21,7 @@ type State = PageState<PendingProofs & { labels: PaymentLabels }>;
   selector: 'app-payments-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, PortalSlotOutlet],
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ t.title }}</h1></div>
+      @if (canManageParameters && navigation?.has('payment-parameters')) { <button type="button" class="crp-operator-outline crp-page-header-action" (click)="navigation?.open('payment-parameters')">{{ t.parameters }}</button> }
       <button type="button" class="crp-operator-outline crp-page-header-action" (click)="navigation?.open('reservations')">{{ t.reservations }}</button></header>
     <section class="crp-proof-review-hero"><div><p class="crp-operator-eyebrow">{{ t.heroEyebrow }}</p><h2>{{ t.heroTitle }}</h2></div><p>{{ t.heroCopy }}</p></section>
     @let s = state();
@@ -49,6 +50,8 @@ export class PaymentsPageComponent {
   protected readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly source = inject(PendingProofsSource); private readonly methods = inject(PaymentMethodsSource);
   protected readonly canDecide = inject(PortalCapabilities).canDecideProof();
+  /** HU-COM-009 P14: the link of the mockup (app.js 12594), the Administrator only. */
+  protected readonly canManageParameters = inject(PortalCapabilities).canManagePaymentParameters();
   protected readonly t = PROOF_REVIEW_TEXT; protected readonly common = PAYMENTS_TEXT; protected readonly money = formatCop; protected readonly modality = modalityOf;
   protected readonly rowActions = PAYMENTS_ROW_ACTIONS; protected readonly panels = PAYMENTS_PAGE_PANELS; protected readonly tableBodies = PAYMENTS_TABLE_BODIES;
   /** The rows of other stories (011) draw the table too; the badge counts only the proofs (what it counts is NO DEFINIDO). */
