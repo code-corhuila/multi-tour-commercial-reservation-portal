@@ -77,6 +77,8 @@ describe('theSearchOpensReservationsInModeAndMarksOnlyEligibleRows', () => {
     expect(Array.from(p.element.querySelectorAll('tbody button')).filter((b) => b.textContent?.trim() === 'Aplicar descuento')).toHaveLength(2);
     expect(p.applyIn('RES-P')).toBeTruthy();
     expect(p.applyIn('RES-C')).toBeTruthy();
+    p.button('Ver todas las reservas')!.click(); await p.settle();
+    expect(Array.from(p.element.querySelectorAll('tbody button')).filter((b) => b.textContent?.trim() === 'Aplicar descuento')).toHaveLength(2);
     for (const code of ['RES-E', 'RES-F', 'RES-X']) expect(p.applyIn(code), code).toBeUndefined();
   });
 
