@@ -57,6 +57,7 @@ describe('theMinimumDepositComesFromThePaymentParametersOnScreen13', () => {
   });
   it('draws no minimum for a Pago total or in a build without the parameters', async () => {
     expect((await screen(TRANSFER_TOTAL)).element.querySelector('[data-payment-minimum]')).toBeNull();
+    TestBed.resetTestingModule();
     const without = await screen(CASH_PARTIAL, [], false);
     expect(without.element.querySelector('[data-payment-minimum]')).toBeNull();
     expect(without.element.querySelector<HTMLInputElement>('[name="amount"]')!.placeholder).toBe('Monto del abono');
