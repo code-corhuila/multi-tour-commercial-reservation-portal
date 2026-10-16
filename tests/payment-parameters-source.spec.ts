@@ -154,12 +154,14 @@ describe('theDeadlinesOf011AndThePenaltyOf013ReadThePaymentParameters', () => {
     expect((await refusal(firstValueFrom(extender.extend({ reservationId: 'RES-N', hours: 6 } as never, 'e1'))))?.userMessage).toBe('La ampliación no puede superar 5 h (parámetro de pago del tenant).');
     expect((await firstValueFrom(extender.extend({ reservationId: 'RES-N', hours: 5 } as never, 'e2'))).deadline?.extension?.hours).toBe(5);
   });
-  it('keeps the pending-policy answer of 013- until a penalty is defined, then retains that percentage', async () => {
-    const store = new DemoReservationsStore([reservationOf('RES-P', { validatedCents: 10_000_000 })]), parameters = new DemoPaymentParametersStore([]);
+  it('keeps the pending-policy answer of 013- until a penalty is defined, then retains that percentage on new reservations', async () => {
+    const store = new DemoReservationsStore([reservationOf('RES-P', { validatedCents: 10_000_000 }), reservationOf('RES-Q', { validatedCents: 10_000_000 })]);
+    const parameters = new DemoPaymentParametersStore([{ id: 'RES-P', tourName: 'Tour 1' }]);
     const quote = new DemoCancellationQuote(store, undefined, parameters);
     expect((await firstValueFrom(quote.quote('RES-P')))?.refundable).toEqual({ kind: 'pending-policy' });
     await save(writerFor(parameters), { tenant: { cancellationPenaltyPercent: 20 } });
-    expect((await firstValueFrom(quote.quote('RES-P')))?.refundable).toEqual({ kind: 'amount', cents: 8_000_000, penaltyCents: 2_000_000 });
+    expect((await firstValueFrom(quote.quote('RES-P')))?.refundable).toEqual({ kind: 'pending-policy' });
+    expect((await firstValueFrom(quote.quote('RES-Q')))?.refundable).toEqual({ kind: 'amount', cents: 8_000_000, penaltyCents: 2_000_000 });
     expect((await firstValueFrom(new DemoCancellationQuote(store, 0, parameters).quote('RES-P')))?.refundable).toEqual({ kind: 'amount', cents: 10_000_000, penaltyCents: 0 });
   });
   it('confirms an Abono at the minimum the parameters give, as the approval of a proof does', async () => {
