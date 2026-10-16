@@ -23,6 +23,8 @@ jobs:
       # The demo module is what the delivered image serves until the API is connected; it must build too.
       - run: npm run build:module:demo
       - run: npm run build:module
+      - name: Check the size budget of the mounted module
+        run: node scripts/check-bundle-size.mjs
       - name: Record the size of the mounted module
         run: |
           {
