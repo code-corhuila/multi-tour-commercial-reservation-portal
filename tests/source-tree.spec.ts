@@ -185,6 +185,10 @@ const SPECIFIED_TREE = [
   'src/app/credit-balance/components/credit-customer-panel.component.ts',
   'src/app/credit-balance/pages/credit-balance-page.component.ts',
   'src/app/demo/credit-overview-demo.ts',
+  'src/app/demo/payment-parameters-demo.ts',
+  'src/app/payment-parameters/payment-parameters-copy.ts',
+  'src/app/payment-parameters/data/payment-parameters-ports.ts',
+  'src/app/payment-parameters/model/payment-parameters.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {
