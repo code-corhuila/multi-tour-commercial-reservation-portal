@@ -20,11 +20,13 @@ export const contextOf = (over: Partial<AdditionalDiscountContext> = {}): Additi
 export class ControllableContexts extends AdditionalDiscountContexts {
   readonly requests: { id: string; reply: (context: AdditionalDiscountContext | null) => void; fail: () => void }[] = [];
   readonly previews: { id: string; basisPoints: number }[] = [];
+  /** What the double says is already paid, to make an excess possible. */
+  paid = 4_000_000;
   /** 1 basis point of 100.000 pesos is 10 pesos; the port, not the view, resolves the new value and the excess. */
   override preview(id: string, basisPoints: number): Observable<AdditionalDiscountPreview> {
     this.previews.push({ id, basisPoints });
     const newValueCents = 10_000_000 - basisPoints * 1_000;
-    return of({ newValueCents, excessCents: Math.max(4_000_000 - newValueCents, 0) });
+    return of({ newValueCents, excessCents: Math.max(this.paid - newValueCents, 0) });
   }
   override of(id: string): Observable<AdditionalDiscountContext | null> {
     return new Observable((subscriber) => {
