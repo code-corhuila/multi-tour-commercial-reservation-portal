@@ -53,6 +53,8 @@ import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.co
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
 import { CREDIT_BALANCE_AREA, CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
+import { PAYMENT_PARAMETERS_AREA, PaymentParametersSource, PaymentParametersWriter } from './payment-parameters/data/payment-parameters-ports';
+import { PaymentParametersPageComponent } from './payment-parameters/pages/payment-parameters-page.component';
 import { CreditBalancePageComponent } from './credit-balance/pages/credit-balance-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
@@ -97,6 +99,9 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   // HU-COM-001 admin-nuevo-servicio.html, opened by "Nuevo servicio" of the hub and "Crear tour" of the list; only who may register is offered it.
   { key: 'catalog-new-service', label: 'Nuevo servicio', component: CatalogNewServicePageComponent, menu: false, parent: 'catalog',
     isAvailable: (injector) => injector.get(PortalCapabilities).catalog().canRegister && has(injector, CatalogItemsSource, CatalogItemsWriter) },
+  // HU-COM-009 admin-parametros-pago.html (amendment v1.9, A.3, P14): opened by the link "Parámetros de pago" of the header of Catálogos; the Administrator only.
+  { key: PAYMENT_PARAMETERS_AREA, label: 'Parámetros de pago', component: PaymentParametersPageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canManagePaymentParameters() && has(injector, CatalogItemsSource, PaymentParametersSource, PaymentParametersWriter) },
   // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
   { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
     // 002 plan D-06, AC-PE.7: no route for a role that cannot read establishments (the Colaborador operativo).

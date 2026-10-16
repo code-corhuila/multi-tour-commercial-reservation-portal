@@ -917,3 +917,7 @@
   .crp-root .crp-reservations-tenant-context { align-items: flex-start; flex-direction: column; }
   .crp-root .crp-reservations-tenant-context p { margin-left: 0; }
 }
+.crp-root .crp-payment-parameters-cell { width: 100%; min-width: 4.5rem; padding: 6px 8px; font-size: 0.82rem; }
+.crp-root .crp-payment-parameters-error { display: block; margin-top: 4px; color: var(--crp-error); font-size: 0.72rem; }
+.crp-root .crp-payment-parameters-reason { display: grid; gap: 4px; max-width: 640px; margin: 14px 0 6px; color: var(--crp-text); font-size: 0.82rem; font-weight: 600; }
+.crp-root .crp-payment-parameters-reason input { padding: 8px 10px; font-size: 0.86rem; font-weight: 400; }
