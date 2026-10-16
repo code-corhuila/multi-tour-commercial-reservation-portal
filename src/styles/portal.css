@@ -733,6 +733,8 @@
 /* HU-COM-012: the policy answer under Tipo spans the grid (plan D-06). */
 .crp-root .crp-travellers-modification { grid-column: 1 / -1; }
 .crp-root .crp-travellers-modification p { margin: 0; color: var(--crp-soft); font-size: 0.82rem; }
+.crp-root .crp-additional-discount-reasons { display: grid; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
+.crp-root .crp-additional-discount-reasons li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--crp-line); }
 .crp-root .crp-additional-discount-list { display: grid; gap: 11px; margin: 16px 0 0; }
 .crp-root .crp-additional-discount-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--crp-line); }
 .crp-root .crp-additional-discount-list div:last-child { padding-bottom: 0; border-bottom: 0; }

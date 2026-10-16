@@ -30,3 +30,11 @@ export const ADDITIONAL_DISCOUNT_DETAIL_COPY = {
   action: 'Aplicar descuento adicional', blockEyebrow: 'Decisión excepcional', blockTitle: 'Descuento adicional aplicado',
   percentage: 'Descuento adicional', reason: 'Motivo', previous: 'Valor anterior', amount: 'Valor descontado', final: 'Valor final',
 } as const;
+
+/** Texts of the panel "Motivos autorizables" of admin-descuentos.html, as the mockup v1.9 writes them. */
+export const AUTHORIZABLE_REASONS_COPY = {
+  eyebrow: 'Parametrización', title: 'Motivos autorizables', copy: 'Define los motivos por los que se puede autorizar un descuento adicional (por ejemplo, fidelización).',
+  field: 'Nuevo motivo', placeholder: 'Ej. Cortesía por referido', add: 'Agregar motivo', remove: 'Quitar', retry: 'Reintentar',
+  required: 'Escribe el motivo que se podrá autorizar.', loading: 'Cargando los motivos…', empty: 'Aún no hay motivos habilitados.',
+  failed: 'No fue posible cargar los motivos.', changeFailed: 'No fue posible guardar el cambio.',
+} as const;
