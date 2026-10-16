@@ -189,6 +189,7 @@ const SPECIFIED_TREE = [
   'src/app/payment-parameters/payment-parameters-copy.ts',
   'src/app/payment-parameters/data/payment-parameters-ports.ts',
   'src/app/payment-parameters/model/payment-parameters.ts',
+  'src/app/payment-parameters/pages/payment-parameters-page.component.ts',
 ];
 
 describe('portalTreeMatchesTheSpecifiedTree', () => {

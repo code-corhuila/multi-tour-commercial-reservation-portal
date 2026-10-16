@@ -5,6 +5,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogHubPageComponent } from '../src/app/catalog/pages/catalog-hub-page.component';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
+import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
+import { proofReviewDemoProviders } from '../src/app/demo/proof-review-demo';
+import { reservationDemoProviders } from '../src/app/demo/reservations-demo';
+import { DemoPaymentMethods } from '../src/app/demo/self-service-reservation-demo';
+import { PaymentsPageComponent } from '../src/app/payments/pages/payments-page.component';
+import { PaymentMethodsSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
+import { screenOf } from './reservations.double';
 import { DemoPaymentParametersStore, DemoPaymentParametersWriter } from '../src/app/demo/payment-parameters-demo';
 import { FixedClock } from '../src/app/demo/reservation-changes-demo';
 import { PAYMENT_PARAMETERS_AREA, PaymentParametersSource, PaymentParametersView, PaymentParametersWriter, SaveParametersCommand } from '../src/app/payment-parameters/data/payment-parameters-ports';
@@ -135,6 +142,26 @@ describe('onlyTheAdministratorOpensThePaymentParameters', () => {
     const s = await screen('OPERATIONAL_COLLABORATOR');
     expect(s.host.querySelector('form')).toBeNull();
     expect(s.flat(s.host.querySelector('[data-state="denied"]'))).toBe(T.forbidden);
+  });
+});
+
+describe('theHeaderOfPagosLinksToThePaymentParameters', () => {
+  const pagos = async (role: string) => {
+    TestBed.resetTestingModule();
+    const navigation = new PortalNavigation(), opened: string[] = [];
+    navigation.register(['reservations', PAYMENT_PARAMETERS_AREA]);
+    navigation.open = (key: string) => { opened.push(key); return true; };
+    const { element } = await screenOf(PaymentsPageComponent, [{ provide: ActorContext, useValue: actorAs(role as never) }, { provide: CatalogItemsSource, useValue: new DemoCatalogStore() },
+      ...reservationDemoProviders(), ...paymentsDemoProviders(), ...proofReviewDemoProviders(), { provide: PaymentMethodsSource, useValue: new DemoPaymentMethods() },
+      { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() }, { provide: PortalNavigation, useValue: navigation }]);
+    return { opened, link: Array.from(element.querySelectorAll('.crp-page-header button')).find((b) => b.textContent?.trim() === 'Parámetros de pago') as HTMLButtonElement | undefined };
+  };
+  it('opens the parameters from the header of Pagos for the Administrator only', async () => {
+    const admin = await pagos('TENANT_ADMINISTRATOR');
+    admin.link!.click();
+    expect(admin.opened).toEqual([PAYMENT_PARAMETERS_AREA]);
+    expect((await pagos('OPERATIONAL_COLLABORATOR')).link).toBeUndefined();
+    expect((await pagos('ACCOUNTANT')).link).toBeUndefined();
   });
 });
 
