@@ -62,26 +62,9 @@ async function openPage(items?: readonly CatalogItem[]) {
   return { fixture, source, writer, host, settle, ui, button, queryButton, rows, rowOf, editOf, type, typed, fillAll, click, formsOpen };
 }
 
-const stored = (name: string): CatalogItem => ({ ...itemNamed(name), baseRateCents: 1250, baseOperationalCostCents: 700, configuredCapacity: 18 });
+const renamed: CatalogItem = { ...itemNamed('Alpha'), commercialName: 'Canyon walk', baseRateCents: 1250, baseOperationalCostCents: 700, configuredCapacity: 18 };
 
 describe('listShowsTheNewValuesWithoutAReload', () => {
-  it('shows a created item at the top of the list without asking the source again, and closes the form', async () => {
-    const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button(CATALOG_COPY.newItem));
-    page.fillAll('Gamma');
-    await page.click(page.button('Guardar tour'));
-    page.writer.calls[0].reply(stored('Gamma'));
-    await page.settle();
-
-    expect(page.rows().map((row) => row.textContent)).toEqual([
-      expect.stringContaining('Gamma'),
-      expect.stringContaining('Alpha'),
-      expect.stringContaining('Beta'),
-    ]);
-    expect(page.source.requests).toHaveLength(1);
-    expect(page.formsOpen()).toBe(0);
-  });
-
   it('shows the new values of an edited item in its own place without asking the source again', async () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
     await page.click(page.editOf('Alpha'));
@@ -106,48 +89,7 @@ describe('listShowsTheNewValuesWithoutAReload', () => {
   });
 });
 
-describe('registersItemFromTheTypedValues', () => {
-  it('sends the exact cents of what was typed and lists the item with those values', async () => {
-    const page = await openPage([itemNamed('Alpha')]);
-    await page.click(page.button(CATALOG_COPY.newItem));
-    page.fillAll('Canyon walk');
-    await page.click(page.button('Guardar tour'));
-
-    expect(page.writer.calls).toHaveLength(1);
-    expect(page.writer.calls[0]).toMatchObject({
-      kind: 'create',
-      command: {
-        serviceType: 'TOUR',
-        commercialName: 'Canyon walk',
-        baseRateCents: 1250,
-        baseOperationalCostCents: 700,
-        configuredCapacity: 18,
-        transportRequired: false,
-        highRisk: false,
-      },
-    });
-    page.writer.calls[0].reply(stored('Canyon walk'));
-    await page.settle();
-    expect(page.rowOf('Canyon walk')).toBeTruthy();
-  });
-});
-
 describe('newItemFromTheEmptyState', () => {
-  it('offers New item on the empty state and leads to the data state after saving', async () => {
-    const page = await openPage([]);
-    expect(page.host.querySelector('[data-state="empty"]')).not.toBeNull();
-    await page.click(page.button(CATALOG_COPY.newItem));
-    page.fillAll('First one');
-    await page.click(page.button('Guardar tour'));
-    page.writer.calls[0].reply(stored('First one'));
-    await page.settle();
-
-    expect(page.host.querySelector('[data-state="empty"]')).toBeNull();
-    expect(page.host.querySelector('[data-state="data"]')).not.toBeNull();
-    expect(page.rows()).toHaveLength(1);
-    expect(page.source.requests).toHaveLength(1);
-  });
-
   it('offers New item in the data state but not while loading or after an error', async () => {
     const loading = await openPage();
     expect(loading.queryButton(CATALOG_COPY.newItem)).toBeNull();
@@ -166,12 +108,8 @@ describe('newItemFromTheEmptyState', () => {
 });
 
 describe('oneFormAtATime', () => {
-  it('keeps a single form when New item and Edit are used one after another, in the mode of the last one', async () => {
+  it('keeps a single form when one Edit follows another, with the values of the last one', async () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button(CATALOG_COPY.newItem));
-    expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Nombre comercial')).toBe('');
-
     await page.click(page.editOf('Alpha'));
     expect(page.formsOpen()).toBe(1);
     expect(page.typed('Nombre comercial')).toBe('Alpha');
@@ -179,19 +117,10 @@ describe('oneFormAtATime', () => {
     await page.click(page.editOf('Beta'));
     expect(page.formsOpen()).toBe(1);
     expect(page.typed('Nombre comercial')).toBe('Beta');
-
-    await page.click(page.button(CATALOG_COPY.newItem));
-    expect(page.formsOpen()).toBe(1);
-    expect(page.typed('Nombre comercial')).toBe('');
   });
 
-  it('closes the form on Cancel without calling the writer, for a new item and for an edit', async () => {
+  it('closes the form on Cancel without calling the writer', async () => {
     const page = await openPage([itemNamed('Alpha')]);
-    await page.click(page.button(CATALOG_COPY.newItem));
-    page.type('Nombre comercial', 'Never saved');
-    await page.click(page.button('Cancelar'));
-    expect(page.formsOpen()).toBe(0);
-
     await page.click(page.editOf('Alpha'));
     page.type('Nombre comercial', 'Never saved either');
     await page.click(page.button('Cancelar'));
@@ -206,7 +135,7 @@ describe('oneFormAtATime', () => {
 describe('aRefusedSaveKeepsTheFormAndTheList', () => {
   it('leaves the form open with what was typed, shows the reason and leaves the list as it was', async () => {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button(CATALOG_COPY.newItem));
+    await page.click(page.editOf('Alpha'));
     page.fillAll('Canyon walk');
     await page.click(page.button('Guardar tour'));
     page.writer.calls[0].fail(apiError({ userMessage: 'The change was refused.' }));
@@ -242,7 +171,7 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
   /** A page with a registration in flight: the form is filled, Save was pressed, the writer has not answered. */
   async function savingPage() {
     const page = await openPage([itemNamed('Alpha'), itemNamed('Beta')]);
-    await page.click(page.button(CATALOG_COPY.newItem));
+    await page.click(page.editOf('Alpha'));
     page.fillAll('Canyon walk');
     await page.click(page.button('Guardar tour'));
     expect(page.writer.calls).toHaveLength(1);
@@ -259,14 +188,14 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
   it('lets the save in flight finish and list its item although another form was tried', async () => {
     const page = await savingPage();
     await page.click(page.button(CATALOG_COPY.newItem));
-    await page.click(page.editOf('Alpha'));
+    await page.click(page.editOf('Beta'));
     expect(page.formsOpen()).toBe(1);
     expect(page.typed('Nombre comercial')).toBe('Canyon walk');
 
-    page.writer.calls[0].reply(stored('Canyon walk'));
+    page.writer.calls[0].reply(renamed);
     await page.settle();
     expect(page.rows()[0].textContent).toContain('Canyon walk');
-    expect(page.rows()).toHaveLength(3);
+    expect(page.rows()).toHaveLength(2);
     expect(page.writer.calls).toHaveLength(1);
   });
 
@@ -276,12 +205,12 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
     await page.settle();
     expect(page.formsOpen()).toBe(1);
 
-    page.writer.calls[0].reply(stored('Canyon walk'));
+    page.writer.calls[0].reply(renamed);
     await page.settle();
-    page.source.requests[1].reply([stored('Canyon walk'), itemNamed('Alpha'), itemNamed('Beta')]);
+    page.source.requests[1].reply([renamed, itemNamed('Beta')]);
     await page.settle();
     expect(page.formsOpen()).toBe(0);
-    expect(page.rows()).toHaveLength(3);
+    expect(page.rows()).toHaveLength(2);
     expect(page.rows()[0].textContent).toContain('Canyon walk');
   });
 
@@ -295,10 +224,10 @@ describe('nothingReplacesTheFormWhileItSaves', () => {
     TestBed.resetTestingModule();
 
     const saved = await savingPage();
-    saved.writer.calls[0].reply(stored('Canyon walk'));
+    saved.writer.calls[0].reply(renamed);
     await saved.settle();
     expect(saved.button(CATALOG_COPY.newItem).disabled).toBe(false);
-    expect(saved.editOf('Alpha').disabled).toBe(false);
+    expect(saved.editOf('Canyon walk').disabled).toBe(false);
   });
 });
 

@@ -55,11 +55,13 @@ describe('theTourListShowsTheMockupColumnsAndTheValidityRange', () => {
     expect(host.textContent).not.toContain('Bus Andino 01');
   });
 
-  it('offers "Crear tour" and "Volver a catálogos", which opens the hub through the navigation', async () => {
+  it('opens the new service screen with "Crear tour" and the hub with "Volver a catálogos", through the navigation', async () => {
     const navigation = new PortalNavigation();
-    navigation.register(['catalog', 'catalog-tours']);
+    navigation.register(['catalog', 'catalog-tours', 'catalog-new-service']);
     const { ui, settle } = await openList([validTour('Tour A')], 'TENANT_ADMINISTRATOR', navigation);
-    expect(ui.getByRole('button', { name: 'Crear tour' })).not.toBeNull();
+    fireEvent.click(ui.getByRole('button', { name: 'Crear tour' }));
+    await settle();
+    expect(navigation.selected()).toBe('catalog-new-service');
     fireEvent.click(ui.getByRole('button', { name: 'Volver a catálogos' }));
     await settle();
     expect(navigation.selected()).toBe('catalog');
@@ -93,7 +95,7 @@ describe('noCatalogTextSaysDeactivateActivateOrService', () => {
 
   it('keeps the words out of the list and of the open form', async () => {
     const { ui, host, settle } = await openList([validTour('Tour A')]);
-    fireEvent.click(ui.getByRole('button', { name: 'Crear tour' }));
+    fireEvent.click(ui.getByRole('button', { name: CATALOG_COPY.edit }));
     await settle();
     expect(host.querySelector('form')).not.toBeNull();
     expect(host.textContent).not.toMatch(BANNED);
@@ -108,7 +110,7 @@ describe('noCatalogTextSaysDeactivateActivateOrService', () => {
 describe('aValidityEndingBeforeItsStartIsRefusedBesideTheField', () => {
   it('shows the error beside "Vigencia hasta" when the person leaves it and sends nothing', async () => {
     const { ui, host, writer, settle } = await openList([validTour('Tour A')]);
-    fireEvent.click(ui.getByRole('button', { name: 'Crear tour' }));
+    fireEvent.click(ui.getByRole('button', { name: CATALOG_COPY.edit }));
     await settle();
     fireEvent.input(ui.getByLabelText('Vigencia desde'), { target: { value: '2026-09-30' } });
     fireEvent.input(ui.getByLabelText('Vigencia hasta'), { target: { value: '2026-09-01' } });
@@ -121,37 +123,6 @@ describe('aValidityEndingBeforeItsStartIsRefusedBesideTheField', () => {
     await settle();
     expect(writer.calls).toHaveLength(0);
     expect(host.querySelector('form')).not.toBeNull();
-  });
-
-  it('requires both dates of the validity', async () => {
-    const { ui, writer, settle } = await openList([validTour('Tour A')]);
-    fireEvent.click(ui.getByRole('button', { name: 'Crear tour' }));
-    await settle();
-    fireEvent.input(ui.getByLabelText('Nombre comercial'), { target: { value: 'Nuevo' } });
-    fireEvent.input(ui.getByLabelText('Tarifa base'), { target: { value: '520000' } });
-    fireEvent.input(ui.getByLabelText('Costo operativo base'), { target: { value: '300000' } });
-    fireEvent.input(ui.getByLabelText('Capacidad configurada'), { target: { value: '10' } });
-    fireEvent.click(ui.getByRole('button', { name: 'Guardar tour' }));
-    await settle();
-    expect(ui.getByLabelText('Vigencia desde').getAttribute('aria-invalid')).toBe('true');
-    expect(ui.getByLabelText('Vigencia hasta').getAttribute('aria-invalid')).toBe('true');
-    expect(writer.calls).toHaveLength(0);
-  });
-
-  it('sends the validity dates with the command once they are valid', async () => {
-    const { ui, writer, settle } = await openList([validTour('Tour A')]);
-    fireEvent.click(ui.getByRole('button', { name: 'Crear tour' }));
-    await settle();
-    fireEvent.input(ui.getByLabelText('Nombre comercial'), { target: { value: 'Nuevo' } });
-    fireEvent.input(ui.getByLabelText('Tarifa base'), { target: { value: '520000' } });
-    fireEvent.input(ui.getByLabelText('Costo operativo base'), { target: { value: '300000' } });
-    fireEvent.input(ui.getByLabelText('Capacidad configurada'), { target: { value: '10' } });
-    fireEvent.input(ui.getByLabelText('Vigencia desde'), { target: { value: '2026-09-01' } });
-    fireEvent.input(ui.getByLabelText('Vigencia hasta'), { target: { value: '2026-09-30' } });
-    fireEvent.click(ui.getByRole('button', { name: 'Guardar tour' }));
-    await settle();
-    expect(JSON.stringify(writer.calls[0])).toContain('"validFrom":"2026-09-01"');
-    expect(JSON.stringify(writer.calls[0])).toContain('"validTo":"2026-09-30"');
   });
 });
 
@@ -169,7 +140,7 @@ describe('theHubDrawsTheCardsOfTheRoleAndSkipsAnAreaWithoutAdapter', () => {
     const host = fixture.nativeElement as HTMLElement;
     return { host, navigation, ui: within(host), cards: () => Array.from(host.querySelectorAll('article span')).map((s) => s.textContent) };
   }
-  const ALL = ['catalog', 'catalog-tours', 'establishments'];
+  const ALL = ['catalog', 'catalog-tours', 'catalog-new-service', 'establishments'];
 
   it('draws the title, the note, "Nuevo servicio" and the cards of the Administrator that have an area', async () => {
     const { ui, cards, host } = await openHub('TENANT_ADMINISTRATOR', ALL);
@@ -193,7 +164,7 @@ describe('theHubDrawsTheCardsOfTheRoleAndSkipsAnAreaWithoutAdapter', () => {
     expect(ui.queryByRole('button', { name: 'Nuevo servicio' })).toBeNull();
   });
 
-  it('opens the tour list, the establishments with their type, and the tour creation through the navigation', async () => {
+  it('opens the tour list, the establishments with their type, and the new service screen through the navigation', async () => {
     const { ui, navigation } = await openHub('TENANT_ADMINISTRATOR', ALL);
     fireEvent.click(ui.getByRole('button', { name: 'Ver tours' }));
     expect(navigation.selected()).toBe('catalog-tours');
@@ -201,8 +172,8 @@ describe('theHubDrawsTheCardsOfTheRoleAndSkipsAnAreaWithoutAdapter', () => {
     expect(navigation.selected()).toBe('establishments');
     expect(navigation.params()).toEqual({ type: 'RESTAURANT' });
     fireEvent.click(ui.getByRole('button', { name: 'Nuevo servicio' }));
-    expect(navigation.selected()).toBe('catalog-tours');
-    expect(navigation.params()).toEqual({ create: '1' });
+    expect(navigation.selected()).toBe('catalog-new-service');
+    expect(navigation.params()).toEqual({});
   });
 
   it('keeps its texts in the hub copy file', () => {
@@ -216,7 +187,7 @@ describe('theOperatorLandsOnReservationsAndTheMenuFollowsTheMockupOrder', () => 
   it('lists the sidebar in the order of the mockup, opening on Reservas, without "Establecimientos"', () => {
     const menu = operator.filter((area) => area.menu !== false).map((area) => area.label);
     expect(menu[0]).toBe('Reservas');
-    expect(menu).toEqual(['Reservas', 'Catálogos', 'Descuentos', 'Descuentos vigentes', 'Titular y acompañantes', 'Pagos', 'Notificaciones']);
+    expect(menu).toEqual(['Reservas', 'Catálogos', 'Descuentos', 'Descuentos vigentes', 'Pagos', 'Notificaciones']);
   });
 
   it('registers the hub as Catálogos and the lists as sub-screens of it', () => {
