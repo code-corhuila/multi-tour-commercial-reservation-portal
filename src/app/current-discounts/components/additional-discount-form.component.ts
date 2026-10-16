@@ -10,7 +10,7 @@ import { pesosText } from '../../shared/money';
 import { ADDITIONAL_DISCOUNT_COPY } from '../current-discounts-copy';
 import { AdditionalDiscountContext, AdditionalDiscountContexts } from '../data/additional-discount-contexts';
 import { ADDITIONAL_DISCOUNT_MODE } from '../data/additional-discount-eligibility';
-import { AdditionalDiscountWriter } from '../data/additional-discount-writer';
+import { AdditionalDiscountApplied, AdditionalDiscountWriter } from '../data/additional-discount-writer';
 import { AdditionalDraft, EMPTY_ADDITIONAL, additionalCommand, previewBasisPoints, validateAdditional } from '../model/current-discounts';
 let formSequence = 0;
 
@@ -45,7 +45,7 @@ let formSequence = 0;
       </section>
       <p class="crp-additional-discount-note">{{ text.note }}</p>
       @if (failure()) { <p role="alert">{{ failure() }}</p> }
-      @if (applied()) { <p role="status">{{ text.applied }}</p> }
+      @if (applied(); as done) { <p role="status">{{ text.applied }}@if (done.excessCents) { {{ text.excessOpened(money(done.excessCents)) }} }</p> }
       <div class="crp-form-actions"><button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">{{ text.cancel }}</button><button class="crp-operator-primary" type="submit" [disabled]="locked()">{{ text.apply }}</button></div>
     </form>
   `,
@@ -58,8 +58,8 @@ export class AdditionalDiscountFormComponent {
   private key = this.keys.generate(); private fingerprint: string | null = null; private readonly prefix = `additional-discount-form-${formSequence++}`;
   protected readonly text = ADDITIONAL_DISCOUNT_COPY; protected readonly money = formatCop;
   protected readonly draft = signal<AdditionalDraft>(EMPTY_ADDITIONAL);
-  protected readonly pending = signal(false); protected readonly failure = signal(''); protected readonly applied = signal(false); private readonly attempted = signal(false);
-  protected readonly locked = computed(() => this.pending() || this.applied());
+  protected readonly pending = signal(false); protected readonly failure = signal(''); protected readonly applied = signal<AdditionalDiscountApplied | null>(null); private readonly attempted = signal(false);
+  protected readonly locked = computed(() => this.pending() || !!this.applied());
   protected readonly messages = computed(() => this.attempted() ? validateAdditional(this.draft(), this.context().capBasisPoints) : {});
   protected get capText(): string { return pesosText(this.context().capBasisPoints); }
   /** The newest percentage typed wins (pillar 8): switchMap drops the answer of an older one. */
@@ -81,7 +81,7 @@ export class AdditionalDiscountFormComponent {
     this.fingerprint = fingerprint; this.pending.set(true);
     defer(() => this.writer.register(command, this.key)).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false)))
       .subscribe({
-        next: () => { this.key = this.keys.generate(); this.fingerprint = null; this.attempted.set(false); this.applied.set(true); },
+        next: (stored) => { this.key = this.keys.generate(); this.fingerprint = null; this.attempted.set(false); this.applied.set(stored); },
         error: (error: Partial<ApiError> | null) => this.failure.set(error?.userMessage ?? this.text.applyFailed),
       });
   }

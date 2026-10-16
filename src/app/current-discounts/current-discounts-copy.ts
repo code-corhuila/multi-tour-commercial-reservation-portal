@@ -19,6 +19,8 @@ export const ADDITIONAL_DISCOUNT_COPY = {
   applied: 'Descuento adicional aplicado correctamente: el valor final se recalculó y quedaron registrados el motivo y el responsable.',
   capValue: (cap: string) => `${cap} % del valor vigente`,
   closed: (state: string) => `Esta reserva está en estado "${state}" y ya no admite modificaciones: no se puede aplicar un descuento adicional.`,
+  alreadyApplied: (percentage: string, date: string, by: string) => `Esta reserva ya tiene un descuento adicional autorizado (${percentage} % el ${date} por ${by}). Solo se autoriza un descuento adicional por reserva.`,
+  excessOpened: (amount: string) => `El valor pagado supera el nuevo valor: excedente de ${amount} pendiente de tratamiento (continúa desde el detalle de la reserva con Gestionar devolución).`,
   invalidValue: 'Ingresa un valor positivo entre 1 y 100, con máximo dos decimales.', reasonRequired: 'El motivo es obligatorio.',
   aboveCap: (cap: string) => `El descuento adicional debe estar entre 1 % y el tope parametrizado de ${cap} %.`,
 } as const;
