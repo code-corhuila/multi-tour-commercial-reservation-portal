@@ -26,6 +26,7 @@ async function detailOf(reservation: Reservation, role: ActorRole = 'TENANT_ADMI
   const screen = await screenOf(ReservationsPageComponent, [...reservationProviders({ role, reservations: source }), ...wired, { provide: PortalNavigation, useValue: navigation }]);
   source.inner.requests[0].reply([reservation]);
   await screen.settle();
+  if (screen.button('Ver todas las reservas')) await screen.click('Ver todas las reservas');
   await screen.click('Ver detalle');
   const action = () => Array.from(screen.element.querySelectorAll('header button')).find((b) => b.textContent?.trim() === 'Aplicar descuento adicional') as HTMLButtonElement | undefined;
   const block = () => Array.from(screen.element.querySelectorAll('section')).find((s) => s.textContent?.includes('Decisión excepcional'));
@@ -54,6 +55,9 @@ describe('theDetailOffersTheButtonOnlyToTheAdministratorOnAnEligibleReservation'
     const p = await detailOf(worth('RES-D', { additionalDiscount: DISCOUNT }), role as ActorRole);
     expect(p.action()).toBeUndefined();
     expect(p.block()).toBeTruthy();
+  });
+
+  it.each(['OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT', 'ROL_DESCONOCIDO'])('offers %s no button on an eligible reservation either', async (role) => {
     expect((await detailOf(worth('RES-E'), role as ActorRole)).action()).toBeUndefined();
   });
 });
