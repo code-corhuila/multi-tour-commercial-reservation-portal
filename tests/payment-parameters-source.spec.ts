@@ -22,6 +22,7 @@ const writerFor = (store: DemoPaymentParametersStore, role = 'TENANT_ADMINISTRAT
 const save = (writer: DemoPaymentParametersWriter, over: Partial<SaveParametersCommand> = {}, key = 'k1') =>
   firstValueFrom(writer.save({ tenant: {}, services: {}, reason: 'política comercial de temporada', ...over }, key));
 const refusal = async (promise: Promise<unknown>) => promise.then(() => null, (e: { status: number; userMessage: string }) => e);
+const subject = (id: string, tourName: string) => ({ id, tourName, quote: { finalCents: THREE_HUNDRED_THOUSAND } });
 const view = (store: DemoPaymentParametersStore, services: string[] = ['Tour 1', 'Tour 2']) => firstValueFrom(store.read(services));
 
 describe('thePaymentParametersSeedKeepsTheFiguresOfTheEarlierStories', () => {
@@ -37,17 +38,18 @@ describe('thePaymentParametersSeedKeepsTheFiguresOfTheEarlierStories', () => {
 describe('theMinimumDepositComesFromThePaymentParameters', () => {
   it('answers a third of the final value by default and the percentage the administrator saves afterwards', async () => {
     const store = new DemoPaymentParametersStore(), source: PaymentParametersSource = store;
-    expect(await firstValueFrom(source.minimumDepositCents(THREE_HUNDRED_THOUSAND, 'Tour 1'))).toBe(10_000_000);
+    expect(await firstValueFrom(source.minimumDepositCents(subject('RES-A', 'Tour 1')))).toBe(10_000_000);
     await save(writerFor(store), { tenant: { minDepositPercent: 50 } });
-    expect(await firstValueFrom(source.minimumDepositCents(THREE_HUNDRED_THOUSAND, 'Tour 1'))).toBe(15_000_000);
+    expect(await firstValueFrom(source.minimumDepositCents(subject('RES-B', 'Tour 1')))).toBe(15_000_000);
+    expect(await firstValueFrom(source.minimumDepositCents(subject('RES-A', 'Tour 1')))).toBe(10_000_000);
   });
   it('lets a service define its own percentage and clears it back to the tenant value with null', async () => {
     const store = new DemoPaymentParametersStore();
     await save(writerFor(store), { tenant: { minDepositPercent: 40 }, services: { 'Tour 2': { minDepositPercent: 25 } } });
-    expect(await firstValueFrom(store.minimumDepositCents(THREE_HUNDRED_THOUSAND, 'Tour 2'))).toBe(7_500_000);
-    expect(await firstValueFrom(store.minimumDepositCents(THREE_HUNDRED_THOUSAND, 'Tour 1'))).toBe(12_000_000);
+    expect(await firstValueFrom(store.minimumDepositCents(subject('RES-C', 'Tour 2')))).toBe(7_500_000);
+    expect(await firstValueFrom(store.minimumDepositCents(subject('RES-D', 'Tour 1')))).toBe(12_000_000);
     await save(writerFor(store), { services: { 'Tour 2': { minDepositPercent: null } } }, 'k2');
-    expect(await firstValueFrom(store.minimumDepositCents(THREE_HUNDRED_THOUSAND, 'Tour 2'))).toBe(12_000_000);
+    expect(await firstValueFrom(store.minimumDepositCents(subject('RES-E', 'Tour 2')))).toBe(12_000_000);
   });
   it('is the minimum partial the stories of payments use, a third without parameters', async () => {
     const quote = { ...reservationOf('x').quote, finalCents: THREE_HUNDRED_THOUSAND }, parameters = new DemoPaymentParametersStore();
