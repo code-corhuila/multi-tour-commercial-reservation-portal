@@ -35,7 +35,9 @@ const SERVICES: readonly PricedService[] = [
 
 /** DEMO: RN-CD4, only a Pendiente de pago or Confirmada reservation admits an additional discount; the production port answers it from the service. */
 export class DemoAdditionalDiscountEligibility extends AdditionalDiscountEligibility {
-  override isEligible(reservation: { readonly status: string }): boolean { return ['PENDIENTE_DE_PAGO', 'CONFIRMADA'].includes(reservation.status); }
+  override isEligible(reservation: { readonly status: string; readonly additionalDiscount?: unknown }): boolean {
+    return ['PENDIENTE_DE_PAGO', 'CONFIRMADA'].includes(reservation.status) && !reservation.additionalDiscount;
+  }
 }
 
 export class DemoCurrentDiscountsStore extends CurrentDiscountsSource {

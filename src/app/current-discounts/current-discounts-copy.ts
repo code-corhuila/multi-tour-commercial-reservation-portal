@@ -24,3 +24,9 @@ export const ADDITIONAL_DISCOUNT_COPY = {
   invalidValue: 'Ingresa un valor positivo entre 1 y 100, con máximo dos decimales.', reasonRequired: 'El motivo es obligatorio.',
   aboveCap: (cap: string) => `El descuento adicional debe estar entre 1 % y el tope parametrizado de ${cap} %.`,
 } as const;
+
+/** Texts of the additional discount in admin-detalle-reserva.html (10A): the header button and the block "Descuento adicional aplicado". */
+export const ADDITIONAL_DISCOUNT_DETAIL_COPY = {
+  action: 'Aplicar descuento adicional', blockEyebrow: 'Decisión excepcional', blockTitle: 'Descuento adicional aplicado',
+  percentage: 'Descuento adicional', reason: 'Motivo', previous: 'Valor anterior', amount: 'Valor descontado', final: 'Valor final',
+} as const;

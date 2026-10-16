@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, Injector, Provider, inject, input } from '@angular/core';
 import { PortalNavigation } from '../../portal-navigation';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { DISCOUNTS_PAGE_PANELS, RESERVATION_MODE_ACTIONS, contribute } from '../../shared/portal-slots';
+import { DISCOUNTS_PAGE_PANELS, PortalSlot, RESERVATION_DETAIL_ACTIONS, RESERVATION_MODE_ACTIONS, contribute } from '../../shared/portal-slots';
 import { ADDITIONAL_DISCOUNT_ENTRY_COPY } from '../current-discounts-copy';
 import { ADDITIONAL_DISCOUNT_AREA, ADDITIONAL_DISCOUNT_MODE, AdditionalDiscountEligibility } from '../data/additional-discount-eligibility';
+import { AdditionalDiscountBlockComponent, AdditionalDiscountDetailActionComponent } from './additional-discount-detail.component';
 
 /** 12 (admin-descuentos.html), panel "Decisiones excepcionales / Descuento adicional": "Buscar una reserva" opens Reservas in mode. */
 @Component({
@@ -37,8 +38,12 @@ export class AdditionalDiscountRowActionComponent {
 export const mayAuthorizeAdditionalDiscount = (injector: Injector): boolean =>
   injector.get(PortalCapabilities).canAuthorizeAdditionalDiscount() && injector.get(AdditionalDiscountEligibility, null) !== null;
 
-/** Registered in mount-entry.ts: the search panel of Descuentos and the row action of Reservas in mode. */
+/** Registered in mount-entry.ts, between the payments block and the cancellation block of 10A (the order of the mockup); read only, so no role gate. */
+export const ADDITIONAL_DISCOUNT_DETAIL_BLOCK: PortalSlot = { component: AdditionalDiscountBlockComponent, order: 10 };
+
+/** Registered in mount-entry.ts: the search panel of Descuentos, the row action of Reservas in mode and the button of 10A. */
 export const ADDITIONAL_DISCOUNT_CONTRIBUTIONS: readonly Provider[] = [
   contribute(DISCOUNTS_PAGE_PANELS, { component: AdditionalDiscountSearchComponent, order: 10, isAvailable: mayAuthorizeAdditionalDiscount }),
   contribute(RESERVATION_MODE_ACTIONS, { component: AdditionalDiscountRowActionComponent, order: 10, isAvailable: mayAuthorizeAdditionalDiscount }),
+  contribute(RESERVATION_DETAIL_ACTIONS, { component: AdditionalDiscountDetailActionComponent, order: 1, isAvailable: mayAuthorizeAdditionalDiscount }),
 ];
