@@ -33,7 +33,7 @@ type Feedback = { readonly text: string; readonly ok: boolean };
         @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.readFailed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @default {
           @let view = current();
-          <form data-payment-params-form novalidate (submit)="submit($event)">
+          <form class="crp-payment-parameters-form" data-payment-params-form novalidate (submit)="submit($event)">
             <section class="crp-operator-panel" data-state="data"><p class="crp-operator-eyebrow">{{ t.panelEyebrow }}</p><h2>{{ t.panelTitle }}</h2>
               <div class="crp-table-wrap"><table class="crp-operator-table"><thead><tr><th scope="col">{{ t.serviceColumn }}</th>@for (f of fields; track f.key) { <th scope="col">{{ t.fields[f.key].short }}</th> }</tr></thead>
                 <tbody>@for (row of view.rows; track row.service; let i = $index) {
