@@ -93,6 +93,8 @@ describe('currentDiscountsAreWiredInTheMountEntry', () => {
     expect(Array.from(host.querySelectorAll('nav button')).map((b) => b.textContent?.trim())).not.toContain('Descuentos vigentes');
     press('Descuentos');
     await vi.waitFor(() => expect(host.textContent).toContain('Buscar una reserva'));
+    await vi.waitFor(() => expect(host.textContent).toContain('Motivos autorizables'));
+    expect(host.textContent).toContain('Compensación por inconveniente');
     press('Buscar una reserva');
     await vi.waitFor(() => expect(host.textContent).toContain('Selecciona la reserva a la que deseas aplicar un descuento adicional.'));
     await vi.waitFor(() => expect(Array.from(host.querySelectorAll('tbody button')).some((b) => b.textContent?.trim() === 'Aplicar descuento')).toBe(true));
