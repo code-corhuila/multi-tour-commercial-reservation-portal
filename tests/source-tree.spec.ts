@@ -65,6 +65,7 @@ const SPECIFIED_TREE = [
   'src/app/current-discounts/data/current-discounts-source.ts',
   'src/app/current-discounts/data/additional-discount-eligibility.ts',
   'src/app/current-discounts/data/additional-discount-contexts.ts',
+  'src/app/current-discounts/components/additional-discount-detail.component.ts',
   'src/app/current-discounts/current-discounts-copy.ts',
   'src/app/current-discounts/components/additional-discount-entries.component.ts',
   'src/app/current-discounts/data/discount-breakdowns.ts',
