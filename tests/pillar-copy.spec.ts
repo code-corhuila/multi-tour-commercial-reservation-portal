@@ -6,10 +6,13 @@ import { listSourceFiles } from './source-files';
 // Pillar 5 (texts in <feature>-copy.ts): no Spanish text lives inside a template or a model of these stories.
 // A text is a decision of the screen; it is read from `reservations-copy.ts`, `self-service-copy.ts` or `shell-copy.ts`.
 // One entry per story that already has its copy file; a story is added in the same commit that creates its copy file.
-const GUARDED = [{ prefix: 'src/app/reservations/', copy: 'src/app/reservations/reservations-copy.ts' }];
+const GUARDED = [{ prefix: 'src/app/reservations/', copy: 'src/app/reservations/reservations-copy.ts' },
+  { prefix: 'src/app/self-service-reservation/', copy: 'src/app/self-service-reservation/self-service-copy.ts' }];
 const TEXT_ATTRIBUTES = /\s(?:aria-label|aria-description|placeholder|title|alt|label)="([^"]*)"/g;
 /** Text that is not a sentence: symbols and units a template may draw by itself. Kept minimal on purpose. */
 const ALLOWED = new Set(['✓', '·', '—', 'COP', '#', '%']);
+/** Messages for developers that no screen ever shows (the read-failure component draws its own text). */
+const INTERNAL_ERRORS = new Set(['No catalog port']);
 
 /** The product name is a proper noun, drawn as MULTI + TOUR in the header and the footer. */
 const isBrand = (text: string) => text.replace(/\s/g, '').toLowerCase() === 'multitour';
@@ -58,7 +61,7 @@ function sentencesOf(file: string): string[] {
   const visit = (node: ts.Node): void => {
     if (ts.isImportDeclaration(node) || (ts.isPropertyAssignment(node) && node.name.getText() === 'template')) return;
     if (ts.isStringLiteralLike(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
-      if (isSentence(node.text)) found.push(node.text);
+      if (isSentence(node.text) && !INTERNAL_ERRORS.has(node.text)) found.push(node.text);
     }
     ts.forEachChild(node, visit);
   };
