@@ -14,6 +14,7 @@ import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-paym
 import { CHECKOUT_BLOCKS, OPERATOR_NOTIFICATIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
 import { REFUND_DETAIL_LINK } from './app/refunds/components/refund-link.component';
 import { REFUND_ALERTS } from './app/refunds/components/refund-alerts.component';
+import { ADDITIONAL_DISCOUNT_CONTRIBUTIONS, ADDITIONAL_DISCOUNT_DETAIL_BLOCK } from './app/current-discounts/components/additional-discount-entries.component';
 import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CREDIT_BALANCE_PAYMENTS_LINK } from './app/credit-balance/components/credit-balance-links.component';
@@ -82,6 +83,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
       // HU-COM-009: Pagos y comprobantes of 10A and Gestionar pago of 10C, drawn only with the payment ports.
       contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK),
+      // HU-COM-004 amendment: "Descuento adicional aplicado" of 10A, read only for every role, between the payments and the cancellation blocks.
+      contribute(RESERVATION_DETAIL_BLOCKS, ADDITIONAL_DISCOUNT_DETAIL_BLOCK),
       // HU-COM-013: the 10A action and blocks, and the Cancelación type; each only with the cancellation ports of the build.
       contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
       contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),
@@ -106,6 +109,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       ...RESCHEDULING_CONTRIBUTIONS,
       // HU-COM-017 amendment: the link to admin-saldo-favor.html from 13 (the one from 10A is pending, second branch).
       contribute(PAYMENTS_PAGE_PANELS, CREDIT_BALANCE_PAYMENTS_LINK),
+      // HU-COM-004 amendment: "Buscar una reserva" of Descuentos and "Aplicar descuento" of Reservas in mode; Administrator only, and only with the eligibility port.
+      ...ADDITIONAL_DISCOUNT_CONTRIBUTIONS,
       // HU-COM-005 amendment: sections 01 (Cliente titular) and 03 (Acompañantes) of 10B, drawn only with the customers directory.
       ...RESERVATION_FORM_CONTRIBUTIONS,
     ],
