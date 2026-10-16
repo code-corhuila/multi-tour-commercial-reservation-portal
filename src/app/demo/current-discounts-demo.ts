@@ -1,5 +1,6 @@
 import { Provider } from '@angular/core';
 import { Observable, of } from 'rxjs';
+import { AdditionalDiscountEligibility } from '../current-discounts/data/additional-discount-eligibility';
 import { AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../current-discounts/data/current-discounts-source';
 import { DiscountBreakdowns } from '../current-discounts/data/discount-breakdowns';
@@ -25,6 +26,11 @@ const SERVICES: readonly PricedService[] = [
   ] },
   { serviceId: 'demo-svc-3', serviceName: 'Traslado aeropuerto Neiva', baseCents: 9_000_000, rules: [] },
 ];
+
+/** DEMO: RN-CD4, only a Pendiente de pago or Confirmada reservation admits an additional discount; the production port answers it from the service. */
+export class DemoAdditionalDiscountEligibility extends AdditionalDiscountEligibility {
+  override isEligible(reservation: { readonly status: string }): boolean { return ['PENDIENTE_DE_PAGO', 'CONFIRMADA'].includes(reservation.status); }
+}
 
 export class DemoCurrentDiscountsStore extends CurrentDiscountsSource {
   override list(): Observable<readonly PricedService[]> { return of(SERVICES); }
@@ -58,5 +64,6 @@ export function currentDiscountsProviders(): Provider[] {
   return [{ provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() },
     { provide: TourValueSource, useValue: new DemoTourValueSource() },
     { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() },
+    { provide: AdditionalDiscountEligibility, useValue: new DemoAdditionalDiscountEligibility() },
     { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }];
 }
