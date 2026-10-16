@@ -1,10 +1,13 @@
-import { Provider } from '@angular/core';
+import { Optional, Provider } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { CashSessionStatus, PaymentsWriter, RegisterPaymentCommand, RegisteringUser } from '../payments/data/payments-writer';
 import { paymentEntryOf, proofProblem } from '../payments/model/payment';
 import { minimumPartial, situation } from './proof-review-demo';
+import { PaymentParametersSource } from '../payment-parameters/data/payment-parameters-ports';
+import { ReservationParametersLookup, SEED_LOOKUP } from '../payment-parameters/model/payment-parameters';
+import { lookupOf } from './payment-parameters-demo';
 import { PAYMENTS_TEXT } from '../payments/payments-copy';
 import { Reservation, STATUS_LABEL } from '../reservations/model/reservation';
 import { formatDate } from '../shared/format';
@@ -30,7 +33,7 @@ export class DemoRegisteringUser extends RegisteringUser {
 /** D-04 to D-06: proof, start, cash session and seat. A transfer is one line En validación (RN-PY1); cash received is validated at once (RF-015A, D9). */
 export class DemoPaymentsWriter extends PaymentsWriter {
   constructor(private readonly store: DemoReservationsStore, private readonly departures: DemoDeparturesStore, private readonly cash: CashSessionStatus,
-    private readonly user: RegisteringUser, private readonly answered: Map<string, Reservation>) { super(); }
+    private readonly user: RegisteringUser, private readonly answered: Map<string, Reservation>, private readonly parameters: ReservationParametersLookup = SEED_LOOKUP) { super(); }
 
   override register(c: RegisterPaymentCommand, key: string): Observable<Reservation> {
     const known = this.answered.get(key);
@@ -62,7 +65,7 @@ export class DemoPaymentsWriter extends PaymentsWriter {
   /** D9: cash received counts at once; 100 % (Total) or the minimum deposit (Abono) confirms, as the proof approval does (HU-COM-010). */
   private validated(next: Reservation, r: Reservation, applied: number): Reservation {
     const validatedCents = (r.validatedCents ?? 0) + applied, balanceCents = r.balanceCents - applied;
-    const reached = r.paymentType === 'PARTIAL' ? validatedCents >= minimumPartial(r) : balanceCents === 0;
+    const reached = r.paymentType === 'PARTIAL' ? validatedCents >= minimumPartial(r, this.parameters) : balanceCents === 0;
     const status = r.status === 'PENDIENTE_DE_PAGO' && reached ? 'CONFIRMADA' : r.status;
     return { ...next, status, validatedCents, balanceCents, financialStatus: situation({ ...r, status }, validatedCents, balanceCents) };
   }
@@ -80,7 +83,8 @@ export function paymentsDemoProviders(): Provider[] {
   return [
     { provide: CashSessionStatus, useValue: cash },
     { provide: RegisteringUser, useFactory: (c: PortalCapabilities, k: CustomerContext) => new DemoRegisteringUser(c, k), deps: [PortalCapabilities, CustomerContext] },
-    { provide: PaymentsWriter, useFactory: (s: ReservationsSource, d: DeparturesSource, u: RegisteringUser) =>
-      new DemoPaymentsWriter(s as DemoReservationsStore, d as DemoDeparturesStore, cash, u, answered), deps: [ReservationsSource, DeparturesSource, RegisteringUser] },
+    { provide: PaymentsWriter, useFactory: (s: ReservationsSource, d: DeparturesSource, u: RegisteringUser, p: PaymentParametersSource | null) =>
+      new DemoPaymentsWriter(s as DemoReservationsStore, d as DemoDeparturesStore, cash, u, answered, lookupOf(p)),
+      deps: [ReservationsSource, DeparturesSource, RegisteringUser, [new Optional(), PaymentParametersSource]] },
   ];
 }
