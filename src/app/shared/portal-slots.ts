@@ -19,6 +19,10 @@ export const RESERVATION_DETAIL_BLOCKS: PortalSlotToken = new InjectionToken('RE
 export const RESERVATION_ROW_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_ROW_ACTIONS');
 /** 21 (finalizar-reserva): blocks of the main column after the payment method card. Inputs: quote, method (the chosen code), reservation (once created). */
 export const CHECKOUT_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_BLOCKS');
+/** 10B (admin-crear-reserva): sections of the form hosted by HU-COM-007, by order. Inputs of the outlet: crpSlotFrom, crpSlotUntil (the order range it draws).
+ * HU-COM-005 contributes 01 (order 10) before 02 and 03 (order 30) after it, so the form draws the outlet twice, split at AFTER_OFFER. */
+export const RESERVATION_FORM_SECTIONS: PortalSlotToken = new InjectionToken('RESERVATION_FORM_SECTIONS');
+export const RESERVATION_FORM_AFTER_OFFER = 20;
 /** 24 (pago-transferencia): lines of the transfer payment page; the outlet comes with that page. */
 export const TRANSFER_PAYMENT_LINES: PortalSlotToken = new InjectionToken('TRANSFER_PAYMENT_LINES');
 /** 13 sub-screen (admin-gestion-pago): actions of the payment management page; the outlet comes with that page. */
@@ -51,8 +55,8 @@ export const REFUND_TREATMENT_ACTIONS: PortalSlotToken = new InjectionToken('REF
 export const DISCOUNTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('DISCOUNTS_PAGE_PANELS');
 
 /** The available contributions of a slot, by order. */
-export function slotEntries(slot: PortalSlotToken, injector: Injector): readonly Type<unknown>[] {
-  return [...(injector.get(slot, null, { optional: true }) ?? [])].filter((entry) => entry.isAvailable?.(injector) ?? true)
+export function slotEntries(slot: PortalSlotToken, injector: Injector, from = -Infinity, until = Infinity): readonly Type<unknown>[] {
+  return [...(injector.get(slot, null, { optional: true }) ?? [])].filter((entry) => entry.order >= from && entry.order < until && (entry.isAvailable?.(injector) ?? true))
     .sort((a, b) => a.order - b.order).map((entry) => entry.component);
 }
 
@@ -61,6 +65,9 @@ export function slotEntries(slot: PortalSlotToken, injector: Injector): readonly
 export class PortalSlotOutlet implements OnChanges {
   readonly crpSlot = input.required<PortalSlotToken>();
   readonly crpSlotInputs = input<Readonly<Record<string, unknown>>>({});
+  /** Only the contributions whose order is in [from, until). */
+  readonly crpSlotFrom = input(-Infinity);
+  readonly crpSlotUntil = input(Infinity);
   private readonly view = inject(ViewContainerRef);
   private readonly injector = inject(Injector);
   private refs: ComponentRef<unknown>[] = [];
@@ -68,7 +75,7 @@ export class PortalSlotOutlet implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['crpSlot']) {
       this.view.clear();
-      this.refs = slotEntries(this.crpSlot(), this.injector).map((component) => this.view.createComponent(component, { injector: this.injector }));
+      this.refs = slotEntries(this.crpSlot(), this.injector, this.crpSlotFrom(), this.crpSlotUntil()).map((component) => this.view.createComponent(component, { injector: this.injector }));
     }
     const values = this.crpSlotInputs();
     for (const ref of this.refs) {

@@ -1,10 +1,11 @@
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
 import { CustomersSource, SensitiveDataAccess } from '../src/app/customers/data/customers-source';
 import { CustomersWriter } from '../src/app/customers/data/customers-writer';
 import { CustomerGroup, LeadCommand, Person, PersonCommand } from '../src/app/customers/model/customer-group';
 
 /** A source that never answers on its own: the test decides when and how. */
 export class ControllableCustomersSource extends CustomersSource {
+  override search() { return of([]); }
   readonly requests: { reply: (group: CustomerGroup | null) => void; fail: () => void }[] = [];
   override current(): Observable<CustomerGroup | null> {
     return new Observable((subscriber) => {

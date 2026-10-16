@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CustomerGroup } from '../model/customer-group';
+import { CustomerGroup, CustomerMatch } from '../model/customer-group';
 
 /** The group being prepared; null when there is none. The contract has no customer operation yet (spec G-B). */
 export abstract class CustomersSource {
   abstract current(): Observable<CustomerGroup | null>;
+  /** The customers whose name, document or e-mail contain the text (the caller asks from two characters on); the newest search wins at the caller. */
+  abstract search(text: string): Observable<readonly CustomerMatch[]>;
 }
 
 /**

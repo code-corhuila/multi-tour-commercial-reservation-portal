@@ -31,8 +31,8 @@ async function openForm() {
   const quotes = new ControllableQuotes(), writer = new ControllableReservationsWriter();
   const view = await screenOf(ReservationFormComponent, [...reservationProviders({ writer }), { provide: ReservationQuoteSource, useValue: quotes }]);
   const fill = async (people = '3') => {
-    await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', 'dep-1');
-    await view.tick('svc-Kayak'); await view.type('people', people); await view.payWith();
+    await view.choose('departureId', 'dep-1');
+    await view.tick('svc-Kayak'); await view.type('people', people); await view.party(); await view.payWith();
   };
   return { ...view, quotes, writer, fill };
 }
@@ -66,7 +66,7 @@ describe('theCreateCommandCarriesNoValues', () => {
     await fill(); quotes.requests.at(-1)!.reply(SERVICE_QUOTE); await settle();
     await submit();
     expect(writer.calls).toHaveLength(1);
-    expect(Object.keys(writer.calls[0].command).sort()).toEqual(['departureId', 'leadCustomerId', 'paymentMethod', 'paymentType', 'people', 'serviceIds']);
+    expect(Object.keys(writer.calls[0].command).sort()).toEqual(['companions', 'departureId', 'lead', 'paymentMethod', 'paymentType', 'people', 'serviceIds']);
   });
 });
 
