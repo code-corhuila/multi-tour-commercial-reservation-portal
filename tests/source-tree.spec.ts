@@ -103,6 +103,7 @@ const SPECIFIED_TREE = [
   'src/app/reservations/data/reservations-source.ts',
   'src/app/reservations/data/reservations-writer.ts',
   'src/app/reservations/model/reservation.ts',
+  'src/app/reservations/reservations-copy.ts',
   'src/app/reservations/pages/reservations-page.component.ts',
   'src/app/demo/self-service-reservation-demo.ts',
   'src/app/self-service-reservation/data/customer-context.ts',
