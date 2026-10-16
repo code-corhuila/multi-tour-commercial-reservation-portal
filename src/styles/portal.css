@@ -422,8 +422,9 @@
 .crp-root .crp-current-discounts-summary span { color: var(--crp-shade-718084); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
 .crp-root .crp-current-discounts-lines { margin: 8px 0; padding-left: 20px; }
 .crp-root .crp-current-discounts-lines li { margin: 4px 0; }
-.crp-root .crp-current-discounts-wide { grid-column: 1 / -1; }
-.crp-root .crp-current-discounts-note { color: var(--crp-soft); font-size: 0.86rem; }
+.crp-root .crp-additional-discount-panel { grid-column: 1 / -1; margin: 0 0 16px; }
+.crp-root .crp-additional-discount-wide { grid-column: 1 / -1; }
+.crp-root .crp-additional-discount-note { color: var(--crp-soft); font-size: 0.86rem; }
 /* Public offer (HU-COM-006) as tours.html, detalle-tour.html, alojamiento.html and gastronomia.html; one column on a 360 px screen. */
 .crp-root .crp-offer-search { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; align-items: center; width: auto; max-width: 100%; align-self: flex-end; }
 .crp-root .crp-offer-search input[type="search"] { flex: 0 1 180px; min-width: 140px; min-height: 54px; padding: 0 18px; border: 1px solid var(--crp-line); border-radius: 14px; }
