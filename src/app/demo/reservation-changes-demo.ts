@@ -1,10 +1,13 @@
-import { Provider } from '@angular/core';
+import { Optional, Provider } from '@angular/core';
 import { Observable, map, of } from 'rxjs';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import { Reservation, ReservationsSource } from '../reservations/data/reservations-source';
 import {
   CancelCommand, CancellationOutcome, CancellationQuote, CancellationQuoteResult, CancellationWriter, Clock, Eligibility, RefundableAmount,
 } from '../reservation-changes/data/cancellation-ports';
+import { PaymentParametersSource } from '../payment-parameters/data/payment-parameters-ports';
+import { ReservationParametersLookup, SEED_LOOKUP } from '../payment-parameters/model/payment-parameters';
+import { lookupOf } from './payment-parameters-demo';
 import { DemoReservationsStore } from './reservations-demo';
 
 // DEMO (spec DD-1, G-B): the cancellation over the one reservations store of HU-COM-007; the service will decide it.
@@ -25,16 +28,19 @@ function eligibilityOf(r: Reservation): Eligibility {
   return r.reschedulingPending ? 'rescheduling-pending' : 'allowed';
 }
 
-/** The policy is NO DEFINIDO (DP-CN1): the demo runs with null, so a validated amount answers pending-policy. */
+/** The policy is NO DEFINIDO (DP-CN1): the penalty comes from the payment parameters (009-); the demo seed is null, so a validated amount answers pending-policy. */
 export class DemoCancellationQuote extends CancellationQuote {
-  constructor(private readonly store: ReservationsSource, private readonly penaltyPercent: number | null = null) { super(); }
+  constructor(private readonly store: ReservationsSource, private readonly penaltyPercent?: number | null, private readonly parameters: ReservationParametersLookup = SEED_LOOKUP) { super(); }
   override quote(code: string): Observable<CancellationQuoteResult | null> {
     return this.store.list().pipe(map((all) => {
       const reservation = all.find((r) => r.id === code);
       return reservation ? { reservation, eligibility: eligibilityOf(reservation), refundable: this.refundable(reservation) } : null;
     }));
   }
-  refundable(r: Reservation): RefundableAmount { return refundableAmount([{ amountCents: r.validatedCents ?? 0, validated: true }], this.penaltyPercent); }
+  refundable(r: Reservation): RefundableAmount {
+    const penalty = this.penaltyPercent !== undefined ? this.penaltyPercent : this.parameters.forReservation(r).cancellationPenaltyPercent;
+    return refundableAmount([{ amountCents: r.validatedCents ?? 0, validated: true }], penalty);
+  }
 }
 
 /** Re-checks the quote; Cancelada with cause, user and instant, the seat released and, when something is refundable, the decision (AC-CN.4). */
@@ -70,7 +76,7 @@ export function reservationChangesDemoProviders(): Provider[] {
   const byKey = new Map<string, CancellationOutcome>(), clock = new FixedClock('2026-10-13T09:30:00-05:00');
   return [
     { provide: Clock, useValue: clock },
-    { provide: CancellationQuote, useFactory: (s: ReservationsSource) => new DemoCancellationQuote(s), deps: [ReservationsSource] },
+    { provide: CancellationQuote, useFactory: (s: ReservationsSource, p: PaymentParametersSource | null) => new DemoCancellationQuote(s, undefined, lookupOf(p)), deps: [ReservationsSource, [new Optional(), PaymentParametersSource]] },
     { provide: CancellationWriter, deps: [ReservationsSource, CancellationQuote, PortalCapabilities],
       useFactory: (s: DemoReservationsStore, q: DemoCancellationQuote, c: PortalCapabilities) => new DemoCancellationWriter(s, q, clock, c.roleLabel(), byKey) },
   ];
