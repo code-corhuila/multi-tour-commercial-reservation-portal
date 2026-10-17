@@ -18,6 +18,7 @@ import {
   Departure, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, Reservation, ReservationDraft, ServiceOption,
   money, openDepartures, peopleOf, seats, validateReservation,
 } from '../model/reservation';
+import { RESERVATION_FORM_TEXT } from '../reservations-copy';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 
 type Options = { departures: readonly Departure[]; services: readonly ServiceOption[] };
@@ -170,12 +171,12 @@ export class ReservationFormComponent {
   /** Mockup data-departure-capacity-info: the seats of the departure, or the shortage for the people typed. */
   protected seatsNote(d: Departure): string {
     const people = peopleOf(this.draft().people);
-    return people !== null && !this.seatRule.fits(d, people) ? this.seatRule.refusal(d) : `Hay ${seats(d.effectiveCapacity)} en la salida seleccionada. El cupo no se garantiza hasta el primer pago.`;
+    return people !== null && !this.seatRule.fits(d, people) ? this.seatRule.refusal(d) : RESERVATION_FORM_TEXT.seatsNote(seats(d.effectiveCapacity));
   }
   /** Mockup data-payment-deadline-note: the hours are tenant parameters that no port hands to the portal yet. */
   protected readonly paymentNote = computed(() => {
     const type = this.draft().paymentType;
-    return type ? `Plazo inicial de pago (${PAYMENT_TYPE_LABEL[type]}): horas corridas desde la creación de la reserva, con una única ampliación registrada; nunca supera la hora programada de inicio de la salida. La promesa de pago en efectivo no confirma la reserva: se confirma al validar ${type === 'PARTIAL' ? 'el abono mínimo' : 'el 100 % del valor final'}.` : this.text.payNote;
+    return type ? RESERVATION_FORM_TEXT.paymentNote(PAYMENT_TYPE_LABEL[type], type === 'PARTIAL') : this.text.payNote;
   });
   /** The submit button enables when nothing mandatory is missing (mockup data-register-reservation). */
   protected readonly complete = computed(() => {

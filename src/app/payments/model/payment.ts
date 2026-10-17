@@ -9,6 +9,10 @@ export function proofProblem(file: File): string | null {
   return PROOF_TYPES.test(file.name) && file.size <= PROOF_MAX_BYTES ? null : PROOF_RULE;
 }
 
+/** AC-PY.12 (DP-PY5, PROPUESTO): the first deposit of an Abono must reach the minimum the parameters give; a later one is bounded by the balance. */
+export const depositBelowMinimum = (r: Reservation, amountCents: number, minimumCents: number | null): boolean =>
+  r.paymentType === 'PARTIAL' && (r.validatedCents ?? 0) === 0 && minimumCents !== null && amountCents < minimumCents;
+
 /**
  * What 13 offers for a reservation (mockup app.js 6700-6744): cancelled and settled close the form with their note, executed and
  * finished too (spec 009- section 5), and a transfer proof En validación locks it. The demo writer refuses the closed ones.

@@ -59,3 +59,9 @@ export function parseCop(text: string): MoneyParse {
 export function pesosText(minorUnits: number): string {
   return minorUnits % 100 === 0 ? String(minorUnits / 100) : formatMoney(minorUnits);
 }
+
+/** A positive amount of whole minor units carried as text (navigation parameters): digits only, safe integer; anything else is null. */
+export function parseMinorUnits(text: string | undefined): number | null {
+  const minorUnits = /^\d+$/.test(text ?? '') ? Number(text) : NaN;
+  return Number.isSafeInteger(minorUnits) && minorUnits > 0 ? minorUnits : null;
+}

@@ -1,5 +1,8 @@
 import { formatCop } from '../../shared/format';
 import type { DepartureCapacity } from '../data/departure-capacity';
+import {
+  FINANCIAL_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, PROOF_LABEL, RESERVATION_LINE_TEXT, RESERVATION_VALIDATION_TEXT as INVALID, STATUS_LABEL,
+} from '../reservations-copy';
 
 /** PROPUESTO: field names await the reservation contract (gap G-B). A departure stands in for HU-OPS-001 (gap G-OPS). */
 export type Departure = {
@@ -75,62 +78,22 @@ export type ReservationStatus = 'PENDIENTE_DE_PAGO' | 'CONFIRMADA' | 'EN_EJECUCI
 export type ReservationDraft = { departureId: string; serviceId: string; people: string; paymentType: string; paymentMethod: string; accepted: boolean };
 export type ReservationMessages = Partial<Record<keyof ReservationDraft, string>>;
 
-export const RESERVATION_TEXT = {
-  eyebrow: 'Gestión comercial', title: 'Reservas', create: 'Crear reserva', save: 'Registrar reserva', cancel: 'Cancelar', back: 'Volver a reservas', view: 'Ver detalle',
-  listEyebrow: 'Reservas activas', listTitle: 'Seguimiento de reservas', columns: ['Reserva', 'Cliente', 'Servicio y salida', 'Estado', 'Saldo', 'Acción'],
-  loading: 'Cargando…', empty: 'Aún no hay reservas registradas.', noDepartures: 'No hay salidas abiertas para reservas.', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
-  offerEyebrow: '02. Servicios y viajeros', offerTitle: 'Oferta seleccionada', departure: 'Salida concreta', services: 'Servicios',
-  people: 'Cantidad total de viajeros',
-  conditionsEyebrow: '04. Condiciones', conditionsTitle: 'Reglas aplicables', conditions: 'Condiciones de reserva', chooseDeparture: 'Selecciona una salida para consultar sus condiciones.',
-  chooseTourConditions: 'Selecciona un tour para consultar las condiciones parametrizadas.',
-  valuesEyebrow: 'Valores calculados', valuesTitle: 'Resumen de la reserva', valuesNote: 'Se recalcula con el tour, las personas, el transporte del tour y los descuentos vigentes del operador activo, que quedan fijados en la reserva al crearla.',
-  feedback: 'Completa los campos obligatorios para registrar la reserva.',
-  feedbackNoTour: 'Selecciona un tour para consultar sus requisitos y valores.', feedbackNoDeparture: 'Selecciona la salida programada: la reserva pertenece a una única salida.',
-  feedbackReady: 'La reserva cumple las validaciones y está lista para registrarse. Quedará Pendiente de pago hasta cumplir la condición de confirmación.',
-  transport: 'Transporte por persona', projected: 'Valor proyectado', applicable: 'Descuentos aplicables', applied: 'Descuentos aplicados', final: 'Valor final', balance: 'Saldo pendiente',
-  ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior',
-  noSeat: 'Aún no se aparta cupo: el cupo se aparta con el primer pago.',
-  offerEyebrow02: '02. Tour, salida y viajeros', tour: 'Tour', scheduled: 'Salida programada', vehicles: 'Vehículo(s) de la salida', vehiclesValue: 'Se define con la salida',
-  chooseTour: 'Selecciona un tour', chooseTourFirst: 'Selecciona primero un tour', chooseScheduled: 'Selecciona una salida programada',
-  departureHint: 'La reserva pertenece a una única salida. Una salida llena no admite nuevas reservas y la creación no aparta cupo: el cupo se aparta con el primer pago.',
-  tenantLabel: 'Operador activo', tenantNote: 'Todos los catálogos, condiciones, cupos y valores se consultan en este contexto.',
-  payEyebrow: '04. Condiciones y pago', payType: 'Tipo de pago esperado', payMethod: 'Medio de pago esperado', chooseType: 'Selecciona el tipo de pago', chooseMethod: 'Selecciona el medio de pago',
-  accept: 'Confirmo que el cliente acepta las condiciones aplicables a esta reserva.',
-  payIntro: 'La comida se muestra únicamente como incluida en el paquete del tour. El tipo de pago (Pago total o Abono) y el medio de pago (Transferencia o Efectivo) se eligen por separado.',
-  payNote: 'El tipo de pago (Pago total o Abono) y el medio (Transferencia o Efectivo) se eligen por separado.',
-  heroEyebrow: 'Nueva reserva', heroTitle: 'Elige el tour y su salida, registra a las personas y los valores antes de continuar al pago.',
-  heroNote: 'La reserva aplica únicamente condiciones, disponibilidad y descuentos vigentes del operador activo. Pertenece a una única salida y no aparta cupo hasta su primer pago.',
-  followEyebrow: 'Seguimiento', followTitle: 'Reserva, salida, cupo y valores siempre conectados.',
-  followNote: 'Cada reserva pertenece a una única salida. Las modificaciones permitidas antes de la ejecución recalculan disponibilidad, descuentos y saldo; el cambio exclusivo de fecha se registra sobre la misma reserva.',
-  modeBanner: 'Selecciona la reserva a la que deseas aplicar un descuento adicional.',
-  all: 'Ver todas las reservas', active: 'Ver reservas activas', pay: 'Gestionar pago', seePay: 'Ver pago', reschedule: 'Reprogramar',
-};
-/** Spanish badges of the screens; a code is never shown. */
-export const STATUS_LABEL: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'Pendiente de pago', CONFIRMADA: 'Confirmada',
-  EN_EJECUCION: 'En ejecución', FINALIZADA: 'Finalizada', CANCELADA: 'Cancelada' };
+export {
+  DEPARTURE_STATE_LABEL, FINANCIAL_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL, RESERVATION_TEXT, STATUS_LABEL, persons, seats, travelers,
+} from '../reservations-copy';
 /** The badge class of each state the service returns. */
 export const STATUS_CLASS: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'crp-is-pending', CONFIRMADA: 'crp-is-confirmed',
   EN_EJECUCION: 'crp-is-execution', FINALIZADA: 'crp-is-finalized', CANCELADA: 'crp-is-cancelled' };
 /** The reservation_status codes the customer area reads (PROPUESTO until the contract, G-B). */
 export const STATUS_CODE: Record<Reservation['status'], string> = { PENDIENTE_DE_PAGO: 'PENDING_PAYMENT', CONFIRMADA: 'CONFIRMED',
   EN_EJECUCION: 'IN_EXECUTION', FINALIZADA: 'FINALIZED', CANCELADA: 'CANCELLED' };
-export const FINANCIAL_LABEL: Record<Reservation['financialStatus'], string> = { SIN_PAGO: 'Sin pago', PARCIAL: 'Parcial',
-  ABONO_RECIBIDO: 'Abono recibido', PAGO_COMPLETO: 'Pago completo' };
-export const PAYMENT_TYPE_LABEL: Readonly<Record<string, string>> = { TOTAL: 'Pago total', PARTIAL: 'Abono' };
-export const PAYMENT_METHOD_LABEL: Readonly<Record<string, string>> = { BANK_TRANSFER: 'Transferencia', CASH_AT_OFFICE: 'Efectivo' };
-const PROOF_LABEL: Record<ReservationPayment['proofStatus'], string> = { EN_VALIDACION: 'En validación', SIN_COMPROBANTE: 'Sin comprobante', APROBADO: 'Aprobado', RECHAZADO: 'Rechazado' };
-export const DEPARTURE_STATE_LABEL: Record<Departure['state'], string> = { PROGRAMADA: 'Programada', EN_CURSO: 'En ejecución', FINALIZADA: 'Finalizada', CANCELADA: 'Cancelada' };
 /** Mockup 10, 10A, 10C: the latest proof beside the financial situation ("Sin comprobante · Sin pago"). */
 export const paymentState = (r: Reservation) => `${PROOF_LABEL[r.payments?.at(-1)?.proofStatus ?? 'SIN_COMPROBANTE']} · ${FINANCIAL_LABEL[r.financialStatus]}`;
 /** "Pago total · Transferencia", or "Sin definir" while the reservation carries neither. */
 export const paymentLine = (r: Reservation) => [r.paymentType, r.paymentMethod].some(Boolean)
-  ? [PAYMENT_TYPE_LABEL[r.paymentType ?? ''], PAYMENT_METHOD_LABEL[r.paymentMethod ?? '']].filter(Boolean).join(' · ') : 'Sin definir';
-export const executionOf = (r: Reservation) => r.status === 'CANCELADA' ? 'No ejecutada' : r.status === 'EN_EJECUCION' || r.status === 'FINALIZADA' ? STATUS_LABEL[r.status] : 'Pendiente de ejecución';
-export const seats = (n: number) => `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`;
+  ? [PAYMENT_TYPE_LABEL[r.paymentType ?? ''], PAYMENT_METHOD_LABEL[r.paymentMethod ?? '']].filter(Boolean).join(' · ') : RESERVATION_LINE_TEXT.undefinedPayment;
+export const executionOf = (r: Reservation) => r.status === 'CANCELADA' ? RESERVATION_LINE_TEXT.notExecuted : r.status === 'EN_EJECUCION' || r.status === 'FINALIZADA' ? STATUS_LABEL[r.status] : RESERVATION_LINE_TEXT.pendingExecution;
 export const money = formatCop;
-/** "1 viajero" or "N viajeros"; "1 persona" or "N personas". */
-export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
-export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
 /** RN-RES-010, RN-SAL-001: only a Programada departure that is open for reservations is offered. */
 export const openDepartures = (all: readonly Departure[]) => all.filter((d) => d.state === 'PROGRAMADA' && d.openForReservations);
@@ -144,12 +107,12 @@ export function peopleOf(text: string): number | null {
 /** The seat rule (RN-RES-007) is the port's: `capacity` answers whether the departure holds the people and with what text it refuses. */
 export function validateReservation(draft: ReservationDraft, departure: Departure | undefined, capacity: DepartureCapacity): ReservationMessages {
   const errors: ReservationMessages = {}, people = peopleOf(draft.people);
-  if (!departure) errors.departureId = 'La salida es obligatoria.';
-  if (!draft.serviceId) errors.serviceId = 'El tour es obligatorio.';
-  if (!draft.paymentType) errors.paymentType = 'El tipo de pago esperado es obligatorio.';
-  if (!draft.paymentMethod) errors.paymentMethod = 'El medio de pago esperado es obligatorio.';
-  if (!draft.accepted) errors.accepted = 'Confirma que el cliente acepta las condiciones.';
-  if (people === null) errors.people = 'La cantidad de viajeros es obligatoria: un número entero de al menos uno.';
+  if (!departure) errors.departureId = INVALID.departureId;
+  if (!draft.serviceId) errors.serviceId = INVALID.serviceId;
+  if (!draft.paymentType) errors.paymentType = INVALID.paymentType;
+  if (!draft.paymentMethod) errors.paymentMethod = INVALID.paymentMethod;
+  if (!draft.accepted) errors.accepted = INVALID.accepted;
+  if (people === null) errors.people = INVALID.people;
   else if (departure && !capacity.fits(departure, people)) errors.people = capacity.refusal(departure);
   return errors;
 }
