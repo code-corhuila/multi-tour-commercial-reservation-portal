@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogHubPageComponent } from '../src/app/catalog/pages/catalog-hub-page.component';
 import { CatalogNewServicePageComponent } from '../src/app/catalog/pages/catalog-new-service-page.component';
+import { PaymentParametersPageComponent } from '../src/app/payment-parameters/pages/payment-parameters-page.component';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
@@ -101,6 +102,7 @@ describe('portalAreasRegistry', () => {
       { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent },
       { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent },
       { key: 'catalog-new-service', label: 'Nuevo servicio', component: CatalogNewServicePageComponent },
+      { key: 'payment-parameters', label: 'Parámetros de pago', component: PaymentParametersPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
       { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },

@@ -3,6 +3,7 @@ export const CATALOG_HUB_COPY = {
   eyebrow: 'Configuración operativa',
   title: 'Catálogos',
   newService: 'Nuevo servicio',
+  paymentParameters: 'Parámetros de pago',
   accessNote: 'El único servicio con reserva y cupo es el tour (por salida). Los hoteles y restaurantes son establecimientos asociados de carácter informativo: solo el Administrador del tenant los registra, inactiva y reactiva. El Colaborador operativo consulta los catálogos sin modificarlos.',
   denied: 'No tienes acceso al catálogo.',
   loading: 'Cargando',
