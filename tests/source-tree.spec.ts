@@ -54,6 +54,7 @@ const SPECIFIED_TREE = [
   'src/app/establishments/model/image-policy.ts',
   'src/app/establishments/pages/establishments-page.component.ts',
   'src/app/shell-contract.ts',
+  'src/app/shell-copy.ts',
   'src/app/sources.demo.ts',
   'src/app/sources.ts',
   'src/bootstrap.ts',
