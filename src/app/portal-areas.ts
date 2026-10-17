@@ -2,7 +2,9 @@ import { AbstractType, InjectionToken, Injector, Type } from '@angular/core';
 import { CatalogHubPageComponent } from './catalog/pages/catalog-hub-page.component';
 import { CatalogNewServicePageComponent } from './catalog/pages/catalog-new-service-page.component';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
+import { ADDITIONAL_DISCOUNT_AREA } from './current-discounts/data/additional-discount-eligibility';
 import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
+import { mayAuthorizeAdditionalDiscount } from './current-discounts/components/additional-discount-entries.component';
 import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
 import { CustomersSource } from './customers/data/customers-source';
 import { CustomersPageComponent } from './customers/pages/customers-page.component';
@@ -111,9 +113,10 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && has(injector, DiscountRulesSource),
   },
-  // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
-  { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
-    isAvailable: (injector) => has(injector, CurrentDiscountsSource) },
+  // HU-COM-004 amendment 2026-10-14 (A.2 row 1): "Descuentos vigentes" leaves the sidebar; admin-aplicar-descuento.html is a sub-screen of Descuentos opened from
+  // Reservas in mode and from 10A with { reservation }, and only the Administrator is offered it (AC-CD.7).
+  { key: ADDITIONAL_DISCOUNT_AREA, label: 'Aplicar descuento', component: CurrentDiscountsPageComponent, menu: false, parent: 'discounts',
+    isAvailable: (injector) => mayAuthorizeAdditionalDiscount(injector) && has(injector, CurrentDiscountsSource) },
   // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
   { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer',
     isAvailable: (injector) => has(injector, PublicOfferSource) },

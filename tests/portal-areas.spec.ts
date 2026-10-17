@@ -105,7 +105,7 @@ describe('portalAreasRegistry', () => {
       { key: 'payment-parameters', label: 'Parámetros de pago', component: PaymentParametersPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
-      { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
+      { key: 'additional-discount', label: 'Aplicar descuento', component: CurrentDiscountsPageComponent },
       { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
       { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
       { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },
