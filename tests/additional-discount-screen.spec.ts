@@ -154,6 +154,45 @@ describe('onlyTheAdministratorSeesTheButtonTheModeAndTheScreen', () => {
   }
 });
 
+describe('aSecondAdditionalDiscountIsNotOffered', () => {
+  it('says the reservation already has one, with its percentage, date and author, and offers no form', async () => {
+    const page = await ready(contextOf({ eligible: false, applied: { basisPoints: 1000, appliedAt: '2026-10-15T10:00:00-05:00', appliedBy: 'Administrador demo' } }));
+    expect(page.element.querySelector('[role="status"]')?.textContent)
+      .toContain('Esta reserva ya tiene un descuento adicional autorizado (10 % el 15 oct 2026 por Administrador demo). Solo se autoriza un descuento adicional por reserva.');
+    expect(page.element.querySelector('form')).toBeNull();
+    expect(page.readOnly('Valor actual')).toBe('$100.000');
+  });
+});
+
+describe('anExcessBelowWhatIsPaidShowsTheTreatmentTextAndOpensIt', () => {
+  it('shows the excess the port resolves while the percentage is typed', async () => {
+    const page = await ready();
+    page.contexts.paid = 9_000_000;
+    await page.type('value', '20');
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$80.000');
+    expect(page.readOnly('Excedente sobre lo pagado')).toBe('$10.000');
+    expect(page.element.querySelector('.crp-access-note')?.textContent).toContain('decisión del Administrador del tenant en 24 horas: devolución del 100 % por defecto o saldo a favor');
+  });
+
+  it('tells, once applied, that the excess waits for its treatment in the detail of the reservation', async () => {
+    const page = await ready();
+    await fill(page, '20');
+    await submit(page);
+    page.writer.calls[0].reply(appliedOf(page.writer.calls[0].command, { excessCents: 1_000_000 }));
+    await page.settle();
+    expect(page.element.querySelector('[role="status"]')?.textContent).toContain('El valor pagado supera el nuevo valor: excedente de $10.000 pendiente de tratamiento (continúa desde el detalle de la reserva con Gestionar devolución).');
+  });
+
+  it('adds nothing about an excess when there is none', async () => {
+    const page = await ready();
+    await fill(page);
+    await submit(page);
+    page.writer.calls[0].reply(appliedOf(page.writer.calls[0].command));
+    await page.settle();
+    expect(page.element.querySelector('[role="status"]')?.textContent).not.toContain('excedente');
+  });
+});
+
 describe('theScreenShowsOneOfTheFourStates', () => {
   it('goes through loading, error with retry, data, and the not found case', async () => {
     const page = await openAdditionalDiscount();
