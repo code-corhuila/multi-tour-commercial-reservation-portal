@@ -54,8 +54,8 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = RESERVATION_HEA
                     <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td><small class="crp-reservations-meta">{{ paymentState(r) }}</small><br><strong>{{ money(r.balanceCents) }}</strong></td>
                     <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button>@if (modeOpen) { <ng-container *crpSlot="modeActions; inputs: { reservation: r, mode: mode }" /> } @else {
                     <ng-container *crpSlot="rowActions; inputs: { reservation: r }" />
-                    @if (payLabel(r); as label) { <span> · </span><button type="button" (click)="open('payment-management', r)">{{ label }}</button> }
-                    @if (reschedulable(r)) { <span> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> } }</td></tr>
+                    @if (payLabel(r); as label) { <span class="crp-row-sep"> · </span><button type="button" (click)="open('payment-management', r)">{{ label }}</button> }
+                    @if (reschedulable(r)) { <span class="crp-row-sep"> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> } }</td></tr>
                 }</tbody>
               </table></div>
             }
