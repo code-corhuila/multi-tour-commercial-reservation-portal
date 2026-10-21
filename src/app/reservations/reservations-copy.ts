@@ -39,7 +39,7 @@ export const RESERVATION_VIEW_TEXT = {
   economic: 'Estado económico', payState: 'Estado de pago', payLine: 'Tipo y medio de pago',
   nextEyebrow: 'Siguiente paso', nextTitle: 'Gestiona el pago según el tipo y el medio elegidos.',
   nextCopy: 'La reserva se confirmará solo cuando se valide el 100 % del valor final (pago total) o el abono mínimo (abono). La promesa de pago en efectivo no confirma la reserva. El cupo se aparta con el primer pago, previa verificación de disponibilidad en la salida.',
-  departureNote: 'Salida:', detailNote: 'Consulta disponible únicamente dentro del operador activo.',
+  departureNote: 'Salida:', departureWithCode: (code: string) => `Salida ${code}:`, email: 'Correo', detailNote: 'Consulta disponible únicamente dentro del operador activo.',
   leadAndTravelers: 'Titular y viajeros', registeredTravelers: 'Viajeros registrados', registeredCompanions: 'Acompañantes registrados',
   noBalance: 'sin saldo pendiente', pending: 'pendientes', validated: 'Valores validados', refunded: 'Valores devueltos',
   minimumDeposit: 'Abono mínimo', notApplicable: 'No aplica',

@@ -34,7 +34,7 @@ export function modalityOf(r: Reservation, labels: PaymentLabels): string {
     @else {
       <section class="crp-operator-panel crp-payments-block">
         <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.blockEyebrow }}</p><h2>{{ text.blockTitle }}</h2></div>
-          @if (canRegister) { <button type="button" class="crp-operator-primary" (click)="manage()">{{ text.manage }}</button> }</div>
+          @if (canRegister) { <button type="button" [class]="settled(r) ? 'crp-operator-outline' : 'crp-operator-primary'" (click)="manage()">{{ settled(r) ? text.seePayments : text.manage }}</button> }</div>
         @let names = labels();
         @if (names === 'loading') { <p role="status">{{ text.loading }}</p> }
         @else if (names === 'error') { <div role="alert">{{ text.failed }} <button type="button" class="crp-operator-outline" (click)="reload()">{{ text.retry }}</button></div> }
@@ -75,6 +75,8 @@ export class ReservationPaymentsBlockComponent {
   protected presented(p: { presentedAt?: string }): string { return p.presentedAt ? tenantDateTime(p.presentedAt) : '—'; }
   protected readonly text = PAYMENTS_TEXT; protected readonly financial = FINANCIAL_LABEL; protected readonly money = formatCop;
   constructor() { this.reload(); }
+  /** Mockup app.js 10045: a cancelled reservation or one with nothing left to pay offers Ver pagos, as an outline action. */
+  protected settled(r: Reservation): boolean { return r.status === 'CANCELADA' || r.balanceCents === 0; }
   protected reload(): void { this.requests.next(); }
   protected manage(): void { this.navigation?.open('payment-management', { reservation: this.reservation().id }); }
 }

@@ -1,9 +1,9 @@
 import { departureLine } from '../shared/format';
 /** Texts of screens 10A ("Pagos y soportes"), 10C ("Gestionar pago") and 13 (admin-gestion-pago.html), as the mockup writes them. */
 export const PAYMENTS_TEXT = {
-  manage: 'Gestionar pago', blockEyebrow: 'Pagos y comprobantes', blockTitle: 'Seguimiento económico', receiptsEyebrow: 'Histórico', receiptsTitle: 'Comprobantes presentados',
+  manage: 'Gestionar pago', seePayments: 'Ver pagos', blockEyebrow: 'Pagos y comprobantes', blockTitle: 'Seguimiento económico', receiptsEyebrow: 'Histórico', receiptsTitle: 'Comprobantes presentados',
   receiptColumns: ['Presentado', 'Valor declarado', 'Monto verificado', 'Estado', 'Decisión'], noReceipts: 'Sin comprobantes presentados.', pendingDecision: 'Pendiente de decisión',
-  columns: ['Tipo', 'Medio', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente'],
+  columns: ['Tipo de pago', 'Medio de pago', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente'],
   eyebrow: 'Seguimiento de reserva', title: 'Gestión de pago', reservation: 'Reserva',
   infoEyebrow: 'Información de pago', modality: 'Tipo y medio de pago', departure: 'Salida', deadline: 'Plazo de pago', validated: 'Valores validados', proofState: 'Estado del comprobante', financial: 'Situación financiera',
   economyEyebrow: 'Estado económico', final: 'Valor final', balance: 'Saldo pendiente',
