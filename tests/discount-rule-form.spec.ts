@@ -37,6 +37,11 @@ describe('discount form validates before sending', () => {
     expect(f.element.textContent).not.toMatch(/Nombre del descuento|Tipo de valor|Monto fijo|Monto del descuento/);
     for (const c of Array.from(f.element.querySelectorAll<HTMLInputElement>('input, select'))) expect(f.element.querySelector(`label[for="${c.id}"]`)).not.toBeNull();
   });
+  it('theCalculationBaseHasNoHelpTextThatTheMockupDoesNotHave', async () => {
+    const f = await openDiscountForm();
+    expect(f.element.querySelector('small')).toBeNull();
+    expect(f.element.textContent).not.toMatch(/se calcula sobre/);
+  });
   it('draws the two numbered panels of the mockup with its labels, note and actions', async () => {
     const f = await openDiscountForm(); const panels = Array.from(f.element.querySelectorAll('form > section.crp-operator-panel'));
     expect(panels.map(s => s.querySelector('.crp-operator-eyebrow')?.textContent)).toEqual(['01. Descuento', '02. Vigencia y prioridad']);
