@@ -11,7 +11,7 @@ import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
 import { DemoPublicEstablishmentsSource, DemoPublicOfferSource } from '../src/app/demo/public-offer-demo';
 import { PublicEstablishmentsSource, PublicOfferSource } from '../src/app/public-offer/data/public-offer-sources';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
-import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
+import { AdditionalDiscountPageComponent } from '../src/app/current-discounts/pages/additional-discount-page.component';
 import { CustomersPageComponent } from '../src/app/customers/pages/customers-page.component';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
@@ -105,7 +105,7 @@ describe('portalAreasRegistry', () => {
       { key: 'payment-parameters', label: 'Parámetros de pago', component: PaymentParametersPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
-      { key: 'additional-discount', label: 'Aplicar descuento', component: CurrentDiscountsPageComponent },
+      { key: 'additional-discount', label: 'Aplicar descuento', component: AdditionalDiscountPageComponent },
       { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
       { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
       { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },

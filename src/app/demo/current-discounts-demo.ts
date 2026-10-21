@@ -1,12 +1,10 @@
 import { Provider } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { AdditionalDiscountEligibility } from '../current-discounts/data/additional-discount-eligibility';
-import { AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { CurrentDiscountsSource } from '../current-discounts/data/current-discounts-source';
 import { DiscountBreakdowns } from '../current-discounts/data/discount-breakdowns';
 import { DemoDiscountBreakdowns, applyDiscounts } from './discount-calculation';
-import { AdditionalDiscount, AdditionalDiscountCommand, PricedService } from '../current-discounts/model/current-discounts';
-import { ApplicableRule } from '../current-discounts/model/current-discounts';
+import { ApplicableRule, PricedService } from '../current-discounts/model/current-discounts';
 import { discountLabelOf } from './discount-label-demo';
 import { TourValueSource } from '../public-offer/data/public-offer-sources';
 import { PublicTour, TourValue } from '../public-offer/model/public-offer';
@@ -36,16 +34,6 @@ export class DemoCurrentDiscountsStore extends CurrentDiscountsSource {
   override list(): Observable<readonly PricedService[]> { return of(SERVICES); }
 }
 
-/** One stored discount per key: a retried intention never registers twice (AC-CD.8). */
-export class DemoAdditionalDiscountWriter extends AdditionalDiscountWriter {
-  private readonly stored = new Map<string, AdditionalDiscount>();
-  override register(command: AdditionalDiscountCommand, idempotencyKey: string): Observable<AdditionalDiscount> {
-    const answer = this.stored.get(idempotencyKey) ?? { ...command, authorizedBy: 'Administradora demo' };
-    this.stored.set(idempotencyKey, answer);
-    return of(answer);
-  }
-}
-
 /**
  * DEMO: the value of a tour on a date, from the rules in force of the demo services (the pure function of HU-COM-004).
  * The production port is asynchronous (CurrentDiscountsSource) and TourValueSource is synchronous, so no production
@@ -63,7 +51,6 @@ export class DemoTourValueSource extends TourValueSource {
 export function currentDiscountsProviders(): Provider[] {
   return [{ provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() },
     { provide: TourValueSource, useValue: new DemoTourValueSource() },
-    { provide: AdditionalDiscountWriter, useValue: new DemoAdditionalDiscountWriter() },
     { provide: AdditionalDiscountEligibility, useValue: new DemoAdditionalDiscountEligibility() },
     { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }];
 }

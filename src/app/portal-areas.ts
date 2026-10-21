@@ -3,9 +3,10 @@ import { CatalogHubPageComponent } from './catalog/pages/catalog-hub-page.compon
 import { CatalogNewServicePageComponent } from './catalog/pages/catalog-new-service-page.component';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
 import { ADDITIONAL_DISCOUNT_AREA } from './current-discounts/data/additional-discount-eligibility';
-import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
+import { AdditionalDiscountContexts } from './current-discounts/data/additional-discount-contexts';
+import { AdditionalDiscountWriter } from './current-discounts/data/additional-discount-writer';
 import { mayAuthorizeAdditionalDiscount } from './current-discounts/components/additional-discount-entries.component';
-import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
+import { AdditionalDiscountPageComponent } from './current-discounts/pages/additional-discount-page.component';
 import { CustomersSource } from './customers/data/customers-source';
 import { CustomersPageComponent } from './customers/pages/customers-page.component';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
@@ -115,8 +116,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   },
   // HU-COM-004 amendment 2026-10-14 (A.2 row 1): "Descuentos vigentes" leaves the sidebar; admin-aplicar-descuento.html is a sub-screen of Descuentos opened from
   // Reservas in mode and from 10A with { reservation }, and only the Administrator is offered it (AC-CD.7).
-  { key: ADDITIONAL_DISCOUNT_AREA, label: 'Aplicar descuento', component: CurrentDiscountsPageComponent, menu: false, parent: 'discounts',
-    isAvailable: (injector) => mayAuthorizeAdditionalDiscount(injector) && has(injector, CurrentDiscountsSource) },
+  { key: ADDITIONAL_DISCOUNT_AREA, label: 'Aplicar descuento', component: AdditionalDiscountPageComponent, menu: false, parent: 'discounts',
+    isAvailable: (injector) => mayAuthorizeAdditionalDiscount(injector) && has(injector, AdditionalDiscountContexts, AdditionalDiscountWriter) },
   // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
   { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer',
     isAvailable: (injector) => has(injector, PublicOfferSource) },
