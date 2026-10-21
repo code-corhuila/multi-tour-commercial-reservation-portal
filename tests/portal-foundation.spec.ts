@@ -205,6 +205,9 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     const block = host.querySelector('app-reservations-page .crp-page-header crp-test-block')!;
     expect(block.textContent?.trim()).toBe(`Bloque ${id}`);
     expect(block.nextElementSibling?.textContent?.trim()).toBe('Volver a reservas');
+    // The actions are one group of the header, so a narrow header moves them together and not one by one.
+    expect(block.closest('.crp-header-actions')).not.toBeNull();
+    expect(block.nextElementSibling?.closest('.crp-header-actions')).toBe(block.closest('.crp-header-actions'));
   });
 
   // Mis reservas: "Responder propuesta" (018) closes the card (app.js:2694).
