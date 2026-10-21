@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ReservationFormComponent } from '../src/app/reservations/components/reservation-form.component';
 import { Departure } from '../src/app/reservations/model/reservation';
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
-import { ControllableReservationsWriter, StubDepartures, StubDiscounts, departureOf, reservationOf, reservationProviders, screenOf } from './reservations.double';
+import { ControllableReservationsWriter, StubDepartures, StubDiscounts, departureOf, reservationOf, reservationProviders, screenOf, serviceOf } from './reservations.double';
 
 async function openForm(over: Parameters<typeof reservationProviders>[0] = {}) {
   const writer = new ControllableReservationsWriter(), keys = new ControllableIdempotencyKeys(), discounts = new StubDiscounts();
@@ -31,6 +31,14 @@ describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
     expect(Array.from(select.options).map((o) => o.value).filter(Boolean)).toEqual(['dep-1', 'dep-4']);
     for (const label of ['Correo electrónico', 'Tour', 'Cantidad total de viajeros']) expect(within(element).getByLabelText(label)).toBeTruthy();
     expect(within(element).queryByLabelText(/Closed/)).toBeNull();
+  });
+});
+
+describe('noTransportItemIsOfferedAsAService', () => {
+  it('offers the active tours of the catalog and leaves out an active transportation item', async () => {
+    const { element } = await openForm({ services: [serviceOf('Kayak', 1999), serviceOf('Traslado aeropuerto', 500, { serviceType: 'TRANSPORTATION' })] });
+    const select = within(element).getByLabelText('Tour') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value).filter(Boolean)).toEqual(['svc-Kayak']);
   });
 });
 
