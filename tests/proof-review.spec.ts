@@ -25,7 +25,7 @@ import { ActorContext } from '../src/app/shared/actor-context';
 import { Clock } from '../src/app/shared/clock';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
-import { PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENTS_TABLE_BODIES, contribute } from '../src/app/shared/portal-slots';
+import { PAYMENTS_HEADER_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENTS_TABLE_BODIES, contribute } from '../src/app/shared/portal-slots';
 import type { MountProps, PortalApiClient } from '../src/app/shell-contract';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
@@ -532,6 +532,15 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     expect(cells.sort()).toEqual((await waitingIds()).map((id) => `Fila ${id}`).sort());
     expect(cells).toEqual(expect.arrayContaining(['Fila RES-1827', `Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]));
     expect(element.querySelector('section.crp-operator-panel:has(table) + crp-test-panel')).not.toBeNull();
+  });
+
+  it('offers PAYMENTS_HEADER_ACTIONS in the header of Pagos, before "Ver reservas", as the header links of the mockup', async () => {
+    @Component({ selector: 'crp-test-header', template: '<button type="button" class="crp-operator-outline crp-page-header-action">Acción de cabecera</button>' })
+    class HeaderDouble {}
+    const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [contribute(PAYMENTS_HEADER_ACTIONS, { component: HeaderDouble, order: 1 })] }));
+    const labels = Array.from(element.querySelectorAll('header.crp-page-header button')).map((button) => button.textContent?.trim());
+    expect(labels[0]).toBe('Acción de cabecera');
+    expect(labels[labels.length - 1]).toBe('Ver reservas');
   });
 
   it('offers PAYMENTS_TABLE_BODIES after the proofs of Pagos pendientes, and draws the table for them when no proof waits', async () => {
