@@ -227,12 +227,12 @@
 
 /* Catálogos hub (admin-catalogos.html): the cards of the areas the build registers. */
 .crp-root .crp-header-actions { display: inline-flex; flex-wrap: wrap; gap: 12px; }
-.crp-root .crp-catalog-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.crp-root .crp-catalog-grid article { display: grid; gap: 10px; align-content: start; min-height: 190px; padding: 20px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); background: var(--crp-surface); }
+.crp-root .crp-catalog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.crp-root .crp-catalog-grid article { display: grid; gap: 10px; align-content: start; min-height: 190px; min-width: 0; padding: 20px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); background: var(--crp-surface); overflow-wrap: anywhere; }
 .crp-root .crp-catalog-grid span { color: var(--crp-soft); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
 .crp-root .crp-catalog-grid strong { color: var(--crp-accent); font-size: 1.24rem; letter-spacing: -0.04em; }
 .crp-root .crp-catalog-grid p { margin: 0; color: var(--crp-soft); font-size: 0.84rem; line-height: 1.5; }
-.crp-root .crp-catalog-link { width: max-content; border: 0; padding: 0; background: transparent; color: var(--crp-accent); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
+.crp-root .crp-catalog-link { width: max-content; max-width: 100%; justify-self: start; text-align: left; overflow-wrap: anywhere; border: 0; padding: 0; background: transparent; color: var(--crp-accent); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
 /* Nuevo servicio (admin-nuevo-servicio.html): two full-width stacked cards, two-column fields, tall controls. */
 .crp-root .crp-operator-shell .crp-catalog-new-service { grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 0; }
 .crp-root .crp-catalog-new-service .crp-operator-panel { margin-top: 0; }
@@ -315,9 +315,6 @@
 .crp-root .crp-discount-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 .crp-root .crp-discount-grid small { display: block; margin-top: 4px; color: var(--crp-soft); font-size: 0.78rem; }
 
-@media (max-width: 1180px) {
-  .crp-root .crp-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 860px) {
   .crp-root .crp-operator-shell, .crp-root .crp-operator-shell.crp-no-sidebar { grid-template-columns: minmax(0, 1fr); }
   .crp-root .crp-operator-sidebar { padding: 16px; border-right: 0; border-bottom: 1px solid var(--crp-line); }
