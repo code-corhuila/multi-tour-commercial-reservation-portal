@@ -178,6 +178,11 @@ describe('manageAndTreatmentShowTheRefundOf10A', () => {
     expect(s.button('Ver detalle y ejecución')).toBeTruthy();
   });
 
+  it('the list table can shrink to the width of the content, so no horizontal bar shows on a normal screen', async () => {
+    const s = await screen(RefundRequestsPageComponent);
+    expect(s.host.querySelector('table')?.classList.contains('crp-refunds-table')).toBe(true);
+  });
+
   it('the list opens the detail for a refund pending its decision, as the current mockup does', async () => {
     const s = await screen(RefundRequestsPageComponent);
     s.host.querySelector<HTMLButtonElement>('tbody tr:first-child td:last-child button')!.click();
