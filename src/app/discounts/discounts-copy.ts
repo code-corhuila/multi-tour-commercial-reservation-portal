@@ -16,19 +16,19 @@ export const DISCOUNT_TEXT = {
   until: 'Vigente hasta el', base: 'Base de cálculo:', priority: 'Prioridad', stackable: 'acumulable', notStackable: 'no acumulable', cap: 'Tope:',
   baseInline: { ORIGINAL_VALUE: 'valor original', PREVIOUS_SUBTOTAL: 'subtotal resultante del descuento anterior' },
 };
-type Control = { name: string; label: string; kind?: string; placeholder?: string; options?: readonly { value: string; label: string; explanation: string }[] };
+type Control = { name: string; label: string; kind?: string; placeholder?: string; options?: readonly { value: string; label: string }[] };
 export const DISCOUNT_CONTROLS: readonly Control[] = [
   { name: 'tourId', label: 'Tour', options: [] },
   { name: 'percentage', label: 'Porcentaje de descuento (1 a 100)', kind: 'text' },
   { name: 'calculationBase', label: 'Base de cálculo', options: [
-    { value: 'ORIGINAL_VALUE', label: 'Valor original', explanation: 'se calcula sobre el valor original de la reserva.' },
-    { value: 'PREVIOUS_SUBTOTAL', label: 'Subtotal resultante del descuento anterior', explanation: 'se calcula sobre el subtotal que deja el descuento previo.' },
+    { value: 'ORIGINAL_VALUE', label: 'Valor original' },
+    { value: 'PREVIOUS_SUBTOTAL', label: 'Subtotal resultante del descuento anterior' },
   ] },
   { name: 'cap', label: 'Tope del descuento', kind: 'text', placeholder: 'Opcional, ej. $50.000' },
   { name: 'startsOn', label: 'Vigencia desde', kind: 'date' },
   { name: 'endsOn', label: 'Vigencia hasta', kind: 'date' },
   { name: 'priority', label: 'Prioridad (1 se aplica primero)', kind: 'text' },
-  { name: 'stackable', label: 'Acumulable', options: [{ value: 'no', label: 'No', explanation: '' }, { value: 'si', label: 'Sí', explanation: '' }] },
+  { name: 'stackable', label: 'Acumulable', options: [{ value: 'no', label: 'No' }, { value: 'si', label: 'Sí' }] },
 ];
 /** The two numbered panels of the form, in the order of the screen. */
 export const DISCOUNT_SECTIONS = [
