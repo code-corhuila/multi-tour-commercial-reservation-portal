@@ -67,6 +67,7 @@ describe('the Validar comprobante links of 10 and 10A (T-07, second pull request
     const example = await reservation(EXAMPLE), plain = await reservation(TOTAL);
     const row = await drawn(ProofRowLinkComponent, example);
     expect(flat(row.element)).toBe('· Validar comprobante');
+    expect(row.element.querySelector('.crp-row-sep')?.textContent?.trim()).toBe('·');
     row.press('Validar comprobante');
     expect(row.navigation.selected()).toBe('payments-validate');
     expect(row.navigation.params()).toEqual({ reservation: EXAMPLE, payment: `${EXAMPLE}-P1` });
