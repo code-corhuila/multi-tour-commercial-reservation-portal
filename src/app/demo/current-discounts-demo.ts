@@ -12,6 +12,8 @@ import { Clock } from '../reservation-changes/data/cancellation-ports';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { STATUS_LABEL } from '../reservations/model/reservation';
 import { pesosText } from '../shared/money';
+import { AuthorizableReasons } from '../current-discounts/data/authorizable-reasons';
+import { DemoAuthorizableReasons } from './authorizable-reasons-demo';
 import { discountLabelOf } from './discount-label-demo';
 import type { DemoReservationsStore } from './reservations-demo';
 import { TourValueSource } from '../public-offer/data/public-offer-sources';
@@ -116,5 +118,6 @@ export function currentDiscountsProviders(): Provider[] {
     { provide: AdditionalDiscountContexts, useFactory: (s: ReservationsSource) => new DemoAdditionalDiscountContexts(s as DemoReservationsStore), deps: [ReservationsSource] },
     { provide: AdditionalDiscountWriter, useFactory: (s: ReservationsSource, c: Clock, u: RegisteringUser) => new DemoAdditionalDiscountWriter(s as DemoReservationsStore, c, u, answered),
       deps: [ReservationsSource, Clock, RegisteringUser] },
+    { provide: AuthorizableReasons, useValue: new DemoAuthorizableReasons() },
     { provide: DiscountBreakdowns, useValue: new DemoDiscountBreakdowns() }];
 }
