@@ -141,7 +141,7 @@ export class ReservationFormComponent {
   }).pipe(
     map(({ departures, items }): OptionsState => {
       const open = openDepartures(departures);
-      const services = items.filter((i) => i.catalogStatus === 'ACTIVE').map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents }));
+      const services = items.filter((i) => i.serviceType === 'TOUR' && i.catalogStatus === 'ACTIVE').map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents }));
       return open.length ? { kind: 'data', options: { departures: open, services } } : { kind: 'empty' };
     }),
     catchError((error) => of<OptionsState>({ kind: 'error', ...readFailure(error) })), startWith<OptionsState>({ kind: 'loading' }),
