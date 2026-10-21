@@ -16,10 +16,11 @@ import { apiError, ControllableCatalogItemsWriter, ControllableIdempotencyKeys }
 // HU-COM-001, owner decision 2026-10-15: "Nuevo servicio" is its own screen, drawn as admin-nuevo-servicio.html of the mockup.
 async function openScreen(role: ActorRole = 'TENANT_ADMINISTRATOR', areas: readonly string[] = ['catalog', 'catalog-tours', 'catalog-new-service', 'establishments']) {
   const writer = new ControllableCatalogItemsWriter();
+  const source = new ControllableCatalogItemsSource();
   const navigation = new PortalNavigation();
   navigation.register(areas);
   TestBed.configureTestingModule({ providers: [
-    { provide: CatalogItemsSource, useValue: new ControllableCatalogItemsSource() },
+    { provide: CatalogItemsSource, useValue: source },
     { provide: CatalogItemsWriter, useValue: writer },
     { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() },
     { provide: ActorContext, useValue: actorAs(role) },
@@ -33,14 +34,16 @@ async function openScreen(role: ActorRole = 'TENANT_ADMINISTRATOR', areas: reado
   const type = (label: string, value: string) => fireEvent.input(ui.getByLabelText(label), { target: { value } });
   const choose = (label: string, value: string) => fireEvent.change(ui.getByLabelText(label), { target: { value } });
   const click = async (name: string) => { fireEvent.click(ui.getByRole('button', { name })); await settle(); };
+  const pickImage = (name = 'cañon.jpg') => fireEvent.change(ui.getByLabelText('Imagen del servicio'), { target: { files: [new File(['x'], name, { type: 'image/jpeg' })] } });
   const fillValid = (rateLabel = 'Tarifa base') => {
     type('Nombre comercial', 'Cañón del Suaza');
     type(rateLabel, '520000');
     type('Costo operativo base', '300000');
     type('Vigencia desde', '2026-09-01');
     type('Vigencia hasta', '2026-09-30');
+    pickImage();
   };
-  return { host, ui, settle, writer, navigation, type, choose, click, fillValid };
+  return { host, ui, settle, writer, source, navigation, pickImage, type, choose, click, fillValid };
 }
 
 const labelsOf = (card: Element) => Array.from(card.querySelectorAll('label')).map((label) => label.firstChild?.textContent?.trim());
@@ -65,7 +68,7 @@ describe('newServiceDrawsTheMockupScreen', () => {
     expect(labelsOf(cards[0])).toEqual(['¿Qué quieres crear?', 'Nombre comercial', 'Tipo', 'Capacidad / cupo', 'Restricciones operativas', '¿Incluye transporte?']);
     expect(cards[1].querySelector('.crp-operator-eyebrow')?.textContent).toBe('02. Condiciones y publicación');
     expect(cards[1].querySelector('h2')?.textContent).toBe('Tarifa, vigencia e imagen');
-    expect(labelsOf(cards[1])).toEqual(['Tarifa base', 'Política de cupo', 'Costo operativo base', 'Alto riesgo', 'Vigencia desde', 'Vigencia hasta']);
+    expect(labelsOf(cards[1])).toEqual(['Tarifa base', 'Política de cupo', 'Costo operativo base', 'Alto riesgo', 'Vigencia desde', 'Vigencia hasta', 'Imagen del servicio']);
     expect(host.textContent).toContain('Completa la información para publicar el producto en el catálogo del cliente.');
   });
 
@@ -138,11 +141,15 @@ describe('newServiceCreatesWithTheSpecFieldsKept', () => {
   });
 
   it('creates a tour with its cost, risk, transport, capacity and restrictions, once, with one Idempotency-Key, and opens the tour list', async () => {
-    const { ui, writer, navigation, type, choose, click, settle, fillValid } = await openScreen();
+    const { ui, writer, source, navigation, type, choose, click, settle, fillValid } = await openScreen();
+    const bus = { ...itemNamed('Bus Neiva'), serviceType: 'TRANSPORTATION' as const };
+    source.requests[0].reply([bus]);
     fillValid();
     type('Capacidad / cupo', '12');
     type('Restricciones operativas', 'Solo mayores de 12 años');
     choose('¿Incluye transporte?', 'si');
+    await settle();
+    choose('Transporte asociado', bus.serviceId);
     choose('Alto riesgo', 'si');
     await settle();
     fireEvent.click(ui.getByRole('button', { name: 'Guardar y publicar' }));
@@ -201,6 +208,63 @@ describe('newServiceCreatesWithTheSpecFieldsKept', () => {
     const { host, ui } = await openScreen('OPERATIONAL_COLLABORATOR');
     expect(ui.getByRole('alert').textContent).toBe(CATALOG_COPY.denied);
     expect(host.querySelector('form')).toBeNull();
+  });
+});
+
+describe('newServiceDrawsTheTransportAndTheImageOfTheMockup', () => {
+  const bus = { ...itemNamed('Bus Neiva'), serviceType: 'TRANSPORTATION' as const };
+  const closedBus = { ...itemNamed('Bus cerrado'), serviceType: 'TRANSPORTATION' as const, catalogStatus: 'INACTIVE' as const };
+
+  it('draws "Transporte asociado" only once the tour includes transport, listing the active transport resources and nothing else', async () => {
+    const { ui, source, choose, settle } = await openScreen();
+    expect(ui.queryByLabelText('Transporte asociado')).toBeNull();
+    source.requests[0].reply([bus, closedBus, itemNamed('Cañón del Suaza')]);
+    choose('¿Incluye transporte?', 'si');
+    await settle();
+    const options = Array.from(ui.getByLabelText('Transporte asociado').querySelectorAll('option')).map((option) => option.textContent);
+    expect(options).toEqual(['Selecciona un transporte activo', 'Bus Neiva']);
+    choose('¿Incluye transporte?', 'no');
+    await settle();
+    expect(ui.queryByLabelText('Transporte asociado')).toBeNull();
+  });
+
+  it('says there is no active transport to associate when the list has none', async () => {
+    const { host, source, choose, settle } = await openScreen();
+    source.requests[0].reply([closedBus]);
+    choose('¿Incluye transporte?', 'si');
+    await settle();
+    expect(host.textContent).toContain('No hay transportes activos disponibles. Crea o activa uno en Gestionar transporte antes de asociarlo a este Tour.');
+  });
+
+  it('refuses a tour that includes transport without a chosen one, and sends it once chosen', async () => {
+    const { ui, host, source, writer, choose, click, settle, fillValid } = await openScreen();
+    source.requests[0].reply([bus]);
+    fillValid();
+    choose('¿Incluye transporte?', 'si');
+    await settle();
+    await click('Guardar y publicar');
+    expect(writer.calls).toHaveLength(0);
+    expect(ui.getByLabelText('Transporte asociado').getAttribute('aria-invalid')).toBe('true');
+    expect(host.textContent).toContain('Selecciona un transporte activo para asociarlo a este Tour, o marca "No" si no incluye transporte.');
+    choose('Transporte asociado', bus.serviceId);
+    await click('Guardar y publicar');
+    expect(writer.calls).toHaveLength(1);
+    expect(writer.calls[0]).toMatchObject({ command: { transportRequired: true } });
+  });
+
+  it('draws "Imagen del servicio" as an image file field and refuses to publish without one', async () => {
+    const { ui, writer, type, click } = await openScreen();
+    const image = ui.getByLabelText('Imagen del servicio') as HTMLInputElement;
+    expect(image.type).toBe('file');
+    expect(image.accept).toBe('image/*');
+    type('Nombre comercial', 'Cañón del Suaza');
+    type('Tarifa base', '520000');
+    type('Costo operativo base', '300000');
+    type('Vigencia desde', '2026-09-01');
+    type('Vigencia hasta', '2026-09-30');
+    await click('Guardar y publicar');
+    expect(writer.calls).toHaveLength(0);
+    expect(ui.getByLabelText('Imagen del servicio').getAttribute('aria-invalid')).toBe('true');
   });
 });
 
