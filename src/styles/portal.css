@@ -171,6 +171,8 @@
 .crp-root .crp-operator-panel h2 { margin: 4px 0 0; color: var(--crp-ink-green); font-size: 1.18rem; letter-spacing: -0.045em; }
 .crp-root .crp-operator-copy { margin: 0 0 18px; color: var(--crp-soft-copy); font-size: 0.92rem; line-height: 1.6; }
 .crp-root .crp-operator-eyebrow, .crp-root .crp-page-header-eyebrow { margin: 0; color: var(--crp-shade-667579); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
+/* The kicker of an operator header is green in the mockup (mt-page-header-eyebrow); the panel kickers stay gray. */
+.crp-root .crp-page-header-eyebrow { color: var(--crp-accent-strong); }
 .crp-root .crp-page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--crp-line); }
 .crp-root .crp-page-header-main { display: grid; gap: 8px; max-width: 62ch; margin-right: auto; }
 .crp-root .crp-h1 { display: block; margin: 0; font-family: inherit; font-size: clamp(2rem, 1.5rem + 2vw, 3.5rem); font-weight: 700; line-height: 1.04; letter-spacing: -0.025em; color: var(--crp-text); }
@@ -227,6 +229,7 @@
 
 /* Catálogos hub (admin-catalogos.html): the cards of the areas the build registers. */
 .crp-root .crp-header-actions { display: inline-flex; flex-wrap: wrap; gap: 12px; }
+.crp-root .crp-page-header .crp-header-actions { justify-content: flex-end; margin-left: auto; }
 .crp-root .crp-catalog-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .crp-root .crp-catalog-grid article { display: grid; gap: 10px; align-content: start; min-height: 190px; padding: 20px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); background: var(--crp-surface); }
 .crp-root .crp-catalog-grid span { color: var(--crp-soft); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
@@ -865,6 +868,14 @@
   --crp-shade-1f7a4a: #1f7a4a;
   --crp-shade-b7c9c3: #b7c9c3;
   --crp-shade-eff5f2: #eff5f2;
+  --crp-shade-193d3a: #193d3a;
+  --crp-shade-bde3d7: #bde3d7;
+  --crp-shade-cbe3dc: #cbe3dc;
+  --crp-shade-5c6c6b: #5c6c6b;
+  --crp-shade-dce5df: #dce5df;
+  --crp-shade-e5ece7: #e5ece7;
+  --crp-panel-warm: rgba(255, 254, 251, 0.94);
+  --crp-shadow-panel: 0 13px 26px rgba(25, 52, 47, 0.035);
 }
 .crp-root .crp-reservations-form { display: block; }
 .crp-root .crp-operator-shell .crp-reservations-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 0; }
@@ -908,6 +919,18 @@
 .crp-root .crp-reservations-lines div { display: flex; justify-content: space-between; gap: 16px; }
 .crp-root .crp-reservations-lines dt, .crp-root .crp-reservations-breakdown dt { color: var(--crp-shade-667579); }
 .crp-root .crp-reservations-lines dd { margin: 0; font-weight: 700; color: var(--crp-ink-slate); text-align: right; }
+/* Detalle de reserva (admin-detalle-reserva.html, 10A): dark hero, access note, warm panels and compact lists as the mockup. */
+.crp-root .crp-reservations-detail .crp-operator-panel { padding: 30px; border-color: var(--crp-shade-dce5df); background: var(--crp-panel-warm); box-shadow: var(--crp-shadow-panel); }
+.crp-root .crp-reservations-detail .crp-operator-panel h2 { margin: 2px 0 10px; font-size: 0.95rem; }
+.crp-root .crp-reservations-detail .crp-reservations-hero { gap: 24px; margin-bottom: 14px; padding: 24px 28px; border: 0; background: var(--crp-shade-193d3a); box-shadow: none; }
+.crp-root .crp-reservations-detail .crp-reservations-hero .crp-operator-eyebrow { color: var(--crp-shade-bde3d7); font-size: 0.9rem; }
+.crp-root .crp-reservations-detail .crp-reservations-hero h2 { margin: 5px 0; color: var(--crp-surface); font-size: 1.612rem; }
+.crp-root .crp-reservations-detail .crp-reservations-hero p:not(.crp-operator-eyebrow) { margin: 0; color: var(--crp-shade-cbe3dc); font-size: 0.9rem; }
+.crp-root .crp-reservations-detail > p.crp-operator-copy { margin: 0 0 18px; padding: 12px 14px; border: 1px solid var(--crp-shade-dce9e2); border-radius: 10px; background: var(--crp-shade-f4faf7); color: var(--crp-shade-5c6c6b); font-size: 0.78rem; line-height: 1.5; }
+.crp-root .crp-reservations-detail .crp-reservations-lines { gap: 11px; margin: 10px 0 0; }
+.crp-root .crp-reservations-detail .crp-reservations-lines div { padding: 0 0 10px; border-bottom: 1px solid var(--crp-shade-e5ece7); }
+.crp-root .crp-reservations-detail .crp-reservations-lines dt { color: var(--crp-shade-718084); font-size: 0.77rem; }
+.crp-root .crp-reservations-detail .crp-reservations-lines dd { color: var(--crp-shade-334547); font-size: 0.82rem; }
 .crp-root .crp-reservations-success-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--crp-shade-e3f4ea); color: var(--crp-shade-1f7a4a); font-weight: 800; }
 .crp-root .crp-reservations-breakdown { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 16px 0 0; font-size: 0.86rem; }
 .crp-root .crp-reservations-tenant-context { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; padding: 11px 14px; border: 1px solid var(--crp-line-green); border-radius: var(--crp-radius-control); background: var(--crp-muted-green); }
