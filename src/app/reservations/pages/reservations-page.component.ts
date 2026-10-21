@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap, tap } from 'rxjs';
+import { ADDITIONAL_DISCOUNT_MODE } from '../../current-discounts/data/additional-discount-eligibility';
 import { PortalNavigation } from '../../portal-navigation';
 import { RESCHEDULING_AREA } from '../../rescheduling/data/rescheduling-ports';
 import { formatDate } from '../../shared/format';
@@ -12,7 +13,7 @@ import { ReservationsSource } from '../data/reservations-source';
 import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, paymentState, travelers } from '../model/reservation';
 import { RESERVATION_HEADERS } from '../reservations-copy';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { PortalSlotOutlet, RESERVATION_DETAIL_ACTIONS, RESERVATION_ROW_ACTIONS } from '../../shared/portal-slots';
+import { PortalSlotOutlet, RESERVATION_DETAIL_ACTIONS, RESERVATION_MODE_ACTIONS, RESERVATION_ROW_ACTIONS, slotEntries } from '../../shared/portal-slots';
 
 type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly Reservation[] };
 type View = { kind: 'list' | 'create' } | { kind: 'created' | 'detail'; reservation: Reservation };
@@ -35,7 +36,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = RESERVATION_HEA
       @case ('created') { <app-reservation-view [reservation]="v.reservation" [fresh]="true" (detail)="view.set({ kind: 'detail', reservation: v.reservation })" /> }
       @case ('detail') { <app-reservation-view [reservation]="v.reservation" /> }
       @default {
-        <section class="crp-operator-panel crp-reservations-hero crp-reservations-hero-wide"><div><p class="crp-operator-eyebrow">{{ text.followEyebrow }}</p><h2>{{ text.followTitle }}</h2></div><p>{{ text.followNote }}</p></section>
+        <section class="crp-operator-panel crp-reservations-hero crp-reservations-hero-wide"><div><p class="crp-operator-eyebrow">{{ text.followEyebrow }}</p><h2>{{ text.followTitle }}</h2></div><p>{{ text.followNote }}</p>@if (modeOpen) { <p data-additional-discount-banner>{{ text.modeBanner }}</p> }</section>
         <section class="crp-operator-panel">
           <div class="crp-operator-panel-head"><div><p class="crp-operator-eyebrow">{{ text.listEyebrow }}</p><h2>{{ text.listTitle }}</h2></div>
             @if (hasArchived()) { <button type="button" class="crp-operator-outline" [attr.aria-expanded]="showAll()" (click)="showAll.set(!showAll())">{{ showAll() ? text.active : text.all }}</button> }</div>
@@ -51,9 +52,10 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = RESERVATION_HEA
                   <tr><td><span class="crp-reservations-code">#{{ r.id }}</span><small class="crp-reservations-meta">{{ date(r.departureDate) }} · {{ travelers(r.people) }}</small></td>
                     <td>{{ r.leadCustomerName }}</td><td>{{ r.tourName }}</td>
                     <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td><small class="crp-reservations-meta">{{ paymentState(r) }}</small><br><strong>{{ money(r.balanceCents) }}</strong></td>
-                    <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button><ng-container *crpSlot="rowActions; inputs: { reservation: r }" />
+                    <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button>@if (modeOpen) { <ng-container *crpSlot="modeActions; inputs: { reservation: r, mode: mode }" /> } @else {
+                    <ng-container *crpSlot="rowActions; inputs: { reservation: r }" />
                     @if (payLabel(r); as label) { <span> · </span><button type="button" (click)="open('payment-management', r)">{{ label }}</button> }
-                    @if (reschedulable(r)) { <span> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> }</td></tr>
+                    @if (reschedulable(r)) { <span> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> } }</td></tr>
                 }</tbody>
               </table></div>
             }
@@ -86,6 +88,10 @@ export class ReservationsPageComponent {
     if (!this.navigation?.has('payment-management') || reviewing || r.status === 'EN_EJECUCION' || r.status === 'FINALIZADA') return null;
     return r.status === 'CANCELADA' || r.balanceCents === 0 ? this.text.seePay : this.text.pay;
   }
+  /** HU-COM-004 (AC-CD.10): Reservas opened with { mode }; the mode exists only while some story offers its actions to this role, so the others get the plain list (AC-CD.7). */
+  protected readonly mode = this.navigation?.params()['mode'] === ADDITIONAL_DISCOUNT_MODE && slotEntries(RESERVATION_MODE_ACTIONS, inject(Injector)).length ? ADDITIONAL_DISCOUNT_MODE : '';
+  protected readonly modeOpen = this.mode !== '';
+  protected readonly modeActions = RESERVATION_MODE_ACTIONS;
   protected reschedulable(r: Reservation): boolean { return !!r.reschedulingPending && !!this.navigation?.has(RESCHEDULING_AREA); }
   protected open(area: string, r: Reservation): void { this.navigation?.open(area, { reservation: r.id }); }
   /** HU-COM-001 portal foundation of 2026-10-13: the actions other stories add to the Acción cell of 10. */

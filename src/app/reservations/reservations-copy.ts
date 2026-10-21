@@ -29,6 +29,7 @@ export const RESERVATION_TEXT = {
   followEyebrow: 'Seguimiento', followTitle: 'Reserva, salida, cupo y valores siempre conectados.',
   followNote: 'Cada reserva pertenece a una única salida. Las modificaciones permitidas antes de la ejecución recalculan disponibilidad, descuentos y saldo; el cambio exclusivo de fecha se registra sobre la misma reserva.',
   all: 'Ver todas las reservas', active: 'Ver reservas activas', pay: 'Gestionar pago', seePay: 'Ver pago', reschedule: 'Reprogramar',
+  modeBanner: 'Selecciona la reserva a la que deseas aplicar un descuento adicional.',
 } as const;
 /** Texts of the result (10C) and the detail (10A) of a reservation. */
 export const RESERVATION_VIEW_TEXT = {
