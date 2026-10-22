@@ -6,6 +6,7 @@ import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, swi
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
+import { EstablishmentManageComponent } from '../components/establishment-manage.component';
 import { ESTABLISHMENTS_COPY } from '../establishments-copy';
 import { AssociatedEstablishmentsWriter } from '../data/associated-establishments-writer';
 import { AssociatedEstablishmentsSource } from '../data/associated-establishments-source';
@@ -22,7 +23,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
 @Component({
   selector: 'app-establishments-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReadErrorComponent, EstablishmentFormComponent],
+  imports: [ReadErrorComponent, EstablishmentFormComponent, EstablishmentManageComponent],
   template: `
     @if (!canRead) {
       <p role="alert" data-state="denied">{{ copy.denied }}</p>
@@ -91,9 +92,11 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
               <tr>
                 <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.establishmentType] }}</small></td>
                 <td>{{ item.commercialInformation }}</td>
-                <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ copy.statuses[item.associationStatus] }}</span></td>
+                <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ copy.statuses[item.associationStatus] }}</span>
+                  <br><small>{{ lastChangeOf(item) }}</small></td>
                 @if (canWrite) {
                 <td class="crp-row-actions">
+                  <button class="crp-operator-outline" type="button" [attr.aria-expanded]="managing() === item.associationId" (click)="managing.set(item.associationId)">{{ copy.manage }}</button>
                   <button class="crp-row-toggle" type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="changeStatus(item)">
                     {{ item.associationStatus === 'ACTIVE' ? copy.inactivate : copy.reactivate }}
                   </button>
@@ -105,6 +108,9 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
             </tbody>
           </table>
           </div>
+          @for (item of [managed(current.items)]; track item?.associationId) {
+            @if (item) { <app-establishment-manage [establishment]="item" (saved)="onManaged($event)" (closed)="managing.set(null)" /> }
+          }
         }
       }
       </section>
@@ -121,6 +127,8 @@ export class EstablishmentsPageComponent {
   protected readonly formOpen = signal(false);
   protected readonly formKey = signal(0);
   protected readonly saving = signal(false);
+  /** The establishment whose "Gestionar" panel is open on this screen; one at a time. */
+  protected readonly managing = signal<string | null>(null);
   protected readonly pendingIds = signal<Readonly<Record<string, boolean>>>({});
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
   private readonly local = signal<EstablishmentsPageState | null>(null);
@@ -187,6 +195,15 @@ export class EstablishmentsPageComponent {
     const current = this.state();
     this.local.set({ kind: 'data', items: [stored, ...(current.kind === 'data' ? current.items : [])] });
     this.formOpen.set(false);
+  }
+  protected managed(items: readonly AssociatedEstablishment[]): AssociatedEstablishment | undefined { return items.find((row) => row.associationId === this.managing()); }
+  protected lastChangeOf(item: AssociatedEstablishment): string {
+    const last = item.changes?.at(-1);
+    return last ? this.copy.lastChange(last.kind, last.by, last.at) : this.copy.noChange;
+  }
+  protected onManaged(stored: AssociatedEstablishment): void {
+    const current = this.state();
+    if (current.kind === 'data') { this.local.set({ kind: 'data', items: current.items.map((row) => row.associationId === stored.associationId ? stored : row) }); }
   }
   protected changeStatus(item: AssociatedEstablishment): void {
     if (!this.canWrite || this.saving() || this.pendingIds()[item.associationId]) { return; }
