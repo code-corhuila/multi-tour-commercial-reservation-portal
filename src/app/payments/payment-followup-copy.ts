@@ -7,6 +7,8 @@ export const PAYMENT_FOLLOWUP_TEXT = {
   eyebrow: 'Control de cobro', title: 'Registrar seguimiento', back: 'Volver a pagos', pendingBalance: 'Saldo pendiente',
   contextEyebrow: '01. Contexto del pago', contextTitle: 'Estado actual de la reserva',
   fields: ['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valores validados', 'Saldo pendiente', 'Situación financiera'], departure: 'Salida', deadline: 'Plazo de pago vigente',
+  /** Improvement of the owner (2026-10-21), spec 011- amendment: the phone of the customer as a link that calls, so the Colaborador does not look for it. */
+  phone: 'Teléfono del cliente',
   followupEyebrow: '02. Seguimiento', followupTitle: 'Registrar contacto',
   rule: 'Durante el plazo, el Colaborador operativo puede contactar al cliente. Una respuesta del cliente sin pago no suspende ni cumple el plazo.', note: 'Nota de seguimiento (obligatoria)',
   notePlaceholder: 'Describe el contacto realizado con el cliente y el resultado',
