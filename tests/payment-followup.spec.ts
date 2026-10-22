@@ -23,6 +23,7 @@ import { TransferPaymentPageComponent } from '../src/app/payments/pages/transfer
 import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
+import { ReservationsWriter } from '../src/app/reservations/data/reservations-writer';
 import { Reservation } from '../src/app/reservations/model/reservation';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
 import { PaymentMethodsSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
@@ -32,7 +33,7 @@ import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
 import { CHECKOUT_BLOCKS, PAYMENTS_TABLE_BODIES, PortalSlot, TRANSFER_PAYMENT_LINES } from '../src/app/shared/portal-slots';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
-import { screenOf } from './reservations.double';
+import { reservationOf, screenOf } from './reservations.double';
 
 // HU-COM-011 (spec 011-, tasks T-01 to T-06): the rows "Saldo pendiente" of 13, the sub-screen admin-registrar-seguimiento.html
 // and the deadline sentence of 21 and 24, over the one reservations store of HU-COM-007.
@@ -145,6 +146,56 @@ describe('the frame: area, ports, four states and texts (T-01)', () => {
     expect(element.querySelector('textarea')?.getAttribute('placeholder')).toBe('Describe el contacto realizado con el cliente y el resultado');
     expect(Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim())).toEqual(['Fecha', 'Hora', 'Actor', 'Nota']);
     expect(text).not.toMatch(/PENDIENTE_DE_PAGO|SIN_PAGO|BANK_TRANSFER|TOTAL\b|undefined|null|NaN/);
+  });
+
+  // Improvement of the owner (2026-10-21), amendment of spec 011-: the Colaborador reaches the customer from the screen made to contact them.
+  it('drawsThePhoneOfTheCustomerAsACallLinkWhenTheReservationCarriesIt', async () => {
+    const { element } = await following();
+    const row = element.querySelector('.crp-payment-followup-phone-row')!;
+    expect(row.querySelector('label, span')?.textContent?.trim()).toBe('Teléfono del cliente');
+    const link = row.querySelector('a')!;
+    expect(link.textContent?.trim()).toBe('+57 310 555 0142');
+    expect(link.getAttribute('href')).toBe('tel:+573105550142');
+    expect(flat(element.querySelector('section')!)).toContain('Teléfono del cliente');
+  });
+
+  it('givesTheSecondSeededReservationItsPhoneToo', async () => {
+    const { element } = await following(EXTENDED);
+    expect(element.querySelector('.crp-payment-followup-phone-row a')?.textContent?.trim()).toBe('+57 311 555 0187');
+  });
+
+  it('keepsThePhoneOfAReservationCreatedWithATypedTitular', async () => {
+    await following();
+    const created = await firstValueFrom(TestBed.inject(ReservationsWriter).create({
+      lead: { fullName: 'Titular Nuevo', document: 'DOC 1', email: 'nuevo@example.test', phone: '+57 320 555 0100', birthDate: '1990-01-01' },
+      departureId: 'demo-dep-1', serviceIds: ['demo-svc-1'], people: 1,
+    }, 'phone-key'));
+    expect(created.leadPhone).toBe('+57 320 555 0100');
+    expect((await stored(created.id)).leadPhone).toBe('+57 320 555 0100');
+  });
+
+  const phonePage = (over: Partial<Reservation>) => {
+    TestBed.resetTestingModule();
+    const source = new (class extends ReservationsSource { override list() { return of([reservationOf(TOTAL, { leadCustomerName: 'Laura Gómez (demo)', ...over })]); } })();
+    return following(TOTAL, { extra: [{ provide: ReservationsSource, useValue: source }, { provide: PaymentDeadlineReader, useValue: { deadlineOf: () => of(null) } }] });
+  };
+
+  it('drawsNoPhoneRowWhenTheReservationHasNoPhone', async () => {
+    const { element } = await phonePage({ balanceCents: 85_000_000 });
+    expect(element.querySelector('.crp-payment-followup-phone-row')).toBeNull();
+    expect(flat(element)).not.toContain('Teléfono del cliente');
+  });
+
+  it('drawsTheCallLinkOfAReservationWithAPhoneAndABalance', async () => {
+    const { element } = await phonePage({ leadPhone: '+57 300 000 0000', balanceCents: 85_000_000 });
+    expect(element.querySelector('.crp-payment-followup-phone-row a')?.getAttribute('href')).toBe('tel:+573000000000');
+  });
+
+  it('drawsNoPhoneRowOnAPaidOrCancelledReservationThatOnlyShowsItsHistory', async () => {
+    for (const over of [{ balanceCents: 0 }, { status: 'CANCELADA' as const, balanceCents: 85_000_000 }]) {
+      const { element } = await phonePage({ leadPhone: '+57 300 000 0000', ...over });
+      expect(element.querySelector('.crp-payment-followup-phone-row'), JSON.stringify(over)).toBeNull();
+    }
   });
 
   it('aMissingReservationDrawsTheFormDisabledWithTheMessageInTheFeedbackLine', async () => {
