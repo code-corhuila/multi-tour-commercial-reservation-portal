@@ -34,6 +34,8 @@ export type Reservation = {
   readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL' | 'ABONO_RECIBIDO' | 'PAGO_COMPLETO';
   /** HU-COM-009 RN-PY5: held with the first payment. */
   readonly seatHeld: boolean; readonly departureId?: string;
+  /** "Registrar seguimiento" (spec 011- amendment, G-B PROPUESTO): the phone typed for the lead customer, so the Colaborador can call; absent when none was typed. */
+  readonly leadPhone?: string;
   /** HU-COM-009 DP-PY3: type and method codes of PaymentMethodsSource; absent while none was set. */
   readonly paymentType?: string; readonly paymentMethod?: string;
   /** HU-COM-009: resolved by the service; registering moves neither (RN-PY1). */

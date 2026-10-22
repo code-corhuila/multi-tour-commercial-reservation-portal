@@ -34,6 +34,8 @@ type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadli
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.contextEyebrow }}</p><h2>{{ t.contextTitle }}</h2>
             <div class="crp-form-grid">
               @for (value of d ? context(d) : blank; track $index) { <div><label [for]="'crp-payment-followup-' + $index">{{ t.fields[$index] }}</label><input [id]="'crp-payment-followup-' + $index" readonly [disabled]="missing" [value]="value"></div> }
+              @if (!settled && r?.leadPhone; as phone) { <div class="crp-payment-followup-wide crp-payment-followup-phone-row"><span class="crp-payment-followup-phone-label">{{ t.phone }}</span>
+                <a class="crp-payment-followup-phone" [href]="'tel:' + callable(phone)">{{ phone }}</a></div> }
               <div class="crp-payment-followup-wide"><label for="crp-payment-followup-departure">{{ t.departure }}</label>
                 <input id="crp-payment-followup-departure" readonly [disabled]="missing" [value]="d ? departure(d) : ''"></div>
               @if (!settled) { <div class="crp-payment-followup-wide"><label for="crp-payment-followup-deadline">{{ t.deadline }}</label>
@@ -100,6 +102,8 @@ export class PaymentFollowupPageComponent {
     const r = d.reservation;
     return [`#${r.id}`, r.leadCustomerName, modalityOf(r, d.labels), formatCop(r.validatedCents ?? 0), formatCop(r.balanceCents), r.status === 'CANCELADA' && !r.validatedCents ? 'No aplica por reserva cancelada' : FINANCIAL_LABEL[r.financialStatus]];
   }
+  /** The number as a `tel:` target: digits and the leading plus only, so the spaces typed by hand never break the call. */
+  protected callable(phone: string): string { return phone.replace(/(?!^\+)[^\d]/g, ''); }
   protected departure(d: { reservation: Reservation; departure?: string }): string { return departureText(d.reservation, d.departure); }
   protected value(event: Event): string { return (event.target as HTMLTextAreaElement).value; }
 
