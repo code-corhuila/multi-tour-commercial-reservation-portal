@@ -1,7 +1,7 @@
 import { ApplicationRef, Injector, Provider, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
-import { COMMERCIAL_NAME, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, MountProps, PortalApiClient } from './app/shell-contract';
+import { COMMERCIAL_NAME, CONTAINER_AREA_REPORTER, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, MountProps, PortalApiClient } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
 import { SensitiveDataAccess, sensitiveDataAccessFor } from './app/customers/data/customers-source';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
@@ -77,6 +77,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: CONTAINER_CHROME, useValue: props.chrome === 'container' },
       { provide: INITIAL_AREA, useValue: props.initialParams?.['area']?.trim() || null },
       ...(props.navigate ? [{ provide: CONTAINER_NAVIGATION, useValue: props.navigate }] : []),
+      ...(props.chrome === 'container' && props.onAreaChange ? [{ provide: CONTAINER_AREA_REPORTER, useValue: props.onAreaChange }] : []),
       ...sources(props.apiClient),
       { provide: SensitiveDataAccess, useValue: sensitiveDataAccessFor(props.session.roles) },
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
