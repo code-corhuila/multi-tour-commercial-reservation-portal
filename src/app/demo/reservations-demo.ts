@@ -54,7 +54,9 @@ const inState = (id: string, status: Reservation['status'], over: Partial<Reserv
   ({ ...SEEDED[1], departureId: undefined, id, status, seatHeld: status !== 'PENDIENTE_DE_PAGO' && status !== 'CANCELADA', ...over });
 SEEDED.push(inState('RES-1839', 'CONFIRMADA', { leadCustomerName: 'Camila Ortega (demo)', validatedCents: 30_000_000, balanceCents: 11_800_000, financialStatus: 'ABONO_RECIBIDO' }),
   inState('RES-1838', 'EN_EJECUCION'), inState('RES-1837', 'FINALIZADA'), inState('RES-1836', 'CANCELADA'),
-  inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true }));
+  // HU-COM-018: marked as waiting for a rescheduling, so its episode exists too (still to propose); "Reprogramar" of Reservas opens it.
+  inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true,
+    reschedulingEpisode: { originDepartureId: 'demo-dep-5', originAt: '2026-10-12T19:30:00-05:00' } }));
 /** HU-COM-010 (Pagos pendientes, AC-PV.2, AC-PV.4, AC-PV.5): two $300.000 Abono · Transferencia reservations with a proof En validación. */
 const proof = (id: string, amountCents: number, presentedAt: string, over: Partial<ReservationPayment> = {}): ReservationPayment =>
   ({ id, method: 'BANK_TRANSFER', amountCents, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)', presentedAt, ...over });
