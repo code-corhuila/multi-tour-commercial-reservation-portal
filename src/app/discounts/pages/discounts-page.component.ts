@@ -33,9 +33,9 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
         @if (current.kind === 'data') { @let active = inForce(current.items);
           <span class="crp-operator-status crp-is-confirmed">{{ active }} {{ active === 1 ? 'activa' : 'activas' }}</span> }</div>
       @if (selected(); as rule) {
-        <div class="crp-discount-dialog" role="dialog" aria-modal="true" [attr.aria-label]="text.confirm">
-          <p>{{ text.confirmation }}</p>
-          <button class="crp-primary" type="button" [disabled]="pending()" (click)="confirm()">{{ text.confirm }}</button>
+        <div class="crp-discount-dialog" role="dialog" aria-modal="true" [attr.aria-label]="rule.status === activeStatus ? text.confirm : text.confirmReactivate">
+          <p>{{ rule.status === activeStatus ? text.confirmation : text.reactivation }}</p>
+          <button class="crp-primary" type="button" [disabled]="pending()" (click)="confirm()">{{ rule.status === activeStatus ? text.confirm : text.confirmReactivate }}</button>
           <button class="crp-outline" type="button" [disabled]="pending()" (click)="selected.set(null)">{{ text.cancel }}</button>
           @if (actionError()) { <p role="alert">{{ actionError() }}</p> }
         </div>
@@ -51,7 +51,7 @@ export type DiscountsPageState = { kind: 'loading' | 'empty' } | { kind: 'error'
               <em [class]="'crp-operator-status crp-is-' + badge.tone">{{ badge.label }}</em></div>
               @if (writer) { <div class="crp-row-actions">
                 <button type="button" [disabled]="busy()" (click)="openForm(rule)">{{ text.edit }}</button>
-                @if (rule.status === activeStatus) { <button class="crp-discount-toggle" type="button" [disabled]="busy()" (click)="ask(rule)">{{ text.inactivate }}</button> }
+                <button type="button" [class.crp-discount-toggle]="rule.status === activeStatus" [disabled]="busy()" (click)="ask(rule)">{{ rule.status === activeStatus ? text.inactivate : text.reactivate }}</button>
               </div> }
             </li>
           }</ul>
@@ -96,13 +96,13 @@ export class DiscountsPageComponent {
     this.formOpen.set(false);
   }
   protected ask(rule: DiscountRule): void {
-    if (!this.allowed || !this.writer || this.busy() || rule.status !== this.activeStatus) return;
+    if (!this.allowed || !this.writer || this.busy()) return;
     this.actionKey = this.keys.generate(); this.actionError.set(''); this.selected.set(rule);
   }
   protected confirm(): void {
     const rule = this.selected(); if (!this.allowed || !this.writer || !rule || this.pending()) return;
     this.pending.set(true); this.actionError.set('');
-    defer(() => this.writer!.inactivate(rule.id, this.actionKey)).pipe(takeUntilDestroyed(this.lifetime),
+    defer(() => rule.status === this.activeStatus ? this.writer!.inactivate(rule.id, this.actionKey) : this.writer!.reactivate(rule.id, this.actionKey)).pipe(takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({ next: stored => { this.onSaved(stored); this.selected.set(null); },
       error: (error: Partial<ApiError> | null) => this.actionError.set(error?.userMessage ?? this.text.failed) });

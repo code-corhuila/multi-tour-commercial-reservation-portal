@@ -43,6 +43,9 @@ export class DemoDiscountRulesWriter extends DiscountRulesWriter {
   override inactivate(id: string, key: string): Observable<DiscountRule> {
     return this.once(key, () => this.store.resolve({ ...this.find(id), status: 'INACTIVE' }));
   }
+  override reactivate(id: string, key: string): Observable<DiscountRule> {
+    return this.once(key, () => this.store.resolve({ ...this.find(id), status: 'ACTIVE' }));
+  }
   private tourName(command: DiscountRuleCommand): string { return this.catalog.find(command.tourId).commercialName; }
   private find(id: string): DiscountRule { return this.store.rules.find(r => r.id === id)!; }
   private once(key: string, next: () => DiscountRule): Observable<DiscountRule> {
