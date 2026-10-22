@@ -70,7 +70,7 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
     }
     expect(element.querySelector('table')!.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);
     // Read only (no writer): the Acción column is not drawn.
-    expect(Array.from(element.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado']);
+    expect(Array.from(element.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado y último cambio']);
     expect(element.querySelector('img, form, button')).toBeNull();
   });
   });
