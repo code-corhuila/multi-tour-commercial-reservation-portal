@@ -12,4 +12,5 @@ export class ControllableDiscountRulesWriter extends DiscountRulesWriter {
   override create(command: DiscountRuleCommand, key: string) { return this.request('create', key, undefined, command); }
   override update(id: string, command: DiscountRuleCommand, key: string) { return this.request('update', key, id, command); }
   override inactivate(id: string, key: string) { return this.request('inactivate', key, id); }
+  override reactivate(id: string, key: string) { return this.request('reactivate', key, id); }
 }
