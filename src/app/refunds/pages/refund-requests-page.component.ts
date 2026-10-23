@@ -31,7 +31,7 @@ type State = PageState<Refund>;
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
         @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @default {
-          <div class="crp-table-wrap" [attr.data-state]="s.kind === 'data' ? 'data' : null"><table class="crp-operator-table"><thead><tr>@for (column of t.columns; track column) { <th>{{ column }}</th> }</tr></thead>
+          <div class="crp-table-wrap" [attr.data-state]="s.kind === 'data' ? 'data' : null"><table class="crp-operator-table crp-refunds-table"><thead><tr>@for (column of t.columns; track column) { <th>{{ column }}</th> }</tr></thead>
             <tbody>@if (s.kind === 'data') { @for (r of s.items; track r.id) {
               <tr><td><button type="button" (click)="open(r)">#{{ r.id }}</button></td><td>{{ r.customer }}</td><td>{{ r.reason }}</td><td>{{ money(r.amountCents) }}</td>
                 <td><span class="crp-operator-status" [class.crp-is-pending]="!r.overdue" [class.crp-is-cancelled]="r.overdue">{{ states[r.state] }}</span>@for (mark of marks(r); track mark) { <br><small>{{ mark }}</small> }</td><td>{{ dateTime(r.date) }}</td><td><button type="button" (click)="open(r)">{{ action(r) }}</button></td></tr>
