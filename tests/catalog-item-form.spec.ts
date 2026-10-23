@@ -224,12 +224,12 @@ describe('capacityDependsOnTheServiceType', () => {
   });
 
   // The type select left the tour form (v1.9: the tour is the only product here), so a transportation item is changed, not registered.
-  it('sends null capacity when a transportation item is changed without one', async () => {
+  it('sends no capacity when a transportation item is changed without one', async () => {
     const { writer, fillAll, save } = await openForm({ ...itemNamed('Bus Andino 01'), serviceType: 'TRANSPORTATION' });
     fillAll({ capacity: '' });
     await save();
     expect(writer.calls).toHaveLength(1);
-    expect(writer.calls[0].command.configuredCapacity).toBeNull();
+    expect(writer.calls[0].command.configuredCapacity).toBeUndefined();
     expect(writer.calls[0].kind).toBe('update');
   });
 });
@@ -281,5 +281,32 @@ describe('theFormFollowsTheAuthorizedScreenInSpanish', () => {
     const { view } = await openForm({ ...itemNamed('Alpha'), baseRateCents: 18_000_000 });
     expect((screen.getByLabelText('Tarifa base') as HTMLInputElement).value).toBe('180000');
     expect(view.fixture.nativeElement.querySelector('[data-money-preview="baseRate"]')?.textContent?.trim()).toBe('$180.000');
+  });
+});
+
+
+// Owner decision 2026-10-23 (A): the API has no validity fields, so the form does not demand them.
+describe('validityIsOptionalBecauseTheApiHasNoValidity', () => {
+  it('saves a tour without typing the validity and shows no validity error', async () => {
+    const { validFrom: _from, validTo: _to, ...bare } = itemNamed('Old name');
+    const { writer, type, save } = await openForm({ ...bare, configuredCapacity: 18 });
+    type('Nombre comercial', 'Canyon walk');
+    await save();
+    expect(screen.getByLabelText('Vigencia desde').getAttribute('aria-invalid')).not.toBe('true');
+    expect(screen.getByLabelText('Vigencia hasta').getAttribute('aria-invalid')).not.toBe('true');
+    expect(writer.calls).toHaveLength(1);
+    expect(writer.calls[0].kind).toBe('update');
+    expect(writer.calls[0].command.validFrom ?? '').toBe('');
+  });
+
+  it('still refuses a validity that ends before it starts', async () => {
+    const { writer, fillAll, type, save, describedBy } = await openForm();
+    fillAll();
+    type('Vigencia desde', '2026-09-30');
+    type('Vigencia hasta', '2026-09-01');
+    await save();
+    expect(screen.getByLabelText('Vigencia hasta').getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy('Vigencia hasta')).toBe('La vigencia termina antes de empezar.');
+    expect(writer.calls).toHaveLength(0);
   });
 });
