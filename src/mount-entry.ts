@@ -11,7 +11,7 @@ import { ActorContext } from './app/shared/actor-context';
 import { SESSION_IDENTITY, sessionIdentityOf } from './app/shared/session-identity';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
 import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
-import { CHECKOUT_BLOCKS, DISCOUNTS_PAGE_PANELS, OPERATOR_NOTIFICATIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { CHECKOUT_BLOCKS, DISCOUNTS_PAGE_PANELS, OPERATOR_NOTIFICATIONS, PAYMENTS_HEADER_ACTIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
 import { REFUND_DETAIL_LINK } from './app/refunds/components/refund-link.component';
 import { REFUND_ALERTS } from './app/refunds/components/refund-alerts.component';
 import { AUTHORIZABLE_REASONS_PANEL } from './app/current-discounts/components/authorizable-reasons-panel.component';
@@ -109,7 +109,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       // HU-COM-018: Salida propuesta, the mark and Responder propuesta of Mis reservas, and the notice of 17; only with the proposals port.
       ...RESCHEDULING_CONTRIBUTIONS,
       // HU-COM-017 amendment: the link to admin-saldo-favor.html from 13 (the one from 10A is pending, second branch).
-      contribute(PAYMENTS_PAGE_PANELS, CREDIT_BALANCE_PAYMENTS_LINK),
+      contribute(PAYMENTS_HEADER_ACTIONS, CREDIT_BALANCE_PAYMENTS_LINK),
       // HU-COM-004 amendment: "Buscar una reserva" of Descuentos and "Aplicar descuento" of Reservas in mode; Administrator only, and only with the eligibility port.
       ...ADDITIONAL_DISCOUNT_CONTRIBUTIONS,
       // HU-COM-004 amendment: the panel "Motivos autorizables" of Descuentos, after the search panel; the Administrator only, and only with the reasons port.
