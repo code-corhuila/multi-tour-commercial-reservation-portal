@@ -37,9 +37,12 @@ function validate(draft: Draft): { command: CreateCatalogItemCommand | null; mes
   if (draft.image === '') { messages.image = COPY.errors.requiredFem; }
   if (rate.kind === 'invalid') { messages.rate = MONEY_ERRORS[rate.reason]; }
   if (cost.kind === 'invalid') { messages.cost = MONEY_ERRORS[cost.reason]; }
-  if (capacity !== '' && !WHOLE_NUMBER.test(capacity)) { messages.capacity = COPY.errors.wholeNumber; }
+  // A tour needs its capacity (like the edit form and the API); a transport may go without it.
+  if (capacity === '' && draft.type === 'tour') { messages.capacity = COPY.errors.capacityRequiredForTour; }
+  else if (capacity !== '' && !WHOLE_NUMBER.test(capacity)) { messages.capacity = COPY.errors.wholeNumber; }
+  // The validity is optional (the API has none); a typed date is still checked.
   for (const name of ['validFrom', 'validTo'] as const) {
-    if (draft[name] === '') { messages[name] = COPY.errors.requiredFem; }
+    if (draft[name] !== '' && Number.isNaN(Date.parse(draft[name]))) { messages[name] = COPY.errors.invalidDate; }
   }
   if (draft.validFrom !== '' && draft.validTo !== '' && draft.validTo < draft.validFrom) { messages.validTo = COPY.errors.validityOrder; }
   if (rate.kind === 'invalid' || cost.kind === 'invalid' || Object.keys(messages).length > 0) { return { command: null, messages }; }
@@ -50,10 +53,11 @@ function validate(draft: Draft): { command: CreateCatalogItemCommand | null; mes
     messages,
     command: {
       serviceType: tour ? 'TOUR' : 'TRANSPORTATION', commercialName: draft.name.trim(), baseRateCents: rate.minorUnits, baseOperationalCostCents: cost.minorUnits,
-      configuredCapacity: capacity === '' ? null : Number(capacity),
+      ...(capacity === '' ? {} : { configuredCapacity: Number(capacity) }),
       // "¿Incluye transporte?" is the mockup's face of the spec's "Transporte obligatorio".
       transportRequired: tour && draft.includesTransport === 'si', highRisk: draft.highRisk === 'si',
-      validFrom: draft.validFrom, validTo: draft.validTo,
+      ...(draft.validFrom === '' ? {} : { validFrom: draft.validFrom }),
+      ...(draft.validTo === '' ? {} : { validTo: draft.validTo }),
       ...(restrictions === '' ? {} : { operationalRestrictions: restrictions }),
       ...(tour || route === '' ? {} : { route }),
     },

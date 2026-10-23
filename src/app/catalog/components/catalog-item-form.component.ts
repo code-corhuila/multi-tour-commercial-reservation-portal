@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemsWriter } from '../data/catalog-api.service';
 import { CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
+import { NEW_SERVICE_COPY } from '../catalog-new-service-copy';
 import { formatCop } from '../../shared/format';
 import { focusFirstError } from '../../shared/focus';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
@@ -109,9 +110,10 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
   if (cost.kind === 'invalid') {
     messages.baseOperationalCost = MONEY_MESSAGES[cost.reason];
   }
+  // The validity is optional (owner decision 2026-10-23: the API has none); a typed date is still checked.
   for (const name of ['validFrom', 'validTo'] as const) {
-    if (draft[name] === '') {
-      messages[name] = 'Obligatoria.';
+    if (draft[name] !== '' && Number.isNaN(Date.parse(draft[name]))) {
+      messages[name] = NEW_SERVICE_COPY.errors.invalidDate;
     }
   }
   const order = validityOrder(draft);
@@ -120,7 +122,7 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
   }
   const capacityText = draft.configuredCapacity.trim();
   if (capacityText === '' && draft.serviceType === CAPACITY_REQUIRED_FOR) {
-    messages.configuredCapacity = 'Obligatoria para un tour';
+    messages.configuredCapacity = NEW_SERVICE_COPY.errors.capacityRequiredForTour;
   } else if (capacityText !== '' && !WHOLE_NUMBER.test(capacityText)) {
     messages.configuredCapacity = 'Usa un número entero de 1 o más.';
   }
@@ -133,11 +135,11 @@ function validate(draft: Draft): { command: UpdateCatalogItemCommand | null; mes
       commercialName: draft.commercialName.trim(),
       baseRateCents: rate.minorUnits,
       baseOperationalCostCents: cost.minorUnits,
-      configuredCapacity: capacityText === '' ? null : Number(capacityText),
+      ...(capacityText === '' ? {} : { configuredCapacity: Number(capacityText) }),
       transportRequired: draft.transportRequired,
       highRisk: draft.highRisk,
-      validFrom: draft.validFrom,
-      validTo: draft.validTo,
+      ...(draft.validFrom === '' ? {} : { validFrom: draft.validFrom }),
+      ...(draft.validTo === '' ? {} : { validTo: draft.validTo }),
     },
   };
 }
