@@ -34,10 +34,11 @@ export interface CreateCatalogItemCommand {
   readonly commercialName: string;
   readonly baseRateCents: number;
   readonly baseOperationalCostCents: number;
-  readonly configuredCapacity: number | null;
+  /** Absent when the form leaves it empty (a transport may go without it); the contract wants the field omitted, never null. */
+  readonly configuredCapacity?: number;
   readonly transportRequired: boolean;
   readonly highRisk: boolean;
-  /** The validity the form requires (G-B: the container adapter drops it until the contract has the fields). */
+  /** Optional: the API has no validity fields (owner decision 2026-10-23); the container adapter drops them. */
   readonly validFrom?: string;
   readonly validTo?: string;
   /** Nuevo servicio of the mockup; PROPOSED like the validity: the container adapter drops them until the contract has the fields (G-B). */

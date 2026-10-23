@@ -42,6 +42,8 @@ export const NEW_SERVICE_COPY = {
     required: 'Obligatorio.',
     requiredFem: 'Obligatoria.',
     transportRequired: 'Selecciona un transporte activo para asociarlo a este Tour, o marca "No" si no incluye transporte.',
+    capacityRequiredForTour: 'Obligatoria para un tour',
+    invalidDate: 'Usa una fecha válida.',
     wholeNumber: 'Usa un número entero de 1 o más.',
     validityOrder: 'La vigencia termina antes de empezar.',
     format: 'Usa solo dígitos y punto decimal, por ejemplo 180000 o 180000.50.',
