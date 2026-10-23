@@ -90,7 +90,7 @@ export const DEFAULT_SERVICES = [serviceOf('Kayak', 1999), serviceOf('Lunch', 25
 /** Providers every reservation screen needs; a test overrides only what it controls. */
 export function reservationProviders(over: { role?: string; departures?: DeparturesSource; writer?: ReservationsWriter;
   reservations?: ReservationsSource; discounts?: ReservationDiscounts; keys?: IdempotencyKeys; quotes?: ReservationQuoteSource;
-  customers?: CustomersSource } = {}) {
+  customers?: CustomersSource; services?: readonly CatalogItem[] } = {}) {
   return [
     { provide: ActorContext, useValue: actorAs((over.role ?? 'OPERATIONAL_COLLABORATOR') as never) },
     { provide: DepartureCapacity, useValue: new DemoDepartureCapacity() },
@@ -98,7 +98,7 @@ export function reservationProviders(over: { role?: string; departures?: Departu
     { provide: LeadCustomersSource, useValue: new StubCustomers() },
     { provide: CustomersSource, useValue: over.customers ?? new StubCustomersDirectory() },
     ...RESERVATION_FORM_CONTRIBUTIONS,
-    { provide: CatalogItemsSource, useValue: new StubCatalog(DEFAULT_SERVICES) },
+    { provide: CatalogItemsSource, useValue: new StubCatalog(over.services ?? DEFAULT_SERVICES) },
     { provide: ReservationDiscounts, useValue: over.discounts ?? new StubDiscounts() },
     { provide: ReservationsWriter, useValue: over.writer ?? new ControllableReservationsWriter() },
     { provide: ReservationsSource, useValue: over.reservations ?? new ControllableReservations() },
