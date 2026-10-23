@@ -928,3 +928,7 @@
 .crp-root .crp-payment-parameters-error { display: block; margin-top: 4px; color: var(--crp-error); font-size: 0.72rem; }
 .crp-root .crp-payment-parameters-reason { display: grid; gap: 4px; max-width: 640px; margin: 14px 0 6px; color: var(--crp-text); font-size: 0.82rem; font-weight: 600; }
 .crp-root .crp-payment-parameters-reason input { padding: 8px 10px; font-size: 0.86rem; font-weight: 400; }
+/* "Cargar predeterminados" and "Guardar parámetros": on the right of the card with the 12px gap of the mockup (operator-form-actions); while it saves, the primary one looks off. */
+.crp-root .crp-payment-parameters-form .crp-operator-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+.crp-root .crp-payment-parameters-form .crp-operator-form-actions button { min-height: 40px; padding: 0 18px; white-space: nowrap; }
+.crp-root .crp-payment-parameters-form .crp-operator-primary:disabled { border-color: var(--crp-shade-b7c9c3); background: var(--crp-shade-b7c9c3); color: var(--crp-shade-eff5f2); cursor: not-allowed; }
