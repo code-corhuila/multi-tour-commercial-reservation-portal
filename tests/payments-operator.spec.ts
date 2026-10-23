@@ -308,9 +308,21 @@ describe('the Pagos y comprobantes block of 10A and the Gestionar pago action of
     expect(block.textContent).toContain('Pagos y comprobantes');
     expect(block.textContent).toContain('Seguimiento económico');
     expect(Array.from(block.querySelectorAll('th'), (th) => th.textContent?.trim()))
-      .toEqual(['Tipo', 'Medio', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente']);
+      .toEqual(['Tipo de pago', 'Medio de pago', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente']);
     expect(Array.from(block.querySelectorAll('td'), (td) => td.textContent?.trim())).toEqual(['Abono', 'Transferencia', 'En validación', 'Sin pago', '$0', '$50']);
     expect(manage()).toBeDefined();
+  });
+
+  it('offers Ver pagos, as an outline action, when there is nothing left to pay or the reservation is cancelled, and Gestionar pago otherwise', async () => {
+    for (const settled of [{ ...paid, balanceCents: 0 }, { ...paid, status: 'CANCELADA' as const }]) {
+      const { press } = await viewOf('TENANT_ADMINISTRATOR', false, settled);
+      expect(press('Gestionar pago')).toBeUndefined();
+      expect(press('Ver pagos')?.classList.contains('crp-operator-outline')).toBe(true);
+      TestBed.resetTestingModule();
+    }
+    const { press } = await viewOf('TENANT_ADMINISTRATOR', false, paid);
+    expect(press('Gestionar pago')?.classList.contains('crp-operator-primary')).toBe(true);
+    expect(press('Ver pagos')).toBeUndefined();
   });
 
   it('offers Reintentar when the enabled types and methods fail to load', async () => {
