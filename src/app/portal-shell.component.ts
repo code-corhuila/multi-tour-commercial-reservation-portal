@@ -1,12 +1,12 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { CLIENT_AREA, CLIENT_LINKS, ClientLink, PORTAL_AREA_LIST } from './portal-areas';
 import { PortalAudience } from './portal-audience';
 import { PortalNavigation } from './portal-navigation';
 import { focusHeading } from './shared/focus';
 import { CLIENT_NOTICES, PortalSlotOutlet, slotEntries } from './shared/portal-slots';
 import { PortalCapabilities } from './shared/portal-capabilities';
-import { CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, PROFILE_TARGET } from './shell-contract';
+import { CONTAINER_AREA_REPORTER, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, PROFILE_TARGET } from './shell-contract';
 import { SESSION_TEXT } from './shared/session-copy';
 import { SHELL_TEXT } from './shell-copy';
 import { SESSION_IDENTITY } from './shared/session-identity';
@@ -149,6 +149,9 @@ export class PortalShellComponent {
   constructor() {
     this.navigation.register(this.areas.map((area) => area.key), () =>
       afterNextRender(() => focusHeading(this.host.querySelector('main') ?? this.host), { injector: this.injector }));
+    // The container draws the sidebar: it marks the entry the portal reports, also when a button of one area opens another ("Ver reservas" of Pagos).
+    const report = inject(CONTAINER_AREA_REPORTER);
+    if (report) { effect(() => { const entry = this.active(); if (entry) { report(entry); } }); }
     // The container may ask for an area at mount; an unknown or unavailable one (or a sub-screen) keeps the default landing.
     const asked = inject(INITIAL_AREA);
     if (asked && this.menu.some((area) => area.key === asked)) { this.navigation.selected.set(asked); }
