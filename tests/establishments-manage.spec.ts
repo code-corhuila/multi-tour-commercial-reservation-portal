@@ -105,8 +105,8 @@ describe('inactivatedEstablishmentStaysInTheListAsInactive', () => {
   it('allows a different row to act while one is pending', async () => {
     const { source, writer, settle, element } = await openPage();
     source.requests[0].reply([establishmentNamed('Alpha'), establishmentNamed('Beta')]); await settle();
-    const rows = element.querySelectorAll('tbody tr'); rows[0].querySelector('button')!.click(); await settle();
-    expect(rows[1].querySelector('button')!.disabled).toBe(false); rows[1].querySelector('button')!.click(); await settle();
+    const rows = element.querySelectorAll('tbody tr'); rows[0].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.click(); await settle();
+    expect(rows[1].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.disabled).toBe(false); rows[1].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.click(); await settle();
     expect(writer.transitions.length).toBe(2);
     writer.transitions[1].reply({ ...establishmentNamed('Beta'), associationStatus: 'INACTIVE' }); await settle();
     writer.transitions[0].reply({ ...establishmentNamed('Alpha'), associationStatus: 'INACTIVE' }); await settle();
