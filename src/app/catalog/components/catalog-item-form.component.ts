@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '../../shell-contract';
 import { CatalogItemsWriter } from '../data/catalog-api.service';
 import { CatalogItem, CatalogServiceType, UpdateCatalogItemCommand, UpdateDescriptionCommand } from '../model/catalog-item';
+import { CATALOG_COPY } from '../catalog-copy';
 import { NEW_SERVICE_COPY } from '../catalog-new-service-copy';
 import { formatCop } from '../../shared/format';
 import { focusFirstError } from '../../shared/focus';
@@ -349,6 +350,14 @@ export class CatalogItemFormComponent implements OnInit {
   private showRefusal(error: unknown): void {
     if (!isApiError(error)) {
       this.formMessages.set([REQUEST_FAILED]);
+      return;
+    }
+    // The container hides the server's reason behind a generic English text: a refused change of an existing tour
+    // by a business rule (422) is the capacity under the held seats (AC5), said beside the capacity field.
+    if (this.item() && error.status === 422 && error.code === 'BUSINESS_RULE_VIOLATION') {
+      this.refusedFields.set({ configuredCapacity: CATALOG_COPY.capacityBelowHeldSeats });
+      this.formMessages.set([]);
+      this.focusFirstErrorOnRender();
       return;
     }
     const fields: FieldMessages = {};
