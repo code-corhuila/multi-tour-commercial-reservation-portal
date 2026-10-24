@@ -5,6 +5,7 @@ import { CatalogItemFormComponent } from '../src/app/catalog/components/catalog-
 import { CatalogItem } from '../src/app/catalog/model/catalog-item';
 import { apiError, ControllableCatalogItemsWriter } from './catalog-items-writer.double';
 import { itemNamed } from './catalog-items-source.double';
+import { CATALOG_COPY } from '../src/app/catalog/catalog-copy';
 
 async function openForm(item?: CatalogItem) {
   const writer = new ControllableCatalogItemsWriter();
@@ -148,6 +149,44 @@ describe('aRefusedChangeKeepsWhatWasTyped', () => {
     expect(describedBy('Capacidad configurada')).toContain('Below the booked seats.');
     expect(screen.getByLabelText('Capacidad configurada').getAttribute('aria-invalid')).toBe('true');
     expect((screen.getByLabelText('Capacidad configurada') as HTMLInputElement).value).toBe('18');
+  });
+});
+
+describe('aCapacityBelowTheHeldSeatsIsExplainedInSpanish', () => {
+  const GENERIC = 'This action is not allowed in the current state.';
+  const containerRefusal = (overrides = {}) =>
+    apiError({ status: 422, code: 'BUSINESS_RULE_VIOLATION', message: GENERIC, userMessage: GENERIC, ...overrides });
+  async function refuseEdit(error: ReturnType<typeof apiError>) {
+    const opened = await openForm({ ...itemNamed('Old name'), configuredCapacity: 18 });
+    opened.type('Capacidad configurada', '2');
+    await opened.save();
+    opened.writer.calls[0].fail(error);
+    await opened.settle();
+    return opened;
+  }
+
+  it('shows the Spanish reason beside the capacity field and not the generic English text', async () => {
+    const { describedBy } = await refuseEdit(containerRefusal());
+    expect(describedBy('Capacidad configurada')).toContain(CATALOG_COPY.capacityBelowHeldSeats);
+    expect(screen.getByLabelText('Capacidad configurada').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.queryByText(GENERIC)).toBeNull();
+  });
+
+  it('keeps the typed capacity', async () => {
+    await refuseEdit(containerRefusal());
+    expect((screen.getByLabelText('Capacidad configurada') as HTMLInputElement).value).toBe('2');
+  });
+
+  it('keeps the message the page already showed for a 422 with another code', async () => {
+    await refuseEdit(apiError({ status: 422, code: 'VALIDATION_FAILED', userMessage: 'Other reason.' }));
+    expect(screen.getByText('Other reason.')).not.toBeNull();
+    expect(screen.queryByText(CATALOG_COPY.capacityBelowHeldSeats)).toBeNull();
+  });
+
+  it.each([403, 400])('keeps the message the page already showed for a %i', async (status) => {
+    await refuseEdit(containerRefusal({ status, userMessage: 'Server says no.' }));
+    expect(screen.getByText('Server says no.')).not.toBeNull();
+    expect(screen.queryByText(CATALOG_COPY.capacityBelowHeldSeats)).toBeNull();
   });
 });
 
