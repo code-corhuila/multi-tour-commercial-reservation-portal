@@ -26,7 +26,7 @@ const CUSTOMERS_READ = { canRead: true, canRegister: false, isDenied: false };
 const CUSTOMERS_REGISTER = { canRead: true, canRegister: true, isDenied: false };
 const CUSTOMERS_DENIED = { canRead: false, canRegister: false, isDenied: true };
 const NOTHING = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerEstablishments: false };
-const READ_ONLY_ANSWERS = { ...NOTHING, catalog: CATALOG_READ, customers: CUSTOMERS_READ, readEstablishments: true, operator: false, label: 'Solo lectura' };
+const READ_ONLY_ANSWERS = { ...NOTHING, catalog: CATALOG_READ, customers: CUSTOMERS_READ, readEstablishments: false, operator: false, label: 'Solo lectura' };
 
 /** Today's nine matrices, one row per role: catalog, customers, sensitive data, discounts, additional discount, reservations, establishments, audience, label. */
 const TODAY: ReadonlyArray<readonly [string, ReturnType<typeof answers>]> = [
@@ -34,8 +34,8 @@ const TODAY: ReadonlyArray<readonly [string, ReturnType<typeof answers>]> = [
     createReservations: true, readEstablishments: true, registerEstablishments: true, operator: true, label: 'Administrador del tenant' }],
   ['OPERATIONAL_COLLABORATOR', { ...NOTHING, catalog: CATALOG_READ, customers: CUSTOMERS_REGISTER, sensitiveData: true, createReservations: true,
     readEstablishments: false, operator: true, label: 'Colaborador operativo' }],
-  ['MANAGER', { ...READ_ONLY_ANSWERS, operator: true, label: 'Gerente' }],
-  ['ANALYST', { ...READ_ONLY_ANSWERS, operator: true, label: 'Analista' }],
+  ['MANAGER', { ...READ_ONLY_ANSWERS, readEstablishments: true, operator: true, label: 'Gerente' }],
+  ['ANALYST', { ...READ_ONLY_ANSWERS, readEstablishments: true, operator: true, label: 'Analista' }],
   ['ACCOUNTANT', { ...NOTHING, catalog: CATALOG_DENIED, customers: CUSTOMERS_DENIED, readEstablishments: false, operator: true, label: 'Contador' }],
   ['READ_ONLY', READ_ONLY_ANSWERS],
 ];
