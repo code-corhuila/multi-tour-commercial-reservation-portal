@@ -7,7 +7,7 @@ import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
 import { EstablishmentManageComponent } from '../components/establishment-manage.component';
-import { ESTABLISHMENTS_COPY } from '../establishments-copy';
+import { ESTABLISHMENTS_COPY, transitionRefusal } from '../establishments-copy';
 import { AssociatedEstablishmentsWriter } from '../data/associated-establishments-writer';
 import { AssociatedEstablishmentsSource } from '../data/associated-establishments-source';
 import {
@@ -157,7 +157,7 @@ export class EstablishmentsPageComponent {
         if (current.kind === 'data') { this.local.set({ kind: 'data', items: current.items.map((row) => row.associationId === stored.associationId ? stored : row) }); }
       }),
       catchError((error: Partial<ApiError> | null) => {
-        this.rowErrors.update((errors) => ({ ...errors, [item.associationId]: error?.userMessage ?? this.copy.requestFailed })); return EMPTY;
+        this.rowErrors.update((errors) => ({ ...errors, [item.associationId]: transitionRefusal(error) })); return EMPTY;
       }),
       finalize(() => this.pendingIds.update(({ [item.associationId]: _settled, ...rest }) => rest)),
     ),
@@ -199,6 +199,7 @@ export class EstablishmentsPageComponent {
   protected managed(items: readonly AssociatedEstablishment[]): AssociatedEstablishment | undefined { return items.find((row) => row.associationId === this.managing()); }
   protected lastChangeOf(item: AssociatedEstablishment): string {
     const last = item.changes?.at(-1);
+    if (!item.changes) { return this.copy.noChangeInfo; }
     return last ? this.copy.lastChange(last.kind, last.by, last.at) : this.copy.noChange;
   }
   protected onManaged(stored: AssociatedEstablishment): void {
