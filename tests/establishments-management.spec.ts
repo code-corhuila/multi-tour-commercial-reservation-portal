@@ -62,7 +62,7 @@ describe('theStatusColumnTellsTheLastChange', () => {
 
   it('says that no change was recorded for an establishment with no bitácora', async () => {
     const { source, element, settle } = await openPage();
-    source.requests[0].reply([establishmentNamed('Sin historial')]); await settle();
+    source.requests[0].reply([{ ...establishmentNamed('Sin historial'), changes: [] }]); await settle();
     expect(flat(element.querySelector('tbody tr td:nth-child(3)')!.textContent)).toContain('Sin cambios registrados');
   });
 });
@@ -105,7 +105,7 @@ describe('gestionarOpensTheEstablishmentOnTheSameScreen', () => {
 
   it('says that nothing was recorded when the bitácora is empty', async () => {
     const { source, settle, click, panel, element } = await openPage();
-    source.requests[0].reply([establishmentNamed('Vacío')]); await settle();
+    source.requests[0].reply([{ ...establishmentNamed('Vacío'), changes: [] }]); await settle();
     await click('Gestionar', element.querySelector('tbody tr')!);
     expect(flat(panel()!.querySelector('.crp-establishment-log')!.textContent)).toContain('Sin cambios registrados.');
   });
@@ -162,8 +162,8 @@ describe('configurarEditsTheInformationOfTheSameEstablishment', () => {
     const { editor, input, type, click, panel, settle } = await open();
     await type('Información comercial', 'Texto nuevo');
     await click('Guardar cambios', panel()!);
-    editor.calls[0].fail({ userMessage: 'No se pudo guardar.' }); await settle();
-    expect(flat(panel()!.querySelector('[role="alert"]')!.textContent)).toBe('No se pudo guardar.');
+    editor.calls[0].fail({ status: 500, userMessage: 'Internal error' }); await settle();
+    expect(flat(panel()!.querySelector('[role="alert"]')!.textContent)).toBe('No se pudo completar la solicitud. Intenta de nuevo.');
     expect(input('Información comercial').value).toBe('Texto nuevo');
   });
 
