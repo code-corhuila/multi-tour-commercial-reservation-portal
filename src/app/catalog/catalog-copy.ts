@@ -22,5 +22,7 @@ export const CATALOG_COPY = {
   empty: 'Sin resultados',
   requestFailed: 'La solicitud falló.',
   retry: 'Reintentar',
+  // The container turns the server's 422 BUSINESS_RULE_VIOLATION into a generic English text; this is the reason the person needs (AC-P1.8).
+  capacityBelowHeldSeats: 'La capacidad no puede ser menor que los cupos ya retenidos en una salida programada.',
   statuses: { ACTIVE: 'Activo', INACTIVE: 'Inactivo' } satisfies Record<CatalogItem['catalogStatus'], string>,
 } as const;

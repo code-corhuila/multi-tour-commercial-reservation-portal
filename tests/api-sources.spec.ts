@@ -110,3 +110,38 @@ describe('establishmentsSourcesOverTheApiClient', () => {
     expect((form.get('image') as File).name).toBe('a.png');
   });
 });
+
+
+describe('catalogWriterBodyMatchesTheApiContract', () => {
+  const absent = ['validFrom', 'validTo', 'operationalRestrictions', 'route'];
+  const noNulls = (body: unknown) => Object.values(body as Record<string, unknown>).every((value) => value !== null && value !== undefined);
+
+  it('creates without null keys and without the fields the API does not know', async () => {
+    const { client, calls } = fakeClient();
+    const withExtras = { ...command, configuredCapacity: null, validFrom: '2026-09-01', validTo: '2026-09-30', operationalRestrictions: 'x', route: 'A-B' };
+    await firstValueFrom(new CatalogApiWriter(client).create(withExtras as never, 'key-12345678'));
+    const body = calls[0].body as Record<string, unknown>;
+    expect(noNulls(body)).toBe(true);
+    expect(Object.keys(body)).not.toContain('configuredCapacity');
+    for (const key of absent) { expect(Object.keys(body)).not.toContain(key); }
+  });
+
+  it('does not send configuredCapacity for a transport created without capacity', async () => {
+    const { client, calls } = fakeClient();
+    const { configuredCapacity: _capacity, ...transport } = { ...command, serviceType: 'TRANSPORTATION' as const };
+    await firstValueFrom(new CatalogApiWriter(client).create(transport, 'key-12345678'));
+    expect(calls[0].body).toEqual(transport);
+    expect(Object.keys(calls[0].body as object)).not.toContain('configuredCapacity');
+  });
+
+  it('updates without null keys and without the validity', async () => {
+    const { client, calls } = fakeClient();
+    const { serviceType: _type, ...update } = command;
+    await firstValueFrom(new CatalogApiWriter(client).update('s1', { ...update, configuredCapacity: null, validFrom: '2026-09-01', validTo: '2026-09-30' } as never));
+    const body = calls[0].body as Record<string, unknown>;
+    expect(noNulls(body)).toBe(true);
+    expect(Object.keys(body)).not.toContain('configuredCapacity');
+    expect(Object.keys(body)).not.toContain('validFrom');
+    expect(Object.keys(body)).not.toContain('validTo');
+  });
+});
