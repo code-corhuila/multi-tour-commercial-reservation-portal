@@ -76,7 +76,7 @@ describe('landingComposition', () => {
     expect(head.querySelector('button.crp-operator-primary')?.textContent).toBe('Agregar establecimiento');
     expect(host.querySelectorAll('.crp-filters select')).toHaveLength(2);
     const table = host.querySelector('.crp-operator-table')!;
-    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado', 'Acción']);
+    expect(Array.from(table.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado y último cambio', 'Acción']);
     expect(table.querySelector('.crp-operator-status.crp-is-confirmed')?.textContent).toBe('Activo');
     expect(table.querySelector('.crp-operator-status.crp-is-pending')?.textContent).toBe('Inactivo');
     expect(table.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);

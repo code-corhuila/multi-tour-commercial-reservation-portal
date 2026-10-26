@@ -6,29 +6,30 @@ export const DISCOUNT_TEXT = {
   panelEyebrow: 'Vigentes', panelTitle: 'Promociones activas',
   loading: 'Cargando descuentos…', saving: 'Guardando…', empty: 'Aún no hay descuentos configurados.',
   failed: 'No se pudieron cargar los descuentos.', retry: 'Reintentar', denied: 'No tienes acceso a los descuentos.',
-  create: 'Crear descuento', edit: 'Editar parámetros', inactivate: 'Inactivar', confirm: 'Confirmar inactivación', cancel: 'Cancelar',
+  create: 'Crear descuento', edit: 'Editar parámetros', inactivate: 'Inactivar', confirm: 'Confirmar inactivación', reactivate: 'Reactivar', confirmReactivate: 'Confirmar reactivación', cancel: 'Cancelar',
   save: 'Guardar cambios', newLead: 'Configura la promoción', editLead: 'Actualiza la promoción', orderLead: 'Reglas de aplicación',
   pickTour: 'Selecciona un tour',
   toursOnly: 'Los descuentos aplican únicamente a tours; no a transporte ni a establecimientos asociados.',
   newFeedback: 'Completa los parámetros para publicar el descuento.',
   editFeedback: 'Actualiza los parámetros y guarda para aplicar los cambios a este mismo descuento. Las reservas ya creadas conservan los descuentos fijados al crearlas.',
   confirmation: 'Las reservas existentes conservan el descuento que ya tienen. ¿Inactivar este descuento?',
+  reactivation: 'La reactivación solo aplica a reservas nuevas: las existentes conservan el descuento que ya tienen. ¿Reactivar este descuento?',
   until: 'Vigente hasta el', base: 'Base de cálculo:', priority: 'Prioridad', stackable: 'acumulable', notStackable: 'no acumulable', cap: 'Tope:',
   baseInline: { ORIGINAL_VALUE: 'valor original', PREVIOUS_SUBTOTAL: 'subtotal resultante del descuento anterior' },
 };
-type Control = { name: string; label: string; kind?: string; placeholder?: string; options?: readonly { value: string; label: string; explanation: string }[] };
+type Control = { name: string; label: string; kind?: string; placeholder?: string; options?: readonly { value: string; label: string }[] };
 export const DISCOUNT_CONTROLS: readonly Control[] = [
   { name: 'tourId', label: 'Tour', options: [] },
   { name: 'percentage', label: 'Porcentaje de descuento (1 a 100)', kind: 'text' },
   { name: 'calculationBase', label: 'Base de cálculo', options: [
-    { value: 'ORIGINAL_VALUE', label: 'Valor original', explanation: 'se calcula sobre el valor original de la reserva.' },
-    { value: 'PREVIOUS_SUBTOTAL', label: 'Subtotal resultante del descuento anterior', explanation: 'se calcula sobre el subtotal que deja el descuento previo.' },
+    { value: 'ORIGINAL_VALUE', label: 'Valor original' },
+    { value: 'PREVIOUS_SUBTOTAL', label: 'Subtotal resultante del descuento anterior' },
   ] },
   { name: 'cap', label: 'Tope del descuento', kind: 'text', placeholder: 'Opcional, ej. $50.000' },
   { name: 'startsOn', label: 'Vigencia desde', kind: 'date' },
   { name: 'endsOn', label: 'Vigencia hasta', kind: 'date' },
   { name: 'priority', label: 'Prioridad (1 se aplica primero)', kind: 'text' },
-  { name: 'stackable', label: 'Acumulable', options: [{ value: 'no', label: 'No', explanation: '' }, { value: 'si', label: 'Sí', explanation: '' }] },
+  { name: 'stackable', label: 'Acumulable', options: [{ value: 'no', label: 'No' }, { value: 'si', label: 'Sí' }] },
 ];
 /** The two numbered panels of the form, in the order of the screen. */
 export const DISCOUNT_SECTIONS = [
