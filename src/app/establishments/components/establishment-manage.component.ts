@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { ApiError } from '../../shell-contract';
+import { focusFirstError } from '../../shared/focus';
 import { AssociatedEstablishmentsEditor } from '../data/associated-establishments-editor';
 import { ESTABLISHMENTS_COPY, changeWhen, registrationRefusal } from '../establishments-copy';
 import { AssociatedEstablishment } from '../model/associated-establishment';
@@ -62,6 +63,8 @@ export class EstablishmentManageComponent {
   protected readonly labels = ESTABLISHMENTS_COPY.changeLabel;
   protected readonly when = changeWhen;
   private readonly editor = inject(AssociatedEstablishmentsEditor, { optional: true });
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
+  private readonly injector = inject(Injector);
   protected readonly editable = this.editor !== null;
   /** Start from the stored record, and again from it when the service answers. */
   protected readonly name = linkedSignal(() => this.establishment().commercialName);
@@ -78,7 +81,7 @@ export class EstablishmentManageComponent {
     if (this.sending() || !this.editor) { return; }
     const commercialName = this.name().trim();
     this.nameError.set(commercialName === '' || commercialName.length > 255);
-    if (this.nameError()) { return; }
+    if (this.nameError()) { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
     this.sending.set(true);
     this.failure.set(null);
     this.notice.set(false);
