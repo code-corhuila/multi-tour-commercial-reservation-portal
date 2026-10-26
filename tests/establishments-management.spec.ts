@@ -158,6 +158,16 @@ describe('configurarEditsTheInformationOfTheSameEstablishment', () => {
     expect(flat(panel()!.querySelector('[role="alert"]')!.textContent)).toBe('Obligatorio: de 1 a 255 caracteres.');
   });
 
+  it('moves the focus to the name field when the form refuses it (HC-4)', async () => {
+    const { editor, type, click, panel, element, settle } = await open();
+    document.body.appendChild(element);
+    await type('Nombre del establecimiento', '   ');
+    await click('Guardar cambios', panel()!); await settle();
+    expect(editor.calls).toEqual([]);
+    expect(document.activeElement).toBe(panel()!.querySelector('#crp-establishment-manage-name'));
+    element.remove();
+  });
+
   it('shows the message of the service and keeps what was typed when the update fails', async () => {
     const { editor, input, type, click, panel, settle } = await open();
     await type('Información comercial', 'Texto nuevo');
