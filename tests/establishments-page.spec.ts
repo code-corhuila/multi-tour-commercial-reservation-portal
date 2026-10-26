@@ -12,11 +12,12 @@ import { ControllableEstablishmentsSource, establishmentNamed } from './associat
 import { ActorRole } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
 
-async function openPage(role?: ActorRole, enabled = false) {
+// The tests of the list read as an Analyst unless they say otherwise: READ_ONLY (no actor) gets 403 from the API, so the screen is not offered to it.
+async function openPage(role: ActorRole | 'NONE' = 'ANALYST', enabled = false) {
   const source = new ControllableEstablishmentsSource();
   TestBed.configureTestingModule({ providers: [
     { provide: AssociatedEstablishmentsSource, useValue: source },
-    ...(role ? [{ provide: ActorContext, useValue: actorAs(role, enabled) }] : []),
+    ...(role !== 'NONE' ? [{ provide: ActorContext, useValue: actorAs(role, enabled) }] : []),
   ] });
   const fixture = TestBed.createComponent(EstablishmentsPageComponent);
   const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
@@ -134,14 +135,18 @@ describe('establishmentAccessUsesTheContainerActor', () => {
       expect(source.requests).toEqual([]);
     });
   }
-  for (const role of ['MANAGER', 'ANALYST', undefined] as const) {
-    it(`${role ?? 'no actor'} reads the list without business actions`, async () => {
+  for (const role of ['MANAGER', 'ANALYST'] as const) {
+    it(`${role} reads the list without business actions`, async () => {
       const { source, settle, element } = await openPage(role);
       source.requests[0].reply([establishmentNamed('Readable')]); await settle();
       expect(element.querySelector('table')!.textContent).toContain('Readable');
       expect(element.querySelector('button, form, img')).toBeNull();
     });
   }
+  it('no actor (fail-closed READ_ONLY, the API answers 403) is denied: no request and no list', async () => {
+    const { source, element } = await openPage('NONE');
+    expect(source.requests).toEqual([]); expect(element.querySelector('table')).toBeNull();
+  });
   it('the provisional route admits the administrator and points to exactly one establishments page', async () => {
     const source = new ControllableEstablishmentsSource();
     TestBed.configureTestingModule({ providers: [provideRouter(PORTAL_ROUTES),

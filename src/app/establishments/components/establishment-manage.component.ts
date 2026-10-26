@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { ApiError } from '../../shell-contract';
 import { AssociatedEstablishmentsEditor } from '../data/associated-establishments-editor';
-import { ESTABLISHMENTS_COPY, changeWhen } from '../establishments-copy';
+import { ESTABLISHMENTS_COPY, changeWhen, registrationRefusal } from '../establishments-copy';
 import { AssociatedEstablishment } from '../model/associated-establishment';
 
 /**
@@ -46,7 +46,7 @@ import { AssociatedEstablishment } from '../model/associated-establishment';
             </table>
           </div>
         } @else {
-          <p>{{ t.noChanges }}</p>
+          <p>{{ establishment().changes ? t.noChanges : t.noChangeInfo }}</p>
         }
       </div>
     </section>
@@ -84,7 +84,7 @@ export class EstablishmentManageComponent {
     this.notice.set(false);
     this.editor.update(this.establishment().associationId, { commercialName, commercialInformation: this.info().trim() }).subscribe({
       next: (stored) => { this.sending.set(false); this.notice.set(true); this.saved.emit(stored); },
-      error: (error: Partial<ApiError> | null) => { this.sending.set(false); this.failure.set(error?.userMessage ?? ESTABLISHMENTS_COPY.requestFailed); },
+      error: (error: Partial<ApiError> | null) => { this.sending.set(false); this.failure.set(registrationRefusal(error).general ?? ESTABLISHMENTS_COPY.refusals.requestFailed); },
     });
   }
 }

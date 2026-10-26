@@ -97,8 +97,8 @@ describe('inactivatedEstablishmentStaysInTheListAsInactive', () => {
   it('shows a rejection by the row without changing its status and allows retry', async () => {
     const { source, writer, settle, element, click, button } = await openPage();
     source.requests[0].reply([establishmentNamed('Alpha')]); await settle(); await click(ESTABLISHMENTS_COPY.inactivate);
-    writer.transitions[0].fail(apiError({ userMessage: 'Status change refused.' })); await settle();
-    expect(element.querySelector('tbody tr [role="alert"]')!.textContent).toContain('Status change refused.');
+    writer.transitions[0].fail(apiError({ status: 403, userMessage: 'Status change refused.' })); await settle();
+    expect(element.querySelector('tbody tr [role="alert"]')!.textContent).toBe('No tienes permiso para esta acción.');
     expect(element.querySelector('tbody tr')!.textContent).toContain('Activo'); expect(element.querySelector('tbody tr')!.textContent).not.toContain('Inactivo');
     expect(button(ESTABLISHMENTS_COPY.inactivate).disabled).toBe(false); await click(ESTABLISHMENTS_COPY.inactivate); expect(writer.transitions.length).toBe(2);
   });
@@ -125,7 +125,7 @@ describe('reactivatedEstablishmentShowsAsActive', () => {
   });
 });
 describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
-  for (const role of ['MANAGER', 'ANALYST', 'READ_ONLY'] as const) {
+  for (const role of ['MANAGER', 'ANALYST'] as const) {
     it(`${role} sees the list with no registration or status actions even with a writer provided`, async () => {
       const { source, writer, settle, element } = await openPage(role);
       source.requests[0].reply([establishmentNamed('Readable')]); await settle();
@@ -134,13 +134,15 @@ describe('managerAndAnalystReadWithoutActionsAccountantIsDenied', () => {
       expect(writer.registrations).toEqual([]); expect(writer.transitions).toEqual([]);
     });
   }
-  it('without a supplied actor defaults to read-only even when the writer is provided', async () => {
-    const { source, settle, element, writer } = await openPage(null);
-    source.requests[0].reply([establishmentNamed('Readable')]); await settle();
-    expect(element.querySelector('tbody tr')!.textContent).toContain('Readable');
-    expect(element.querySelector('button')).toBeNull();
-    expect(writer.registrations).toEqual([]); expect(writer.transitions).toEqual([]);
-  });
+  for (const role of ['READ_ONLY', null] as const) {
+    it(`${role ?? 'no actor'} (fail-closed; the API answers 403) sees no list, makes no request and gets no actions`, async () => {
+      const { source, element, writer } = await openPage(role);
+      expect(source.requests).toEqual([]);
+      expect(element.textContent).toContain(ESTABLISHMENTS_COPY.denied);
+      expect(element.querySelector('tbody, button')).toBeNull();
+      expect(writer.registrations).toEqual([]); expect(writer.transitions).toEqual([]);
+    });
+  }
 });
 describe('collaboratorGetsNoRouteAndNoMenuEntry', () => {
   for (const role of ['OPERATIONAL_COLLABORATOR', 'ACCOUNTANT'] as const) {
