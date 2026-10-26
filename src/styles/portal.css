@@ -198,7 +198,7 @@
 
 /* Semantic tables and textual status pills from the landing. */
 .crp-root .crp-table-wrap { overflow-x: auto; }
-.crp-root .crp-table, .crp-root .crp-operator-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
+.crp-root .crp-table, .crp-root .crp-operator-table { width: 100%; min-width: 720px; border-collapse: collapse; text-align: left; }
 .crp-root .crp-table th, .crp-root .crp-operator-table th { padding: 16px 12px 12px; color: var(--crp-shade-748084); font-size: 0.69rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .crp-root .crp-table td, .crp-root .crp-operator-table td { padding: 16px 12px; border-top: 1px solid var(--crp-shade-e4ebe6); color: var(--crp-soft); font-size: 0.86rem; vertical-align: middle; }
 .crp-root .crp-table strong, .crp-root .crp-operator-table strong { color: var(--crp-ink-slate); }
@@ -212,6 +212,12 @@
 .crp-root .crp-operator-table small { color: var(--crp-soft); font-size: 0.76rem; }
 .crp-root .crp-operator-table button { min-height: 0; width: max-content; padding: 0; border: 0; background: transparent; color: var(--crp-accent-strong); font-size: 0.82rem; font-weight: 800; }
 .crp-root .crp-operator-table button:hover:not(:disabled) { text-decoration: underline; }
+/* The actions of a row sit as pills with a gap; the " · " of the mockup is hidden because a separator alone on a line is loose when the cell wraps. */
+.crp-root .crp-operator-table td:last-child button { margin: 3px 8px 3px 0; width: auto; max-width: 100%; white-space: normal; text-align: left; }
+.crp-root .crp-operator-table .crp-operator-status { width: auto; max-width: 100%; white-space: normal; }
+.crp-root .crp-row-sep { display: none; }
+/* Solicitudes de devolución: the table shrinks to the content column and, with the wrapping pills and actions above, a normal screen shows no horizontal bar. */
+.crp-root .crp-refunds-table { min-width: 0; }
 .crp-root .crp-operator-table button:disabled { background: transparent; color: var(--crp-placeholder); }
 /* Screens 10 and 13 (admin-reservas.html, admin-pagos.html): the last-cell actions are the mockup pills. */
 .crp-root .crp-table-wrap[data-state="data"] > .crp-operator-table td:last-child button, .crp-root .crp-proof-review-hero ~ .crp-operator-panel .crp-operator-table td:last-child button { min-height: 34px; padding: 0 11px; border-radius: 8px; background: var(--crp-row-action-bg); color: var(--crp-row-action-text); font-size: 0.78rem; text-decoration: none; }
@@ -227,12 +233,12 @@
 
 /* Catálogos hub (admin-catalogos.html): the cards of the areas the build registers. */
 .crp-root .crp-header-actions { display: inline-flex; flex-wrap: wrap; gap: 12px; }
-.crp-root .crp-catalog-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.crp-root .crp-catalog-grid article { display: grid; gap: 10px; align-content: start; min-height: 190px; padding: 20px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); background: var(--crp-surface); }
+.crp-root .crp-catalog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.crp-root .crp-catalog-grid article { display: grid; gap: 10px; align-content: start; min-height: 190px; min-width: 0; padding: 20px; border: 1px solid var(--crp-line); border-radius: var(--crp-radius-card); background: var(--crp-surface); overflow-wrap: anywhere; }
 .crp-root .crp-catalog-grid span { color: var(--crp-soft); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
 .crp-root .crp-catalog-grid strong { color: var(--crp-accent); font-size: 1.24rem; letter-spacing: -0.04em; }
 .crp-root .crp-catalog-grid p { margin: 0; color: var(--crp-soft); font-size: 0.84rem; line-height: 1.5; }
-.crp-root .crp-catalog-link { width: max-content; border: 0; padding: 0; background: transparent; color: var(--crp-accent); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
+.crp-root .crp-catalog-link { width: max-content; max-width: 100%; justify-self: start; text-align: left; overflow-wrap: anywhere; border: 0; padding: 0; background: transparent; color: var(--crp-accent); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
 /* Nuevo servicio (admin-nuevo-servicio.html): two full-width stacked cards, two-column fields, tall controls. */
 .crp-root .crp-operator-shell .crp-catalog-new-service { grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 0; }
 .crp-root .crp-catalog-new-service .crp-operator-panel { margin-top: 0; }
@@ -315,9 +321,6 @@
 .crp-root .crp-discount-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 .crp-root .crp-discount-grid small { display: block; margin-top: 4px; color: var(--crp-soft); font-size: 0.78rem; }
 
-@media (max-width: 1180px) {
-  .crp-root .crp-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 860px) {
   .crp-root .crp-operator-shell, .crp-root .crp-operator-shell.crp-no-sidebar { grid-template-columns: minmax(0, 1fr); }
   .crp-root .crp-operator-sidebar { padding: 16px; border-right: 0; border-bottom: 1px solid var(--crp-line); }
@@ -764,7 +767,6 @@
   border: 1px solid var(--crp-line); border-radius: var(--crp-radius-panel); background: var(--crp-hero-gradient); }
 .crp-root .crp-proof-review-hero h2 { margin: var(--crp-space-1) 0 0; color: var(--crp-text); } .crp-root .crp-proof-review-hero > p { margin: 0; color: var(--crp-soft); line-height: 1.6; }
 .crp-root .crp-proof-review-wide { grid-column: 1 / -1; }
-.crp-root .crp-proof-review-hero ~ .crp-operator-panel .crp-operator-table .crp-operator-status { background: transparent; color: inherit; }
 @media (max-width: 720px) { .crp-root .crp-proof-review-hero { grid-template-columns: minmax(0, 1fr); } }
 .crp-root .crp-payment-followup-wide { grid-column: 1 / -1; display: grid; }
 /* The phone of the customer sits in the context card as a call link, with the size of the fields around it. */
@@ -936,3 +938,7 @@
 .crp-root .crp-payment-parameters-error { display: block; margin-top: 4px; color: var(--crp-error); font-size: 0.72rem; }
 .crp-root .crp-payment-parameters-reason { display: grid; gap: 4px; max-width: 640px; margin: 14px 0 6px; color: var(--crp-text); font-size: 0.82rem; font-weight: 600; }
 .crp-root .crp-payment-parameters-reason input { padding: 8px 10px; font-size: 0.86rem; font-weight: 400; }
+/* "Cargar predeterminados" and "Guardar parámetros": on the right of the card with the 12px gap of the mockup (operator-form-actions); while it saves, the primary one looks off. */
+.crp-root .crp-payment-parameters-form .crp-operator-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+.crp-root .crp-payment-parameters-form .crp-operator-form-actions button { min-height: 40px; padding: 0 18px; white-space: nowrap; }
+.crp-root .crp-payment-parameters-form .crp-operator-primary:disabled { border-color: var(--crp-shade-b7c9c3); background: var(--crp-shade-b7c9c3); color: var(--crp-shade-eff5f2); cursor: not-allowed; }

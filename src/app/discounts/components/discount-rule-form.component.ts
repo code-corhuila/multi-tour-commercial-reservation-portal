@@ -11,7 +11,7 @@ import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 let formSequence = 0;
 type DiscountControl = (typeof DISCOUNT_CONTROLS)[number];
-type Option = { value: string; label: string; explanation: string };
+type Option = { value: string; label: string };
 @Component({
   selector: 'app-discount-rule-form', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -30,7 +30,6 @@ type Option = { value: string; label: string; explanation: string };
                     @if (name === 'tourId') { <option value="" [selected]="!draft()[name]">{{ text.pickTour }}</option> }
                     @for (option of options(name); track option.value) { <option [value]="option.value" [selected]="option.value === draft()[name]">{{ option.label }}</option> }
                   </select>
-                  @for (option of options(name); track option.value) { @if (option.explanation) { <small>{{ option.label }}: {{ option.explanation }}</small> } }
                 } @else {
                   <input [name]="name" [id]="id(name)" [type]="field.kind ?? 'text'" [attr.placeholder]="field.placeholder ?? null" [value]="draft()[name]" [disabled]="pending()"
                     [attr.aria-invalid]="messages()[name] ? 'true' : null" [attr.aria-describedby]="errorId(name)"
@@ -63,12 +62,12 @@ export class DiscountRuleFormComponent {
   protected control(name: DiscountField): DiscountControl { return this.controls.get(name)!; }
   /** The active tours of the catalog (HU-COM-001 port); the tour the rule already has stays choosable while it is edited. */
   private readonly tours = toSignal((inject(CatalogItemsSource, { optional: true })?.list() ?? of([])).pipe(
-    map(items => items.filter(i => i.serviceType === 'TOUR' && i.catalogStatus === 'ACTIVE').map(i => ({ value: i.serviceId, label: i.commercialName, explanation: '' }))),
+    map(items => items.filter(i => i.serviceType === 'TOUR' && i.catalogStatus === 'ACTIVE').map(i => ({ value: i.serviceId, label: i.commercialName }))),
     catchError(() => of<Option[]>([]))), { initialValue: [] as Option[] });
   protected options(name: DiscountField): readonly Option[] {
     const own = this.rule();
     return name !== 'tourId' ? this.control(name).options! : own && !this.tours().some(t => t.value === own.tourId)
-      ? [{ value: own.tourId, label: own.tourName, explanation: '' }, ...this.tours()] : this.tours();
+      ? [{ value: own.tourId, label: own.tourName }, ...this.tours()] : this.tours();
   }
   protected readonly draft = signal(discountDraft(null)); protected readonly pending = signal(false);
   private readonly touched = signal<Partial<Record<DiscountField, boolean>>>({}); private readonly refused = signal<DiscountMessages>({});

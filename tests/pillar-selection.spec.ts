@@ -84,6 +84,7 @@ describe('theHolderFieldsAreDrawnDisabledAndNothingIsSent', () => {
     expect(holder).toHaveLength(5);
     expect(holder.every((input) => input.disabled)).toBe(true);
     expect(element.querySelector('.crp-finish-holder')!.textContent).toContain('Pendiente de definición');
+    expect(element.querySelector('.crp-finish-holder')!.textContent).not.toContain('DP-RS5');
     const select = element.querySelector('select') as HTMLSelectElement;
     select.value = 'BANK_TRANSFER'; select.dispatchEvent(new Event('change'));
     element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());

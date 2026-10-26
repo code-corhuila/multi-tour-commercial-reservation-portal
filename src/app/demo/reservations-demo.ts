@@ -31,15 +31,17 @@ const SEEDED: Reservation[] = [
   { id: 'RES-1842', leadCustomerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa al atardecer', departureDate: '2026-11-07', conditions: CONDITIONS, people: 2,
     quote: { services: [{ name: 'Guianza (demo)', cents: 80_000_000 }], transportCents: 5_000_000, projectedCents: 85_000_000, discounts: [], discountCents: 0, finalCents: 85_000_000 }, balanceCents: 85_000_000,
     status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'demo-dep-1', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER',
-    leadPhone: '+57 310 555 0142' },
-  { id: 'RES-1841', leadCustomerName: 'Mateo Ríos (demo)', tourName: 'Ruta del café en Pitalito', departureDate: '2026-11-14', conditions: CONDITIONS, people: 1,
-    quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], discountCents: 0, finalCents: 41_800_000 }, balanceCents: 41_800_000,
-    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'demo-dep-2', paymentType: 'PARTIAL', paymentMethod: 'CASH_AT_OFFICE',
-    leadPhone: '+57 311 555 0187' },
-];
-/** HU-COM-014: the demo customer's situations of the mockup's demo data (app.js 2621-2626), coded below the writer's sequence. */
-const ownAs = (id: string, tourName: string, departureDate: string, finalCents: number, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, tourName,
-  departureDate, departureId: undefined, leadPhone: undefined, seatHeld: true, balanceCents: finalCents, ...over,
+    leadEmail: 'laura.gomez@ejemplo.com', departureCode: 'SAL-001', deadline: { dueAt: '2026-10-16T09:00:00-05:00' },
+    leadPhone: '+57 310 555 0142' },
+  { id: 'RES-1841', leadCustomerName: 'Mateo Ríos (demo)', tourName: 'Ruta del café en Pitalito', departureDate: '2026-11-14', conditions: CONDITIONS, people: 1,
+    quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], discountCents: 0, finalCents: 41_800_000 }, balanceCents: 41_800_000,
+    status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'demo-dep-2', paymentType: 'PARTIAL', paymentMethod: 'CASH_AT_OFFICE',
+    leadEmail: 'mateo.rios@ejemplo.com', departureCode: 'SAL-002', deadline: { dueAt: '2026-10-15T09:00:00-05:00', extendedUntil: '2026-10-18T09:00:00-05:00' },
+    leadPhone: '+57 311 555 0187' },
+];
+/** HU-COM-014: the demo customer's situations of the mockup's demo data (app.js 2621-2626), coded below the writer's sequence. */
+const ownAs = (id: string, tourName: string, departureDate: string, finalCents: number, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, tourName,
+  departureDate, departureId: undefined, leadEmail: undefined, departureCode: undefined, deadline: undefined, leadPhone: undefined, seatHeld: true, balanceCents: finalCents, ...over,
   quote: { services: [{ name: 'Guianza (demo)', cents: finalCents }], transportCents: 0, projectedCents: finalCents, discounts: [], discountCents: 0, finalCents } });
 const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus'], presentedAt?: string): ReservationPayment[] =>
   [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)', ...(presentedAt ? { presentedAt } : {}) }];
@@ -53,10 +55,12 @@ SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000,
     balanceCents: 0, payments: proofOf('RES-1830', 129_900_000, 'APROBADO') }));
 /** HU-COM-013 (tasks T-08): one reservation per state the cancellation tells apart; codes below the writer's sequence. */
 const inState = (id: string, status: Reservation['status'], over: Partial<Reservation> = {}): Reservation =>
-  ({ ...SEEDED[1], departureId: undefined, leadPhone: undefined, id, status, seatHeld: status !== 'PENDIENTE_DE_PAGO' && status !== 'CANCELADA', ...over });
+  ({ ...SEEDED[1], departureId: undefined, leadEmail: undefined, departureCode: undefined, deadline: undefined, leadPhone: undefined, id, status, seatHeld: status !== 'PENDIENTE_DE_PAGO' && status !== 'CANCELADA', ...over });
 SEEDED.push(inState('RES-1839', 'CONFIRMADA', { leadCustomerName: 'Camila Ortega (demo)', validatedCents: 30_000_000, balanceCents: 11_800_000, financialStatus: 'ABONO_RECIBIDO' }),
   inState('RES-1838', 'EN_EJECUCION'), inState('RES-1837', 'FINALIZADA'), inState('RES-1836', 'CANCELADA'),
-  inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true }));
+  // HU-COM-018: marked as waiting for a rescheduling, so its episode exists too (still to propose); "Reprogramar" of Reservas opens it.
+  inState('RES-1835', 'CONFIRMADA', { leadCustomerName: 'Andrés Pinto (demo)', reschedulingPending: true,
+    reschedulingEpisode: { originDepartureId: 'demo-dep-5', originAt: '2026-10-12T19:30:00-05:00' } }));
 /** HU-COM-010 (Pagos pendientes, AC-PV.2, AC-PV.4, AC-PV.5): two $300.000 Abono · Transferencia reservations with a proof En validación. */
 const proof = (id: string, amountCents: number, presentedAt: string, over: Partial<ReservationPayment> = {}): ReservationPayment =>
   ({ id, method: 'BANK_TRANSFER', amountCents, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)', presentedAt, ...over });
@@ -136,7 +140,7 @@ export class DemoReservationsWriter extends ReservationsWriter {
       const again = this.byKey.get(key);
       if (again) return again;
       const created: Reservation = {
-        id: `RES-${++this.sequence}`, leadCustomerName: this.leadName(c), ...(c.lead?.phone?.trim() ? { leadPhone: c.lead.phone.trim() } : {}),
+        id: `RES-${++this.sequence}`, leadCustomerName: this.leadName(c), ...(c.lead?.email ? { leadEmail: c.lead.email } : {}), ...(c.lead?.phone?.trim() ? { leadPhone: c.lead.phone.trim() } : {}), departureCode: `SAL-${d.id.replace('demo-dep-', '').padStart(3, '0')}`,
         departureId: d.id, tourName: d.tourName, departureDate: d.date, conditions: d.conditions, people: c.people, quote, balanceCents: quote.finalCents,
         status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, paymentType: c.paymentType, paymentMethod: c.paymentMethod,
       };

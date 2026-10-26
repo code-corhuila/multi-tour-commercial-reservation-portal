@@ -6,17 +6,17 @@ import { focusFirstError } from '../../shared/focus';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { MoneyRejection, parseMoney } from '../../shared/money';
 import { NEW_SERVICE_COPY as COPY } from '../catalog-new-service-copy';
-import { CatalogItemsWriter } from '../data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from '../data/catalog-api.service';
 import { CatalogItem, CreateCatalogItemCommand } from '../model/catalog-item';
 
-// Declared debt (spec.md DD-11, DD-14): capacity, transport and the per-person rate are not defined for this portal;
+// Declared debt (spec.md DD-11, DD-14): capacity, transport, the image and the per-person rate are not defined for this portal;
 // the screen draws them as the mockup does and the container adapter drops what the contract does not know (G-B).
 
-type Field = 'kind' | 'name' | 'type' | 'capacity' | 'restrictions' | 'includesTransport' | 'route' | 'rate' | 'policy' | 'cost' | 'highRisk' | 'validFrom' | 'validTo';
+type Field = 'kind' | 'name' | 'type' | 'capacity' | 'restrictions' | 'includesTransport' | 'transportKey' | 'image' | 'route' | 'rate' | 'policy' | 'cost' | 'highRisk' | 'validFrom' | 'validTo';
 type Draft = Readonly<Record<Field, string>>;
 type Messages = Partial<Record<Field, string>>;
 
-const EMPTY: Draft = { kind: 'operational', name: '', type: 'tour', capacity: '', restrictions: '', includesTransport: 'no', route: '', rate: '', policy: 'first-valid-payment', cost: '', highRisk: 'no', validFrom: '', validTo: '' };
+const EMPTY: Draft = { kind: 'operational', name: '', type: 'tour', capacity: '', restrictions: '', includesTransport: 'no', transportKey: '', image: '', route: '', rate: '', policy: 'first-valid-payment', cost: '', highRisk: 'no', validFrom: '', validTo: '' };
 const WIRE_FIELDS: Readonly<Record<string, Field>> = {
   commercialName: 'name', baseRateCents: 'rate', baseOperationalCostCents: 'cost', configuredCapacity: 'capacity',
   transportRequired: 'includesTransport', highRisk: 'highRisk', validFrom: 'validFrom', validTo: 'validTo', serviceType: 'type',
@@ -33,11 +33,16 @@ function validate(draft: Draft): { command: CreateCatalogItemCommand | null; mes
   const cost = parseMoney(draft.cost);
   const capacity = draft.capacity.trim();
   if (draft.name.trim() === '') { messages.name = COPY.errors.required; }
+  if (draft.type === 'tour' && draft.includesTransport === 'si' && draft.transportKey === '') { messages.transportKey = COPY.errors.transportRequired; }
+  if (draft.image === '') { messages.image = COPY.errors.requiredFem; }
   if (rate.kind === 'invalid') { messages.rate = MONEY_ERRORS[rate.reason]; }
   if (cost.kind === 'invalid') { messages.cost = MONEY_ERRORS[cost.reason]; }
-  if (capacity !== '' && !WHOLE_NUMBER.test(capacity)) { messages.capacity = COPY.errors.wholeNumber; }
+  // A tour needs its capacity (like the edit form and the API); a transport may go without it.
+  if (capacity === '' && draft.type === 'tour') { messages.capacity = COPY.errors.capacityRequiredForTour; }
+  else if (capacity !== '' && !WHOLE_NUMBER.test(capacity)) { messages.capacity = COPY.errors.wholeNumber; }
+  // The validity is optional (the API has none); a typed date is still checked.
   for (const name of ['validFrom', 'validTo'] as const) {
-    if (draft[name] === '') { messages[name] = COPY.errors.requiredFem; }
+    if (draft[name] !== '' && Number.isNaN(Date.parse(draft[name]))) { messages[name] = COPY.errors.invalidDate; }
   }
   if (draft.validFrom !== '' && draft.validTo !== '' && draft.validTo < draft.validFrom) { messages.validTo = COPY.errors.validityOrder; }
   if (rate.kind === 'invalid' || cost.kind === 'invalid' || Object.keys(messages).length > 0) { return { command: null, messages }; }
@@ -48,10 +53,11 @@ function validate(draft: Draft): { command: CreateCatalogItemCommand | null; mes
     messages,
     command: {
       serviceType: tour ? 'TOUR' : 'TRANSPORTATION', commercialName: draft.name.trim(), baseRateCents: rate.minorUnits, baseOperationalCostCents: cost.minorUnits,
-      configuredCapacity: capacity === '' ? null : Number(capacity),
+      ...(capacity === '' ? {} : { configuredCapacity: Number(capacity) }),
       // "¿Incluye transporte?" is the mockup's face of the spec's "Transporte obligatorio".
       transportRequired: tour && draft.includesTransport === 'si', highRisk: draft.highRisk === 'si',
-      validFrom: draft.validFrom, validTo: draft.validTo,
+      ...(draft.validFrom === '' ? {} : { validFrom: draft.validFrom }),
+      ...(draft.validTo === '' ? {} : { validTo: draft.validTo }),
       ...(restrictions === '' ? {} : { operationalRestrictions: restrictions }),
       ...(tour || route === '' ? {} : { route }),
     },
@@ -85,7 +91,7 @@ let nextFormId = 0;
     <ng-template #choice let-name let-label="label" let-options="options" let-wide="wide">
       <div class="crp-catalog-field" [class.crp-catalog-wide]="wide">
         <label [for]="id(name)">{{ label }}</label>
-        <select [id]="id(name)" (change)="set(name, $event)">
+        <select [id]="id(name)" [attr.aria-invalid]="message(name) ? 'true' : null" [attr.aria-describedby]="message(name) ? id(name) + '-error' : null" (change)="set(name, $event)">
           @for (option of options; track option.value) { <option [value]="option.value" [selected]="value(name) === option.value" [disabled]="option.disabled">{{ option.label }}</option> }
         </select>
         <ng-container *ngTemplateOutlet="error; context: { $implicit: name }" />
@@ -104,6 +110,10 @@ let nextFormId = 0;
           <ng-container *ngTemplateOutlet="text; context: { $implicit: 'restrictions', label: copy.labels.restrictions, type: 'textarea', placeholder: copy.placeholders.restrictions }" />
           @if (isTour()) {
             <ng-container *ngTemplateOutlet="choice; context: { $implicit: 'includesTransport', label: copy.labels.includesTransport, options: yesNo }" />
+            @if (draft().includesTransport === 'si') {
+              <ng-container *ngTemplateOutlet="choice; context: { $implicit: 'transportKey', label: copy.labels.transport, options: transportOptions() }" />
+              @if (transports().length === 0) { <p class="crp-catalog-note crp-catalog-wide">{{ copy.transportEmpty }}</p> }
+            }
           } @else {
             <ng-container *ngTemplateOutlet="text; context: { $implicit: 'route', label: copy.labels.route, type: 'text', placeholder: '' }" />
           }
@@ -119,6 +129,12 @@ let nextFormId = 0;
           <ng-container *ngTemplateOutlet="choice; context: { $implicit: 'highRisk', label: copy.labels.highRisk, options: yesNo }" />
           <ng-container *ngTemplateOutlet="text; context: { $implicit: 'validFrom', label: copy.labels.validFrom, type: 'date', placeholder: '' }" />
           <ng-container *ngTemplateOutlet="text; context: { $implicit: 'validTo', label: copy.labels.validTo, type: 'date', placeholder: '' }" />
+          <div class="crp-catalog-field crp-catalog-wide">
+            <label [for]="id('image')">{{ copy.labels.image }}</label>
+            <input type="file" accept="image/*" [id]="id('image')" [attr.aria-invalid]="message('image') ? 'true' : null"
+              [attr.aria-describedby]="message('image') ? id('image') + '-error' : null" (change)="setImage($event)" />
+            <ng-container *ngTemplateOutlet="error; context: { $implicit: 'image' }" />
+          </div>
         </div>
       </section>
       <p class="crp-catalog-note">{{ copy.note }}</p>
@@ -133,6 +149,7 @@ let nextFormId = 0;
 export class CatalogNewServiceFormComponent {
   protected readonly copy = COPY;
   private readonly writer = inject(CatalogItemsWriter);
+  private readonly source = inject(CatalogItemsSource);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly injector = inject(Injector);
@@ -154,10 +171,22 @@ export class CatalogNewServiceFormComponent {
   protected readonly isTour = computed(() => this.draft().type === 'tour');
   protected readonly messages = computed<Messages>(() => ({ ...this.refused(), ...(this.attempted() ? validate(this.draft()).messages : {}) }));
 
+  /** The active transport resources a tour can include (RN-TRA-001); the mockup lists only those. */
+  protected readonly transports = signal<readonly CatalogItem[]>([]);
+  protected readonly transportOptions = computed(() => [{ value: '', label: COPY.transportPlaceholder }, ...this.transports().map((each) => ({ value: each.serviceId, label: each.commercialName }))]);
+
   protected readonly types = [{ value: 'tour', label: COPY.types.tour }, { value: 'transport', label: COPY.types.transport }];
   protected readonly yesNo = [{ value: 'no', label: COPY.yesNo.no }, { value: 'si', label: COPY.yesNo.yes }];
   protected readonly policies = [{ value: 'first-valid-payment', label: COPY.policy }];
   protected readonly kinds = computed(() => [{ value: 'operational', label: COPY.kinds.operational }, { value: 'establishment', label: COPY.kinds.establishment, disabled: !this.establishmentsAvailable() }]);
+
+  constructor() {
+    this.source.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (items) => this.transports.set(items.filter((each) => each.serviceType === 'TRANSPORTATION' && each.catalogStatus === 'ACTIVE')),
+      // Without the list the select only offers its placeholder; the form does not break.
+      error: () => this.transports.set([]),
+    });
+  }
 
   protected id(name: string): string { return `${this.formId}-${name}`; }
   protected value(name: Field): string { return this.draft()[name]; }
@@ -172,6 +201,13 @@ export class CatalogNewServiceFormComponent {
     }
     this.draft.update((current) => ({ ...current, [name]: control.value }));
     this.refused.update(({ [name]: _cleared, ...rest }) => rest);
+  }
+
+  /** The mockup keeps the file as the service image; the contract has no field for it yet, so only its presence is checked (G-B). */
+  protected setImage(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    this.draft.update((current) => ({ ...current, image: file?.name ?? '' }));
+    this.refused.update(({ image: _cleared, ...rest }) => rest);
   }
 
   protected submit(event: Event): void {
