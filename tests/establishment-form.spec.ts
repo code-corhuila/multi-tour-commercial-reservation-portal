@@ -117,8 +117,8 @@ describe('aCorrectedImageResubmitsWithTheSameKey', () => {
     expect(keys.generated.length).toBe(1);
     await fill(); const firstFile = (field('image') as HTMLInputElement).files![0]; await submit();
     expect(writer.registrations[0].key).toBe(keys.generated[0]);
-    writer.registrations[0].fail(apiError({ userMessage: 'Image refused.', details: [{ field: 'image', message: 'Content does not match.' }] })); await settle();
-    expect(errorFor('image')).toContain('Image refused.'); expect(errorFor('image')).toContain('Content does not match.');
+    writer.registrations[0].fail(apiError({ status: 400, userMessage: 'Image refused.', details: [{ field: 'image', message: 'Content does not match.' }] })); await settle();
+    expect(errorFor('image')).toBe('La imagen debe ser PNG, JPEG o WebP.');
     expect(field('commercialName').value).toBe('Hotel Alpha');
     expect((field('image') as HTMLInputElement).files![0]).toBe(firstFile);
     expect(saving).toEqual([true, false]);
@@ -129,15 +129,14 @@ describe('aCorrectedImageResubmitsWithTheSameKey', () => {
     expect(saved).toHaveLength(1); expect(keys.generated.length).toBe(2);
     await fill(); await submit(); expect(writer.registrations[2].key).toBe(keys.generated[1]);
   });
-  it('places service details and userMessage by their field, including unknown details beside image', async () => {
+  it('places Spanish texts by the field the API names and never prints the English details', async () => {
     const { fill, submit, writer, settle, errorFor, element } = await openForm();
     await fill(); await submit();
-    writer.registrations[0].fail(apiError({ userMessage: 'Please correct these fields.', details: [
-      { field: 'commercialName', message: 'Name conflicts.' }, { field: 'commercialName', message: 'Choose another name.' },
-      { field: 'commercialInformation', message: 'Contact required.' }, { field: 'content', message: 'Unreadable file.' },
+    writer.registrations[0].fail(apiError({ status: 400, userMessage: 'Please correct these fields.', details: [
+      { field: 'commercialName', message: 'Name conflicts.' }, { field: 'commercialInformation', message: 'Contact required.' }, { field: 'content', message: 'Unreadable file.' },
     ] })); await settle();
-    for (const text of ['Please correct these fields.', 'Name conflicts.', 'Choose another name.']) { expect(errorFor('commercialName')).toContain(text); }
-    expect(errorFor('commercialInformation')).toContain('Contact required.'); expect(errorFor('image')).toContain('Unreadable file.');
+    expect(errorFor('commercialName')).toBe('Obligatorio: de 1 a 255 caracteres.'); expect(errorFor('commercialInformation')).not.toBe('');
+    expect(element.textContent).not.toMatch(/Please correct|Name conflicts|Contact required|Unreadable/);
     expect(Array.from(element.querySelectorAll('[role="alert"]')).every((alert) => alert.parentElement?.querySelector('input, textarea, select'))).toBe(true);
   });
 });

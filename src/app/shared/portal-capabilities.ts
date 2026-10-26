@@ -82,7 +82,8 @@ const TABLE: Readonly<Record<ActorRole, Row>> = Object.freeze({
   MANAGER: { ...READER, label: 'Gerente' },
   ANALYST: { ...READER, label: 'Analista' },
   ACCOUNTANT: { ...NONE, label: 'Contador', operator: true, catalog: 'denied', customers: 'denied', readEstablishments: false },
-  READ_ONLY: { ...READER, operator: false },
+  // The API answers 403 to this fail-closed actor on the establishments, so the screen is not offered.
+  READ_ONLY: { ...READER, operator: false, readEstablishments: false },
 });
 
 const CATALOG_READ: CatalogCapabilities = {

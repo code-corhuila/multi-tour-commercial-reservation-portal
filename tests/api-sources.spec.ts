@@ -96,8 +96,17 @@ describe('establishmentsSourcesOverTheApiClient', () => {
     expect(error).toMatchObject({ status: 403, userMessage: 'not allowed' });
   });
 
-  // Debt: needs FormData support in the container client (api-client.ts JSON.stringify-s every body).
-  it.todo('registers with a multipart FormData body once the container client supports it');
+  it('registers with a multipart FormData body (never a JSON-serialized one) and only the Idempotency-Key header', async () => {
+    const { client, calls } = fakeClient();
+    const image = new File(['x'], 'a.png', { type: 'image/png' });
+    await firstValueFrom(new EstablishmentsApiWriter(client).register({ establishmentType: 'RESTAURANT', commercialName: 'R', commercialInformation: 'Info', image }, 'k-987654321'));
+    const body = calls[0].body;
+    expect(body).toBeInstanceOf(FormData); expect(typeof body).not.toBe('string');
+    const form = body as FormData;
+    expect(['commercialInformation', 'commercialName', 'establishmentType', 'image'].every((name) => form.has(name))).toBe(true);
+    expect(form.get('establishmentType')).toBe('RESTAURANT'); expect(form.get('image')).toBeInstanceOf(File);
+    expect(calls[0].headers).toEqual({ 'Idempotency-Key': 'k-987654321' });
+  });
 
   it('builds the registration as FormData with the Idempotency-Key header (container support pending)', async () => {
     const { client, calls } = fakeClient();

@@ -1,3 +1,4 @@
+import { tenantWallTime } from '../shared/clock';
 import { formatDate } from '../shared/format';
 import type { PaymentDeadline } from './data/payment-followup-ports';
 
@@ -27,7 +28,7 @@ export const PAYMENT_FOLLOWUP_TEXT = {
 export const dateTime = (iso: string) => `${formatDate(iso)} · ${iso.slice(11, 16)}`;
 
 /** The same, for an instant with any offset, read in the tenant's time (America/Bogota, no daylight saving): "10 oct 2026 · 10:00". */
-export const tenantDateTime = (iso: string) => dateTime(new Date(Date.parse(iso) - 5 * 60 * 60 * 1000).toISOString());
+export const tenantDateTime = (iso: string) => dateTime(tenantWallTime(iso));
 
 
 /** "Plazo de pago" (app.js 10711): the effective deadline already resolved by the service; it never exceeds the departure start (RN-RES-006). */

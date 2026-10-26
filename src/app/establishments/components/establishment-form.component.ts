@@ -3,11 +3,10 @@ import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, exhaustMap, tap } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { ApiError } from '../../shell-contract';
 import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '../data/associated-establishments-writer';
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
-import { ESTABLISHMENTS_COPY } from '../establishments-copy';
+import { ESTABLISHMENTS_COPY, registrationRefusal } from '../establishments-copy';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { FilePickerComponent } from '../../shared/file-picker.component';
 
@@ -70,6 +69,7 @@ let nextFormId = 0;
         <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">Cancelar</button>
         <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar establecimiento</button>
       </div>
+      @if (general(); as text) { <p role="alert">{{ text }}</p> }
       </form>
     }
   `,
@@ -96,6 +96,8 @@ export class EstablishmentFormComponent {
   protected readonly image = signal<File | null>(null);
   private readonly attempted = signal(false);
   private readonly refused = signal<Messages>({});
+  /** A refusal with no field of its own (permission, key, content type, server): the notice of the form, as in the catalog form. */
+  protected readonly general = signal<string | null>(null);
   protected readonly messages = computed(() => {
     const local: Messages = {}, draft = this.draft();
     if (this.attempted()) {
@@ -137,7 +139,7 @@ export class EstablishmentFormComponent {
     event.preventDefault(); if (this.pending() || !this.canRegister) { return; }
     this.attempted.set(true);
     // Service messages must not block retrying an otherwise valid intention.
-    this.refused.set({}); if (Object.keys(this.messages()).length) { this.focusFirstErrorOnRender(); return; }
+    this.refused.set({}); this.general.set(null); if (Object.keys(this.messages()).length) { this.focusFirstErrorOnRender(); return; }
     this.pending.set(true); this.saving.emit(true);
     this.submittedForm = event.target as HTMLFormElement;
     const draft = this.draft();
@@ -146,12 +148,7 @@ export class EstablishmentFormComponent {
   }
   private finish(): void { this.pending.set(false); this.saving.emit(false); }
   private showRefusal(value: unknown): void {
-    const error = value as Partial<ApiError> | null, messages: Messages = {};
-    const reason = error?.userMessage ?? ESTABLISHMENTS_COPY.requestFailed;
-    for (const detail of Array.isArray(error?.details) ? error.details : []) {
-      const field: Field = ['establishmentType', 'commercialName', 'commercialInformation', 'image'].includes(detail.field) ? detail.field as Field : 'image';
-      messages[field] = `${messages[field] ?? reason} ${detail.message}`;
-    }
-    this.refused.set(Object.keys(messages).length ? messages : { image: reason });
+    const { fields, general } = registrationRefusal(value as Parameters<typeof registrationRefusal>[0]);
+    this.refused.set(fields); this.general.set(general);
   }
 }

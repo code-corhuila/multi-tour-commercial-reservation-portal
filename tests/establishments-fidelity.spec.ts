@@ -55,13 +55,13 @@ describe('theActionColumnIsOnlyForWhoCanAct', () => {
   it('the administrator with the writer sees the Acción column', async () => {
     const { source, settle, headers } = await openPage('TENANT_ADMINISTRATOR', { writer: true });
     source.requests[0].reply([establishmentNamed('Hotel Alpha')]); await settle();
-    expect(headers()).toEqual(['Establecimiento', 'Información comercial', 'Estado', 'Acción']);
+    expect(headers()).toEqual(['Establecimiento', 'Información comercial', 'Estado y último cambio', 'Acción']);
   });
   for (const role of ['ANALYST', 'MANAGER'] as const) {
     it(`${role} reads the list without the Acción column`, async () => {
       const { source, settle, headers, element } = await openPage(role, { writer: true });
       source.requests[0].reply([establishmentNamed('Hotel Alpha')]); await settle();
-      expect(headers()).toEqual(['Establecimiento', 'Información comercial', 'Estado']);
+      expect(headers()).toEqual(['Establecimiento', 'Información comercial', 'Estado y último cambio']);
       expect(element.querySelector('tbody tr')!.children.length).toBe(3);
     });
   }
