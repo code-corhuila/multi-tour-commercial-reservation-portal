@@ -772,6 +772,11 @@
 .crp-root .crp-proof-review-wide { grid-column: 1 / -1; }
 @media (max-width: 720px) { .crp-root .crp-proof-review-hero { grid-template-columns: minmax(0, 1fr); } }
 .crp-root .crp-payment-followup-wide { grid-column: 1 / -1; display: grid; }
+/* The phone of the customer sits in the context card as a call link, with the size of the fields around it. */
+.crp-root .crp-payment-followup-phone-row { gap: 6px; }
+.crp-root .crp-payment-followup-phone-label { color: var(--crp-shade-667579); font-size: 0.78rem; font-weight: 600; }
+.crp-root .crp-payment-followup-phone { width: max-content; color: var(--crp-accent-strong); font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; }
+.crp-root .crp-payment-followup-phone:hover { text-decoration: underline; }
 .crp-root .crp-operator-form-feedback { margin: -6px 0 0; color: var(--crp-soft); font-size: 0.8rem; line-height: 1.45; }
 .crp-root .crp-operator-form-feedback.crp-is-valid { color: var(--crp-success); font-weight: 700; }
 
