@@ -140,3 +140,14 @@ describe('theDemoReasonsKeepTheMockupRules', () => {
     expect(await run(firstValueFrom(port.remove('Fidelización', 'k2')))).toMatchObject({ status: 409 });
   });
 });
+
+describe('theReasonsPanelFocusesTheFieldWhenThePortalRefuses', () => {
+  it('moves the focus to the field of the reason that the port refused', async () => {
+    const p = await ready(); document.body.append(p.element);
+    await p.type('Cortesia por referido'); await p.submit();
+    p.port.changes[0].fail(apiError()); await p.settle();
+    expect(p.field().getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(p.field());
+    p.element.remove();
+  });
+});

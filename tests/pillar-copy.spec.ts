@@ -9,7 +9,8 @@ import { listSourceFiles } from './source-files';
 const GUARDED = [{ prefix: 'src/app/reservations/', copy: 'src/app/reservations/reservations-copy.ts' },
   { prefix: 'src/app/self-service-reservation/', copy: 'src/app/self-service-reservation/self-service-copy.ts' },
   { prefix: 'src/app/portal-shell.component.ts', copy: 'src/app/shell-copy.ts' },
-  { prefix: 'src/app/discounts/', copy: 'src/app/discounts/discounts-copy.ts' }];
+  { prefix: 'src/app/discounts/', copy: 'src/app/discounts/discounts-copy.ts' },
+  { prefix: 'src/app/current-discounts/', copy: 'src/app/current-discounts/current-discounts-copy.ts' }];
 const TEXT_ATTRIBUTES = /\s(?:aria-label|aria-description|placeholder|title|alt|label)="([^"]*)"/g;
 /** Text that is not a sentence: symbols and units a template may draw by itself. Kept minimal on purpose. */
 const ALLOWED = new Set(['✓', '·', '—', 'COP', '#', '%']);
