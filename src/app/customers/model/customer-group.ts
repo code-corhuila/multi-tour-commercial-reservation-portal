@@ -1,3 +1,4 @@
+import { CUSTOMERS_COPY } from '../customers-copy';
 
 /** The extra data of a high-risk activity (RN-CLI-002, RN-CLI-003). Sensitive: shown only with the permission. */
 export interface HighRiskData { readonly informedConsent: boolean; readonly bloodType: string; readonly emergencyContact: string; readonly physicalRestrictions: string }
@@ -50,11 +51,11 @@ export function duplicateDocument(group: CustomerGroup | null, document: string)
 export function validatePerson(draft: PersonDraft, kind: PersonKind, highRisk: boolean, group: CustomerGroup | null): PersonMessages {
   const messages: PersonMessages = {};
   const required: PersonField[] = kind === 'lead' ? ['serviceId', ...LEAD_FIELDS] : [...PERSON_FIELDS];
-  for (const field of required) if (blank(draft[field])) messages[field] = 'Obligatorio.';
-  if (kind === 'lead' && !messages.email && !EMAIL.test(draft.email!.trim())) messages.email = 'Escribe un correo válido.';
-  if (kind === 'lead' && draft.acceptedTerms !== 'true') messages.acceptedTerms = 'El cliente debe aceptar las condiciones.';
-  if (!messages.document && duplicateDocument(group, draft.document ?? '')) messages.document = 'Este documento ya está en la reserva.';
-  for (const field of missingHighRiskData(draft, highRisk)) messages[field] = 'Obligatorio para una actividad de riesgo.';
+  for (const field of required) if (blank(draft[field])) messages[field] = CUSTOMERS_COPY.required;
+  if (kind === 'lead' && !messages.email && !EMAIL.test(draft.email!.trim())) messages.email = CUSTOMERS_COPY.invalidEmail;
+  if (kind === 'lead' && draft.acceptedTerms !== 'true') messages.acceptedTerms = CUSTOMERS_COPY.termsRequired;
+  if (!messages.document && duplicateDocument(group, draft.document ?? '')) messages.document = CUSTOMERS_COPY.duplicate;
+  for (const field of missingHighRiskData(draft, highRisk)) messages[field] = CUSTOMERS_COPY.riskRequired;
   return messages;
 }
 
