@@ -4,8 +4,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ADDITIONAL_DISCOUNT_CONTRIBUTIONS, AdditionalDiscountSearchComponent } from '../src/app/current-discounts/components/additional-discount-entries.component';
 import { ADDITIONAL_DISCOUNT_ENTRY_COPY } from '../src/app/current-discounts/current-discounts-copy';
 import { ADDITIONAL_DISCOUNT_AREA, ADDITIONAL_DISCOUNT_MODE, AdditionalDiscountEligibility } from '../src/app/current-discounts/data/additional-discount-eligibility';
-import { CurrentDiscountsSource } from '../src/app/current-discounts/data/current-discounts-source';
-import { DemoAdditionalDiscountEligibility, DemoCurrentDiscountsStore } from '../src/app/demo/current-discounts-demo';
+import { AdditionalDiscountContexts } from '../src/app/current-discounts/data/additional-discount-contexts';
+import { AdditionalDiscountWriter } from '../src/app/current-discounts/data/additional-discount-writer';
+import { DemoAdditionalDiscountEligibility } from '../src/app/demo/current-discounts-demo';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { ReservationsPageComponent } from '../src/app/reservations/pages/reservations-page.component';
@@ -15,6 +16,7 @@ import { ActorRole } from '../src/app/shared/portal-capabilities';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { DISCOUNTS_PAGE_PANELS, slotEntries } from '../src/app/shared/portal-slots';
+import { ControllableAdditionalDiscountWriter, ControllableContexts } from './additional-discount.double';
 import { actorAs } from './actor-context.double';
 import { ControllableReservations, reservationOf, reservationProviders, screenOf } from './reservations.double';
 import { ControllableDiscountRulesSource } from './discount-rules-source.double';
@@ -23,6 +25,7 @@ afterEach(() => TestBed.resetTestingModule());
 
 // HU-COM-004 amendment 2026-10-14 (mockup PDR v1.9), AC-CD.7 and AC-CD.10: the entrances to "Aplicar descuento".
 const withEligibility: Provider[] = [{ provide: AdditionalDiscountEligibility, useValue: new DemoAdditionalDiscountEligibility() }, ...ADDITIONAL_DISCOUNT_CONTRIBUTIONS];
+const screenPorts: Provider[] = [{ provide: AdditionalDiscountContexts, useValue: new ControllableContexts() }, { provide: AdditionalDiscountWriter, useValue: new ControllableAdditionalDiscountWriter() }];
 
 const RESERVATIONS: readonly Reservation[] = [
   reservationOf('RES-P', { status: 'PENDIENTE_DE_PAGO' }), reservationOf('RES-C', { status: 'CONFIRMADA', balanceCents: 1000 }),
@@ -48,7 +51,7 @@ describe('theSearchOpensReservationsInModeAndMarksOnlyEligibleRows', () => {
   it('draws the panel "Decisiones excepcionales / Descuento adicional" with "Buscar una reserva" in Descuentos, through its slot', async () => {
     const source = new ControllableDiscountRulesSource();
     TestBed.configureTestingModule({ providers: [{ provide: DiscountRulesSource, useValue: source }, { provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') },
-      { provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() }, ...withEligibility] });
+      ...screenPorts, ...withEligibility] });
     const fixture = TestBed.createComponent(DiscountsPageComponent);
     const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
     await settle(); source.requests[0].reply([]); await settle();
@@ -112,7 +115,7 @@ describe('onlyTheAdministratorSeesTheButtonTheModeAndTheScreen', () => {
 
   it.each(['OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST', 'ACCOUNTANT', 'ROL_DESCONOCIDO'])('%s is offered neither the search panel nor the screen', (role) => {
     TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs(role as ActorRole) }, ...withEligibility,
-      { provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() }] });
+      ...screenPorts] });
     const injector = TestBed.inject(Injector);
     const area = PORTAL_AREAS.find((a) => a.key === ADDITIONAL_DISCOUNT_AREA)!;
     expect(area.isAvailable!(injector)).toBe(false);
@@ -123,7 +126,7 @@ describe('onlyTheAdministratorSeesTheButtonTheModeAndTheScreen', () => {
 
   it('offers the screen to the Administrator, as a sub-screen of Descuentos with no sidebar item', () => {
     TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') }, ...withEligibility,
-      { provide: CurrentDiscountsSource, useValue: new DemoCurrentDiscountsStore() }] });
+      ...screenPorts] });
     const area = PORTAL_AREAS.find((a) => a.key === ADDITIONAL_DISCOUNT_AREA)!;
     expect(area).toMatchObject({ key: 'additional-discount', label: 'Aplicar descuento', menu: false, parent: 'discounts' });
     expect(area.isAvailable!(TestBed.inject(Injector))).toBe(true);
