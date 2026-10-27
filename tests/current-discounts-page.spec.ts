@@ -225,12 +225,19 @@ describe('theScreenFollowsTheAuthorizedMockup', () => {
 describe('currentDiscountsAreWiredInTheMountEntry', () => {
   let host: HTMLElement; let cleanup: () => void;
   afterEach(() => { cleanup(); host.remove(); });
-  it('opens the area from the navigation with the in-memory demo data', async () => {
+  it('reaches the screen through Descuentos, Buscar una reserva and Aplicar descuento, with the in-memory demo data', async () => {
     host = document.createElement('div'); document.body.append(host);
     const request = vi.fn(async () => ({ data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 1 } }));
     cleanup = entry.mountWith(host, { apiClient: { request } as never, session: { roles: ['TENANT_ADMINISTRATOR'], open: () => undefined, close: () => undefined } }, demoSources);
     await vi.waitFor(() => expect(host.querySelector('nav')).toBeTruthy());
-    Array.from(host.querySelectorAll('nav button')).find((b) => b.textContent?.trim() === 'Descuentos vigentes')!.dispatchEvent(new Event('click'));
+    const press = (label: string) => Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === label)!.dispatchEvent(new Event('click'));
+    expect(Array.from(host.querySelectorAll('nav button')).map((b) => b.textContent?.trim())).not.toContain('Descuentos vigentes');
+    press('Descuentos');
+    await vi.waitFor(() => expect(host.textContent).toContain('Buscar una reserva'));
+    press('Buscar una reserva');
+    await vi.waitFor(() => expect(host.textContent).toContain('Selecciona la reserva a la que deseas aplicar un descuento adicional.'));
+    await vi.waitFor(() => expect(Array.from(host.querySelectorAll('tbody button')).some((b) => b.textContent?.trim() === 'Aplicar descuento')).toBe(true));
+    Array.from(host.querySelectorAll('tbody button')).find((b) => b.textContent?.trim() === 'Aplicar descuento')!.dispatchEvent(new Event('click'));
     await vi.waitFor(() => expect(host.querySelectorAll('[data-line]').length).toBeGreaterThan(0));
     expect(host.querySelector('form')).not.toBeNull();
   });

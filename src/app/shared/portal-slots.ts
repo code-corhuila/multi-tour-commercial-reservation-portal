@@ -17,6 +17,8 @@ export const contribute = (slot: PortalSlotToken, entry: PortalSlot): Provider =
 export const RESERVATION_DETAIL_BLOCKS: PortalSlotToken = new InjectionToken('RESERVATION_DETAIL_BLOCKS');
 /** 10 (admin-reservas): actions of the "Acción" cell after "Ver detalle"; each draws its own " · ". Input: reservation. */
 export const RESERVATION_ROW_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_ROW_ACTIONS');
+/** 10 (admin-reservas) opened in a mode (HU-COM-004 additional-discount): the actions of the Acción cell after "Ver detalle" while the mode is open, which replace the usual ones. Inputs: reservation, mode. */
+export const RESERVATION_MODE_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_MODE_ACTIONS');
 /** 21 (finalizar-reserva): blocks of the main column after the payment method card. Inputs: quote, method (the chosen code), reservation (once created). */
 export const CHECKOUT_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_BLOCKS');
 /** 10B (admin-crear-reserva): sections of the form hosted by HU-COM-007, by order. Inputs of the outlet: crpSlotFrom, crpSlotUntil (the order range it draws).
