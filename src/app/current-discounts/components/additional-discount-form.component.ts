@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { defer, finalize, of, switchMap } from 'rxjs';
+import { catchError, defer, finalize, of, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
 import { ApiError } from '../../shell-contract';
 import { formatCop } from '../../shared/format';
@@ -44,7 +44,7 @@ let formSequence = 0;
         </div>
       </section>
       <p class="crp-additional-discount-note">{{ text.note }}</p>
-      @if (failure()) { <p role="alert">{{ failure() }}</p> }
+      @if (failure()) { <p role="alert" tabindex="-1" data-failure>{{ failure() }}</p> }
       @if (applied(); as done) { <p role="status">{{ text.applied }}@if (done.excessCents) { {{ text.excessOpened(money(done.excessCents)) }} }</p> }
       <div class="crp-form-actions"><button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">{{ text.cancel }}</button><button class="crp-operator-primary" type="submit" [disabled]="locked()">{{ text.apply }}</button></div>
     </form>
@@ -54,6 +54,7 @@ export class AdditionalDiscountFormComponent {
   readonly context = input.required<AdditionalDiscountContext>();
   private readonly contexts = inject(AdditionalDiscountContexts); private readonly writer = inject(AdditionalDiscountWriter);
   private readonly keys = inject(IdempotencyKeys); private readonly lifetime = inject(DestroyRef); private readonly injector = inject(Injector);
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private key = this.keys.generate(); private fingerprint: string | null = null; private readonly prefix = `additional-discount-form-${formSequence++}`;
   protected readonly text = ADDITIONAL_DISCOUNT_COPY; protected readonly money = formatCop;
@@ -62,9 +63,9 @@ export class AdditionalDiscountFormComponent {
   protected readonly locked = computed(() => this.pending() || !!this.applied());
   protected readonly messages = computed(() => this.attempted() ? validateAdditional(this.draft(), this.context().capBasisPoints) : {});
   protected get capText(): string { return pesosText(this.context().capBasisPoints); }
-  /** The newest percentage typed wins (pillar 8): switchMap drops the answer of an older one. */
+  /** The newest percentage typed wins (pillar 8): switchMap drops the answer of an older one. A preview the port cannot answer leaves the current value, never a broken form. */
   protected readonly preview = toSignal(toObservable(computed(() => previewBasisPoints(this.draft(), this.context().capBasisPoints)))
-    .pipe(switchMap((basisPoints) => basisPoints ? this.contexts.preview(this.context().reservationId, basisPoints) : of(null))), { initialValue: null });
+    .pipe(switchMap((basisPoints) => basisPoints ? this.contexts.preview(this.context().reservationId, basisPoints).pipe(catchError(() => of(null))) : of(null))), { initialValue: null });
   protected id(field: string): string { return `${this.prefix}-${field}`; }
   protected edit(field: keyof AdditionalDraft, event: Event): void {
     if (!this.locked()) this.draft.update((d) => ({ ...d, [field]: (event.target as HTMLInputElement).value }));
@@ -82,7 +83,10 @@ export class AdditionalDiscountFormComponent {
     defer(() => this.writer.register(command, this.key)).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false)))
       .subscribe({
         next: (stored) => { this.key = this.keys.generate(); this.fingerprint = null; this.attempted.set(false); this.applied.set(stored); },
-        error: (error: Partial<ApiError> | null) => this.failure.set(error?.userMessage ?? this.text.applyFailed),
+        error: (error: Partial<ApiError> | null) => {
+          this.failure.set(error?.userMessage ?? this.text.applyFailed);
+          afterNextRender(() => { this.host.querySelector<HTMLElement>('[data-failure]')?.focus(); }, { injector: this.injector });
+        },
       });
   }
 }

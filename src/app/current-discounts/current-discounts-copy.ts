@@ -32,6 +32,13 @@ export const ADDITIONAL_DISCOUNT_DETAIL_COPY = {
 } as const;
 
 /** Texts of the panel "Motivos autorizables" of admin-descuentos.html, as the mockup v1.9 writes them. */
+/** Texts of the values block of admin-crear-reserva.html (12-ux-ui/authorized-screens.md). */
+export const CURRENT_DISCOUNTS_TEXT = {
+  base: 'Valor proyectado', discounts: 'Descuentos aplicables', final: 'Valor final', subtotal: 'Subtotal', additional: 'Descuento adicional',
+  reason: 'Motivo', authorizedBy: 'Autorizado por',
+  bases: { ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior' },
+} as const;
+
 export const AUTHORIZABLE_REASONS_COPY = {
   eyebrow: 'Parametrización', title: 'Motivos autorizables', copy: 'Define los motivos por los que se puede autorizar un descuento adicional (por ejemplo, fidelización).',
   field: 'Nuevo motivo', placeholder: 'Ej. Cortesía por referido', add: 'Agregar motivo', remove: 'Quitar', retry: 'Reintentar',
