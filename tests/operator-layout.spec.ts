@@ -78,11 +78,11 @@ describe('operatorRowActionsArePillsAndPaymentStatusIsBoldText', () => {
     expect(ruleOf('.crp-root .crp-operator-table button')).toMatch(/background:\s*transparent;/);
   });
 
-  it('writes the ESTADO cell of screen 13 as bold text without a pill colour', () => {
-    const rule = ruleOf(PAYMENTS_STATUS);
-    expect(rule).toMatch(/background:\s*transparent;/);
-    expect(rule).toMatch(/color:\s*inherit;/);
-    noHex(rule);
+  it('draws the ESTADO pills of screen 13 with the status colours of the mockup, not as plain text', () => {
+    // 2026-10-21 (portal 06059888): Pagos reset the background and the color of its pills; the mockup colours them, so the reset rule is gone.
+    expect(ruleOf(PAYMENTS_STATUS)).toBe('');
+    expect(css).toMatch(/\.crp-root \.crp-operator-status\.crp-is-confirmed \{ background: var\(--crp-success-soft\); color: var\(--crp-success\); \}/);
+    expect(css).toMatch(/\.crp-root \.crp-operator-status\.crp-is-pending \{ background: var\(--crp-warning-soft\); color: var\(--crp-warning\); \}/);
   });
 });
 
