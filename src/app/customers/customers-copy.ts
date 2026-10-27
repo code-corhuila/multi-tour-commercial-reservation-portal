@@ -1,4 +1,4 @@
-import { HighRiskField, PersonField } from './model/customer-group';
+import type { HighRiskField, PersonField } from './model/customer-group';
 
 /** Texts of screen 10B (`admin-crear-reserva.html`, sections 01, 03 and the high-risk panel). */
 export const CUSTOMERS_COPY = {
@@ -11,7 +11,7 @@ export const CUSTOMERS_COPY = {
   companionsEyebrow: '03. Acompañantes', companionsTitle: 'Datos individuales requeridos',
   companionsCopy: 'Los documentos no pueden repetirse dentro de la misma reserva.',
   riskEyebrow: 'Requisitos de actividad de riesgo', riskTitle: 'Información obligatoria antes de registrar',
-  riskCopy: 'Este servicio requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero.',
+  riskCopy: 'Este tour requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero. Esta información es sensible: su consulta posterior exige el permiso Consultar datos sensibles.',
   lead: 'Titular', companion: 'Acompañante', highRisk: 'Actividad de riesgo', restricted: 'Restringido',
   newGroup: 'Nuevo grupo', cancel: 'Cancelar', registerLead: 'Registrar titular', addCompanion: 'Agregar acompañante',
   saving: 'Guardando…', refused: 'No se pudo registrar la persona.',
@@ -20,6 +20,7 @@ export const CUSTOMERS_COPY = {
   searchLabel: 'Buscar cliente existente (nombre, documento o correo)', searchPlaceholder: 'Escribe al menos 2 caracteres',
   searching: 'Buscando clientes…', noMatches: 'Sin coincidencias: se registrará como cliente nuevo.', searchFailed: 'No se pudo buscar clientes.',
   unverified: 'correo sin verificar', noDocument: 'sin documento',
+  termsRequired: 'El cliente debe aceptar las condiciones.', riskRequired: 'Obligatorio para una actividad de riesgo.',
   required: 'Obligatorio.', invalidEmail: 'Escribe un correo válido.', invalidDate: 'Escribe una fecha válida (dd/mm/aaaa).', duplicate: 'Este documento ya está en la reserva.',
   companionsNote: 'La cantidad total de viajeros determina los acompañantes que deben registrarse. Los documentos no pueden repetirse dentro de la misma reserva.',
   noCompanions: 'No requiere acompañantes', companionTitle: 'Acompañante',
@@ -30,7 +31,8 @@ export const CUSTOMERS_COPY = {
 export const requiredCompanions = (count: number): string => `${count} acompañante${count === 1 ? ' requerido' : 's requeridos'}`;
 
 /** The placeholders of section 01 and 03 (mockup 10B). */
-export const PLACEHOLDERS = { fullName: 'Ej. Laura Gómez', document: 'Ej. 1.234.567.890', email: 'correo@ejemplo.com', phone: 'Ej. 300 000 0000', birthDate: 'dd/mm/aaaa', companionName: 'Nombre completo', companionDocument: 'Documento' } as const;
+export const PLACEHOLDERS = { fullName: 'Ej. Laura Gómez', document: 'Ej. 1.234.567.890', email: 'correo@ejemplo.com', phone: 'Ej. 300 000 0000', birthDate: 'dd/mm/aaaa', companionName: 'Nombre completo', companionDocument: 'Documento',
+  bloodType: 'Ej. O+', emergencyContact: 'Nombre y teléfono', physicalRestrictions: 'Indica restricciones o escribe Ninguna.' } as const;
 
 /** `1 acompañante registrado`, `2 acompañantes registrados`, `Sin acompañantes registrados`. */
 export function companionCount(count: number): string {

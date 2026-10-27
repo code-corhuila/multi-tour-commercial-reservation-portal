@@ -31,7 +31,7 @@ export type CustomersPageState = { kind: 'loading' } | { kind: 'error' } | Ready
         @if (state().kind === 'loading') { <p role="status" data-state="loading">{{ text.loading }}</p> }
         @if (state().kind === 'error') { <div role="alert" data-state="error"><crp-read-error [state]="state()" [fallback]="text.failed" />&ngsp;<button type="button" (click)="reload()">{{ text.retry }}</button></div> }
         @if (ready(); as current) {
-          @if (caps.canRegister && (!current.group || startingNew())) {
+          @if (leadFormOpen(current.group)) {
             @if (!current.group) { <p role="status" data-state="empty">{{ text.empty }}</p> }
             <app-customer-form kind="lead" [activities]="current.activities" (saved)="onSaved($event)" />
           } @else if (current.group; as group) {
@@ -79,6 +79,8 @@ export class CustomersPageComponent {
   protected readonly text = CUSTOMERS_COPY; protected readonly labels = PERSON_LABELS; protected readonly sensitive = SENSITIVE_LABELS;
   protected readonly leadColumns = LEAD_FIELDS; protected readonly companionColumns = PERSON_FIELDS; protected readonly count = companionCount;
   protected readonly startingNew = signal(false); private readonly requests = new Subject<void>();
+  /** The lead form is drawn when the person may register and there is no group yet, or a new group was asked for. */
+  protected leadFormOpen(group: unknown): boolean { return this.caps.canRegister && (!group || this.startingNew()); }
   private readonly local = signal<CustomersPageState | null>(null);
   private readonly loaded = toSignal(this.requests.pipe(switchMap(() => combineLatest([this.source.current(), this.catalog.list()]).pipe(
     map(([group, activities]): CustomersPageState => ({ kind: 'ready', group, activities })),

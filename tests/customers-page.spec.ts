@@ -100,6 +100,27 @@ describe('highRiskActivityRefusesTheLeadWithoutTheExtraData', () => {
   });
 });
 
+describe('theHighRiskNoticeIsWrittenAsTheMockupDoes', () => {
+  it('names the tour and warns that the data is sensitive', async () => {
+    const p = await openPeople(); await p.answer(null);
+    await p.set('Tour', 'svc-risky');
+    expect(p.element.textContent).toContain('Este tour requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero. Esta información es sensible: su consulta posterior exige el permiso Consultar datos sensibles.');
+  });
+});
+
+describe('aRefusalOfTheServiceMovesTheFocusToItsMessage', () => {
+  it('focuses the message when the service refuses the lead', async () => {
+    const p = await openPeople(); document.body.append(p.element); await p.answer(null);
+    await p.set('Tour', 'svc-ordinary'); await p.fill({ ...lead, 'Confirmo que el cliente acepta las condiciones aplicables a esta reserva.': 'true' });
+    await p.click('Registrar titular');
+    p.writer.calls[0].fail(apiError()); await p.settle();
+    const message = p.element.querySelector('.crp-form-actions [role="alert"]');
+    expect(message).not.toBeNull();
+    expect(document.activeElement).toBe(message);
+    p.element.remove();
+  });
+});
+
 describe('ordinaryActivityDoesNotAskForTheExtraData', () => {
   it('shows the extra fields only for a high-risk activity', async () => {
     const p = await openPeople(); await p.answer(null);
