@@ -25,6 +25,9 @@ describe('demo build lets the administrator manage discount rules (AC-PD.1, AC-P
     expect(inactive).toMatchObject({ id: created.id, priority: 9, status: 'INACTIVE' });
     const listed = await firstValueFrom(source.list());
     expect(listed.filter(r => r.id === created.id)).toEqual([inactive]);
+    const reactivated = await firstValueFrom(writer!.reactivate(created.id, 'key-4'));
+    expect(reactivated).toMatchObject({ id: created.id, priority: 9, status: 'ACTIVE' });
+    expect((await firstValueFrom(source.list())).filter(r => r.id === created.id)).toEqual([reactivated]);
   });
   it('answers a repeated Idempotency-Key with the first result and creates one rule (AC-PD.11)', async () => {
     const { source, writer } = demo(); const before = (await firstValueFrom(source.list())).length;

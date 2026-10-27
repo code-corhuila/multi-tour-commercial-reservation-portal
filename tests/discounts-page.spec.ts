@@ -66,7 +66,10 @@ describe('discount list states and newest request', () => {
     expect(items[4].querySelector('p')?.textContent).toBe('Vigente hasta el 31 dic 2999. Base de cálculo: subtotal resultante del descuento anterior. Prioridad 5, acumulable. Tope: $80.000.');
     expect(items[0].querySelector('p')?.textContent).not.toContain('Tope');
     expect(Array.from(items[0].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros', 'Inactivar']);
-    expect(Array.from(items[3].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros']);
+    expect(Array.from(items[3].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros', 'Reactivar']);
+    // Only Inactivar is drawn as the destructive action; Reactivar is a regular one.
+    expect(items[0].querySelectorAll('button')[1].classList.contains('crp-discount-toggle')).toBe(true);
+    expect(items[3].querySelectorAll('button')[1].classList.contains('crp-discount-toggle')).toBe(false);
     expect(e.textContent).not.toMatch(RAW_CODES); expect(e.textContent).not.toMatch(/Discount|Retry|Loading|No results/);
   });
   it('writes the loading, empty, error and denied states in Spanish', async () => {
