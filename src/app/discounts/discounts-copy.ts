@@ -3,7 +3,7 @@ export const DISCOUNT_TEXT = {
   eyebrow: 'Reglas comerciales', title: 'Descuentos', newTitle: 'Nuevo descuento', editTitle: 'Editar descuento', back: 'Volver a descuentos',
   heroEyebrow: 'Configuración', heroTitle: 'Descuentos visibles y trazables.',
   heroCopy: 'Define vigencia, prioridad, acumulación, topes y base de cálculo para los tours. Un descuento general se fija en el contexto comercial de cada reserva al crearla: los cambios posteriores no afectan reservas ya creadas.',
-  panelEyebrow: 'Vigentes', panelTitle: 'Promociones activas',
+  panelEyebrow: 'Vigentes', panelTitle: 'Promociones activas', activeOne: 'activa', activeMany: 'activas', valueSuffix: '% de descuento',
   loading: 'Cargando descuentos…', saving: 'Guardando…', empty: 'Aún no hay descuentos configurados.',
   failed: 'No se pudieron cargar los descuentos.', retry: 'Reintentar', denied: 'No tienes acceso a los descuentos.',
   create: 'Crear descuento', edit: 'Editar parámetros', inactivate: 'Inactivar', confirm: 'Confirmar inactivación', reactivate: 'Reactivar', confirmReactivate: 'Confirmar reactivación', cancel: 'Cancelar',
@@ -31,6 +31,17 @@ export const DISCOUNT_CONTROLS: readonly Control[] = [
   { name: 'priority', label: 'Prioridad (1 se aplica primero)', kind: 'text' },
   { name: 'stackable', label: 'Acumulable', options: [{ value: 'no', label: 'No' }, { value: 'si', label: 'Sí' }] },
 ];
+/** The reasons the form gives beside a field it refuses before sending (pillar 5: texts live in the copy file, not in the model). */
+export const DISCOUNT_MESSAGES = {
+  tourId: 'Elige el tour al que aplica el descuento.',
+  date: 'Ingresa una fecha completa.',
+  range: 'El inicio de la vigencia no puede ser posterior a su fin.',
+  priority: 'La prioridad debe ser un entero positivo.',
+  calculationBase: 'Elige la base de cálculo.',
+  stackable: 'Elige si el descuento es acumulable.',
+  percentage: 'Ingresa un porcentaje entre 1 y 100, con máximo dos decimales.',
+  cap: 'El tope debe ser un valor en pesos mayor a cero (por ejemplo $50.000) o dejarse vacío.',
+} as const;
 /** The two numbered panels of the form, in the order of the screen. */
 export const DISCOUNT_SECTIONS = [
   { eyebrow: '01. Descuento', fields: ['tourId', 'percentage', 'calculationBase', 'cap'] },

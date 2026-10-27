@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, map, of, tap } from 'rxjs';
 import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
@@ -54,7 +54,7 @@ export class DiscountRuleFormComponent {
   readonly rule = input<DiscountRule | null>(null);
   readonly saved = output<DiscountRule>(); readonly cancelled = output<void>(); readonly saving = output<boolean>();
   protected readonly allowed = inject(PortalCapabilities).canManageDiscounts();
-  private readonly injector = inject(Injector); private readonly writer = inject(DiscountRulesWriter); private readonly keys = inject(IdempotencyKeys);
+  private readonly injector = inject(Injector); private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly writer = inject(DiscountRulesWriter); private readonly keys = inject(IdempotencyKeys);
   private key = this.keys.generate(); private fingerprint: string | null = null;
   private readonly prefix = `discount-form-${formSequence++}`;
   protected readonly sections = DISCOUNT_SECTIONS; protected readonly text = DISCOUNT_TEXT;
@@ -85,7 +85,8 @@ export class DiscountRuleFormComponent {
         const field = detail.field in this.draft() ? detail.field as DiscountField : 'percentage';
         messages[field] = `${messages[field] ?? reason} ${detail.message}`;
       }
-      this.refused.set(Object.keys(messages).length ? messages : { percentage: reason }); return EMPTY;
+      this.refused.set(Object.keys(messages).length ? messages : { percentage: reason });
+      afterNextRender(() => { focusFirstError(this.host); }, { injector: this.injector }); return EMPTY;
     }), finalize(() => { this.pending.set(false); this.saving.emit(false); }),
   ))));
   constructor() { effect(() => { const rule = this.rule(); untracked(() => this.draft.set(discountDraft(rule))); }); }
