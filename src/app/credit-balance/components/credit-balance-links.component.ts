@@ -8,8 +8,6 @@ import { CREDIT_BALANCE_AREA, CreditBalanceSource } from '../data/credit-balance
 @Component({
   selector: 'app-credit-balance-payments-link', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<button type="button" class="crp-operator-outline crp-page-header-action" (click)="navigation?.open(area)">{{ t.link }}</button>`,
-  // The button is the flex item of the header, so it stretches on a phone like "Parámetros de pago" and "Ver reservas".
-  styles: [':host { display: contents; }'],
 })
 export class CreditBalancePaymentsLinkComponent {
   protected readonly t = CREDIT_BALANCE_COPY; protected readonly area = CREDIT_BALANCE_AREA;

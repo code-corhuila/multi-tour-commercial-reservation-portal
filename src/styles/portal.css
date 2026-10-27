@@ -899,6 +899,8 @@
 .crp-root .crp-reservations-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 30px; }
 .crp-root .crp-reservations-summary p:not(.crp-operator-eyebrow) { max-width: 470px; margin: 0; color: var(--crp-soft-copy); font-size: 0.83rem; line-height: 1.5; }
 .crp-root .crp-reservations-summary app-reservation-breakdown { grid-column: 1 / -1; }
+/* The button of the credit balance link is the flex item of the header, so its host stays out of the layout and it stretches on a phone like "Parámetros de pago" and "Ver reservas". */
+.crp-root app-credit-balance-payments-link { display: contents; }
 .crp-root .crp-reservations-check { display: flex; gap: 9px; margin-top: 17px; color: var(--crp-soft-copy); font-size: 0.8rem; font-weight: 500; line-height: 1.45; }
 .crp-root .crp-reservations-actions .crp-operator-primary:disabled { border-color: var(--crp-shade-b7c9c3); background: var(--crp-shade-b7c9c3); color: var(--crp-shade-eff5f2); cursor: not-allowed; }
 .crp-root .crp-customers-count { color: var(--crp-accent-strong); font-size: 0.78rem; font-weight: 800; }
