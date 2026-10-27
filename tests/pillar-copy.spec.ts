@@ -15,7 +15,7 @@ const TEXT_ATTRIBUTES = /\s(?:aria-label|aria-description|placeholder|title|alt|
 /** Text that is not a sentence: symbols and units a template may draw by itself. Kept minimal on purpose. */
 const ALLOWED = new Set(['✓', '·', '—', 'COP', '#', '%']);
 /** Messages for developers that no screen ever shows (the read-failure component draws its own text). */
-const INTERNAL_ERRORS = new Set(['No catalog port', 'Invalid discount rule']);
+const INTERNAL_ERRORS = new Set(['No catalog port', 'Invalid discount rule', 'Invalid additional discount']);
 
 /** The product name is a proper noun, drawn as MULTI + TOUR in the header and the footer. */
 const isBrand = (text: string) => text.replace(/\s/g, '').toLowerCase() === 'multitour';
