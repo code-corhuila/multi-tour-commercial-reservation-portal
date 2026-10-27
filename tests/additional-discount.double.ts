@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { ADDITIONAL_DISCOUNT_AREA } from '../src/app/current-discounts/data/additional-discount-eligibility';
 import { AdditionalDiscountContext, AdditionalDiscountContexts, AdditionalDiscountPreview } from '../src/app/current-discounts/data/additional-discount-contexts';
 import { AdditionalDiscountApplied, AdditionalDiscountCommand, AdditionalDiscountWriter } from '../src/app/current-discounts/data/additional-discount-writer';
@@ -20,11 +20,21 @@ export const contextOf = (over: Partial<AdditionalDiscountContext> = {}): Additi
 export class ControllableContexts extends AdditionalDiscountContexts {
   readonly requests: { id: string; reply: (context: AdditionalDiscountContext | null) => void; fail: () => void }[] = [];
   readonly previews: { id: string; basisPoints: number }[] = [];
+  /** What the double says is already paid, to make an excess possible. */
+  paid = 4_000_000;
+  /** Makes the port refuse the preview, and holds each answer until the test releases it (to answer an older request after a newer one). */
+  failPreview = false; deferPreviews = false;
+  readonly heldPreviews: { basisPoints: number; release: () => void }[] = [];
   /** 1 basis point of 100.000 pesos is 10 pesos; the port, not the view, resolves the new value and the excess. */
   override preview(id: string, basisPoints: number): Observable<AdditionalDiscountPreview> {
     this.previews.push({ id, basisPoints });
+    if (this.failPreview) return throwError(() => new Error('preview unavailable'));
     const newValueCents = 10_000_000 - basisPoints * 1_000;
-    return of({ newValueCents, excessCents: Math.max(4_000_000 - newValueCents, 0) });
+    const answer = { newValueCents, excessCents: Math.max(this.paid - newValueCents, 0) };
+    if (!this.deferPreviews) return of(answer);
+    return new Observable<AdditionalDiscountPreview>((subscriber) => {
+      this.heldPreviews.push({ basisPoints, release: () => { subscriber.next(answer); subscriber.complete(); } });
+    });
   }
   override of(id: string): Observable<AdditionalDiscountContext | null> {
     return new Observable((subscriber) => {

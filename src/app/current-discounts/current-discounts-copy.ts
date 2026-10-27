@@ -19,6 +19,29 @@ export const ADDITIONAL_DISCOUNT_COPY = {
   applied: 'Descuento adicional aplicado correctamente: el valor final se recalculó y quedaron registrados el motivo y el responsable.',
   capValue: (cap: string) => `${cap} % del valor vigente`,
   closed: (state: string) => `Esta reserva está en estado "${state}" y ya no admite modificaciones: no se puede aplicar un descuento adicional.`,
+  alreadyApplied: (percentage: string, date: string, by: string) => `Esta reserva ya tiene un descuento adicional autorizado (${percentage} % el ${date} por ${by}). Solo se autoriza un descuento adicional por reserva.`,
+  excessOpened: (amount: string) => `El valor pagado supera el nuevo valor: excedente de ${amount} pendiente de tratamiento (continúa desde el detalle de la reserva con Gestionar devolución).`,
   invalidValue: 'Ingresa un valor positivo entre 1 y 100, con máximo dos decimales.', reasonRequired: 'El motivo es obligatorio.',
   aboveCap: (cap: string) => `El descuento adicional debe estar entre 1 % y el tope parametrizado de ${cap} %.`,
+} as const;
+
+/** Texts of the additional discount in admin-detalle-reserva.html (10A): the header button and the block "Descuento adicional aplicado". */
+export const ADDITIONAL_DISCOUNT_DETAIL_COPY = {
+  action: 'Aplicar descuento adicional', blockEyebrow: 'Decisión excepcional', blockTitle: 'Descuento adicional aplicado',
+  percentage: 'Descuento adicional', reason: 'Motivo', previous: 'Valor anterior', amount: 'Valor descontado', final: 'Valor final',
+} as const;
+
+/** Texts of the panel "Motivos autorizables" of admin-descuentos.html, as the mockup v1.9 writes them. */
+/** Texts of the values block of admin-crear-reserva.html (12-ux-ui/authorized-screens.md). */
+export const CURRENT_DISCOUNTS_TEXT = {
+  base: 'Valor proyectado', discounts: 'Descuentos aplicables', final: 'Valor final', subtotal: 'Subtotal', additional: 'Descuento adicional',
+  reason: 'Motivo', authorizedBy: 'Autorizado por',
+  bases: { ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior' },
+} as const;
+
+export const AUTHORIZABLE_REASONS_COPY = {
+  eyebrow: 'Parametrización', title: 'Motivos autorizables', copy: 'Define los motivos por los que se puede autorizar un descuento adicional (por ejemplo, fidelización).',
+  field: 'Nuevo motivo', placeholder: 'Ej. Cortesía por referido', add: 'Agregar motivo', remove: 'Quitar', retry: 'Reintentar',
+  required: 'Escribe el motivo que se podrá autorizar.', loading: 'Cargando los motivos…', empty: 'Aún no hay motivos habilitados.',
+  failed: 'No fue posible cargar los motivos.', changeFailed: 'No fue posible guardar el cambio.',
 } as const;

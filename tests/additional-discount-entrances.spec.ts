@@ -15,7 +15,7 @@ import { ActorContext } from '../src/app/shared/actor-context';
 import { ActorRole } from '../src/app/shared/portal-capabilities';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
-import { DISCOUNTS_PAGE_PANELS, slotEntries } from '../src/app/shared/portal-slots';
+import { DISCOUNTS_PAGE_PANELS, RESERVATION_DETAIL_ACTIONS, RESERVATION_MODE_ACTIONS, slotEntries } from '../src/app/shared/portal-slots';
 import { ControllableAdditionalDiscountWriter, ControllableContexts } from './additional-discount.double';
 import { actorAs } from './actor-context.double';
 import { ControllableReservations, reservationOf, reservationProviders, screenOf } from './reservations.double';
@@ -119,9 +119,7 @@ describe('onlyTheAdministratorSeesTheButtonTheModeAndTheScreen', () => {
     const injector = TestBed.inject(Injector);
     const area = PORTAL_AREAS.find((a) => a.key === ADDITIONAL_DISCOUNT_AREA)!;
     expect(area.isAvailable!(injector)).toBe(false);
-    expect(slotEntries(DISCOUNTS_PAGE_PANELS, injector)).toEqual([]);
-    const contributed = ADDITIONAL_DISCOUNT_CONTRIBUTIONS.map((p) => (p as { useValue: { isAvailable: (i: Injector) => boolean } }).useValue);
-    expect(contributed.every((entry) => entry.isAvailable(injector) === false)).toBe(true);
+    for (const slot of [DISCOUNTS_PAGE_PANELS, RESERVATION_MODE_ACTIONS, RESERVATION_DETAIL_ACTIONS]) expect(slotEntries(slot, injector)).toEqual([]);
   });
 
   it('offers the screen to the Administrator, as a sub-screen of Descuentos with no sidebar item', () => {

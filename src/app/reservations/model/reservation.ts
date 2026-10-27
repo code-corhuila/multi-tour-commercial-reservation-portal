@@ -49,6 +49,9 @@ export type Reservation = {
     readonly execution?: RefundAct & { readonly method: string; readonly cashMovement: string };
     /** v1.9 (PROPUESTO): the administrative note, the justified rejection, and the 100 % kept as a credit balance (decision or execution without outflow). */
     readonly note?: string; readonly rejection?: RefundAct & { readonly reason: string }; readonly creditBalance?: RefundAct & { readonly reason?: string } };
+  /** HU-COM-004 amendment 2026-10-14 (PROPUESTO, G-B): the one additional discount, with the value before it and the amount taken off; resolved by the service. */
+  readonly additionalDiscount?: { readonly basisPoints: number; readonly reason: string; readonly appliedBy: string; readonly appliedAt: string;
+    readonly previousValueCents: number; readonly amountCents: number };
   /** HU-COM-018 D-02 (PROPUESTO): the rescheduling episode, on the same reservation; fields follow rescheduling_records (G-B). */
   readonly reschedulingEpisode?: ReschedulingEpisode;
 };

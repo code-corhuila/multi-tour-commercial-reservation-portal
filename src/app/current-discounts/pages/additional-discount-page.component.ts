@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
-import { formatCop } from '../../shared/format';
+import { formatCop, formatDate } from '../../shared/format';
+import { pesosText } from '../../shared/money';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
@@ -43,6 +44,7 @@ export type AdditionalDiscountState = { kind: 'loading' | 'empty' | 'error' } | 
             </div>
           </section>
           @if (c.eligible) { <app-additional-discount-form [context]="c" /> }
+          @else if (c.applied; as done) { <p role="status">{{ text.alreadyApplied(percentage(done.basisPoints), date(done.appliedAt), done.appliedBy) }}</p> }
           @else { <p role="status">{{ text.closed(c.stateLabel) }}</p> }
         }
       }
@@ -59,6 +61,7 @@ export class AdditionalDiscountPageComponent {
   ))), { initialValue: { kind: 'loading' } as AdditionalDiscountState });
   constructor() { this.reload(); }
   reload(): void { if (this.allowed) this.requests.next(); }
+  protected readonly percentage = pesosText; protected readonly date = formatDate;
   protected back(): void { this.navigation?.open('reservations', { mode: ADDITIONAL_DISCOUNT_MODE }); }
   /** Panel 01: label and formatted value, in the order of the mockup. */
   protected facts(c: AdditionalDiscountContext): readonly (readonly [string, string])[] {
