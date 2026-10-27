@@ -42,8 +42,11 @@ const ownAs = (id: string, tourName: string, departureDate: string, finalCents: 
 const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus'], presentedAt?: string): ReservationPayment[] =>
   [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)', ...(presentedAt ? { presentedAt } : {}) }];
 SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION', '2026-10-13T08:30:00-05:00') }),
+  // HU-COM-004: this confirmed reservation already carries an additional discount (20 % of 37.500.000 = 7.500.000), so the detail 10A draws its block and no second one is offered.
   ownAs('RES-1832', 'Tour de ejemplo', '2026-09-20T07:00:00', 30_000_000, { status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', paymentType: 'PARTIAL',
-    validatedCents: 10_000_000, balanceCents: 20_000_000, payments: proofOf('RES-1832', 10_000_000, 'APROBADO') }),
+    validatedCents: 10_000_000, balanceCents: 20_000_000, payments: proofOf('RES-1832', 10_000_000, 'APROBADO'),
+    additionalDiscount: { basisPoints: 2000, reason: 'Fidelización', appliedBy: 'Administrador del tenant (demo)', appliedAt: '2026-10-14T10:00:00-05:00',
+      previousValueCents: 37_500_000, amountCents: 7_500_000 } }),
   ownAs('RES-1831', 'Ruta Andina', '2026-09-22T06:30:00', 120_000_000, { status: 'CANCELADA', seatHeld: false, financialStatus: 'PARCIAL', paymentType: 'PARTIAL',
     validatedCents: 120_000_000, balanceCents: 0, payments: proofOf('RES-1831', 120_000_000, 'APROBADO'),
     cancellation: { cause: 'Cancelada por falta de pago', by: 'Administrador del tenant (demo)', at: '2026-09-15T09:00:00-05:00' } }),

@@ -154,6 +154,45 @@ describe('onlyTheAdministratorSeesTheButtonTheModeAndTheScreen', () => {
   }
 });
 
+describe('aSecondAdditionalDiscountIsNotOffered', () => {
+  it('says the reservation already has one, with its percentage, date and author, and offers no form', async () => {
+    const page = await ready(contextOf({ eligible: false, applied: { basisPoints: 1000, appliedAt: '2026-10-15T10:00:00-05:00', appliedBy: 'Administrador demo' } }));
+    expect(page.element.querySelector('[role="status"]')?.textContent)
+      .toContain('Esta reserva ya tiene un descuento adicional autorizado (10 % el 15 oct 2026 por Administrador demo). Solo se autoriza un descuento adicional por reserva.');
+    expect(page.element.querySelector('form')).toBeNull();
+    expect(page.readOnly('Valor actual')).toBe('$100.000');
+  });
+});
+
+describe('anExcessBelowWhatIsPaidShowsTheTreatmentTextAndOpensIt', () => {
+  it('shows the excess the port resolves while the percentage is typed', async () => {
+    const page = await ready();
+    page.contexts.paid = 9_000_000;
+    await page.type('value', '20');
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$80.000');
+    expect(page.readOnly('Excedente sobre lo pagado')).toBe('$10.000');
+    expect(page.element.querySelector('.crp-access-note')?.textContent).toContain('decisión del Administrador del tenant en 24 horas: devolución del 100 % por defecto o saldo a favor');
+  });
+
+  it('tells, once applied, that the excess waits for its treatment in the detail of the reservation', async () => {
+    const page = await ready();
+    await fill(page, '20');
+    await submit(page);
+    page.writer.calls[0].reply(appliedOf(page.writer.calls[0].command, { excessCents: 1_000_000 }));
+    await page.settle();
+    expect(page.element.querySelector('[role="status"]')?.textContent).toContain('El valor pagado supera el nuevo valor: excedente de $10.000 pendiente de tratamiento (continúa desde el detalle de la reserva con Gestionar devolución).');
+  });
+
+  it('adds nothing about an excess when there is none', async () => {
+    const page = await ready();
+    await fill(page);
+    await submit(page);
+    page.writer.calls[0].reply(appliedOf(page.writer.calls[0].command));
+    await page.settle();
+    expect(page.element.querySelector('[role="status"]')?.textContent).not.toContain('excedente');
+  });
+});
+
 describe('theScreenShowsOneOfTheFourStates', () => {
   it('goes through loading, error with retry, data, and the not found case', async () => {
     const page = await openAdditionalDiscount();
@@ -173,5 +212,33 @@ describe('theScreenShowsOneOfTheFourStates', () => {
     const page = await ready(contextOf({ eligible: false, stateLabel: 'Finalizada' }));
     expect(page.element.querySelector('[role="status"]')?.textContent).toContain('Esta reserva está en estado "Finalizada" y ya no admite modificaciones: no se puede aplicar un descuento adicional.');
     expect(page.element.querySelector('form')).toBeNull();
+  });
+});
+
+describe('focus and requests of the additional discount form (pillars 7 and 8)', () => {
+  it('moves the focus to the message when the service refuses the registration', async () => {
+    const page = await ready(); document.body.append(page.element);
+    await fill(page); await submit(page);
+    page.writer.calls[0].fail(apiError()); await page.settle();
+    const message = page.element.querySelector('form [role="alert"]');
+    expect(message).not.toBeNull();
+    expect(document.activeElement).toBe(message);
+    page.element.remove();
+  });
+
+  it('keeps the form usable when the preview of the new value fails and recovers with the next percentage', async () => {
+    const page = await ready();
+    page.contexts.failPreview = true; await page.type('value', '15');
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$100.000');
+    page.contexts.failPreview = false; await page.type('value', '20');
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$80.000');
+  });
+
+  it('shows the answer of the newest percentage even when an older answer arrives later', async () => {
+    const page = await ready(); page.contexts.deferPreviews = true;
+    await page.type('value', '15'); await page.type('value', '20');
+    const [older, newest] = page.contexts.heldPreviews;
+    newest.release(); await page.settle(); older.release(); await page.settle();
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$80.000');
   });
 });

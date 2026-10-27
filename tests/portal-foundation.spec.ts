@@ -196,7 +196,7 @@ describe('theOutletsOfTheScreensInDevelop', () => {
 
   // 10A header: "Cancelar o modificar reserva" (013) sits before "Volver a reservas" (admin-detalle-reserva.html:34).
   it('draws RESERVATION_DETAIL_ACTIONS in the header of 10A, before Volver a reservas', async () => {
-    mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 1 })], ['TENANT_ADMINISTRATOR']);
+    mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 99 })], ['TENANT_ADMINISTRATOR']);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const id = host.querySelector('.crp-reservations-code')?.textContent?.slice(1);

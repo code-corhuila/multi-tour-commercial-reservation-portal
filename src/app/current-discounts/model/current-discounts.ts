@@ -17,12 +17,8 @@ export type DiscountLine = {
 };
 export type Breakdown = { readonly baseCents: number; readonly lines: readonly DiscountLine[]; readonly finalCents: number };
 
-/** Texts of the values block of admin-crear-reserva.html (12-ux-ui/authorized-screens.md). */
-export const CURRENT_DISCOUNTS_TEXT = {
-  base: 'Valor proyectado', discounts: 'Descuentos aplicables', final: 'Valor final', subtotal: 'Subtotal', additional: 'Descuento adicional',
-  reason: 'Motivo', authorizedBy: 'Autorizado por',
-  bases: { ORIGINAL_VALUE: 'sobre el valor original', PREVIOUS_SUBTOTAL: 'sobre el subtotal anterior' },
-} as const;
+/** The texts of the values block live in the copy file (pillar 5); they are exported here so the readers of the model keep their import. */
+export { CURRENT_DISCOUNTS_TEXT } from '../current-discounts-copy';
 
 export type AdditionalDraft = { value: string; reason: string };
 export type AdditionalMessages = Partial<Record<keyof AdditionalDraft, string>>;
