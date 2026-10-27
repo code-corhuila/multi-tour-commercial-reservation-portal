@@ -90,6 +90,11 @@ describe('discount form validates before sending', () => {
     await f.text('priority', '0'); await f.text('percentage', '0'); await f.submit();
     expect(document.activeElement).toBe(f.field('percentage')); f.element.remove();
   });
+  it('moves the focus to the field the service refused', async () => {
+    const f = await openDiscountForm(); document.body.append(f.element); await f.fill(); await f.submit();
+    f.writer.calls[0].fail(apiError({ details: [{ field: 'priority', message: 'Priority conflict.' }] })); await f.settle();
+    expect(document.activeElement).toBe(f.field('priority')); f.element.remove();
+  });
   it('guards double clicks, disables controls, retries with the same key and renews after success', async () => {
     const f = await openDiscountForm(); await f.fill(); await f.submit(); await f.submit();
     expect(f.writer.calls).toHaveLength(1);

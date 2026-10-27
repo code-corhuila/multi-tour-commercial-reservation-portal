@@ -77,3 +77,23 @@ describe('discount management intentions', () => {
     p.writer.calls[1].reply(discountNamed('Created', 2)); await p.settle(); expect(p.element.querySelectorAll('li')).toHaveLength(2);
   });
 });
+
+describe('focus follows the screen (pillar 7, HC-4)', () => {
+  it('moves the focus into the confirmation dialog and gives it back to the rule action when cancelled', async () => {
+    const p = await open(); document.body.append(p.element);
+    await p.click('Inactivar');
+    const dialog = p.element.querySelector('[role="dialog"]')!;
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await p.click('Cancelar');
+    expect(document.activeElement).toBe(Array.from(p.element.querySelectorAll('li button')).find(b => b.textContent?.trim() === 'Inactivar'));
+    p.element.remove();
+  });
+  it('focuses the heading of the form when it opens and the heading of the list when it closes', async () => {
+    const p = await open(); document.body.append(p.element);
+    await p.click('Crear descuento'); expect(document.activeElement).toBe(p.element.querySelector('h1'));
+    expect(p.element.querySelector('h1')?.textContent).toBe('Nuevo descuento');
+    await p.click('Cancelar'); expect(document.activeElement).toBe(p.element.querySelector('h1'));
+    expect(p.element.querySelector('h1')?.textContent).toBe('Descuentos');
+    p.element.remove();
+  });
+});
