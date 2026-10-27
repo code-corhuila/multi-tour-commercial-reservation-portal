@@ -214,3 +214,31 @@ describe('theScreenShowsOneOfTheFourStates', () => {
     expect(page.element.querySelector('form')).toBeNull();
   });
 });
+
+describe('focus and requests of the additional discount form (pillars 7 and 8)', () => {
+  it('moves the focus to the message when the service refuses the registration', async () => {
+    const page = await ready(); document.body.append(page.element);
+    await fill(page); await submit(page);
+    page.writer.calls[0].fail(apiError()); await page.settle();
+    const message = page.element.querySelector('form [role="alert"]');
+    expect(message).not.toBeNull();
+    expect(document.activeElement).toBe(message);
+    page.element.remove();
+  });
+
+  it('keeps the form usable when the preview of the new value fails and recovers with the next percentage', async () => {
+    const page = await ready();
+    page.contexts.failPreview = true; await page.type('value', '15');
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$100.000');
+    page.contexts.failPreview = false; await page.type('value', '20');
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$80.000');
+  });
+
+  it('shows the answer of the newest percentage even when an older answer arrives later', async () => {
+    const page = await ready(); page.contexts.deferPreviews = true;
+    await page.type('value', '15'); await page.type('value', '20');
+    const [older, newest] = page.contexts.heldPreviews;
+    newest.release(); await page.settle(); older.release(); await page.settle();
+    expect(page.readOnly('Nuevo valor calculado')).toBe('$80.000');
+  });
+});

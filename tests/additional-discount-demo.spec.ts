@@ -1,8 +1,10 @@
+import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
+import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DemoAdditionalDiscountContexts, DemoAdditionalDiscountWriter } from '../src/app/demo/current-discounts-demo';
 import { DemoRefundsSource } from '../src/app/demo/refunds-demo';
-import { DemoReservationsStore } from '../src/app/demo/reservations-demo';
+import { DemoReservationsStore, reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { FixedClock } from '../src/app/demo/reservation-changes-demo';
 import { RegisteringUser } from '../src/app/payments/data/payments-writer';
 import * as entry from '../src/mount-entry';
@@ -17,6 +19,19 @@ const setup = (items = [worth(10_000_000, { validatedCents: 4_000_000, balanceCe
   return { store, contexts: new DemoAdditionalDiscountContexts(store), writer: new DemoAdditionalDiscountWriter(store, new FixedClock('2026-10-15T10:00:00-05:00'), new Admin()) };
 };
 const refusal = async (answer: Promise<unknown>) => answer.then(() => null, (e: { status: number; code: string }) => e);
+
+describe('theDeliveredDemoShowsAReservationThatAlreadyHasItsAdditionalDiscount', () => {
+  it('seeds a confirmed reservation with the percentage, reason, author and values, whose final value is the previous one minus the amount', async () => {
+    TestBed.configureTestingModule({ providers: reservationDemoProviders() });
+    const store = TestBed.inject(ReservationsSource) as DemoReservationsStore;
+    const seeded = store.items.find((r) => r.id === 'RES-1832')!;
+    expect(seeded.status).toBe('CONFIRMADA');
+    expect(seeded.additionalDiscount).toEqual({ basisPoints: 2000, reason: 'Fidelización', appliedBy: 'Administrador del tenant (demo)',
+      appliedAt: '2026-10-14T10:00:00-05:00', previousValueCents: 37_500_000, amountCents: 7_500_000 });
+    expect(seeded.quote.finalCents).toBe(seeded.additionalDiscount!.previousValueCents - seeded.additionalDiscount!.amountCents);
+    expect(await firstValueFrom(new DemoAdditionalDiscountContexts(store).of('RES-1832'))).toMatchObject({ eligible: false });
+  });
+});
 
 describe('theDemoContextAnswersWhatTheScreenFormats', () => {
   it('resolves the facts, the cap, the eligibility and the preview from the reservation', async () => {

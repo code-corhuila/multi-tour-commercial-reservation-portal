@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, defer, finalize, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
@@ -45,6 +45,7 @@ type ReasonsState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; it
 export class AuthorizableReasonsPanelComponent {
   private readonly port = inject(AuthorizableReasons); private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef); private readonly injector = inject(Injector);
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   protected readonly t = AUTHORIZABLE_REASONS_COPY;
   protected readonly draft = signal(''); protected readonly error = signal(''); protected readonly pending = signal(false);
   private attempt: { intent: string; key: string } | null = null;
@@ -69,7 +70,10 @@ export class AuthorizableReasonsPanelComponent {
     const key = this.attempt.key; this.pending.set(true);
     defer(() => call(key)).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
       next: (items) => { this.attempt = null; this.local.set(stateOf(items)); done(); },
-      error: (failure: Partial<ApiError> | null) => this.error.set(failure?.userMessage ?? this.t.changeFailed),
+      error: (failure: Partial<ApiError> | null) => {
+        this.error.set(failure?.userMessage ?? this.t.changeFailed);
+        afterNextRender(() => { focusFirstError(this.host); }, { injector: this.injector });
+      },
     });
   }
 }
