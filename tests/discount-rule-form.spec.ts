@@ -37,6 +37,11 @@ describe('discount form validates before sending', () => {
     expect(f.element.textContent).not.toMatch(/Nombre del descuento|Tipo de valor|Monto fijo|Monto del descuento/);
     for (const c of Array.from(f.element.querySelectorAll<HTMLInputElement>('input, select'))) expect(f.element.querySelector(`label[for="${c.id}"]`)).not.toBeNull();
   });
+  it('theCalculationBaseHasNoHelpTextThatTheMockupDoesNotHave', async () => {
+    const f = await openDiscountForm();
+    expect(f.element.querySelector('small')).toBeNull();
+    expect(f.element.textContent).not.toMatch(/se calcula sobre/);
+  });
   it('draws the two numbered panels of the mockup with its labels, note and actions', async () => {
     const f = await openDiscountForm(); const panels = Array.from(f.element.querySelectorAll('form > section.crp-operator-panel'));
     expect(panels.map(s => s.querySelector('.crp-operator-eyebrow')?.textContent)).toEqual(['01. Descuento', '02. Vigencia y prioridad']);
@@ -84,6 +89,11 @@ describe('discount form validates before sending', () => {
     const f = await openDiscountForm(); document.body.append(f.element); await f.fill();
     await f.text('priority', '0'); await f.text('percentage', '0'); await f.submit();
     expect(document.activeElement).toBe(f.field('percentage')); f.element.remove();
+  });
+  it('moves the focus to the field the service refused', async () => {
+    const f = await openDiscountForm(); document.body.append(f.element); await f.fill(); await f.submit();
+    f.writer.calls[0].fail(apiError({ details: [{ field: 'priority', message: 'Priority conflict.' }] })); await f.settle();
+    expect(document.activeElement).toBe(f.field('priority')); f.element.remove();
   });
   it('guards double clicks, disables controls, retries with the same key and renews after success', async () => {
     const f = await openDiscountForm(); await f.fill(); await f.submit(); await f.submit();
