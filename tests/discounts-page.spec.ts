@@ -90,6 +90,16 @@ describe('discount list states and newest request', () => {
     const p = await openDiscounts(); TestBed.resetTestingModule(); expect(p.source.requests[0].isOpen()).toBe(false);
   });
 });
+describe('theListLineShowsPriorityAccumulableAndCap', () => {
+  it('theListLineShowsPriorityAccumulableAndCap', async () => {
+    const p = await openDiscounts();
+    const capped = { ...discountNamed('Con tope', 3), stackable: true, capCents: 5_000_000 };
+    p.source.requests[0].reply([discountNamed('Sin tope', 1), capped]); await p.settle();
+    const lines = Array.from(p.element.querySelectorAll('li.crp-discount-promo p'), l => l.textContent);
+    expect(lines[0]).toContain('Prioridad 1, no acumulable.'); expect(lines[0]).not.toContain('Tope');
+    expect(lines[1]).toContain('Prioridad 3, acumulable.'); expect(lines[1]).toContain('Tope: $50.000.');
+  });
+});
 describe('discount route fails closed', () => {
   for (const role of ['OPERATIONAL_COLLABORATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST', 'READ_ONLY'] as const) {
     it(`denies ${role} by the address and exposes no entry`, async () => {
