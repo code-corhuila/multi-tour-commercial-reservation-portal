@@ -100,6 +100,7 @@ const SPECIFIED_TREE = [
   'src/app/customers/data/reservation-party.ts',
   'src/app/customers/components/titular-section.component.ts',
   'src/app/customers/components/companions-section.component.ts',
+  'src/app/customers/components/risk-section.component.ts',
   'src/app/customers/components/reservation-form-sections.ts',
   'src/app/customers/pages/customers-page.component.ts',
   'src/app/demo/customers-demo.ts',
