@@ -3,6 +3,9 @@ import { CatalogItemsSource, CatalogItemsWriter } from './catalog/data/catalog-a
 import { AssociatedEstablishmentsSource } from './establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from './establishments/data/associated-establishments-writer';
 import { CatalogApiSource, CatalogApiWriter } from './http/catalog-api-sources';
+import { DiscountRulesApiSource, DiscountRulesApiWriter } from './http/discount-rules-api-sources';
+import { DiscountRulesSource } from './discounts/data/discount-rules-source';
+import { DiscountRulesWriter } from './discounts/data/discount-rules-writer';
 import { EstablishmentsApiSource, EstablishmentsApiWriter } from './http/establishments-api-sources';
 import { PortalApiClient } from './shell-contract';
 
@@ -13,5 +16,7 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     { provide: CatalogItemsWriter, useValue: new CatalogApiWriter(client) },
     { provide: AssociatedEstablishmentsSource, useValue: new EstablishmentsApiSource(client) },
     { provide: AssociatedEstablishmentsWriter, useValue: new EstablishmentsApiWriter(client) },
+    { provide: DiscountRulesSource, useValue: new DiscountRulesApiSource(client) },
+    { provide: DiscountRulesWriter, useValue: new DiscountRulesApiWriter(client) },
   ];
 }
