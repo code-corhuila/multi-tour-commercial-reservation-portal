@@ -12,6 +12,8 @@ export const BLANK_RISK: RiskFields = { informedConsent: '', bloodType: '', emer
 export type PartyMessages = { lead: Partial<Record<keyof LeadFields, string>>; companions: Partial<Record<keyof CompanionFields, string>>[]; risk: Partial<Record<HighRiskField, string>>[] };
 
 const blank = (value: string) => !value.trim();
+/** The one rule that compares e-mails (HU-COM-005 AC5, decision 2026-10-28): trimmed and lower case. The command still carries what the person typed. */
+export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 const normalized = (document: string) => document.replace(/[\s.]+/g, '').toLowerCase();
 
 /** dd/mm/aaaa (as the person types it) to ISO, or null when it is not a real calendar date; the future is not judged here (AC-PC.13). */

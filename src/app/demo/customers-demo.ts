@@ -4,7 +4,7 @@ import { CatalogItemsSource } from '../catalog/data/catalog-api.service';
 import { CustomersSource } from '../customers/data/customers-source';
 import { CustomersWriter } from '../customers/data/customers-writer';
 import { CustomerGroup, CustomerMatch, LeadCommand, Person, PersonCommand } from '../customers/model/customer-group';
-import type { LeadFields } from '../customers/model/party-rules';
+import { normalizeEmail, type LeadFields } from '../customers/model/party-rules';
 
 // DEMO (spec DD-1): invented people only (RN-PC9). Debt: replace with sources over props.apiClient when G-B is closed.
 const extra = (bloodType: string, physicalRestrictions: string) =>
@@ -37,7 +37,9 @@ export class DemoCustomersStore extends CustomersSource {
   }
   /** A titular typed by hand is registered with the reservation (A.2 row 2); the same document is the same customer. */
   register(lead: LeadFields): string {
-    const known = this.directory.find((c) => documentKey(c.document) === documentKey(lead.document));
+    // AC5: a verified account with the same normalized e-mail links first (the service resolves it from AccountEmailVerified); then the document.
+    const known = this.directory.find((c) => c.verified && normalizeEmail(c.email) === normalizeEmail(lead.email))
+      ?? this.directory.find((c) => documentKey(c.document) === documentKey(lead.document));
     if (known) return known.id;
     const created: CustomerMatch = { id: `demo-cus-${++this.sequence}`, ...lead, verified: false };
     this.directory.push(created);
