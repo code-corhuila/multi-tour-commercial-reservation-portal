@@ -33,7 +33,7 @@ describe('discountRulesSourcesOverTheApiClient', () => {
   });
 
   it('sends the same key again when the form retries the same creation', async () => {
-    const { client, calls } = fakeClient({ fail: { status: 500, code: 'X', message: 'down', traceId: 't' } });
+    const { client, calls } = fakeClient({ fail: { status: 500, code: 'X', message: 'down', traceId: 't' } }, { ok: response });
     const writer = new DiscountRulesApiWriter(client);
     await firstValueFrom(writer.create(command, 'same-key-1')).catch(() => undefined);
     await firstValueFrom(writer.create(command, 'same-key-1'));
