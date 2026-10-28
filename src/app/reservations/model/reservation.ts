@@ -12,7 +12,7 @@ export type Departure = {
 };
 /** Pending HU-COM-005: the lead customer is chosen here, registered there. */
 export type LeadCustomer = { readonly id: string; readonly fullName: string };
-export type ServiceOption = { readonly id: string; readonly name: string; readonly rateCents: number };
+export type ServiceOption = { readonly id: string; readonly name: string; readonly rateCents: number; readonly highRisk?: boolean };
 /** Pending HU-COM-004: its calculation returns these lines, in the order applied. */
 export type AppliedDiscount = { readonly name: string; readonly base: 'ORIGINAL_VALUE' | 'PREVIOUS_SUBTOTAL'; readonly amountCents: number };
 export type Quote = {
