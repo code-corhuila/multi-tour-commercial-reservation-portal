@@ -129,7 +129,7 @@ export class DemoReservationsWriter extends ReservationsWriter {
     private readonly quotes: ReservationQuoteSource, private readonly customers?: DemoCustomersStore) { super(); }
   /** The titular typed by hand joins the directory with the reservation, in the same command (V19-D3); a chosen one is named from it. */
   private leadName(c: CreateReservationCommand): string {
-    if (c.lead) { this.customers?.register(c.lead); return c.lead.fullName; }
+    if (c.lead) { const id = this.customers?.register(c.lead); return (id && this.customers?.nameOf(id)) || c.lead.fullName; }
     const id = c.leadCustomerId ?? '';
     return this.customers?.nameOf(id) ?? DEMO_CUSTOMERS.find((x) => x.id === id)?.fullName ?? id;
   }
