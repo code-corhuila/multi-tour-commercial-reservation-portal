@@ -30,6 +30,7 @@ const SPECIFIED_TREE = [
   'src/app/shared/session-copy.ts',
   'src/app/shared/session-identity.ts',
   'src/app/shared/tour-photo.ts',
+  'src/app/http/additional-discount-api-sources.ts',
   'src/app/http/api-paths.ts',
   'src/app/http/catalog-api-sources.ts',
   'src/app/http/discount-rules-api-sources.ts',
