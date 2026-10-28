@@ -140,7 +140,7 @@ export class ReservationFormComponent {
   }).pipe(
     map(({ departures, items }): OptionsState => {
       const open = openDepartures(departures);
-      const services = items.filter((i) => i.catalogStatus === 'ACTIVE').map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents }));
+      const services = items.filter((i) => i.catalogStatus === 'ACTIVE').map((i) => ({ id: i.serviceId, name: i.commercialName, rateCents: i.baseRateCents, highRisk: i.highRisk }));
       return open.length ? { kind: 'data', options: { departures: open, services } } : { kind: 'empty' };
     }),
     catchError((error) => of<OptionsState>({ kind: 'error', ...readFailure(error) })), startWith<OptionsState>({ kind: 'loading' }),
@@ -154,6 +154,8 @@ export class ReservationFormComponent {
   constructor() {
     // The number of travelers decides how many companions section 03 asks for (HU-COM-005); the form only tells it.
     effect(() => this.party.travelers.set(peopleOf(this.draft().people) ?? 0));
+    // Whether the chosen tour is high risk decides if block "Requisitos de actividad de riesgo" is asked (HU-COM-005, T-V19-1b); the form only tells it.
+    effect(() => { const s = this.state(); this.party.highRisk.set(s.kind === 'data' && !!s.options.services.find((o) => o.id === this.draft().serviceId)?.highRisk); });
     this.reload();
   }
   reload(): void { this.requests.next(); }

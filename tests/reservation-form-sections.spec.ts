@@ -6,7 +6,7 @@ import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { DemoCustomersStore } from '../src/app/demo/customers-demo';
 import { DemoDeparturesStore, DemoReservationsStore, DemoReservationsWriter } from '../src/app/demo/reservations-demo';
 import { DemoReservationQuotes } from '../src/app/demo/reservation-quote-demo';
-import { ControllableReservationsWriter, DEFAULT_SERVICES, PEOPLE, StubCatalog, StubCustomersDirectory, StubDiscounts, reservationProviders, screenOf } from './reservations.double';
+import { ControllableReservationsWriter, DEFAULT_SERVICES, PEOPLE, StubCatalog, StubCustomersDirectory, StubDiscounts, reservationProviders, screenOf, serviceOf } from './reservations.double';
 
 // HU-COM-005 amendment 2026-10-14 against admin-crear-reserva.html (10B): sections 01 and 03 come through RESERVATION_FORM_SECTIONS.
 const texts = (root: Element, selector: string) => Array.from(root.querySelectorAll(selector)).map((e) => e.textContent?.trim());
@@ -255,5 +255,73 @@ describe('theSidebarHasNoTitularAndCompanionsItem', () => {
     const area = PORTAL_AREAS.find((a) => a.key === 'customers');
     expect(area).toBeTruthy();
     expect(area!.menu).toBe(false);
+  });
+});
+
+// HU-COM-005 task T-V19-1b: the block "Requisitos de actividad de riesgo" of 10B, drawn after section 03 when the tour is high risk (AC-PC.2, AC-PC.3, AC-PC.10).
+const RISKY = [serviceOf('Rafting', 3000, { highRisk: true }), ...DEFAULT_SERVICES];
+const REQUIRED = 'Obligatorio para una actividad de riesgo.';
+async function openRiskyForm() {
+  const view = await openForm({ services: RISKY });
+  const risky = async (people = '3') => { await view.choose('departureId', 'dep-1'); await view.tick('svc-Rafting'); await view.type('people', people); await view.payWith(); await view.party(); };
+  const fillRisk = async (person: number) => {
+    await view.type(`bloodType-${person}`, 'O+'); await view.type(`emergencyContact-${person}`, 'Ana Ficticia 300 000 0000');
+    await view.type(`physicalRestrictions-${person}`, 'Ninguna'); view.field<HTMLInputElement>(`informedConsent-${person}`).click(); await view.settle();
+  };
+  return { ...view, risky, fillRisk };
+}
+
+describe('theRiskBlockIsDrawnForAHighRiskTourWithACardPerTraveler', () => {
+  it('draws the block after section 03 and before 04, with the texts of the mockup and a card for the titular and each companion', async () => {
+    const { element, tick, type } = await openRiskyForm();
+    await tick('svc-Rafting'); await type('people', '3');
+    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')).toEqual(
+      ['01. Cliente titular', '02. Tour, salida y viajeros', '03. Acompañantes', 'Requisitos de actividad de riesgo', '04. Condiciones y pago', 'Valores calculados']);
+    const block = element.querySelector('[data-risk-section]')!;
+    expect(texts(block, 'h2')).toEqual(['Información obligatoria antes de registrar']);
+    expect(block.textContent).toContain('Este tour requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero. Esta información es sensible: su consulta posterior exige el permiso Consultar datos sensibles.');
+    const cards = Array.from(block.querySelectorAll('.crp-customers-risk-card'));
+    expect(cards.map((c) => c.querySelector('strong')?.textContent?.trim())).toEqual(['Titular', 'Acompañante 1', 'Acompañante 2']);
+    expect(texts(cards[0], 'label')).toEqual(['Tipo de sangre', 'Contacto de emergencia', 'Restricciones físicas o movilidad reducida', 'Consentimiento informado o exoneración registrado.']);
+    expect(cards[0].querySelector<HTMLInputElement>('[name="bloodType-0"]')!.placeholder).toBe('Ej. O+');
+    expect(cards[0].querySelector('textarea[name="physicalRestrictions-0"]')).toBeTruthy();
+  });
+});
+
+describe('noRiskBlockIsDrawnForAnOrdinaryTour', () => {
+  it('has no block before a tour is chosen nor for a tour that is not high risk', async () => {
+    const { element, tick } = await openRiskyForm();
+    expect(element.querySelector('[data-risk-section]')).toBeNull();
+    await tick('svc-Kayak');
+    expect(element.querySelector('[data-risk-section]')).toBeNull();
+  });
+});
+
+describe('aHighRiskTourWithoutTheExtraDataIsNotRegisteredAndEachFieldShowsItsError', () => {
+  it('refuses the submit, shows the error beside each field of each person and keeps the data out of the command once complete', async () => {
+    const { element, risky, fillRisk, submit, writer } = await openRiskyForm();
+    await risky('2'); await submit();
+    expect(writer.calls).toHaveLength(0);
+    for (const person of [0, 1]) for (const name of ['bloodType', 'emergencyContact', 'physicalRestrictions', 'informedConsent']) {
+      const field = element.querySelector<HTMLElement>(`[name="${name}-${person}"]`)!;
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+      expect(errorBeside(element, `${name}-${person}`)).toBe(REQUIRED);
+    }
+    await fillRisk(0); await fillRisk(1); await submit();
+    expect(writer.calls).toHaveLength(1);
+    // The contract has no field for them yet (gap G-B, DD-10): they are validated here and do not travel.
+    expect(JSON.stringify(writer.calls[0].command)).not.toMatch(/bloodType|emergencyContact|physicalRestrictions|informedConsent/);
+  });
+});
+
+describe('changingToAnOrdinaryTourStopsAskingForTheExtraData', () => {
+  it('removes the block and registers without the extra data', async () => {
+    const { element, risky, tick, submit, writer } = await openRiskyForm();
+    await risky('2'); await submit();
+    expect(writer.calls).toHaveLength(0);
+    await tick('svc-Kayak');
+    expect(element.querySelector('[data-risk-section]')).toBeNull();
+    await submit();
+    expect(writer.calls).toHaveLength(1);
   });
 });
