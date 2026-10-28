@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { CustomerMatch } from '../model/customer-group';
-import { BLANK_COMPANION, BLANK_LEAD, CompanionFields, LeadFields, PartyMessages, birthToIso, companionsRequired, hasMessages, isoToBirth, partyMessages } from '../model/party-rules';
+import { CustomerMatch, HighRiskField } from '../model/customer-group';
+import { BLANK_COMPANION, BLANK_LEAD, BLANK_RISK, CompanionFields, LeadFields, PartyMessages, RiskFields, birthToIso, companionsRequired, hasMessages, isoToBirth, partyMessages } from '../model/party-rules';
 
 export type PartyCommand = { leadCustomerId?: string; lead?: LeadFields; companions: readonly CompanionFields[] };
 
@@ -12,6 +12,9 @@ export type PartyCommand = { leadCustomerId?: string; lead?: LeadFields; compani
 @Injectable()
 export class ReservationParty {
   readonly travelers = signal(0);
+  /** True when the tour chosen in 02 is high risk: the form tells it, as it tells `travelers`; the block of 10B asks the extra data of each person. */
+  readonly highRisk = signal(false);
+  private readonly riskTyped = signal<readonly RiskFields[]>([]);
   readonly picked = signal<CustomerMatch | null>(null);
   readonly lead = signal<LeadFields>(BLANK_LEAD);
   private readonly typed = signal<readonly CompanionFields[]>([]);
@@ -21,7 +24,9 @@ export class ReservationParty {
   readonly rejected = signal(0);
   readonly required = computed(() => companionsRequired(this.travelers()));
   readonly companions = computed(() => Array.from({ length: this.required() }, (_, i) => this.typed()[i] ?? BLANK_COMPANION));
-  private readonly all = computed<PartyMessages>(() => partyMessages(this.lead(), this.companions()));
+  /** One entry per traveler (the titular first) while the tour is high risk, none otherwise. */
+  readonly risk = computed<readonly RiskFields[]>(() => (this.highRisk() ? Array.from({ length: 1 + this.required() }, (_, i) => this.riskTyped()[i] ?? BLANK_RISK) : []));
+  private readonly all = computed<PartyMessages>(() => partyMessages(this.lead(), this.companions(), false, this.risk()));
   readonly valid = computed(() => !hasMessages(this.all()));
   readonly shown = computed<PartyMessages>(() => (this.attempted() ? this.all() : partyMessages(this.lead(), this.companions(), true)));
 
@@ -39,6 +44,12 @@ export class ReservationParty {
     while (next.length <= index) next.push(BLANK_COMPANION);
     next[index] = { ...next[index], [field]: value };
     this.typed.set(next);
+  }
+  setRisk(index: number, field: HighRiskField, value: string): void {
+    const next = [...this.riskTyped()];
+    while (next.length <= index) next.push(BLANK_RISK);
+    next[index] = { ...next[index], [field]: value };
+    this.riskTyped.set(next);
   }
   command(): PartyCommand {
     const picked = this.picked();
