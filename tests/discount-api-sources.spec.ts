@@ -19,8 +19,8 @@ function fakeClient(...replies: Array<{ ok: unknown } | { fail: unknown }>) {
   };
   return { client, calls };
 }
-const response = { discountRuleId: 'r1', name: 'tour-1', validFrom: '2026-01-01T00:00:00Z', validTo: '2026-12-31T23:59:59Z', priority: 2,
-  calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250, ruleStatus: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' };
+const response = { discountRuleId: 'r1', name: 'Descuento tour-1', validFrom: '2026-01-01', validTo: '2026-12-31', priority: 2,
+  calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250, serviceCoverage: 'SELECTED', serviceIds: ['tour-1'], capCents: 5_000_000, ruleStatus: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' };
 const command = { tourId: 'tour-1', percentageBasisPoints: 1250, calculationBase: 'PREVIOUS_SUBTOTAL', startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 2, stackable: true, capCents: 5_000_000 } as const;
 
 describe('discountRulesSourcesOverTheApiClient', () => {
@@ -28,8 +28,9 @@ describe('discountRulesSourcesOverTheApiClient', () => {
     const { client, calls } = fakeClient({ ok: response });
     const rule = await firstValueFrom(new DiscountRulesApiWriter(client).create(command, 'key-12345678'));
     expect(calls).toEqual([{ path: `${API_BASE}/discount-rules`, method: 'POST', headers: { 'Idempotency-Key': 'key-12345678' },
-      body: { name: 'tour-1', validFrom: '2026-01-01T00:00:00Z', validTo: '2026-12-31T23:59:59Z', priority: 2, calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250 } }]);
-    expect(rule).toMatchObject({ id: 'r1', startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 2, percentageBasisPoints: 1250, calculationBase: 'PREVIOUS_SUBTOTAL', status: 'ACTIVE', stackable: false });
+      body: { name: 'Descuento tour-1', validFrom: '2026-01-01', validTo: '2026-12-31', priority: 2, calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250,
+        serviceCoverage: 'SELECTED', serviceIds: ['tour-1'], capCents: 5_000_000 } }]);
+    expect(rule).toMatchObject({ id: 'r1', tourId: 'tour-1', capCents: 5_000_000, startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 2, percentageBasisPoints: 1250, calculationBase: 'PREVIOUS_SUBTOTAL', status: 'ACTIVE', stackable: false });
   });
 
   it('sends the same key again when the form retries the same creation', async () => {
@@ -40,15 +41,25 @@ describe('discountRulesSourcesOverTheApiClient', () => {
     expect(calls.map((c) => c.headers?.['Idempotency-Key'])).toEqual(['same-key-1', 'same-key-1']);
   });
 
-  it('reads one rule by id, updates it with PATCH and inactivates it with POST', async () => {
-    const { client, calls } = fakeClient({ ok: response }, { ok: response }, { ok: { ...response, ruleStatus: 'INACTIVE' } });
+  it('reads one rule by id and inactivates it with POST', async () => {
+    const { client, calls } = fakeClient({ ok: response }, { ok: { ...response, ruleStatus: 'INACTIVE' } });
     const source = new DiscountRulesApiSource(client), writer = new DiscountRulesApiWriter(client);
     expect((await firstValueFrom(source.get('r1'))).id).toBe('r1');
-    await firstValueFrom(writer.update('r1', command, 'k-update-1'));
     const inactive = await firstValueFrom(writer.inactivate('r1', 'k-inactivate-1'));
     expect(inactive).toMatchObject({ status: 'INACTIVE', validity: { label: 'Inactivo', inForce: false } });
-    expect(calls.map((c) => [c.method ?? 'GET', c.path])).toEqual([['GET', `${API_BASE}/discount-rules/r1`], ['PATCH', `${API_BASE}/discount-rules/r1`], ['POST', `${API_BASE}/discount-rules/r1/inactivate`]]);
-    expect(calls[1].headers).toBeUndefined();
+    expect(calls.map((c) => [c.method ?? 'GET', c.path])).toEqual([['GET', `${API_BASE}/discount-rules/r1`], ['POST', `${API_BASE}/discount-rules/r1/inactivate`]]);
+  });
+
+  it('never calls PATCH: the update is not published and answers a declared error', async () => {
+    const { client, calls } = fakeClient();
+    const error = await firstValueFrom(new DiscountRulesApiWriter(client).update('r1', command, 'k-update-1')).catch((e) => e);
+    expect(error).toMatchObject({ code: 'NOT_IN_CONTRACT' });
+    expect(calls).toEqual([]);
+  });
+
+  it('reads a rule that covers all services without inventing a tour', async () => {
+    const { client } = fakeClient({ ok: { ...response, serviceCoverage: 'ALL', serviceIds: [], capCents: undefined } });
+    expect(await firstValueFrom(new DiscountRulesApiSource(client).get('r1'))).toMatchObject({ tourId: '', capCents: undefined });
   });
 
   it('never calls a reactivation route and keeps an amount rule readable', async () => {
@@ -66,11 +77,12 @@ describe('discountRulesSourcesOverTheApiClient', () => {
     expect(error).toMatchObject({ status: 400, userMessage: 'refused', details, traceId: 'tr' });
   });
 
-  it('answers the list with a declared error because the contract has no list route yet', async () => {
-    const { client, calls } = fakeClient();
-    const error = await firstValueFrom(new DiscountRulesApiSource(client).list()).catch((e) => e);
-    expect(error).toMatchObject({ code: 'NOT_IN_CONTRACT' });
-    expect(calls).toEqual([]);
+  it('lists every page of GET /discount-rules and maps each rule', async () => {
+    const { client, calls } = fakeClient({ ok: { data: [response], meta: { page: 1, totalPages: 2 } } }, { ok: { data: [{ ...response, discountRuleId: 'r2' }], meta: { page: 2, totalPages: 2 } } });
+    const rules = await firstValueFrom(new DiscountRulesApiSource(client).list());
+    expect(rules.map((r) => r.id)).toEqual(['r1', 'r2']);
+    expect(rules[0]).toMatchObject({ tourId: 'tour-1', startsOn: '2026-01-01', endsOn: '2026-12-31' });
+    expect(calls.map((c) => c.path)).toEqual([`${API_BASE}/discount-rules?page=1&limit=100`, `${API_BASE}/discount-rules?page=2&limit=100`]);
   });
 
   it('is provided by the real build of the sources', () => {
