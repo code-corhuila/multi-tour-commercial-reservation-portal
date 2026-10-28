@@ -80,7 +80,6 @@ const SPECIFIED_TREE = [
   'src/app/demo/discount-label-demo.ts',
   'src/app/demo/tour-photo-demo.ts',
   'src/app/current-discounts/data/additional-discount-writer.ts',
-  'src/app/current-discounts/components/current-discounts-value.component.ts',
   'src/app/current-discounts/components/additional-discount-form.component.ts',
   'src/app/current-discounts/pages/additional-discount-page.component.ts',
   'src/app/demo/current-discounts-demo.ts',
