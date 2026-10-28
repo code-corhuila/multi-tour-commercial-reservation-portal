@@ -39,3 +39,6 @@ export function listAll<T>(client: PortalApiClient, path: string, filters: Recor
     reduce((all, result) => [...all, ...result.data], [] as readonly T[]),
   );
 }
+
+/** The failure of an operation the contract does not publish yet; the page shows it in its error state. */
+export const notInContract = (what: string): Observable<never> => throwError((): ApiError => ({ status: 0, code: 'NOT_IN_CONTRACT', message: what, details: [], traceId: '', userMessage: what }));

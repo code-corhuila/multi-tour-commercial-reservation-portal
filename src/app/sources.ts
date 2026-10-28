@@ -1,7 +1,11 @@
 import { Provider } from '@angular/core';
 import { CatalogItemsSource, CatalogItemsWriter } from './catalog/data/catalog-api.service';
+import { AdditionalDiscountContexts } from './current-discounts/data/additional-discount-contexts';
+import { AdditionalDiscountWriter } from './current-discounts/data/additional-discount-writer';
+import { AuthorizableReasons } from './current-discounts/data/authorizable-reasons';
 import { AssociatedEstablishmentsSource } from './establishments/data/associated-establishments-source';
 import { AssociatedEstablishmentsWriter } from './establishments/data/associated-establishments-writer';
+import { AdditionalDiscountApiContexts, AdditionalDiscountApiWriter, AuthorizableReasonsApi } from './http/additional-discount-api-sources';
 import { CatalogApiSource, CatalogApiWriter } from './http/catalog-api-sources';
 import { DiscountRulesApiSource, DiscountRulesApiWriter } from './http/discount-rules-api-sources';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
@@ -18,5 +22,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     { provide: AssociatedEstablishmentsWriter, useValue: new EstablishmentsApiWriter(client) },
     { provide: DiscountRulesSource, useValue: new DiscountRulesApiSource(client) },
     { provide: DiscountRulesWriter, useValue: new DiscountRulesApiWriter(client) },
+    { provide: AdditionalDiscountContexts, useValue: new AdditionalDiscountApiContexts(client) },
+    { provide: AdditionalDiscountWriter, useValue: new AdditionalDiscountApiWriter(client) },
+    { provide: AuthorizableReasons, useValue: new AuthorizableReasonsApi(client) },
   ];
 }
