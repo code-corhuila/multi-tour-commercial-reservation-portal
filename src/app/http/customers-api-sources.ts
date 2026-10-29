@@ -1,9 +1,9 @@
-import { Observable, map, throwError } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { CustomersSource } from '../customers/data/customers-source';
 import { CustomersWriter } from '../customers/data/customers-writer';
 import { CustomerGroup, CustomerMatch, LeadCommand, PersonCommand } from '../customers/model/customer-group';
-import { ApiError, PortalApiClient } from '../shell-contract';
-import { API_BASE, call } from './api-paths';
+import { PortalApiClient } from '../shell-contract';
+import { API_BASE, call, notInContract } from './api-paths';
 
 /** Customers over the container client (openapi: POST /customers, PROPOSED field names; G-A). Sensitive data is sent, never returned, logged or kept. */
 export const customersPath = (customerId?: string): string => [`${API_BASE}/customers`, customerId].filter(Boolean).join('/');
@@ -13,8 +13,6 @@ interface CustomerDto {
   readonly customerId: string; readonly fullName: string; readonly documentNumber: string; readonly birthDate?: string;
   readonly contact: { readonly email: string; readonly phone: string }; readonly termsAccepted: boolean; readonly highRisk: boolean;
 }
-
-const notInContract = (what: string): Observable<never> => throwError((): ApiError => ({ status: 0, code: 'NOT_IN_CONTRACT', message: what, details: [], traceId: '', userMessage: what }));
 
 function bodyFromCommand(command: LeadCommand): Record<string, unknown> {
   const risk = command.highRisk;
