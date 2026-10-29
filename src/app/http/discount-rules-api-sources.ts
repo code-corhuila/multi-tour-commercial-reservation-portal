@@ -1,9 +1,9 @@
-import { Observable, map, throwError } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { DiscountRulesSource } from '../discounts/data/discount-rules-source';
 import { DiscountRulesWriter } from '../discounts/data/discount-rules-writer';
 import { DiscountRule, DiscountRuleCommand } from '../discounts/model/discount-rule';
-import { ApiError, PortalApiClient } from '../shell-contract';
-import { API_BASE, call, listAll } from './api-paths';
+import { PortalApiClient } from '../shell-contract';
+import { API_BASE, call, listAll, notInContract } from './api-paths';
 
 /** Discount rules over the container client (openapi: /discount-rules, PROPOSED field names). */
 export const discountRulesPath = (id?: string, action?: 'inactivate'): string => [`${API_BASE}/discount-rules`, id, action].filter(Boolean).join('/');
@@ -14,8 +14,6 @@ interface DiscountRuleDto {
   readonly calculationBase: DiscountRule['calculationBase']; readonly percentageBasisPoints?: number; readonly amountCents?: number;
   readonly serviceCoverage: 'ALL' | 'SELECTED'; readonly serviceIds?: readonly string[]; readonly capCents?: number; readonly ruleStatus: DiscountRule['status'];
 }
-
-const notInContract = (what: string): Observable<never> => throwError((): ApiError => ({ status: 0, code: 'NOT_IN_CONTRACT', message: what, details: [], traceId: '', userMessage: what }));
 
 function validityOf(status: DiscountRule['status'], startsOn: string, endsOn: string): DiscountRule['validity'] {
   const today = new Date().toISOString().slice(0, 10);
