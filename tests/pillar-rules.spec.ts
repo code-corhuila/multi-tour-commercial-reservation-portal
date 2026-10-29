@@ -17,7 +17,6 @@ const BUSINESS_RULES: readonly [string, RegExp][] = [
 const EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/self-service-reservation/pages/reserve-tour-page.component.ts': ['Math.'], // the minus button of the people stepper never goes below one: a control bound, not a rule
   'src/app/payments/pages/payment-management-page.component.ts': ['arithmetic on a value in cents'], // DEBT: the surplus of a payment should come resolved from the payments port
-  'src/app/current-discounts/components/current-discounts-value.component.ts': ['arithmetic on a value in cents'], // DEBT: the discounted amount should come in the breakdown of HU-COM-004
 };
 
 describe('viewsAndComponentsHoldNoBusinessRule', () => {
