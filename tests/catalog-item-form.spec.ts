@@ -120,7 +120,7 @@ describe('theSubmitActionIsDisabledWhilePending', () => {
   });
 });
 
-describe('aRefusedChangeKeepsWhatWasTyped', () => {
+describe('capacityRefusalIsShownWithItsReason', () => {
   it('shows the userMessage and keeps every typed value', async () => {
     const { writer, fillAll, view } = await openForm();
     fillAll({ name: 'Canyon walk', rate: '12.50', cost: '7', capacity: '18' });
@@ -202,7 +202,7 @@ describe('listShowsTheNewValuesWithoutAReload', () => {
   });
 });
 
-describe('sendsMoneyAsMinorUnits', () => {
+describe('registersItemFromTheTypedValues', () => {
   it('sends 12.50 as 1250 and the rest of the typed values', async () => {
     const { writer, fillAll, save } = await openForm();
     fillAll({ rate: '12.50', cost: '0.07' });
