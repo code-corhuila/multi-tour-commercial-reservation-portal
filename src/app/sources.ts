@@ -10,6 +10,9 @@ import { AssociatedEstablishmentsWriter } from './establishments/data/associated
 import { AdditionalDiscountApiContexts, AdditionalDiscountApiWriter, AuthorizableReasonsApi } from './http/additional-discount-api-sources';
 import { CatalogApiSource, CatalogApiWriter } from './http/catalog-api-sources';
 import { CustomersApiSource, CustomersApiWriter } from './http/customers-api-sources';
+import { DepartureApiCapacity, DeparturesApiSource } from './http/departures-api-source';
+import { DepartureCapacity } from './reservations/data/departure-capacity';
+import { DeparturesSource } from './reservations/data/departures-source';
 import { DiscountRulesApiSource, DiscountRulesApiWriter } from './http/discount-rules-api-sources';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
 import { DiscountRulesWriter } from './discounts/data/discount-rules-writer';
@@ -32,6 +35,9 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     { provide: AuthorizableReasons, useValue: new AuthorizableReasonsApi(client) },
     { provide: CustomersSource, useValue: new CustomersApiSource(client) },
     { provide: CustomersWriter, useValue: new CustomersApiWriter(client) },
+    // HU-COM-007: the open departures of the active tours and the seat rule over what the service says is left (PROPOSED routes).
+    { provide: DeparturesSource, useValue: new DeparturesApiSource(client) },
+    { provide: DepartureCapacity, useValue: new DepartureApiCapacity() },
     // HU-COM-006: the public routes; the tenant is the identifier of the link the container mounted the portal with.
     { provide: PublicOfferSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicOfferApiSource(client, () => tenant); } },
     { provide: PublicEstablishmentsSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicEstablishmentsApiSource(client, () => tenant); } },
