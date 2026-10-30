@@ -8,6 +8,9 @@ export interface PublicTour {
   readonly baseRateCents: number;
   readonly transportIncluded: boolean;
   readonly available: boolean;
+  /** The value in force the service calculated (HU-COM-004's rule) and the percentage it discounted, in basis points; absent where the source has no rule. */
+  readonly finalValueCents?: number;
+  readonly discountPercentageBp?: number | null;
   /** The validity of the offer, when the service declares it (G-SAL); without it the detail shows the consulted date. */
   readonly validity?: { readonly from: string; readonly to: string };
 }
