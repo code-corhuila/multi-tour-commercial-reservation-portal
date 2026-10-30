@@ -83,3 +83,6 @@ export const CONTAINER_CHROME = new InjectionToken<boolean>('CONTAINER_CHROME', 
 export const INITIAL_AREA = new InjectionToken<string | null>('INITIAL_AREA', { factory: () => null });
 
 export type PortalApiClient = MountProps['apiClient'];
+
+/** The public identifier of the tenant of the link (MountProps.identifier), or null: the public offer asks its routes with it (ADR-004 D5); the customer never picks it. */
+export const TENANT_IDENTIFIER = new InjectionToken<string | null>('TENANT_IDENTIFIER', { factory: () => null });

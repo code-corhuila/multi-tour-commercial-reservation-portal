@@ -9,6 +9,9 @@ export const catalogPath = (serviceId?: string, action?: 'inactivate' | 'reactiv
   [`${API_BASE}/catalog/services`, serviceId, action].filter(Boolean).join('/');
 export const establishmentsPath = (associationId?: string, action?: 'inactivate' | 'reactivate'): string =>
   [`${API_BASE}/associated-establishments`, associationId, action].filter(Boolean).join('/');
+/** A public GET route of the offer (PROPOSED): the tenant identifier travels in the path, never in a header or a body (ADR-004 D5). */
+export const publicOfferPath = (identifier: string, resource: 'tours' | 'associated-establishments', id?: string): string =>
+  [`${API_BASE}/public/tenants/${encodeURIComponent(identifier)}`, resource, id].filter(Boolean).join('/');
 
 interface Page<T> { readonly data: readonly T[]; readonly meta: { readonly page: number; readonly totalPages: number } }
 type Init = Parameters<PortalApiClient['request']>[1];
