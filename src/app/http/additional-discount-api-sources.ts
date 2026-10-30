@@ -1,9 +1,12 @@
-import { Observable, map, switchMap, throwError } from 'rxjs';
+import { Observable, map, of, switchMap, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AdditionalDiscountContext, AdditionalDiscountContexts, AdditionalDiscountPreview } from '../current-discounts/data/additional-discount-contexts';
 import { AdditionalDiscountApplied, AdditionalDiscountCommand, AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
 import { AuthorizableReason, AuthorizableReasons } from '../current-discounts/data/authorizable-reasons';
 import { ApiError, PortalApiClient } from '../shell-contract';
-import { API_BASE, call, listAll, notInContract } from './api-paths';
+import { STATUS_LABEL } from '../reservations/model/reservation';
+import { API_BASE, call, listAll, reservationsPath } from './api-paths';
+import { ReservationDto, reservationFrom, rowsOf } from './reservations-api-sources';
 
 /** Additional discount over the container client (openapi: /reservations/{id}/additional-discount and /additional-discount-reasons, PROPOSED; G-API). */
 export const additionalDiscountPath = (reservationId: string, action?: 'preview'): string => [`${API_BASE}/reservations`, reservationId, 'additional-discount', action].filter(Boolean).join('/');
@@ -17,10 +20,26 @@ interface BreakdownDto {
 interface PreviewDto { readonly newFinalValueCents: number; readonly excessCents: number }
 interface ReasonDto { readonly reasonId: string; readonly text: string; readonly reasonStatus: 'ENABLED' | 'DISABLED' }
 
+const NO_CAP_BASIS_POINTS = 10_000;
+const ELIGIBLE: readonly string[] = ['PENDIENTE_DE_PAGO', 'CONFIRMADA'];
+
 export class AdditionalDiscountApiContexts extends AdditionalDiscountContexts {
   constructor(private readonly client: PortalApiClient) { super(); }
-  /** TODO(G-B): the contract has no read of a reservation (customer, service, paid, state); the screen shows its error state until HU-COM-007 publishes it. */
-  override of(_reservationId: string): Observable<AdditionalDiscountContext | null> { return notInContract('El servicio aún no publica la consulta de la reserva.'); }
+  /**
+   * GET /reservations/{id} for the values fixed at creation and the list row for the two names the detail lacks. Only Pendiente de pago and
+   * Confirmada are eligible. TODO(G-B): the contract publishes no cap (no cap exists, 2026-10-28), so the screen is given the ceiling of the
+   * field itself (10 000 basis points), and no read tells whether an additional discount already exists; the service refuses the second with 422.
+   */
+  override of(reservationId: string): Observable<AdditionalDiscountContext | null> {
+    return call<ReservationDto>(this.client, reservationsPath(reservationId)).pipe(
+      switchMap((dto) => rowsOf(this.client).pipe(map((rows) => reservationFrom(dto, rows.find((row) => row.reservationId === reservationId))))),
+      map((r): AdditionalDiscountContext => ({
+        reservationId: r.id, customerName: r.leadCustomerName, serviceName: r.tourName, currentValueCents: r.quote.finalCents, generalDiscountCents: r.quote.discountCents,
+        paidCents: r.validatedCents ?? 0, capBasisPoints: NO_CAP_BASIS_POINTS, eligible: ELIGIBLE.includes(r.status), stateLabel: STATUS_LABEL[r.status],
+      })),
+      catchError((error: Partial<ApiError>) => (error.status === 404 ? of(null) : throwError(() => error))),
+    );
+  }
   override preview(reservationId: string, basisPoints: number): Observable<AdditionalDiscountPreview> {
     return call<PreviewDto>(this.client, `${additionalDiscountPath(reservationId, 'preview')}?basisPoints=${basisPoints}`)
       .pipe(map((dto) => ({ newValueCents: dto.newFinalValueCents, excessCents: dto.excessCents })));
