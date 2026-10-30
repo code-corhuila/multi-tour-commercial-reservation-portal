@@ -34,6 +34,7 @@ const SPECIFIED_TREE = [
   'src/app/http/api-paths.ts',
   'src/app/http/catalog-api-sources.ts',
   'src/app/http/customers-api-sources.ts',
+  'src/app/http/departures-api-source.ts',
   'src/app/http/discount-rules-api-sources.ts',
   'src/app/http/establishments-api-sources.ts',
   'src/app/http/public-offer-api-sources.ts',
