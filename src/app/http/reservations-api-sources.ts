@@ -19,9 +19,9 @@ const invert = (codes: Record<string, string>) => Object.fromEntries(Object.entr
 const TYPE_OUT = invert(TYPE_IN), METHOD_OUT = invert(METHOD_IN);
 
 /** ReservationSummary of the contract (PROPOSED): the row of screen 10, which carries the names the detail lacks. */
-interface SummaryDto { readonly reservationId: string; readonly customerName: string; readonly tourName: string; readonly departureStartsAt: string }
+export interface SummaryDto { readonly reservationId: string; readonly customerName: string; readonly tourName: string; readonly departureStartsAt: string }
 /** ReservationResponse of the contract (PROPOSED): the values and the context fixed at creation, never recalculated (RN-RES-003). */
-interface ReservationDto extends ReservationQuoteDto {
+export interface ReservationDto extends ReservationQuoteDto {
   readonly reservationId: string; readonly salidaId: string; readonly people: number; readonly reservationStatus: string; readonly paymentStatus: string;
   readonly paymentType?: string; readonly paymentMethod?: string; readonly pendingBalanceCents: number; readonly validatedValueCents?: number;
   readonly paymentDeadline?: string; readonly seatHeld: boolean; readonly conditions?: string | null;
@@ -41,7 +41,7 @@ export function reservationFrom(dto: ReservationDto, row?: SummaryDto): Reservat
   };
 }
 
-const rowsOf = (client: PortalApiClient) => listAll<SummaryDto>(client, reservationsPath(), { scope: 'all' });
+export const rowsOf = (client: PortalApiClient) => listAll<SummaryDto>(client, reservationsPath(), { scope: 'all' });
 
 /**
  * The reservations over GET /reservations and GET /reservations/{id}. The page hides the archived ones, so every scope is asked.
