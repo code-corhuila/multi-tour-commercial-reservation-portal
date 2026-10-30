@@ -5,10 +5,10 @@ import { PUBLIC_OFFER_COPY } from '../public-offer/public-offer-copy';
 import { ApiError, PortalApiClient } from '../shell-contract';
 import { listAll, publicOfferPath } from './api-paths';
 
-/** PublicTour of the contract (PROPOSED). `maxTravelers` and every other field the portal does not show are left out on purpose (RN-PO6). */
+/** PublicTour of the contract (PROPOSED). `maxTravelers` is the plain maximum of travellers (AC-PO.6); every other field the portal does not show is left out on purpose. */
 interface PublicTourDto {
   readonly serviceId: string; readonly commercialName: string; readonly transportIncluded: boolean; readonly baseValueCents: number;
-  readonly finalValueCents: number; readonly discountPercentageBp: number | null;
+  readonly finalValueCents: number; readonly discountPercentageBp: number | null; readonly maxTravelers?: number | null;
 }
 
 /** PublicEstablishment of the contract (PROPOSED): the contact travels inside the commercial information (DP-PO3). */
@@ -36,6 +36,7 @@ export class PublicOfferApiSource extends PublicOfferSource {
       serviceId: tour.serviceId, commercialName: tour.commercialName, baseRateCents: tour.baseValueCents,
       transportIncluded: tour.transportIncluded, available: true,
       finalValueCents: tour.finalValueCents, discountPercentageBp: tour.discountPercentageBp,
+      ...(Number.isInteger(tour.maxTravelers) && tour.maxTravelers! > 0 ? { maxTravelers: tour.maxTravelers! } : {}),
     }))));
   }
 }

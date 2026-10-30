@@ -19,9 +19,10 @@ describe('theDemoOfferReadsTheCatalogStore (plan D-05)', () => {
     expect(names).not.toContain('Traslado aeropuerto Neiva');
   });
 
-  it('projects no cost, capacity or status (RN-PO6)', async () => {
+  it('projects the plain maximum of travellers and no cost, effective capacity or status (AC-PO.6)', async () => {
     const [tour] = await toursOf(new DemoPublicOfferSource(new DemoCatalogStore()));
-    expect(Object.keys(tour).sort()).toEqual(['available', 'baseRateCents', 'commercialName', 'serviceId', 'transportIncluded']);
+    expect(Object.keys(tour).sort()).toEqual(['available', 'baseRateCents', 'commercialName', 'maxTravelers', 'serviceId', 'transportIncluded']);
+    expect(tour.maxTravelers).toBe(12);
   });
 
   it('follows the store: a tour inactivated in the catalog leaves the offer, so no data is duplicated', async () => {
