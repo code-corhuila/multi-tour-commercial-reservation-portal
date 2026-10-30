@@ -57,17 +57,30 @@ export class ReservationsApiSource extends ReservationsSource {
 }
 
 /**
+ * The titular typed in 10B as the `holder` of the contract (ReservationHolder): the fields of RegisterCustomerRequest without serviceId, the
+ * risk mark being the catalog's. The terms are a datum of the holder (RN-CLI-001): the confirmation the form requires, never made up here.
+ * TODO(DP-07): the risk data of a high-risk tour (informedConsentSigned, emergencyInfo) are not in the command yet, so the service names them.
+ */
+function holderFrom(command: CreateReservationCommand): Record<string, unknown> {
+  const lead = command.lead!;
+  return {
+    fullName: lead.fullName, documentNumber: lead.document, ...(lead.birthDate ? { birthDate: lead.birthDate } : {}),
+    contact: { email: lead.email, phone: lead.phone }, termsAccepted: command.acceptedTerms === true,
+  };
+}
+
+/**
  * POST /reservations with the Idempotency-Key of the intention. The body is the selection and nothing else: the service recalculates and
- * fixes the value, takes the tenant from the token and the user from the session. TODO(G-B): the operator names the customer by id, so a
- * titular typed by hand (HU-COM-005 amendment) has no route yet, and the contract has no field for the risk data of a high-risk tour.
+ * fixes the value, takes the tenant from the token and the user from the session. The lead is `customerId` or `holder`, exactly one: the
+ * service registers a holder and the reservation in one transaction, so the portal runs no sequence of writes.
  */
 export class ReservationsApiWriter extends ReservationsWriter {
   constructor(private readonly client: PortalApiClient) { super(); }
   override create(command: CreateReservationCommand, idempotencyKey: string): Observable<Reservation> {
-    if (!command.leadCustomerId) { return notInContract('El servicio aún no publica el registro del titular junto con la reserva: elija un cliente registrado.'); }
+    if (!command.leadCustomerId && !command.lead) { return notInContract('Falta el titular de la reserva: elija un cliente registrado o escriba sus datos.'); }
     const companions = (command.companions ?? []).map((c) => ({ fullName: c.fullName, documentNumber: c.document, ...(c.birthDate ? { birthDate: c.birthDate } : {}) }));
     const body = {
-      customerId: command.leadCustomerId, serviceId: command.serviceIds[0], salidaId: command.departureId, people: command.people,
+      ...(command.leadCustomerId ? { customerId: command.leadCustomerId } : { holder: holderFrom(command) }), serviceId: command.serviceIds[0], salidaId: command.departureId, people: command.people,
       ...(command.paymentType ? { paymentType: TYPE_OUT[command.paymentType] ?? command.paymentType } : {}),
       ...(command.paymentMethod ? { paymentMethod: METHOD_OUT[command.paymentMethod] ?? command.paymentMethod } : {}),
       ...(companions.length ? { companions } : {}),
