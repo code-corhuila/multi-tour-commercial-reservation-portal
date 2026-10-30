@@ -1,4 +1,4 @@
-import { Observable, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AdditionalDiscountContext, AdditionalDiscountContexts, AdditionalDiscountPreview } from '../current-discounts/data/additional-discount-contexts';
 import { AdditionalDiscountApplied, AdditionalDiscountCommand, AdditionalDiscountWriter } from '../current-discounts/data/additional-discount-writer';
@@ -10,6 +10,8 @@ import { ReservationDto, reservationFrom, rowsOf } from './reservations-api-sour
 
 /** Additional discount over the container client (openapi: /reservations/{id}/additional-discount and /additional-discount-reasons, PROPOSED; G-API). */
 export const additionalDiscountPath = (reservationId: string, action?: 'preview'): string => [`${API_BASE}/reservations`, reservationId, 'additional-discount', action].filter(Boolean).join('/');
+/** GET /reservations/{id}/discount-breakdown (PROPOSED): the current breakdown, the only read that shows the additional discount. */
+export const discountBreakdownPath = (reservationId: string): string => `${API_BASE}/reservations/${reservationId}/discount-breakdown`;
 export const reasonsPath = (reasonId?: string, action?: 'disable'): string => [`${API_BASE}/additional-discount-reasons`, reasonId, action].filter(Boolean).join('/');
 
 /** DiscountBreakdown of the contract; the additional line, when there is one, is the last. */
@@ -17,25 +19,41 @@ interface BreakdownDto {
   readonly baseCents: number; readonly finalValueCents: number;
   readonly lines: readonly { readonly kind: 'RULE' | 'ADDITIONAL'; readonly baseCents: number; readonly amountCents: number }[];
 }
+/** ReservationDiscountBreakdown of the contract: the other fields are present only when the reservation has an additional discount. */
+interface CurrentBreakdownDto {
+  readonly breakdown?: BreakdownDto; readonly excessCents?: number; readonly additionalDiscount?: { readonly authorId: string; readonly registeredAt: string };
+}
 interface PreviewDto { readonly newFinalValueCents: number; readonly excessCents: number }
 interface ReasonDto { readonly reasonId: string; readonly text: string; readonly reasonStatus: 'ENABLED' | 'DISABLED' }
 
 const NO_CAP_BASIS_POINTS = 10_000;
 const ELIGIBLE: readonly string[] = ['PENDIENTE_DE_PAGO', 'CONFIRMADA'];
 
+const currentBreakdown = (client: PortalApiClient, reservationId: string): Observable<CurrentBreakdownDto> =>
+  call<CurrentBreakdownDto>(client, discountBreakdownPath(reservationId));
+
+/** The percentage is read back from the additional line (its amount over its base), in basis points; the author is the account, the name is OPEN. */
+function appliedFrom(current: CurrentBreakdownDto): AdditionalDiscountContext['applied'] {
+  const line = current.breakdown?.lines.find((l) => l.kind === 'ADDITIONAL');
+  if (!current.additionalDiscount || !line) return undefined;
+  return { basisPoints: Math.round((line.amountCents * 10_000) / line.baseCents), appliedAt: current.additionalDiscount.registeredAt, appliedBy: current.additionalDiscount.authorId };
+}
+
 export class AdditionalDiscountApiContexts extends AdditionalDiscountContexts {
   constructor(private readonly client: PortalApiClient) { super(); }
   /**
    * GET /reservations/{id} for the values fixed at creation and the list row for the two names the detail lacks. Only Pendiente de pago and
-   * Confirmada are eligible. TODO(G-B): the contract publishes no cap (no cap exists, 2026-10-28), so the screen is given the ceiling of the
-   * field itself (10 000 basis points), and no read tells whether an additional discount already exists; the service refuses the second with 422.
+   * Confirmada are eligible, and only once: the current breakdown tells whether an additional discount exists and who registered it. The
+   * contract publishes no cap (no cap exists, 2026-10-28), so the screen is given the ceiling of the field itself (10 000 basis points).
    */
   override of(reservationId: string): Observable<AdditionalDiscountContext | null> {
     return call<ReservationDto>(this.client, reservationsPath(reservationId)).pipe(
-      switchMap((dto) => rowsOf(this.client).pipe(map((rows) => reservationFrom(dto, rows.find((row) => row.reservationId === reservationId))))),
-      map((r): AdditionalDiscountContext => ({
+      switchMap((dto) => forkJoin({ rows: rowsOf(this.client), current: currentBreakdown(this.client, reservationId) }).pipe(
+        map(({ rows, current }) => ({ r: reservationFrom(dto, rows.find((row) => row.reservationId === reservationId)), applied: appliedFrom(current) })))),
+      map(({ r, applied }): AdditionalDiscountContext => ({
         reservationId: r.id, customerName: r.leadCustomerName, serviceName: r.tourName, currentValueCents: r.quote.finalCents, generalDiscountCents: r.quote.discountCents,
-        paidCents: r.validatedCents ?? 0, capBasisPoints: NO_CAP_BASIS_POINTS, eligible: ELIGIBLE.includes(r.status), stateLabel: STATUS_LABEL[r.status],
+        paidCents: r.validatedCents ?? 0, capBasisPoints: NO_CAP_BASIS_POINTS, eligible: ELIGIBLE.includes(r.status) && !applied, stateLabel: STATUS_LABEL[r.status],
+        ...(applied ? { applied } : {}),
       })),
       catchError((error: Partial<ApiError>) => (error.status === 404 ? of(null) : throwError(() => error))),
     );
@@ -59,11 +77,15 @@ export class AdditionalDiscountApiWriter extends AdditionalDiscountWriter {
       map((reasons) => reasons.find((r) => sameText(r.text, command.reason))),
       switchMap((found) => !found ? notEnabled() : call<BreakdownDto>(this.client, additionalDiscountPath(command.reservationId),
         { method: 'POST', body: { basisPoints: command.percentageBasisPoints, reasonId: found.reasonId }, headers: { 'Idempotency-Key': idempotencyKey } })),
-      map((dto): AdditionalDiscountApplied => {
-        const line = dto.lines[dto.lines.length - 1];
-        /** TODO(G-API): the answer carries no author, no date and no excess; they read empty and zero (the preview already showed the excess). */
-        return { ...command, appliedBy: '', appliedAt: '', previousValueCents: line.baseCents, amountCents: line.amountCents, newValueCents: dto.finalValueCents, excessCents: 0 };
-      }),
+      switchMap((dto) => currentBreakdown(this.client, command.reservationId).pipe(
+        /** The answer of the registration carries no author, no date and no excess: the current breakdown does. If that read fails the registration still stands, so they read empty and zero. */
+        catchError(() => of<CurrentBreakdownDto | null>(null)),
+        map((current): AdditionalDiscountApplied => {
+          const line = dto.lines[dto.lines.length - 1];
+          return { ...command, appliedBy: current?.additionalDiscount?.authorId ?? '', appliedAt: current?.additionalDiscount?.registeredAt ?? '', previousValueCents: line.baseCents,
+            amountCents: line.amountCents, newValueCents: dto.finalValueCents, excessCents: current?.excessCents ?? 0 };
+        }),
+      )),
     );
   }
 }
