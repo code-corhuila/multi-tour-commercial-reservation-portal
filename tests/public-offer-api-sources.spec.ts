@@ -36,10 +36,25 @@ describe('publicOfferOverTheApiClient', () => {
     expect(calls).toEqual([{ path: `${toursPath}?page=1&limit=100` }]);
   });
 
-  it('shows the public projection of a tour with its value in force and never the capacity of the contract answer (RN-PO6)', async () => {
+  it('shows the public projection of a tour with its value in force and the plain maximum of travellers (AC-PO.6, DP-006-V19-3)', async () => {
     const { client } = fakeClient({ ok: page([tourDto]) });
     const [tour] = await firstValueFrom(new PublicOfferApiSource(client, () => TENANT).listAvailable('2026-12-01'));
-    expect(tour).toEqual({ serviceId: 't-1', commercialName: 'Caminata Ficticia al Mirador', baseRateCents: 15_000_000, transportIncluded: true, available: true, finalValueCents: 13_500_000, discountPercentageBp: 1000 });
+    expect(tour).toEqual({ serviceId: 't-1', commercialName: 'Caminata Ficticia al Mirador', baseRateCents: 15_000_000, transportIncluded: true, available: true, finalValueCents: 13_500_000, discountPercentageBp: 1000, maxTravelers: 12 });
+  });
+
+  it('carries the maximum as a plain number and never the cost, the effective capacity, the held seats or the status', async () => {
+    const extras = { operationalCostCents: 9_000_000, effectiveCapacity: 8, heldSeats: 3, availableSeats: 5, catalogStatus: 'ACTIVE' };
+    const { client } = fakeClient({ ok: page([{ ...tourDto, ...extras }]) });
+    const [tour] = await firstValueFrom(new PublicOfferApiSource(client, () => TENANT).listAvailable('2026-12-01'));
+    expect(Object.keys(tour).sort()).toEqual(['available', 'baseRateCents', 'commercialName', 'discountPercentageBp', 'finalValueCents', 'maxTravelers', 'serviceId', 'transportIncluded']);
+    expect(tour.maxTravelers).toBe(12);
+  });
+
+  it('leaves the maximum out when the contract answer has none or it is not a positive whole number', async () => {
+    const { maxTravelers: _omitted, ...withoutMax } = tourDto;
+    const { client } = fakeClient({ ok: page([withoutMax, { ...tourDto, maxTravelers: null }, { ...tourDto, maxTravelers: 0 }, { ...tourDto, maxTravelers: 2.5 }]) });
+    const tours = await firstValueFrom(new PublicOfferApiSource(client, () => TENANT).listAvailable('2026-12-01'));
+    expect(tours.map((t) => 'maxTravelers' in t)).toEqual([false, false, false, false]);
   });
 
   it('follows every page of the offer', async () => {
