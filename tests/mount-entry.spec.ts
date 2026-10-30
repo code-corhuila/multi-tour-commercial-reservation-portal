@@ -7,7 +7,7 @@ import { ESTABLISHMENTS_COPY } from '../src/app/establishments/establishments-co
 
 const rows = (key: string) => [1, 2, 3, 4].map((n) => ({ [key]: 'id' + n, commercialName: 'Row ' + n, serviceType: 'TOUR', catalogStatus: 'ACTIVE', associationStatus: 'ACTIVE', establishmentType: 'HOTEL', commercialInformation: 'info' }));
 // The container client, faked: the portal reads whatever this answers, so it must go through apiClient.
-const request = vi.fn(async (path: string) => ({ data: rows(path.includes('associated') ? 'associationId' : 'serviceId'), meta: { page: 1, limit: 100, total: 4, totalPages: 1 } }));
+const request = vi.fn(async (path: string) => ({ data: path.includes('/reservations') ? [] : rows(path.includes('associated') ? 'associationId' : 'serviceId'), meta: { page: 1, limit: 100, total: 4, totalPages: 1 } }));
 const propsFor = (roles: string[]): MountProps => ({
   apiClient: { request } as never,
   session: { roles, open: () => undefined, close: () => undefined },
@@ -74,6 +74,7 @@ describe('mountEntryContract', () => {
   it('reads through the container client and makes no direct network call', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     mountAs(['TENANT_ADMINISTRATOR']);
+    await goToCard('Ver tours');
     await vi.waitFor(() => expect(host.querySelector('[data-state="data"]')).toBeTruthy());
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(request).toHaveBeenCalled();
