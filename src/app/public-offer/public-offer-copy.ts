@@ -19,6 +19,8 @@ export const PUBLIC_OFFER_COPY = {
   validityTitle: 'Vigencia, capacidad y restricciones',
   validity: 'Vigencia',
   availableOnDay: 'Disponible el',
+  capacity: 'Capacidad',
+  maxTravelers: (travelers: number) => `Hasta ${travelers} viajeros`,
   transport: 'Transporte',
   conditionsTitle: 'Condiciones de reserva',
   conditions: [

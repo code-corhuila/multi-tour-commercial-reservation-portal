@@ -11,6 +11,8 @@ export interface PublicTour {
   /** The value in force the service calculated (HU-COM-004's rule) and the percentage it discounted, in basis points; absent where the source has no rule. */
   readonly finalValueCents?: number;
   readonly discountPercentageBp?: number | null;
+  /** The plain maximum of travellers a customer may book for the tour (AC-PO.6, DP-006-V19-3); never the effective capacity, the held seats or a cost. Absent where the source has none. */
+  readonly maxTravelers?: number;
   /** The validity of the offer, when the service declares it (G-SAL); without it the detail shows the consulted date. */
   readonly validity?: { readonly from: string; readonly to: string };
 }
