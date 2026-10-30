@@ -13,6 +13,8 @@ import { CustomersApiSource, CustomersApiWriter } from './http/customers-api-sou
 import { DepartureApiCapacity, DeparturesApiSource } from './http/departures-api-source';
 import { DepartureCapacity } from './reservations/data/departure-capacity';
 import { DeparturesSource } from './reservations/data/departures-source';
+import { ReservationQuoteApiSource } from './http/reservation-quote-api-source';
+import { ReservationQuoteSource } from './reservations/data/reservation-quote-source';
 import { DiscountRulesApiSource, DiscountRulesApiWriter } from './http/discount-rules-api-sources';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
 import { DiscountRulesWriter } from './discounts/data/discount-rules-writer';
@@ -38,6 +40,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-007: the open departures of the active tours and the seat rule over what the service says is left (PROPOSED routes).
     { provide: DeparturesSource, useValue: new DeparturesApiSource(client) },
     { provide: DepartureCapacity, useValue: new DepartureApiCapacity() },
+    // HU-COM-007 (amendment 2026-10-13, RN-RC5): the value comes calculated by the service; the portal adds nothing up.
+    { provide: ReservationQuoteSource, useValue: new ReservationQuoteApiSource(client) },
     // HU-COM-006: the public routes; the tenant is the identifier of the link the container mounted the portal with.
     { provide: PublicOfferSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicOfferApiSource(client, () => tenant); } },
     { provide: PublicEstablishmentsSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicEstablishmentsApiSource(client, () => tenant); } },
