@@ -35,11 +35,36 @@ describe('additionalDiscountSourcesOverTheApiClient', () => {
     expect(preview).toEqual({ newValueCents: 8_100_000, excessCents: 300_000 });
   });
 
-  it('answers the reservation context with a declared error because the contract has no reservation read yet', async () => {
-    const { client, calls } = fakeClient();
+  const detail = { reservationId: 'res-1', customerId: 'c-1', serviceId: 't-1', salidaId: 'd-1', people: 2, reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'PARTIAL',
+    tourLine: { amountCents: 10_000_000 }, projectedValueCents: 10_000_000, discounts: [{ order: 1, name: 'Temporada', calculationBase: 'ORIGINAL_VALUE', baseCents: 10_000_000, amountCents: 1_000_000, subtotalCents: 9_000_000 }],
+    finalValueCents: 9_000_000, pendingBalanceCents: 5_000_000, validatedValueCents: 4_000_000, seatHeld: true, createdAt: '2026-10-30T10:00:00Z' };
+  const row = { reservationId: 'res-1', customerName: 'Camila Ortega', tourName: 'Ruta Andina', departureStartsAt: '2026-11-07T06:30:00Z', reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'PARTIAL', pendingBalanceCents: 5_000_000 };
+
+  it('reads the reservation of the contract and the names of its row to build the context of the screen', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, page(row));
+    const context = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1'));
+    expect(calls[0]).toEqual({ path: `${API_BASE}/reservations/res-1` });
+    expect(calls[1].path).toBe(`${API_BASE}/reservations?page=1&limit=100&scope=all`);
+    expect(context).toMatchObject({ reservationId: 'res-1', customerName: 'Camila Ortega', serviceName: 'Ruta Andina', currentValueCents: 9_000_000, generalDiscountCents: 1_000_000,
+      paidCents: 4_000_000, eligible: true, stateLabel: 'Pendiente de pago' });
+  });
+
+  it('marks a reservation that is not pending or confirmed as not eligible, and a missing validated value as nothing paid', async () => {
+    const { client } = fakeClient({ ok: { ...detail, reservationStatus: 'CANCELLED', validatedValueCents: undefined } }, page({ ...row, reservationStatus: 'CANCELLED' }));
+    const context = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1'));
+    expect(context).toMatchObject({ eligible: false, paidCents: 0, stateLabel: 'Cancelada' });
+  });
+
+  it('answers null when the service says the reservation does not exist', async () => {
+    const { client, calls } = fakeClient({ fail: { status: 404, code: 'NOT_FOUND', message: 'not found', traceId: 't' } });
+    expect(await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-9'))).toBeNull();
+    expect(calls).toHaveLength(1);
+  });
+
+  it('hands any other failure of the read to the page', async () => {
+    const { client } = fakeClient({ fail: { status: 500, code: 'X', message: 'down', traceId: 't' } });
     const error = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1')).catch((e) => e);
-    expect(error).toMatchObject({ code: 'NOT_IN_CONTRACT' });
-    expect(calls).toEqual([]);
+    expect(error).toMatchObject({ status: 500, userMessage: 'down' });
   });
 
   it('registers with the enabled reason id and the Idempotency-Key, and reads the additional line of the breakdown', async () => {
