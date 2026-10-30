@@ -36,10 +36,10 @@ describe('publicOfferOverTheApiClient', () => {
     expect(calls).toEqual([{ path: `${toursPath}?page=1&limit=100` }]);
   });
 
-  it('shows the public projection of a tour and never the capacity of the contract answer (RN-PO6)', async () => {
+  it('shows the public projection of a tour with its value in force and never the capacity of the contract answer (RN-PO6)', async () => {
     const { client } = fakeClient({ ok: page([tourDto]) });
     const [tour] = await firstValueFrom(new PublicOfferApiSource(client, () => TENANT).listAvailable('2026-12-01'));
-    expect(tour).toEqual({ serviceId: 't-1', commercialName: 'Caminata Ficticia al Mirador', baseRateCents: 15_000_000, transportIncluded: true, available: true });
+    expect(tour).toEqual({ serviceId: 't-1', commercialName: 'Caminata Ficticia al Mirador', baseRateCents: 15_000_000, transportIncluded: true, available: true, finalValueCents: 13_500_000, discountPercentageBp: 1000 });
   });
 
   it('follows every page of the offer', async () => {
