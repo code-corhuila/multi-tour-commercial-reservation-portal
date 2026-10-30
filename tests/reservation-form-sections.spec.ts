@@ -50,6 +50,12 @@ describe('theTitularIsRegisteredFromTheFiveFieldsOrChosenFromTheSearch', () => {
     expect(writer.calls[0].command.companions).toEqual([]);
   });
 
+  it('carries the confirmation of the conditions that the form requires as the terms of the typed titular, and only then', async () => {
+    const { ready, party, submit, writer } = await openForm();
+    await ready('1'); await party(); await submit();
+    expect(writer.calls[0].command.acceptedTerms).toBe(true);
+  });
+
   it('searches from two characters on, and choosing a result fills the fields and links the reservation', async () => {
     const { element, field, type, click, customers, ready, submit, writer, settle } = await openForm();
     await type('customerSearch', 'c');
