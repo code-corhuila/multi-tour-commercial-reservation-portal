@@ -23,6 +23,7 @@ const reservation = {
     discounts: [{ name: 'Temporada baja', base: 'ORIGINAL_VALUE', amountCents: 750 }], discountCents: 750, finalCents: 6747 },
   balanceCents: 6747, status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'd-1', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER',
 };
+const lead = { fullName: 'Persona Ficticia Uno', document: 'DOC-0001', email: 'persona.uno@example.invalid', phone: '3000000000', birthDate: '1990-05-01' };
 const command: CreateReservationCommand = { leadCustomerId: 'c-1', departureId: 'd-1', serviceIds: ['t-1'], people: 3, paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' };
 
 describe('reservationsSourceOverTheApiClient', () => {
@@ -86,11 +87,43 @@ describe('reservationsWriterOverTheApiClient', () => {
     expect(calls.filter((c) => c.method === 'POST').map((c) => c.headers?.['Idempotency-Key'])).toEqual(['key-12345678', 'key-12345678']);
   });
 
-  it('builds no call for a titular typed by hand: the contract takes the customer by id (declared gap)', async () => {
+  it('sends a titular typed by hand as the holder object of the contract, in the same call and under the same key, and no customerId', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    const { leadCustomerId: _id, ...typed } = command;
+    await firstValueFrom(new ReservationsApiWriter(client).create({ ...typed, lead, acceptedTerms: true }, 'key-12345678'));
+    expect(calls.filter((c) => c.method === 'POST')).toHaveLength(1);
+    expect(calls[0]).toEqual({ path: `${API_BASE}/reservations`, method: 'POST', headers: { 'Idempotency-Key': 'key-12345678' },
+      body: { holder: { fullName: 'Persona Ficticia Uno', documentNumber: 'DOC-0001', birthDate: '1990-05-01',
+        contact: { email: 'persona.uno@example.invalid', phone: '3000000000' }, termsAccepted: true },
+        serviceId: 't-1', salidaId: 'd-1', people: 3, paymentType: 'FULL_PAYMENT', paymentMethod: 'TRANSFER' } });
+  });
+
+  it('leaves an empty birth date out of the holder and never types the risk mark or the tour into it', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    const { leadCustomerId: _id, ...typed } = command;
+    await firstValueFrom(new ReservationsApiWriter(client).create({ ...typed, lead: { ...lead, birthDate: '' }, acceptedTerms: true }, 'key-12345678'));
+    const holder = (calls[0].body as { holder: Record<string, unknown> }).holder;
+    expect(Object.keys(holder).sort()).toEqual(['contact', 'documentNumber', 'fullName', 'termsAccepted']);
+  });
+
+  it('does not make up the acceptance of the terms: without it the holder says false and the service refuses', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    const { leadCustomerId: _id, ...typed } = command;
+    await firstValueFrom(new ReservationsApiWriter(client).create({ ...typed, lead }, 'key-12345678'));
+    expect((calls[0].body as { holder: { termsAccepted: boolean } }).holder.termsAccepted).toBe(false);
+  });
+
+  it('sends exactly one of the customer and the holder: a chosen customer wins over a typed titular', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    await firstValueFrom(new ReservationsApiWriter(client).create({ ...command, lead, acceptedTerms: true }, 'key-12345678'));
+    expect(Object.keys(calls[0].body as object)).toContain('customerId');
+    expect(Object.keys(calls[0].body as object)).not.toContain('holder');
+  });
+
+  it('builds no call when neither a customer nor a titular is given', async () => {
     const { client, calls } = fakeClient();
     const { leadCustomerId: _id, ...typed } = command;
-    const lead = { fullName: 'Persona Ficticia Uno', document: 'DOC-0001', email: 'persona.uno@example.invalid', phone: '3000000000', birthDate: '1990-05-01' };
-    const error = await firstValueFrom(new ReservationsApiWriter(client).create({ ...typed, lead }, 'key-12345678')).catch((e) => e);
+    const error = await firstValueFrom(new ReservationsApiWriter(client).create(typed, 'key-12345678')).catch((e) => e);
     expect(error).toMatchObject({ code: 'NOT_IN_CONTRACT' });
     expect(calls).toEqual([]);
   });
