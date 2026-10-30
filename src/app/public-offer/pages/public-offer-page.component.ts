@@ -73,6 +73,7 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
             <h2>{{ copy.validityTitle }}</h2>
             <dl class="crp-offer-facts">
               <div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div>
+              @if (priced.tour.maxTravelers; as travelers) { &ngsp;<div><dt>{{ copy.capacity }}</dt>&ngsp;<dd>{{ copy.maxTravelers(travelers) }}</dd></div> }
               @if (priced.tour.transportIncluded) { &ngsp;<div><dt>{{ copy.transport }}</dt>&ngsp;<dd>{{ copy.transportIncluded }}</dd></div> }
             </dl>
             <section class="crp-offer-conditions"><h2>{{ copy.conditionsTitle }}</h2>
@@ -95,7 +96,7 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
               }
               <p class="crp-offer-from">{{ copy.from }}: <span data-value="current">{{ money(priced.value.currentValueCents) }}</span></p>
             </div>&ngsp;
-            <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div></dl>
+            <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div>@if (priced.tour.maxTravelers; as travelers) { &ngsp;<div><dt>{{ copy.capacity }}</dt>&ngsp;<dd>{{ copy.maxTravelers(travelers) }}</dd></div> }</dl>
             @if (priced.tour.validity; as range) { <p class="crp-offer-validity">{{ copy.validFrom }} {{ day(range.from) }} {{ copy.validTo }} {{ day(range.to) }}.</p> }
             @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" [disabled]="!hasSeats(priced)" (click)="reserve(priced.tour.serviceId)">{{ copy.reserve }}</button> }
           </aside>
