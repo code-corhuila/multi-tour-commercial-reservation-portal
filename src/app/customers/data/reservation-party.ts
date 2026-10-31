@@ -2,7 +2,8 @@ import { Injectable, computed, signal } from '@angular/core';
 import { CustomerMatch, HighRiskField } from '../model/customer-group';
 import { BLANK_COMPANION, BLANK_LEAD, BLANK_RISK, CompanionFields, LeadFields, PartyMessages, RiskFields, birthToIso, companionsRequired, hasMessages, isoToBirth, partyMessages } from '../model/party-rules';
 
-export type PartyCommand = { leadCustomerId?: string; lead?: LeadFields; companions: readonly CompanionFields[] };
+export type RiskData = { informedConsent: boolean; bloodType: string; emergencyContact: string; physicalRestrictions: string };
+export type PartyCommand = { leadCustomerId?: string; lead?: LeadFields & { highRisk?: RiskData }; companions: readonly (CompanionFields & { highRisk?: RiskData })[] };
 
 /**
  * The people of one reservation being prepared in 10B. The form of HU-COM-007 provides it and sets `travelers`; the sections that
@@ -51,10 +52,15 @@ export class ReservationParty {
     next[index] = { ...next[index], [field]: value };
     this.riskTyped.set(next);
   }
+  /** The risk entry of a person (index 0 is the titular) as the command carries it; none for an ordinary tour. */
+  private riskOf(index: number): { highRisk?: RiskData } {
+    const r = this.risk()[index];
+    return r ? { highRisk: { informedConsent: r.informedConsent === 'true', bloodType: r.bloodType.trim(), emergencyContact: r.emergencyContact.trim(), physicalRestrictions: r.physicalRestrictions.trim() } } : {};
+  }
   command(): PartyCommand {
     const picked = this.picked();
     const lead = this.lead();
-    return { ...(picked ? { leadCustomerId: picked.id } : { lead: { ...(Object.fromEntries(Object.entries(lead).map(([k, v]) => [k, v.trim()])) as LeadFields), birthDate: birthToIso(lead.birthDate) ?? '' } }),
-      companions: this.companions().map((c) => ({ fullName: c.fullName.trim(), document: c.document.trim(), birthDate: birthToIso(c.birthDate) ?? '' })) };
+    return { ...(picked ? { leadCustomerId: picked.id } : { lead: { ...(Object.fromEntries(Object.entries(lead).map(([k, v]) => [k, v.trim()])) as LeadFields), birthDate: birthToIso(lead.birthDate) ?? '', ...this.riskOf(0) } }),
+      companions: this.companions().map((c, i) => ({ fullName: c.fullName.trim(), document: c.document.trim(), birthDate: birthToIso(c.birthDate) ?? '', ...this.riskOf(i + 1) })) };
   }
 }
