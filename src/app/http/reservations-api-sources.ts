@@ -1,7 +1,7 @@
 import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { ReservationsWriter } from '../reservations/data/reservations-writer';
-import { CreateReservationCommand, Reservation } from '../reservations/model/reservation';
+import { CreateReservationCommand, Reservation, ReservationRiskData } from '../reservations/model/reservation';
 import { PortalApiClient } from '../shell-contract';
 import { call, listAll, notInContract, reservationsPath } from './api-paths';
 import { ReservationQuoteDto, quoteFrom } from './reservation-quote-api-source';
@@ -56,16 +56,21 @@ export class ReservationsApiSource extends ReservationsSource {
   }
 }
 
+/** The sensitive fields of a person of a high-risk tour as the contract names them (RN-CLI-002, RN-CLI-003): consent and EmergencyInfo; nothing for an ordinary tour. */
+function riskFrom(risk?: ReservationRiskData): Record<string, unknown> {
+  return risk ? { informedConsentSigned: risk.informedConsent, emergencyInfo: { bloodType: risk.bloodType, emergencyContact: risk.emergencyContact, mobilityRestrictions: risk.physicalRestrictions } } : {};
+}
+
 /**
  * The titular typed in 10B as the `holder` of the contract (ReservationHolder): the fields of RegisterCustomerRequest without serviceId, the
  * risk mark being the catalog's. The terms are a datum of the holder (RN-CLI-001): the confirmation the form requires, never made up here.
- * TODO(DP-07): the risk data of a high-risk tour (informedConsentSigned, emergencyInfo) are not in the command yet, so the service names them.
+ * A high-risk tour adds informedConsentSigned and emergencyInfo (the mark itself is never typed). A customer chosen by id has no place for them in the contract.
  */
 function holderFrom(command: CreateReservationCommand): Record<string, unknown> {
   const lead = command.lead!;
   return {
     fullName: lead.fullName, documentNumber: lead.document, ...(lead.birthDate ? { birthDate: lead.birthDate } : {}),
-    contact: { email: lead.email, phone: lead.phone }, termsAccepted: command.acceptedTerms === true,
+    contact: { email: lead.email, phone: lead.phone }, termsAccepted: command.acceptedTerms === true, ...riskFrom(lead.highRisk),
   };
 }
 
@@ -78,7 +83,7 @@ export class ReservationsApiWriter extends ReservationsWriter {
   constructor(private readonly client: PortalApiClient) { super(); }
   override create(command: CreateReservationCommand, idempotencyKey: string): Observable<Reservation> {
     if (!command.leadCustomerId && !command.lead) { return notInContract('Falta el titular de la reserva: elija un cliente registrado o escriba sus datos.'); }
-    const companions = (command.companions ?? []).map((c) => ({ fullName: c.fullName, documentNumber: c.document, ...(c.birthDate ? { birthDate: c.birthDate } : {}) }));
+    const companions = (command.companions ?? []).map((c) => ({ fullName: c.fullName, documentNumber: c.document, ...(c.birthDate ? { birthDate: c.birthDate } : {}), ...riskFrom(c.highRisk) }));
     const body = {
       ...(command.leadCustomerId ? { customerId: command.leadCustomerId } : { holder: holderFrom(command) }), serviceId: command.serviceIds[0], salidaId: command.departureId, people: command.people,
       ...(command.paymentType ? { paymentType: TYPE_OUT[command.paymentType] ?? command.paymentType } : {}),
