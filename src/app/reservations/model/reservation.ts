@@ -24,6 +24,8 @@ export type ReservationLead = { readonly fullName: string; readonly document: st
 export type ReservationCompanion = { readonly fullName: string; readonly document: string; readonly birthDate: string };
 export type CreateReservationCommand = {
   readonly leadCustomerId?: string; readonly lead?: ReservationLead; readonly companions?: readonly ReservationCompanion[];
+  /** The confirmation of the conditions given in 10B, sent as the terms of a typed titular (RN-CLI-001); absent when a customer was chosen. */
+  readonly acceptedTerms?: boolean;
   readonly departureId: string; readonly serviceIds: readonly string[]; readonly people: number;
   /** v1.9 (mockup 04, PROPUESTO until the contract, G-B): the expected type and method, chosen apart; codes of PaymentMethodsSource. */
   readonly paymentType?: string; readonly paymentMethod?: string;
