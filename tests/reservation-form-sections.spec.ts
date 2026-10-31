@@ -304,7 +304,7 @@ describe('noRiskBlockIsDrawnForAnOrdinaryTour', () => {
 });
 
 describe('aHighRiskTourWithoutTheExtraDataIsNotRegisteredAndEachFieldShowsItsError', () => {
-  it('refuses the submit, shows the error beside each field of each person and keeps the data out of the command once complete', async () => {
+  it('refuses the submit, shows the error beside each field of each person and sends the data of each person in the command once complete', async () => {
     const { element, risky, fillRisk, submit, writer } = await openRiskyForm();
     await risky('2'); await submit();
     expect(writer.calls).toHaveLength(0);
@@ -315,8 +315,11 @@ describe('aHighRiskTourWithoutTheExtraDataIsNotRegisteredAndEachFieldShowsItsErr
     }
     await fillRisk(0); await fillRisk(1); await submit();
     expect(writer.calls).toHaveLength(1);
-    // The contract has no field for them yet (gap G-B, DD-10): they are validated here and do not travel.
-    expect(JSON.stringify(writer.calls[0].command)).not.toMatch(/bloodType|emergencyContact|physicalRestrictions|informedConsent/);
+    // The contract carries them (RN-CLI-002, RN-CLI-003): the titular typed by hand and each companion take their own data.
+    const risk = { informedConsent: true, bloodType: 'O+', emergencyContact: 'Ana Ficticia 300 000 0000', physicalRestrictions: 'Ninguna' };
+    const command = writer.calls[0].command as { lead?: { highRisk?: unknown }; companions?: { highRisk?: unknown }[] };
+    expect(command.lead?.highRisk).toEqual(risk);
+    expect(command.companions?.map((c) => c.highRisk)).toEqual([risk]);
   });
 });
 
@@ -329,5 +332,6 @@ describe('changingToAnOrdinaryTourStopsAskingForTheExtraData', () => {
     expect(element.querySelector('[data-risk-section]')).toBeNull();
     await submit();
     expect(writer.calls).toHaveLength(1);
+    expect(JSON.stringify(writer.calls[0].command)).not.toMatch(/highRisk/);
   });
 });

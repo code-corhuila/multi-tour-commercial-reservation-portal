@@ -106,6 +106,25 @@ describe('reservationsWriterOverTheApiClient', () => {
     expect(Object.keys(holder).sort()).toEqual(['contact', 'documentNumber', 'fullName', 'termsAccepted']);
   });
 
+  it('sends the consent and the emergency info of a high-risk titular and of each companion, in the shape of the contract', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    const { leadCustomerId: _id, ...typed } = command;
+    const risk = { informedConsent: true, bloodType: 'O+', emergencyContact: 'Contacto Ficticio 3000000001', physicalRestrictions: 'Ninguna' };
+    const companion = { fullName: 'Persona Ficticia Dos', document: 'DOC-0002', birthDate: '1992-01-01', highRisk: { ...risk, bloodType: 'A-' } };
+    await firstValueFrom(new ReservationsApiWriter(client).create({ ...typed, lead: { ...lead, highRisk: risk }, companions: [companion], acceptedTerms: true }, 'key-12345678'));
+    const body = calls[0].body as { holder: Record<string, unknown>; companions: Record<string, unknown>[] };
+    expect(body.holder).toMatchObject({ informedConsentSigned: true, emergencyInfo: { bloodType: 'O+', emergencyContact: 'Contacto Ficticio 3000000001', mobilityRestrictions: 'Ninguna' } });
+    expect(body.companions).toEqual([{ fullName: 'Persona Ficticia Dos', documentNumber: 'DOC-0002', birthDate: '1992-01-01', informedConsentSigned: true,
+      emergencyInfo: { bloodType: 'A-', emergencyContact: 'Contacto Ficticio 3000000001', mobilityRestrictions: 'Ninguna' } }]);
+  });
+
+  it('sends none of the risk fields for a tour that is not high risk', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    const { leadCustomerId: _id, ...typed } = command;
+    await firstValueFrom(new ReservationsApiWriter(client).create({ ...typed, lead, companions: [{ fullName: 'Persona Ficticia Dos', document: 'DOC-0002', birthDate: '' }], acceptedTerms: true }, 'key-12345678'));
+    expect(JSON.stringify(calls[0].body)).not.toMatch(/informedConsentSigned|emergencyInfo/);
+  });
+
   it('does not make up the acceptance of the terms: without it the holder says false and the service refuses', async () => {
     const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
     const { leadCustomerId: _id, ...typed } = command;
