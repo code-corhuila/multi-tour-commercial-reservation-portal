@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
+import { fillCompanionsIn } from './customer-companions.double';
 import type { MountProps } from '../src/app/shell-contract';
 import { SELF_SERVICE_TEXT } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
@@ -28,6 +29,7 @@ describe('theDemoStoreIsOnePerPage', () => {
     const select = host.querySelector('select') as HTMLSelectElement;
     select.value = select.options[1].value; select.dispatchEvent(new Event('change'));
     host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());
+    fillCompanionsIn(host);
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.confirm)!.click();
     await vi.waitFor(() => expect(host.textContent).toContain('RES-1843'));
     unmount();

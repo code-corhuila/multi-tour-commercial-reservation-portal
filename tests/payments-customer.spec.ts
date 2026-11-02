@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
+import { fillCompanionsIn } from './customer-companions.double';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
 import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
@@ -285,6 +286,7 @@ describe('customer payment wiring', () => {
       const method = host.querySelector<HTMLSelectElement>('#self-service-method')!;
       method.value = 'BANK_TRANSFER'; method.dispatchEvent(new Event('change'));
       host.querySelector<HTMLInputElement>('[name="conditions"]')!.click(); host.querySelector<HTMLInputElement>('[name="terms"]')!.click();
+      fillCompanionsIn(host);
       press('Confirmar reserva');
       await vi.waitFor(() => expect(host.querySelector('.crp-self-service-created')?.textContent).toContain('RES-1843'));
       await vi.waitFor(() => press('Continuar al pago'));
