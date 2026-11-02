@@ -27,6 +27,8 @@ import { PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '
 import { PaymentMethodsApiSource, PaymentsApiWriter, ReservationsWithPaymentsApiSource } from './http/payments-api-sources';
 import { PendingProofsApiSource, ProofReviewApiWriter } from './http/proof-review-api-sources';
 import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
+import { PaymentParametersApiSource, PaymentParametersApiWriter } from './http/payment-parameters-api-sources';
+import { PaymentParametersSource, PaymentParametersWriter } from './payment-parameters/data/payment-parameters-ports';
 import { PaymentsWriter } from './payments/data/payments-writer';
 import { PaymentMethodsSource } from './self-service-reservation/data/reservation-confirmation-ports';
 import { MyReservationsApiSource, ReservationRequesterApi, SelectionQuoteApiSource } from './http/self-service-api-sources';
@@ -65,6 +67,9 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-010: the panel of proofs and the decision (approve or reject) over the proof routes.
     { provide: PendingProofsSource, useValue: new PendingProofsApiSource(client) },
     { provide: ProofReviewWriter, useValue: new ProofReviewApiWriter(client) },
+    // HU-COM-009: the payment parameters (the Administrator's screen) and the minimum deposit of a reservation.
+    { provide: PaymentParametersSource, useValue: new PaymentParametersApiSource(client) },
+    { provide: PaymentParametersWriter, useValue: new PaymentParametersApiWriter(client) },
     // HU-COM-006: the public routes; the tenant is the identifier of the link the container mounted the portal with.
     { provide: PublicOfferSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicOfferApiSource(client, () => tenant); } },
     { provide: PublicEstablishmentsSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicEstablishmentsApiSource(client, () => tenant); } },
