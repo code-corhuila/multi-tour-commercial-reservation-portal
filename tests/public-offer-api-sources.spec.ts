@@ -129,7 +129,7 @@ describe('mountEntryHandsTheTenantIdentifierToThePublicOffer', () => {
     host = document.createElement('div');
     document.body.append(host);
     cleanup = entry.mount(host, {
-      identifier: TENANT,
+      identifier: TENANT, initialParams: { area: 'tours' },
       apiClient: { request: async (path: string) => { paths.push(path); return page([]); } } as never,
       session: { roles: ['FINAL_CUSTOMER'], open: () => undefined, close: () => undefined },
     });
