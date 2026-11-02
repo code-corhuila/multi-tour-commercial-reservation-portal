@@ -48,7 +48,7 @@ export const rowsOf = (client: PortalApiClient) => listAll<SummaryDto>(client, r
  * DEBT: one read per row (the row has no values and the detail has no names); a service-side list with both would remove it.
  */
 export class ReservationsApiSource extends ReservationsSource {
-  constructor(private readonly client: PortalApiClient) { super(); }
+  constructor(protected readonly client: PortalApiClient) { super(); }
   override list(): Observable<readonly Reservation[]> {
     return rowsOf(this.client).pipe(switchMap((rows) => (rows.length
       ? forkJoin(rows.map((row) => call<ReservationDto>(this.client, reservationsPath(row.reservationId)).pipe(map((dto) => reservationFrom(dto, row)))))
