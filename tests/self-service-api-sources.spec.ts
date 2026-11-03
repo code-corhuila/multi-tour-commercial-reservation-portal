@@ -54,10 +54,10 @@ describe('myReservationsOverTheApiClient', () => {
 });
 
 describe('selectionQuoteOverTheApiClient', () => {
-  it('quotes the selection and reads the tour and its departure from the public route of the tenant: the customer cannot read the catalog', async () => {
+  it('quotes the selection on the own route of the Final Customer and reads the tour and its departure from the public route of the tenant: the customer cannot read the catalog', async () => {
     const { client, calls } = fakeClient({ ok: quote }, { ok: publicTour });
     const summaryOfSelection = await firstValueFrom(new SelectionQuoteApiSource(client, () => TENANT).quote(selection));
-    expect(calls[0]).toEqual({ path: `${API_BASE}/reservation-quotes`, method: 'POST', body: { serviceId: 't-1', salidaId: 'd-1', people: 3 } });
+    expect(calls[0]).toEqual({ path: `${API_BASE}/own/reservation-quotes`, method: 'POST', body: { serviceId: 't-1', salidaId: 'd-1', people: 3 } });
     expect(calls[1]).toEqual({ path: `${API_BASE}/public/tenants/${TENANT}/tours/t-1` });
     expect(summaryOfSelection).toEqual({
       tourName: 'Desierto de la Tatacoa', departureAt: '2026-11-07T06:30:00Z', baseValueCents: 5997, discountCents: 600, finalValueCents: 5397,
