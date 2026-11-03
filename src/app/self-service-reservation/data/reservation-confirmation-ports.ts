@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CustomerCompanion } from '../../shared/customer-companions';
 import { PortalNavigation } from '../../portal-navigation';
@@ -44,10 +44,15 @@ export abstract class PaymentMethodsSource {
  */
 export abstract class ReservationRequester {
   /** The companions of screen 21 travel with the same command (HU-COM-005 D-6): one intention, one key. */
-  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions?: readonly CustomerCompanion[]): Observable<CustomerReservation>;
+  /** DP-08 (option C): the reservation is born with the payment type and the medium chosen on 21; the service refuses a creation without them. */
+  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions?: readonly CustomerCompanion[], paymentType?: string): Observable<CustomerReservation>;
 }
 
 /** PENDING INTEGRATION (G-DEP): the summary and values of the selection, from the calculation of HU-COM-007 (RN-RS4). */
 export abstract class SelectionQuoteSource {
   abstract quote(selection: ReservationSelection): Observable<SelectionQuote>;
 }
+
+/** The payment type the customer chose in the card of 21 (HU-COM-009 draws it, HU-COM-008 sends it at creation, DP-08). Empty until chosen. */
+@Injectable({ providedIn: 'root' })
+export class PaymentTypeChoice { readonly type = signal(''); }

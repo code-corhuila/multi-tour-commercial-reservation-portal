@@ -3,7 +3,7 @@ import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
-import { CustomerReservation, PaymentMethodsSource, SelectionQuote } from '../../self-service-reservation/data/reservation-confirmation-ports';
+import { CustomerReservation, PaymentMethodsSource, PaymentTypeChoice, SelectionQuote } from '../../self-service-reservation/data/reservation-confirmation-ports';
 import { parseMoney } from '../../shared/money';
 import { PortalSlot } from '../../shared/portal-slots';
 import { PaymentsWriter } from '../data/payments-writer';
@@ -24,7 +24,7 @@ import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT } from '../payments-copy';
         <fieldset><legend>{{ text.typeTitle }}</legend>
           @for (option of options; track option.code) {
             <label class="crp-checkout-option"><input type="radio" name="paymentType" [value]="option.code" [checked]="chosen(options) === option.code"
-              (change)="type.set(option.code)" />&ngsp;<span><strong>{{ option.label }}</strong>&ngsp;<span>{{ text.typeHint[option.code] }}</span></span></label>
+              (change)="choose(option.code)" />&ngsp;<span><strong>{{ option.label }}</strong>&ngsp;<span>{{ text.typeHint[option.code] }}</span></span></label>
           }
         </fieldset>
         @if (chosen(options) === 'PARTIAL') {
@@ -54,6 +54,7 @@ export class CheckoutPaymentBlockComponent {
   readonly method = input('');
   private readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly methods = inject(PaymentMethodsSource);
+  private readonly choice = inject(PaymentTypeChoice);
   private readonly requests = new Subject<void>();
   protected readonly types = toSignal(this.requests.pipe(switchMap(() => defer(() => this.methods.listTypes()).pipe(
     startWith('loading' as const), catchError(() => of('error' as const))))), { initialValue: 'loading' as const });
@@ -63,6 +64,8 @@ export class CheckoutPaymentBlockComponent {
   protected reload(): void { this.requests.next(); }
   /** The mockup checks the first enabled type. */
   protected chosen(options: readonly { code: string }[]): string { return this.type() || options[0]?.code || ''; }
+  /** DP-08: the page of 21 sends the type at creation, so the choice goes to the shared state as well. */
+  protected choose(code: string): void { this.type.set(code); this.choice.type.set(code); }
 
   /** Pago total pays the final value; an Abono pays the Monto a abonar, above zero and up to the final value (mockup 21). */
   protected pay(r: CustomerReservation, type: string): void {
