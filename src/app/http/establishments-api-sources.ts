@@ -17,9 +17,9 @@ export class EstablishmentsApiSource extends AssociatedEstablishmentsSource {
 export class EstablishmentsApiWriter extends AssociatedEstablishmentsWriter {
   constructor(private readonly client: PortalApiClient) { super(); }
   /**
-   * DEBT: needs FormData support in the container client. The contract is multipart/form-data with the image,
-   * but api-client.ts JSON.stringify-s every body, so until the container sends a FormData as is, this call
-   * reaches the gateway malformed. It is not faked with fetch: the credential lives only in the container client.
+   * The contract is multipart/form-data with the image. The container client sends a FormData as is (front
+   * 0762145d, spec DD-13), so the body is built here and never faked with fetch: the credential lives only in
+   * the container client.
    */
   override register(command: RegisterEstablishmentCommand, idempotencyKey: string): Observable<AssociatedEstablishment> {
     const body = new FormData();
