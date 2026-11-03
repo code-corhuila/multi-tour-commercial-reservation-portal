@@ -7,7 +7,7 @@ import { ReservationRequester, SelectionQuoteSource } from '../self-service-rese
 import { CustomerReservation, ReservationSelection, SelectionQuote } from '../self-service-reservation/model/self-service-reservation';
 import { ApiError, PortalApiClient } from '../shell-contract';
 import { call, ownReservationQuotesPath, publicOfferPath, reservationsPath } from './api-paths';
-import { METHOD_OUT, ReservationDto, reservationFrom, rowsOf } from './reservations-api-sources';
+import { METHOD_OUT, TYPE_OUT, ReservationDto, reservationFrom, rowsOf } from './reservations-api-sources';
 import { ReservationQuoteDto } from './reservation-quote-api-source';
 
 /** The reservation as the customer's panel reads it: the codes of the customer area, the values the service fixed, no recalculation. */
@@ -67,14 +67,14 @@ export class SelectionQuoteApiSource extends SelectionQuoteSource {
 }
 
 /**
- * POST /reservations with the Idempotency-Key of the intention. For a Final Customer the body is the selection and, when chosen, the expected method;
+ * POST /reservations with the Idempotency-Key of the intention. For a Final Customer the body is the selection, the payment type and the method chosen on 21 (both required, DP-08 option C);
  * the customer is the one of the token (AC-08.9), so neither a customer nor a holder travels. The registration of the holder (AC-08.13) has no screen here.
  */
 export class ReservationRequesterApi extends ReservationRequester {
   constructor(private readonly client: PortalApiClient) { super(); }
-  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = []): Observable<CustomerReservation> {
+  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = [], paymentType = ''): Observable<CustomerReservation> {
     // Only the three fields the contract has; the phone and the emergency contact stay on the screen (gap G-B, HU-COM-005 D-6).
-    const body = { serviceId: selection.serviceIds[0], salidaId: selection.departureId, people: selection.people, ...(paymentMethod ? { paymentMethod: METHOD_OUT[paymentMethod] ?? paymentMethod } : {}),
+    const body = { serviceId: selection.serviceIds[0], salidaId: selection.departureId, people: selection.people, ...(paymentType ? { paymentType: TYPE_OUT[paymentType] ?? paymentType } : {}), ...(paymentMethod ? { paymentMethod: METHOD_OUT[paymentMethod] ?? paymentMethod } : {}),
       ...(companions.length ? { companions: companions.map((c) => ({ fullName: c.fullName, documentNumber: c.document, birthDate: c.birthDate })) } : {}) };
     return call<ReservationDto>(this.client, reservationsPath(), { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } }).pipe(
       switchMap((dto) => rowsOf(this.client).pipe(map((rows) => customerReservationFrom(reservationFrom(dto, rows.find((row) => row.reservationId === dto.reservationId)), dto.serviceId)))),
