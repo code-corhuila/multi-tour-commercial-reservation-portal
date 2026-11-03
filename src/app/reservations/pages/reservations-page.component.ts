@@ -11,6 +11,7 @@ import { ReservationFormComponent } from '../components/reservation-form.compone
 import { ReservationViewComponent } from '../components/reservation-view.component';
 import { ReservationsSource } from '../data/reservations-source';
 import { RESERVATION_TEXT, Reservation, STATUS_CLASS, STATUS_LABEL, money, paymentState, travelers } from '../model/reservation';
+import { RESERVATION_HEADERS } from '../reservations-copy';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { PortalSlotOutlet, RESERVATION_DETAIL_ACTIONS, RESERVATION_MODE_ACTIONS, RESERVATION_ROW_ACTIONS, slotEntries } from '../../shared/portal-slots';
 
@@ -18,10 +19,7 @@ type PageState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items
 type View = { kind: 'list' | 'create' } | { kind: 'created' | 'detail'; reservation: Reservation };
 const archived = (r: Reservation) => r.status === 'FINALIZADA' || r.status === 'CANCELADA';
 /** Eyebrow and title of screens 10, 10B, 10C and 10A. */
-const HEADERS: Record<View['kind'], readonly [string, string]> = {
-  list: ['Gestión comercial', 'Reservas'], create: ['Gestión comercial', 'Crear reserva'],
-  created: ['Registro completado', 'Reserva registrada'], detail: ['Consulta de reserva', 'Detalle de reserva'],
-};
+const HEADERS: Record<View['kind'], readonly [string, string]> = RESERVATION_HEADERS;
 
 @Component({
   selector: 'app-reservations-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, ReservationFormComponent, ReservationViewComponent, PortalSlotOutlet],
