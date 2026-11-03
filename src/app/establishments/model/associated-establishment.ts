@@ -1,4 +1,4 @@
-/** PROPOSED response shape; reconcile with the published contract in T-01. */
+/** Response shape of `AssociatedEstablishmentResponse` in the published contract (commercial-reservation.yaml). */
 export const ESTABLISHMENT_TYPES = ['HOTEL', 'RESTAURANT'] as const;
 export type EstablishmentType = (typeof ESTABLISHMENT_TYPES)[number];
 export const ASSOCIATION_STATUSES = ['ACTIVE', 'INACTIVE'] as const;
