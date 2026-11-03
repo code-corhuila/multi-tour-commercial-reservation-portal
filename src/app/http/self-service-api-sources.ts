@@ -6,7 +6,7 @@ import { MyReservationsSource } from '../self-service-reservation/data/my-reserv
 import { ReservationRequester, SelectionQuoteSource } from '../self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerReservation, ReservationSelection, SelectionQuote } from '../self-service-reservation/model/self-service-reservation';
 import { ApiError, PortalApiClient } from '../shell-contract';
-import { call, publicOfferPath, reservationQuotesPath, reservationsPath } from './api-paths';
+import { call, ownReservationQuotesPath, publicOfferPath, reservationsPath } from './api-paths';
 import { METHOD_OUT, ReservationDto, reservationFrom, rowsOf } from './reservations-api-sources';
 import { ReservationQuoteDto } from './reservation-quote-api-source';
 
@@ -44,8 +44,8 @@ const departureGone = (): Observable<never> => throwError((): ApiError => ({
 }));
 
 /**
- * The summary of a selection: POST /reservation-quotes (the selection only) and the public detail of the tour for its name and the start of the
- * departure. OPEN (contract, quote route): a Final Customer answers 403 until HU-COM-008 names its quote route; this adapter uses the shared one.
+ * The summary of a selection: POST /own/reservation-quotes (the selection only) and the public detail of the tour for its name and the start of the
+ * departure. The Final Customer has their own quote route (HU-COM-008 DP-12); the staff route answers them 403.
  */
 export class SelectionQuoteApiSource extends SelectionQuoteSource {
   constructor(private readonly client: PortalApiClient, private readonly identifier: () => string | null) { super(); }
@@ -53,7 +53,7 @@ export class SelectionQuoteApiSource extends SelectionQuoteSource {
     const tenant = this.identifier(), serviceId = selection.serviceIds[0];
     if (!tenant) { return noTenant(); }
     return forkJoin({
-      quote: call<Omit<ReservationQuoteDto, 'discounts'> & { readonly discounts: readonly DiscountLineDto[] }>(this.client, reservationQuotesPath(), { method: 'POST', body: { serviceId, salidaId: selection.departureId, people: selection.people } }),
+      quote: call<Omit<ReservationQuoteDto, 'discounts'> & { readonly discounts: readonly DiscountLineDto[] }>(this.client, ownReservationQuotesPath(), { method: 'POST', body: { serviceId, salidaId: selection.departureId, people: selection.people } }),
       tour: call<PublicTourDetailDto>(this.client, publicOfferPath(tenant, 'tours', serviceId)),
     }).pipe(switchMap(({ quote, tour }) => {
       const departure = tour.departures.find((d) => d.departureId === selection.departureId);
