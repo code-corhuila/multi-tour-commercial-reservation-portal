@@ -1,3 +1,4 @@
+import { PaymentTypeChoice } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { resolvedPortalCss } from './css-tokens';
@@ -450,5 +451,21 @@ describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () 
     p.requester.calls[1].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
     p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
     expect(p.requester.calls[2].idempotencyKey).toBe(p.requester.calls[1].idempotencyKey);
+  });
+});
+
+describe('theReservationIsBornWithPaymentTypeAndMethod (HU-COM-008 DP-08, option C)', () => {
+  it('sends the first enabled type when the customer did not touch the card, with the medium chosen', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].paymentType).toBe('TOTAL');
+    expect(p.requester.calls[0].paymentMethod).toBe('BANK_TRANSFER');
+  });
+
+  it('sends the type the card holds when the customer chose another one', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    TestBed.inject(PaymentTypeChoice).type.set('PARTIAL');
+    await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].paymentType).toBe('PARTIAL');
   });
 });
