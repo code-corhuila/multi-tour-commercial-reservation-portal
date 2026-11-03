@@ -22,8 +22,8 @@ import { DiscountRulesApiSource, DiscountRulesApiWriter } from './http/discount-
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
 import { DiscountRulesWriter } from './discounts/data/discount-rules-writer';
 import { EstablishmentsApiSource, EstablishmentsApiWriter } from './http/establishments-api-sources';
-import { PublicEstablishmentsApiSource, PublicOfferApiSource, PublicTourValueSource } from './http/public-offer-api-sources';
-import { PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from './public-offer/data/public-offer-sources';
+import { PublicDeparturesApiSource, PublicEstablishmentsApiSource, PublicOfferApiSource, PublicTourValueSource } from './http/public-offer-api-sources';
+import { PublicDeparturesSource, PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from './public-offer/data/public-offer-sources';
 import { PaymentMethodsApiSource, PaymentsApiWriter, ReservationsWithPaymentsApiSource } from './http/payments-api-sources';
 import { PendingProofsApiSource, ProofReviewApiWriter } from './http/proof-review-api-sources';
 import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
@@ -73,6 +73,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-006: the public routes; the tenant is the identifier of the link the container mounted the portal with.
     { provide: PublicOfferSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicOfferApiSource(client, () => tenant); } },
     { provide: PublicEstablishmentsSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicEstablishmentsApiSource(client, () => tenant); } },
+    // HU-COM-006 portal spec A.6b: a visitor's departures come from the public tour detail, not from the authenticated reader above.
+    { provide: PublicDeparturesSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicDeparturesApiSource(client, () => tenant); } },
     // HU-COM-006 AC-PO.4: the value in force arrives calculated with each tour; HU-COM-004's pure function stays the service's.
     { provide: TourValueSource, useValue: new PublicTourValueSource() },
   ];
