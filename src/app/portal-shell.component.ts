@@ -8,6 +8,7 @@ import { CLIENT_NOTICES, PortalSlotOutlet, slotEntries } from './shared/portal-s
 import { PortalCapabilities } from './shared/portal-capabilities';
 import { CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, PROFILE_TARGET } from './shell-contract';
 import { SESSION_TEXT } from './shared/session-copy';
+import { SHELL_TEXT } from './shell-copy';
 import { SESSION_IDENTITY } from './shared/session-identity';
 
 /**
@@ -26,7 +27,7 @@ import { SESSION_IDENTITY } from './shared/session-identity';
         @if (chrome() === 'site') {
         <header class="crp-client-header">
           <button type="button" class="crp-client-brand" (click)="open(landing?.key)">MULTI<span>TOUR</span></button>
-          <nav class="crp-client-nav" aria-label="Navegación principal del cliente">
+          <nav class="crp-client-nav" [attr.aria-label]="text.clientNavigation">
             @for (link of headerNav; track link.key) { <button type="button" [class.crp-is-active]="link.key === current()?.key" [attr.aria-current]="link.key === current()?.key ? 'page' : null"
                 (click)="open(link.key)">{{ link.label }}</button> }
           </nav>
@@ -45,13 +46,13 @@ import { SESSION_IDENTITY } from './shared/session-identity';
                 @if (panelLink(); as link) { <button type="button" (click)="open(link.key)">{{ link.label }}</button> }
                 @if (onPanel()) {
                   <div class="crp-client-bell">
-                    <button type="button" class="crp-client-bell-button" aria-label="Notificaciones" aria-haspopup="true" [attr.aria-expanded]="bell()"
+                    <button type="button" class="crp-client-bell-button" [attr.aria-label]="text.notifications" aria-haspopup="true" [attr.aria-expanded]="bell()"
                       (click)="bell.set(!bell())"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg></button>
-                    <div class="crp-client-bell-panel" role="region" aria-label="Notificaciones" [hidden]="!bell()">
-                      <h2>Notificaciones</h2>
+                    <div class="crp-client-bell-panel" role="region" [attr.aria-label]="text.notifications" [hidden]="!bell()">
+                      <h2>{{ text.notifications }}</h2>
                       <div class="crp-client-bell-list">
                         <ng-container *crpSlot="notices" />
-                        @if (!hasNotices) { <p>No tienes notificaciones nuevas.</p> }
+                        @if (!hasNotices) { <p>{{ text.noNotifications }}</p> }
                       </div>
                     </div>
                   </div>
@@ -68,16 +69,16 @@ import { SESSION_IDENTITY } from './shared/session-identity';
           <div class="crp-client-footer-grid">
             <div>
               <span class="crp-client-footer-brand">MULTI<span>TOUR</span></span>
-              <p>Plataforma para descubrir, reservar y gestionar experiencias de turismo con operadores locales.</p>
+              <p>{{ text.footerAbout }}</p>
             </div>
-            <nav class="crp-client-footer-col" aria-label="Explorar">
-              <strong>Explorar</strong>
+            <nav class="crp-client-footer-col" [attr.aria-label]="text.footerExplore">
+              <strong>{{ text.footerExplore }}</strong>
               @for (link of footerLinks; track link.key) {
                 @if (navigation.has(link.key)) { <button type="button" (click)="open(link.key)">{{ link.label }}</button> } @else { <span>{{ link.label }}</span> }
               }
             </nav>
           </div>
-          <p class="crp-client-footer-bottom">© 2026 Multitour. Plataforma para operadores de turismo.</p>
+          <p class="crp-client-footer-bottom">{{ text.footerBottom }}</p>
         </footer>
         }
       </div>
@@ -87,7 +88,7 @@ import { SESSION_IDENTITY } from './shared/session-identity';
         <aside class="crp-operator-sidebar">
           <p class="crp-operator-brand">MULTITOUR</p>
           <p class="crp-operator-role">{{ roleLabel }}</p>
-          <nav class="crp-operator-nav" aria-label="Administración comercial">
+          <nav class="crp-operator-nav" [attr.aria-label]="text.operatorNavigation">
             @for (area of menu; track area.key) {
               <button type="button" [class.crp-is-active]="area.key === active()" [attr.aria-current]="area.key === active() ? 'page' : null"
                 (click)="open(area.key)">{{ area.label }}</button>
@@ -118,6 +119,7 @@ export class PortalShellComponent {
   /** The sidebar item marked active: the parent of an open sub-screen, or the open area itself. */
   protected readonly active = computed(() => this.current()?.parent ?? this.current()?.key);
   protected readonly initials = inject(SESSION_IDENTITY).initials;
+  protected readonly text = SHELL_TEXT;
   protected readonly avatarLabel = SESSION_TEXT.avatarLabel;
   protected readonly profileLabel = SESSION_TEXT.profile;
   private readonly navigateTo = inject(CONTAINER_NAVIGATION);

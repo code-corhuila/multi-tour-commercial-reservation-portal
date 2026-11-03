@@ -10,6 +10,7 @@ import { CustomerContext } from '../data/customer-context';
 import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
+import { HOLDER_TEXT } from '../self-service-copy';
 import { TourImages } from '../../shared/tour-photo';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
@@ -129,11 +130,11 @@ export class ConfirmReservationPageComponent {
   /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
   protected readonly checkout = CHECKOUT_BLOCKS;
   protected readonly holder = [
-    { id: 'crp-holder-name', label: 'Nombre completo', type: 'text', placeholder: 'Nombre completo' },
-    { id: 'crp-holder-document', label: 'Documento de identidad', type: 'text', placeholder: 'Documento' },
-    { id: 'crp-holder-phone', label: 'Teléfono', type: 'tel', placeholder: 'Teléfono' },
-    { id: 'crp-holder-email', label: 'Correo electrónico', type: 'email', placeholder: 'correo@ejemplo.com' },
-    { id: 'crp-holder-birthdate', label: 'Fecha de nacimiento', type: 'date', placeholder: '' },
+    { id: 'crp-holder-name', type: 'text', ...HOLDER_TEXT.name },
+    { id: 'crp-holder-document', type: 'text', ...HOLDER_TEXT.document },
+    { id: 'crp-holder-phone', type: 'tel', ...HOLDER_TEXT.phone },
+    { id: 'crp-holder-email', type: 'email', ...HOLDER_TEXT.email },
+    { id: 'crp-holder-birthdate', type: 'date', ...HOLDER_TEXT.birthdate },
   ] as const;
   /** Volver a fecha y viajeros: only when the shell can open Reservar tour. */
   private readonly navigation = inject(PortalNavigation, { optional: true });
