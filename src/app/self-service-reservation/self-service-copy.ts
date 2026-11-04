@@ -27,6 +27,7 @@ export const SELF_SERVICE_TEXT = {
   backToReserve: 'Volver a salida y viajeros',
   pill: 'Tu reserva se crea Pendiente de pago. Elige por separado el tipo de pago y el medio de pago habilitados.',
   holderTitle: 'Cliente titular',
+  riskNeeded: 'Esta actividad requiere los datos de riesgo de cada viajero. Complétalos y confirma de nuevo.',
   holderMissing: 'Completa nombre, documento, teléfono, correo y fecha de nacimiento del titular.',
   holderEmail: 'Escribe un correo válido para el titular.',
   holderFuture: 'La fecha de nacimiento del titular no puede ser futura.',
