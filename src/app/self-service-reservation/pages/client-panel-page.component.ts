@@ -3,11 +3,11 @@ import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
-import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/data/catalog-api.service';
+import { PublicOfferSource } from '../../public-offer/data/public-offer-sources';
 import { DiscountRulesSource } from '../../discounts/data/discount-rules-source';
 import { DiscountRule, discountValueText } from '../../discounts/data/discount-rules-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
+import { Clock, tenantDay } from '../../shared/clock';
 import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
@@ -28,6 +28,7 @@ const QUICK = [
 ];
 const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 
+type OfferedTour = { readonly serviceId: string; readonly commercialName: string; readonly baseRateCents: number; readonly available: boolean };
 type Part<T> = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly T[] };
 const partOf = <T>(read: Observable<readonly T[]>) => read.pipe(
   map((items): Part<T> => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
@@ -149,6 +150,7 @@ export class ClientPanelPageComponent {
   protected readonly quickSlots = slotEntries(CLIENT_QUICK_ACTIONS, this.injector).length;
   protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly source = inject(MyReservationsSource);
+  private readonly clock = inject(Clock);
   private readonly requests = new Subject<void>();
   protected readonly reservations = toSignal(this.requests.pipe(switchMap(() => partOf(this.source.listMine()))), { initialValue: { kind: 'loading' } as Part<CustomerReservation> });
   // Read-only: the rules of HU-COM-003 in force today. Without the port, or if it fails, there is nothing in force to show.
@@ -157,10 +159,10 @@ export class ClientPanelPageComponent {
     catchError(() => of<readonly DiscountRule[]>([])),
   ), { initialValue: [] as readonly DiscountRule[] });
   // The base value of up to four active tours of the catalog of HU-COM-001; never a cost or a capacity.
-  protected readonly featured = toSignal(partOf((inject(CatalogItemsSource, { optional: true })?.list()
+  protected readonly featured = toSignal(partOf((inject(PublicOfferSource, { optional: true })?.listAvailable(tenantDay(this.clock.now()))
     ?? throwError(() => new Error('No catalog port'))).pipe(
-    map((items: readonly CatalogItem[]) => items.filter((item) => item.serviceType === 'TOUR' && item.catalogStatus === 'ACTIVE').slice(0, 4)),
-  )), { initialValue: { kind: 'loading' } as Part<CatalogItem> });
+    map((items: readonly OfferedTour[]) => items.filter((item) => item.available).slice(0, 4)),
+  )), { initialValue: { kind: 'loading' } as Part<OfferedTour> });
 
   constructor() {
     this.reload();

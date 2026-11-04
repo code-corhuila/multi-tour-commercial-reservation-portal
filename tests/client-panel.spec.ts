@@ -4,7 +4,8 @@ import { resolvedPortalCss } from './css-tokens';
 import { of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
-import { CatalogItem } from '../src/app/catalog/model/catalog-item';
+import { PublicOfferSource } from '../src/app/public-offer/data/public-offer-sources';
+import { PublicTour } from '../src/app/public-offer/model/public-offer';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
 import { DiscountRule } from '../src/app/discounts/model/discount-rule';
 import { CLIENT_AREA, PORTAL_AREAS } from '../src/app/portal-areas';
@@ -26,15 +27,14 @@ const rule = (overrides: Partial<DiscountRule>): DiscountRule => ({
   percentageBasisPoints: 2000, stackable: false, status: 'ACTIVE', ...overrides,
   validity: validityOn({ status: 'ACTIVE', startsOn: '2000-01-01', endsOn: '2999-12-31', ...overrides }, '2026-10-14'),
 } as DiscountRule);
-const tour = (n: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
-  serviceId: `svc-${n}`, serviceType: 'TOUR', commercialName: `Tour ${n}`, catalogStatus: 'ACTIVE', baseRateCents: 18_000_000 + n * 100_000,
-  baseOperationalCostCents: 9_000_000, configuredCapacity: 12, transportRequired: false, highRisk: false,
-  createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', ...overrides,
+/** The public tour of the contract; the Final Customer cannot read the operator's catalog (403), so that port here always refuses. */
+const tour = (n: number, overrides: Partial<PublicTour> = {}): PublicTour => ({
+  serviceId: `svc-${n}`, commercialName: `Tour ${n}`, baseRateCents: 18_000_000 + n * 100_000, transportIncluded: false, available: true, ...overrides,
 });
 
 interface Options {
   readonly standing?: CustomerStanding; readonly selection?: ReservationSelection | null; readonly areas?: readonly string[];
-  readonly rules?: readonly DiscountRule[] | 'none'; readonly catalog?: readonly CatalogItem[] | 'fails';
+  readonly rules?: readonly DiscountRule[] | 'none'; readonly catalog?: readonly PublicTour[] | 'fails';
 }
 
 async function openPanel(options: Options = {}) {
@@ -48,7 +48,8 @@ async function openPanel(options: Options = {}) {
     { provide: MyReservationsSource, useValue: reservations },
     { provide: ReservationSelectionSource, useValue: selectionAt(options.selection ?? null) },
     { provide: PortalNavigation, useValue: navigation },
-    { provide: CatalogItemsSource, useValue: { list: () => (catalog === 'fails' ? throwError(() => new Error('down')) : of(catalog)) } },
+    { provide: CatalogItemsSource, useValue: { list: () => throwError(() => ({ status: 403, code: 'FORBIDDEN' })) } },
+    { provide: PublicOfferSource, useValue: { listAvailable: () => (catalog === 'fails' ? throwError(() => new Error('down')) : of(catalog)) } },
     ...(options.rules === 'none' ? [] : [{ provide: DiscountRulesSource, useValue: { list: () => of(options.rules ?? []) } }]),
   ] });
   const fixture = TestBed.createComponent(ClientPanelPageComponent);
@@ -170,8 +171,8 @@ describe('thePanelClienteIsTheLandingOfTheCustomer (panel-cliente.html, PR #361)
     }
   });
 
-  it('features up to four active tours with a photo, Desde, the price and Ver detalle', async () => {
-    const p = await openPanel({ catalog: [tour(1), tour(2, { catalogStatus: 'INACTIVE' }), tour(3, { serviceType: 'TRANSPORTATION' }), tour(4), tour(5), tour(6), tour(7)] });
+  it('features up to four public tours with a photo, Desde, the price and Ver detalle', async () => {
+    const p = await openPanel({ catalog: [tour(1), tour(4), tour(5), tour(6), tour(7)] });
     expect(p.text('.crp-panel-featured h2')).toBe('Experiencias destacadas');
     const cards = Array.from(p.host.querySelectorAll('.crp-panel-featured li'));
     expect(cards.map((card) => card.querySelector('strong')?.textContent?.trim())).toEqual(['Tour 1', 'Tour 4', 'Tour 5', 'Tour 6']);
