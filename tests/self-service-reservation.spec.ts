@@ -267,6 +267,11 @@ describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
     expect(p.element.textContent).not.toContain(T.created);
     expect(buttonNamed(p.element, T.confirm)!.disabled).toBe(false);
   });
+  it('reads the refusal 422 SEATS_UNAVAILABLE of the service as the same lack of seats', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(noCapacity({ status: 422, code: 'SEATS_UNAVAILABLE' })); await p.settle();
+    expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
+  });
   it('prefers the message the container decided, when there is one', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity({ userMessage: 'Sold out for that date.' })); await p.settle();
