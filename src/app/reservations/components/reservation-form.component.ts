@@ -131,7 +131,7 @@ export class ReservationFormComponent {
   protected readonly date = formatDate;
   protected readonly paymentTypes = Object.entries(PAYMENT_TYPE_LABEL);
   protected readonly paymentMethods = Object.entries(PAYMENT_METHOD_LABEL);
-  protected readonly seatsOf = (d: Departure) => seats(d.effectiveCapacity);
+  protected readonly seatsOf = (d: Departure) => seats(d.effectiveCapacity, d.totalSeats);
   protected readonly draft = signal<ReservationDraft>({ departureId: '', serviceId: '', people: '4', paymentType: '', paymentMethod: '', accepted: false });
   protected readonly pending = signal(false); protected readonly failure = signal('');
   private readonly tried = signal(false); private readonly refusedForCapacity = signal('');
