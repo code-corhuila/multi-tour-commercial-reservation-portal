@@ -39,6 +39,7 @@ import {
 } from './self-service-reservation.double';
 import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
+import { RESERVATION_FORM_CONTRIBUTIONS } from '../src/app/customers/components/reservation-form-sections';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
@@ -78,6 +79,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
     { provide: TourImages, useValue: new DemoTourImages() },
+    ...RESERVATION_FORM_CONTRIBUTIONS,
     ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
