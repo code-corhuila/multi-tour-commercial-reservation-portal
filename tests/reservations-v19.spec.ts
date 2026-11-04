@@ -22,6 +22,11 @@ const valueOf = (element: Element, label: string) => row(element, label)?.queryS
 const optionsOf = (element: Element, name: string) => texts(element, `[name="${name}"] option`);
 
 describe('create reservation (admin-crear-reserva): one tour, its scheduled departure, and payment type and method apart', () => {
+  it('draws the seats left of the total when the departure reports its total, as the mockup does', async () => {
+    const { element } = await screenOf(ReservationFormComponent, reservationProviders({ departures: new StubDepartures(() => of([departureOf(1, { effectiveCapacity: 4, totalSeats: 12 }), departureOf(2)])) }));
+    expect(optionsOf(element, 'departureId')).toEqual(expect.arrayContaining(['Tour 1 · 07 nov 2026 · 4 de 12 cupos disponibles', 'Tour 2 · 07 nov 2026 · 10 cupos disponibles']));
+  });
+
   it('draws Tour, Salida programada, travelers and the vehicles line of section 02', async () => {
     const { element, field } = await screenOf(ReservationFormComponent, reservationProviders());
     expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')[1]).toBe('02. Tour, salida y viajeros');
