@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { CustomerMatch, HighRiskField } from '../model/customer-group';
+import { CustomerMatch, HighRiskField, missingHighRiskData } from '../model/customer-group';
 import { BLANK_COMPANION, BLANK_LEAD, BLANK_RISK, CompanionFields, LeadFields, PartyMessages, RiskFields, birthToIso, companionsRequired, hasMessages, isoToBirth, partyMessages } from '../model/party-rules';
 
 export type RiskData = { informedConsent: boolean; bloodType: string; emergencyContact: string; physicalRestrictions: string };
@@ -27,6 +27,8 @@ export class ReservationParty {
   readonly companions = computed(() => Array.from({ length: this.required() }, (_, i) => this.typed()[i] ?? BLANK_COMPANION));
   /** One entry per traveler (the titular first) while the tour is high risk, none otherwise. */
   readonly risk = computed<readonly RiskFields[]>(() => (this.highRisk() ? Array.from({ length: 1 + this.required() }, (_, i) => this.riskTyped()[i] ?? BLANK_RISK) : []));
+  /** True while a traveler still lacks some extra datum of the high-risk block. */
+  readonly riskMissing = computed(() => this.risk().some((r) => missingHighRiskData(r, true).length > 0));
   private readonly all = computed<PartyMessages>(() => partyMessages(this.lead(), this.companions(), false, this.risk()));
   readonly valid = computed(() => !hasMessages(this.all()));
   readonly shown = computed<PartyMessages>(() => (this.attempted() ? this.all() : partyMessages(this.lead(), this.companions(), true)));
