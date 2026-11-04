@@ -6,8 +6,9 @@ import { MyReservationsSource } from '../self-service-reservation/data/my-reserv
 import { CheckoutHolder, ReservationRequester, SelectionQuoteSource } from '../self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerReservation, ReservationSelection, SelectionQuote } from '../self-service-reservation/model/self-service-reservation';
 import { ApiError, PortalApiClient } from '../shell-contract';
+import { RiskData } from '../customers/data/reservation-party';
 import { call, ownReservationQuotesPath, publicOfferPath, reservationsPath } from './api-paths';
-import { METHOD_OUT, TYPE_OUT, ReservationDto, reservationFrom, rowsOf } from './reservations-api-sources';
+import { METHOD_OUT, TYPE_OUT, ReservationDto, reservationFrom, riskFrom, rowsOf } from './reservations-api-sources';
 import { ReservationQuoteDto } from './reservation-quote-api-source';
 
 /** The reservation as the customer's panel reads it: the codes of the customer area, the values the service fixed, no recalculation. */
@@ -73,12 +74,12 @@ export class SelectionQuoteApiSource extends SelectionQuoteSource {
  */
 export class ReservationRequesterApi extends ReservationRequester {
   constructor(private readonly client: PortalApiClient) { super(); }
-  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = [], paymentType = '', holder?: CheckoutHolder): Observable<CustomerReservation> {
+  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = [], paymentType = '', holder?: CheckoutHolder, risk?: readonly RiskData[]): Observable<CustomerReservation> {
     // Only the three fields the contract has; the phone and the emergency contact stay on the screen (gap G-B, HU-COM-005 D-6).
     const body = { serviceId: selection.serviceIds[0], salidaId: selection.departureId, people: selection.people, ...(paymentType ? { paymentType: TYPE_OUT[paymentType] ?? paymentType } : {}), ...(paymentMethod ? { paymentMethod: METHOD_OUT[paymentMethod] ?? paymentMethod } : {}),
-      ...(companions.length ? { companions: companions.map((c) => ({ fullName: c.fullName, documentNumber: c.document, birthDate: c.birthDate })) } : {}) };
+      ...(companions.length ? { companions: companions.map((c, i) => ({ fullName: c.fullName, documentNumber: c.document, birthDate: c.birthDate, ...riskFrom(risk?.[i + 1]) })) } : {}) };
     const create = (sent: object) => call<ReservationDto>(this.client, reservationsPath(), { method: 'POST', body: sent, headers: { 'Idempotency-Key': idempotencyKey } });
-    const wire = holder ? { fullName: holder.fullName, documentNumber: holder.document, birthDate: holder.birthDate, contact: { email: holder.email, phone: holder.phone }, termsAccepted: holder.termsAccepted } : null;
+    const wire = holder ? { fullName: holder.fullName, documentNumber: holder.document, birthDate: holder.birthDate, contact: { email: holder.email, phone: holder.phone }, termsAccepted: holder.termsAccepted, ...riskFrom(risk?.[0]) } : null;
     const created = !wire ? create(body) : create({ ...body, holder: wire }).pipe(
       catchError((error: Partial<ApiError>) => (error.status === 400 && error.details?.some((d) => d.field === 'holder') ? create(body) : throwError(() => error))),
     );

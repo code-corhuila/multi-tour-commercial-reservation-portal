@@ -7,9 +7,12 @@ import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, swi
 import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
+import { ReservationParty } from '../../customers/data/reservation-party';
+import { RiskSectionComponent } from '../../customers/components/risk-section.component';
+import { missingHighRiskData } from '../../customers/model/customer-group';
 import { CheckoutHolder, PaymentMethodsSource, PaymentTypeChoice, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
-import { BLANK_HOLDER, CustomerReservation, HolderKey, HolderValues, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, holderIssues, reservationState, travelers } from '../model/self-service-reservation';
+import { BLANK_HOLDER, CustomerReservation, HolderKey, HolderValues, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, holderIssues, namesRiskData, reservationState, travelers } from '../model/self-service-reservation';
 import { HOLDER_TEXT } from '../self-service-copy';
 import { TourImages } from '../../shared/tour-photo';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
@@ -26,7 +29,8 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
  */
 @Component({
   selector: 'app-confirm-reservation-page',
-  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent],
+  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent, RiskSectionComponent],
+  providers: [ReservationParty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let current = state();
@@ -60,6 +64,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                   <app-customer-companion-fields [companions]="companionList()" [today]="today()" [issues]="issues()" (changed)="companionChanged($event)" />
                   <p data-companions-feedback class="crp-customers-error" aria-live="polite">{{ issues()?.message }}</p>
                 }</article>
+              <app-risk-section [customer]="true" />
               <article class="crp-booking-card crp-finish-conditions"><h2>{{ text.conditionsTitle }}</h2>
                 <p class="crp-self-service-note">{{ text.conditionsCopy }}</p>
                 <ul>@for (line of text.conditionLines; track line) { <li>{{ line }}</li> }</ul>
@@ -162,6 +167,8 @@ export class ConfirmReservationPageComponent {
   protected readonly today = computed(() => tenantDay(this.clock.now()));
   /** HU-COM-005 AC-PC.13/14: the companions of the selection, checked among themselves before anything is sent (the titular is checked with them, DP-RS5). */
   protected readonly needed = companionsFor(injectSelection()?.people ?? 1);
+  /** The risk block of the operator form, reused: it starts hidden and shows when the service names risk data. */
+  protected readonly party = inject(ReservationParty);
   private readonly typedCompanions = signal<readonly CustomerCompanion[]>([]);
   protected readonly companionList = computed(() => paddedCompanions(this.typedCompanions(), this.needed));
   protected readonly issues = signal<CompanionIssues | null>(null);
@@ -196,7 +203,7 @@ export class ConfirmReservationPageComponent {
     startWith<ConfirmState>({ kind: 'loading' }),
   ))), { initialValue: (this.selection ? { kind: 'loading' } : { kind: 'empty' }) as ConfirmState });
 
-  constructor() { this.reload(); }
+  constructor() { this.party.travelers.set(this.selection?.people ?? 1); this.reload(); }
 
   reload(): void { if (this.selection) this.requests.next(); }
 
@@ -222,7 +229,9 @@ export class ConfirmReservationPageComponent {
     this.holderProblem.set(holderFound);
     const found = this.needed ? companionIssues(this.companionList(), this.holderValues().document, this.today()) : null;
     this.issues.set(found);
-    if (this.missing() || this.unaccepted() || holderFound || found?.message) { this.focusFirstErrorOnRender(); return; }
+    const riskFound = this.party.highRisk() && this.party.risk().some((r) => missingHighRiskData(r, true).length > 0);
+    if (riskFound) { this.party.attempted.set(true); this.party.rejected.update((n) => n + 1); }
+    if (this.missing() || this.unaccepted() || holderFound || found?.message || riskFound) { this.focusFirstErrorOnRender(); return; }
     if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
@@ -230,14 +239,15 @@ export class ConfirmReservationPageComponent {
     const current = this.state(), type = this.typeChoice.type() || (current.kind === 'data' ? current.types[0]?.code : '') || '';
     const v = this.holderValues();
     const holder: CheckoutHolder = { fullName: v.name.trim(), document: v.document.trim(), phone: v.phone.trim(), email: v.email.trim(), birthDate: v.birthdate, termsAccepted: terms };
-    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method(), type, companions: this.companionList(), holder }), this.companionList(), type, holder)).pipe(
+    const risk = this.party.highRisk() ? this.party.risk().map((r) => ({ informedConsent: r.informedConsent === 'true', bloodType: r.bloodType.trim(), emergencyContact: r.emergencyContact.trim(), physicalRestrictions: r.physicalRestrictions.trim() })) : undefined;
+    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method(), type, companions: this.companionList(), holder, risk }), this.companionList(), type, holder, risk)).pipe(
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({
       // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
       next: (reservation) => this.created.set(reservation),
       error: (error: Partial<ApiError> | null) => this.refusal.set(
-        error?.userMessage || (error?.status === 409 || error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : this.text.refused)),
+        namesRiskData(error) ? (this.party.highRisk.set(true), this.text.riskNeeded) : error?.userMessage || (error?.status === 409 || error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : this.text.refused)),
     });
   }
 }
