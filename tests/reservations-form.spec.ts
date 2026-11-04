@@ -79,6 +79,16 @@ describe('notEnoughCapacityCreatesNothingAndSaysSo', () => {
   });
 });
 
+describe('theRealCapacityRefusalOfTheServiceReadsAsLackOfSeats (RN-RES-007)', () => {
+  it('shows the refusal 422 SEATS_UNAVAILABLE of the service beside the people field and creates nothing', async () => {
+    const { element, fill, submit, writer, settle, created } = await openForm();
+    await fill(); await submit();
+    writer.calls[0].fail(apiError({ status: 422, code: 'SEATS_UNAVAILABLE' })); await settle();
+    expect(errorBeside(element, 'people')).toContain('No hay cupo suficiente');
+    expect(created).toHaveLength(0);
+  });
+});
+
 describe('eachDiscountLineNamesItsBaseInTheOrderApplied', () => {
   it('shows services, transport per person, each discount with its base in order, projected and final value', async () => {
     const { element, fill, discounts, settle } = await openForm();
