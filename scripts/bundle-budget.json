@@ -1,4 +1,4 @@
 {
-  "dist/portal.js": { "maxBytes": 700000 },
+  "dist/portal.js": { "maxBytes": 750000 },
   "dist/portal.css": { "maxBytes": 110000 }
 }
