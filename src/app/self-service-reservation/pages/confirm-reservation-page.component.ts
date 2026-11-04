@@ -8,15 +8,13 @@ import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
 import { ReservationParty } from '../../customers/data/reservation-party';
-import { RiskSectionComponent } from '../../customers/components/risk-section.component';
-import { missingHighRiskData } from '../../customers/model/customer-group';
 import { CheckoutHolder, PaymentMethodsSource, PaymentTypeChoice, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { BLANK_HOLDER, CustomerReservation, HolderKey, HolderValues, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, holderIssues, namesRiskData, reservationState, travelers } from '../model/self-service-reservation';
 import { HOLDER_TEXT } from '../self-service-copy';
 import { TourImages } from '../../shared/tour-photo';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
-import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
+import { CHECKOUT_BLOCKS, CHECKOUT_TRAVELER_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
 import { Clock, tenantDay } from '../../shared/clock';
 import { CustomerCompanionFieldsComponent } from '../../shared/customer-companion-fields.component';
 import { CompanionIssues, CustomerCompanion, companionIssues, companionsFor, paddedCompanions, withCompanionField } from '../../shared/customer-companions';
@@ -29,7 +27,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
  */
 @Component({
   selector: 'app-confirm-reservation-page',
-  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent, RiskSectionComponent],
+  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent],
   providers: [ReservationParty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -64,7 +62,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                   <app-customer-companion-fields [companions]="companionList()" [today]="today()" [issues]="issues()" (changed)="companionChanged($event)" />
                   <p data-companions-feedback class="crp-customers-error" aria-live="polite">{{ issues()?.message }}</p>
                 }</article>
-              <app-risk-section [customer]="true" />
+              <ng-container *crpSlot="travelerBlocks; inputs: { customer: true }" />
               <article class="crp-booking-card crp-finish-conditions"><h2>{{ text.conditionsTitle }}</h2>
                 <p class="crp-self-service-note">{{ text.conditionsCopy }}</p>
                 <ul>@for (line of text.conditionLines; track line) { <li>{{ line }}</li> }</ul>
@@ -143,6 +141,8 @@ export class ConfirmReservationPageComponent {
   protected readonly cash = 'CASH_AT_OFFICE';
   /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
   protected readonly checkout = CHECKOUT_BLOCKS;
+  /** The risk requirements of the customers story, after Viajeros. */
+  protected readonly travelerBlocks = CHECKOUT_TRAVELER_BLOCKS;
   protected readonly holder = [
     { key: 'name', id: 'crp-holder-name', type: 'text', ...HOLDER_TEXT.name },
     { key: 'document', id: 'crp-holder-document', type: 'text', ...HOLDER_TEXT.document },
@@ -229,7 +229,7 @@ export class ConfirmReservationPageComponent {
     this.holderProblem.set(holderFound);
     const found = this.needed ? companionIssues(this.companionList(), this.holderValues().document, this.today()) : null;
     this.issues.set(found);
-    const riskFound = this.party.highRisk() && this.party.risk().some((r) => missingHighRiskData(r, true).length > 0);
+    const riskFound = this.party.highRisk() && this.party.riskMissing();
     if (riskFound) { this.party.attempted.set(true); this.party.rejected.update((n) => n + 1); }
     if (this.missing() || this.unaccepted() || holderFound || found?.message || riskFound) { this.focusFirstErrorOnRender(); return; }
     if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
