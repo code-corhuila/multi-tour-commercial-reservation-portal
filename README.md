@@ -31,6 +31,10 @@ Both module builds run `scripts/pack-module.mjs`, which copies the bundle to `di
 over the limits of `scripts/bundle-budget.json` (the CI runs it after the module build and also writes
 both sizes in the job summary). `angular.json` adds an Angular `initial` budget to the `module` target.
 
+Updated 2026-11-04: the `initial` budget is 700 kB (warning) and 750 kB (error), and `dist/portal.js` may weigh up to 750000 bytes, because the module is a single file and
+the customer screen of HU-COM-008 needs the holder and the risk requirements. Loading areas lazily would free space, but it needs
+`scripts/pack-module.mjs` and the serving container to handle chunks; it is a later improvement.
+
 ## Container image
 
 `deploy/Dockerfile` builds with `npm ci` and `npm run build:${PORTAL_BUILD}`, then serves the two files
