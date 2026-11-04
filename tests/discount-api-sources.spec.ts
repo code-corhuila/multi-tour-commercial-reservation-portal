@@ -68,7 +68,7 @@ describe('discountRulesSourcesOverTheApiClient', () => {
   });
 
   it('does not write anything when the name of the tour cannot be read', async () => {
-    const { client, calls } = fakeClient({ fail: { status: 404, code: 'NOT_FOUND', message: 'resource not found', traceId: 't' } });
+    const { client, calls } = fakeClient({ fail: { status: 404, code: 'NOT_FOUND', message: 'resource not found', traceId: 't' } }, { fail: { status: 404, code: 'NOT_FOUND', message: 'resource not found', traceId: 't' } });
     const writer = new DiscountRulesApiWriter(client);
     expect(await firstValueFrom(writer.create(command, 'key-12345678')).catch((e) => e)).toMatchObject({ status: 404 });
     expect(await firstValueFrom(writer.update('r1', command, 'k-update-3')).catch((e) => e)).toMatchObject({ status: 404 });
