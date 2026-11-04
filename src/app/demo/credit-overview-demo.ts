@@ -2,6 +2,7 @@ import { CREDIT_BALANCE_COPY as T } from '../credit-balance/credit-balance-copy'
 import { CreditApplyOutcome, CreditBalance, CreditCustomer, CreditMovement, CreditOverview } from '../credit-balance/data/credit-balance-ports';
 import { Reservation, STATUS_LABEL } from '../reservations/model/reservation';
 import { formatCop as money } from '../shared/format';
+import { ReservationParametersLookup, SEED_LOOKUP } from '../payment-parameters/model/payment-parameters';
 import { minimumPartial, situation } from './proof-review-demo';
 import { resolveRefund } from './refunds-demo';
 import type { DemoDeparturesStore, DemoReservationsStore } from './reservations-demo';
@@ -51,7 +52,8 @@ export function overviewOf(store: DemoReservationsStore, now: number): CreditOve
 }
 
 /** AC-CB.4, D-5: the refusals of the mockup in its order; a first payment holds the seat in the same operation or applies nothing (G10). */
-export function applyCredit(store: DemoReservationsStore, departures: DemoDeparturesStore, now: string, tenant: string, actor: string, targetId: string, cents: number): CreditApplyOutcome {
+export function applyCredit(store: DemoReservationsStore, departures: DemoDeparturesStore, now: string, tenant: string, actor: string, targetId: string, cents: number,
+  parameters: ReservationParametersLookup = SEED_LOOKUP): CreditApplyOutcome {
   const target = store.items.find((r) => r.id === targetId), refuse = (reason: string): CreditApplyOutcome => ({ ok: false, reason });
   if (!target) return refuse(T.refusal.notFound);
   if (CLOSED.has(target.status)) return refuse(T.refusal.state(STATUS_LABEL[target.status]));
@@ -72,7 +74,7 @@ export function applyCredit(store: DemoReservationsStore, departures: DemoDepart
     if (used > 0) store.creditApplications = [...store.creditApplications, { id: `SAA-${store.creditApplications.length + 1}`, sourceId: source.reservationId, targetId, amountCents: used, actor, at: now, tenant }];
   }
   const validatedCents = (target.validatedCents ?? 0) + cents, balanceCents = target.balanceCents - cents;
-  const reached = target.paymentType === 'PARTIAL' ? validatedCents >= minimumPartial(target) : balanceCents === 0;
+  const reached = target.paymentType === 'PARTIAL' ? validatedCents >= minimumPartial(target, parameters) : balanceCents === 0;
   const status = target.status === 'PENDIENTE_DE_PAGO' && reached ? 'CONFIRMADA' : target.status;
   store.items = store.items.map((r) => (r.id === targetId ? { ...r, status, validatedCents, balanceCents, seatHeld: true, financialStatus: situation({ ...r, status }, validatedCents, balanceCents) } : r));
   return { ok: true, appliedCents: cents, firstPayment };
