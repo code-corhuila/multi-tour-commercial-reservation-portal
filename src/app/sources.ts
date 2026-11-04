@@ -34,6 +34,9 @@ import { PaymentMethodsSource } from './self-service-reservation/data/reservatio
 import { MyReservationsApiSource, ReservationRequesterApi, SelectionQuoteApiSource } from './http/self-service-api-sources';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
+import { CancellationApiQuote, CancellationApiWriter } from './http/cancellation-api-sources';
+import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
+import { PortalCapabilities } from './shared/portal-capabilities';
 import { PortalApiClient, TENANT_IDENTIFIER } from './shell-contract';
 
 /** Default: every read and write goes through the container client. `build:module:demo` swaps this file for sources.demo.ts. */
@@ -77,5 +80,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     { provide: PublicDeparturesSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicDeparturesApiSource(client, () => tenant); } },
     // HU-COM-006 AC-PO.4: the value in force arrives calculated with each tour; HU-COM-004's pure function stays the service's.
     { provide: TourValueSource, useValue: new PublicTourValueSource() },
+    // HU-COM-013: the quote and the cancellation at the customer's request over the service (PROPOSED routes); the penalty, the seat and the decision are the service's.
+    { provide: CancellationQuote, useFactory: () => new CancellationApiQuote(client, inject(ReservationsSource)) },
+    { provide: CancellationWriter, useFactory: () => { const capabilities = inject(PortalCapabilities); return new CancellationApiWriter(client, inject(ReservationsSource), () => capabilities.roleLabel()); } },
   ];
 }
