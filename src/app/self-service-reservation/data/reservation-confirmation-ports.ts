@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
+import { RiskData } from '../../customers/data/reservation-party';
 import { CustomerCompanion } from '../../shared/customer-companions';
 import { PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuote, selectionFromParams } from '../model/self-service-reservation';
@@ -50,7 +51,7 @@ export interface CheckoutHolder {
 export abstract class ReservationRequester {
   /** The companions of screen 21 travel with the same command (HU-COM-005 D-6): one intention, one key. */
   /** DP-08 (option C): the reservation is born with the payment type and the medium chosen on 21; the service refuses a creation without them. */
-  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions?: readonly CustomerCompanion[], paymentType?: string, holder?: CheckoutHolder): Observable<CustomerReservation>;
+  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions?: readonly CustomerCompanion[], paymentType?: string, holder?: CheckoutHolder, risk?: readonly RiskData[]): Observable<CustomerReservation>;
 }
 
 /** PENDING INTEGRATION (G-DEP): the summary and values of the selection, from the calculation of HU-COM-007 (RN-RS4). */

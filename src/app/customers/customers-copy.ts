@@ -12,6 +12,7 @@ export const CUSTOMERS_COPY = {
   companionsCopy: 'Los documentos no pueden repetirse dentro de la misma reserva.',
   riskEyebrow: 'Requisitos de actividad de riesgo', riskTitle: 'Información obligatoria antes de registrar',
   riskCopy: 'Este tour requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero. Esta información es sensible: su consulta posterior exige el permiso Consultar datos sensibles.',
+  riskCustomerCopy: 'Esta actividad requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero.',
   lead: 'Titular', companion: 'Acompañante', highRisk: 'Actividad de riesgo', restricted: 'Restringido',
   newGroup: 'Nuevo grupo', cancel: 'Cancelar', registerLead: 'Registrar titular', addCompanion: 'Agregar acompañante',
   saving: 'Guardando…', refused: 'No se pudo registrar la persona.',

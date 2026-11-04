@@ -72,6 +72,10 @@ export function selectionFromQuery(query: string): ReservationSelection | null {
 export const HOLDER_KEYS = ['name', 'document', 'phone', 'email', 'birthdate'] as const;
 export type HolderKey = (typeof HOLDER_KEYS)[number];
 export type HolderValues = Readonly<Record<HolderKey, string>>;
+/** The service names the risk data it lacks (the Final Customer cannot read the risk mark of a tour): `bloodType`, `emergencyContact`, `mobilityRestrictions` or `informedConsentSigned`, maybe prefixed `companions[n].`. */
+export const namesRiskData = (error: { details?: readonly { field: string }[] } | null): boolean =>
+  !!error?.details?.some((d) => /(^|\.)(bloodType|emergencyContact|mobilityRestrictions|informedConsentSigned)$/.test(d.field));
+
 export const BLANK_HOLDER: HolderValues = { name: '', document: '', phone: '', email: '', birthdate: '' };
 
 /** DP-RS5: the five fields are required; the e-mail has a shape; the birth date (ISO) is not after the tenant's `today`. One sentence, the fields to mark. */

@@ -57,7 +57,7 @@ export class ReservationsApiSource extends ReservationsSource {
 }
 
 /** The sensitive fields of a person of a high-risk tour as the contract names them (RN-CLI-002, RN-CLI-003): consent and EmergencyInfo; nothing for an ordinary tour. */
-function riskFrom(risk?: ReservationRiskData): Record<string, unknown> {
+export function riskFrom(risk?: ReservationRiskData): Record<string, unknown> {
   return risk ? { informedConsentSigned: risk.informedConsent, emergencyInfo: { bloodType: risk.bloodType, emergencyContact: risk.emergencyContact, mobilityRestrictions: risk.physicalRestrictions } } : {};
 }
 

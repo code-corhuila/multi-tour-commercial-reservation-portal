@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, input } from '@angular/core';
 import { focusFirstError } from '../../shared/focus';
 import { CUSTOMERS_COPY, PERSON_LABELS, PLACEHOLDERS } from '../customers-copy';
 import { ReservationParty } from '../data/reservation-party';
@@ -16,9 +16,9 @@ const FIELDS: readonly { key: HighRiskField; kind: 'text' | 'area' | 'check'; la
   selector: 'app-risk-section', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (party.highRisk()) {
-      <section class="crp-operator-panel" data-risk-section>
-        <p class="crp-operator-eyebrow">{{ text.riskEyebrow }}</p><h2>{{ text.riskTitle }}</h2>
-        <p class="crp-customers-copy">{{ text.riskCopy }}</p>
+      <section [class]="customer() ? 'crp-booking-card' : 'crp-operator-panel'" data-risk-section>
+        @if (customer()) { <h2>{{ text.riskEyebrow }}</h2> } @else { <p class="crp-operator-eyebrow">{{ text.riskEyebrow }}</p><h2>{{ text.riskTitle }}</h2> }
+        <p class="crp-customers-copy">{{ customer() ? text.riskCustomerCopy : text.riskCopy }}</p>
         @for (person of party.risk(); track $index; let i = $index) {
           <article class="crp-customers-risk-card"><strong>{{ i === 0 ? text.lead : text.companion + ' ' + i }}</strong>
             <div class="crp-customers-grid">
@@ -52,6 +52,8 @@ const FIELDS: readonly { key: HighRiskField; kind: 'text' | 'area' | 'check'; la
   `,
 })
 export class RiskSectionComponent {
+  /** Screen 21 draws the block with the words of finalizar-reserva (the customer types his own data); 10B keeps the operator's. */
+  readonly customer = input(false);
   protected readonly party = inject(ReservationParty);
   protected readonly text = CUSTOMERS_COPY;
   protected readonly fields = FIELDS;
