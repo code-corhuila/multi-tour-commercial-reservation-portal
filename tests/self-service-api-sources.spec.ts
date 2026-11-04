@@ -134,6 +134,24 @@ describe('reservationRequesterOverTheApiClient', () => {
     expect(b.calls).toHaveLength(2);
   });
 
+  it('theRiskDataOfTheHolderAndOfEachCompanionTravelAsEmergencyInfo', async () => {
+    const risk = [
+      { informedConsent: true, bloodType: 'O+', emergencyContact: 'Contacto Ficticio 300 000 0001', physicalRestrictions: 'Ninguna' },
+      { informedConsent: true, bloodType: 'A-', emergencyContact: 'Contacto Ficticio 300 000 0002', physicalRestrictions: 'Usa lentes' },
+    ];
+    const wire = (r: (typeof risk)[number]) => ({ informedConsentSigned: true, emergencyInfo: { bloodType: r.bloodType, emergencyContact: r.emergencyContact, mobilityRestrictions: r.physicalRestrictions } });
+    const companion = { fullName: 'Acompañante Ficticio Uno', document: 'DEMO-2001', birthDate: '2001-05-01', phone: '', emergency: '' };
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    await firstValueFrom(new ReservationRequesterApi(client).request(selection, 'BANK_TRANSFER', 'key-12345678', [companion], '', holder, risk));
+    expect(calls[0].body).toEqual({ serviceId: 't-1', salidaId: 'd-1', people: 3, paymentMethod: 'TRANSFER', holder: { ...holderWire, ...wire(risk[0]) },
+      companions: [{ fullName: 'Acompañante Ficticio Uno', documentNumber: 'DEMO-2001', birthDate: '2001-05-01', ...wire(risk[1]) }] });
+    // A holder refused because the account has a record: the companions keep their data, the holder block goes.
+    const again = fakeClient(refusedHolder, { ok: detail }, { ok: page([summary]) });
+    await firstValueFrom(new ReservationRequesterApi(again.client).request(selection, 'BANK_TRANSFER', 'key-12345678', [companion], '', holder, risk));
+    expect(again.calls.filter((c) => c.method === 'POST')[1].body).toEqual({ serviceId: 't-1', salidaId: 'd-1', people: 3, paymentMethod: 'TRANSFER',
+      companions: [{ fullName: 'Acompañante Ficticio Uno', documentNumber: 'DEMO-2001', birthDate: '2001-05-01', ...wire(risk[1]) }] });
+  });
+
   it('leaves the method out when none was chosen and sends the same key again on a retry', async () => {
     const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) }, { ok: detail }, { ok: page([summary]) });
     const requester = new ReservationRequesterApi(client);
