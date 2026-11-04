@@ -7,7 +7,7 @@ import { PortalApiClient } from '../shell-contract';
 import { catalogPath, departuresPath, listAll } from './api-paths';
 
 /** ReservationDeparture of the contract (PROPOSED): `availableSeats` is the effective capacity minus the seats held. */
-interface DepartureDto { readonly departureId: string; readonly startsAt: string; readonly availableSeats: number; readonly full: boolean }
+interface DepartureDto { readonly departureId: string; readonly startsAt: string; readonly availableSeats: number; readonly totalSeats: number; readonly full: boolean }
 
 /**
  * The open departures of every active tour over the route of the departures of a tour (HU-COM-007 plan D-03). The service returns only
@@ -28,7 +28,7 @@ export class DeparturesApiSource extends DeparturesSource {
   private departuresOf(tour: CatalogItem): Observable<Departure[]> {
     return listAll<DepartureDto>(this.client, departuresPath(tour.serviceId)).pipe(map((found) => found.map((d): Departure => ({
       id: d.departureId, tourName: tour.commercialName, date: d.startsAt, state: 'PROGRAMADA', openForReservations: !d.full,
-      effectiveCapacity: d.availableSeats, transportPerPersonCents: 0, conditions: '',
+      effectiveCapacity: d.availableSeats, totalSeats: d.totalSeats, transportPerPersonCents: 0, conditions: '',
     }))));
   }
 }
