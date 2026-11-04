@@ -102,6 +102,38 @@ describe('reservationRequesterOverTheApiClient', () => {
       companions: [{ fullName: 'Acompañante Ficticio Uno', documentNumber: 'DEMO-2001', birthDate: '2001-05-01' }] });
   });
 
+  const holder = { fullName: 'Laura Gómez (demo)', document: 'DEMO-1001', phone: '300 000 0000', email: 'laura@example.invalid', birthDate: '1990-04-12', termsAccepted: true };
+  const holderWire = { fullName: 'Laura Gómez (demo)', documentNumber: 'DEMO-1001', birthDate: '1990-04-12', contact: { email: 'laura@example.invalid', phone: '300 000 0000' }, termsAccepted: true };
+  const refusedHolder = { fail: { status: 400, code: 'VALIDATION_ERROR', message: 'the request has invalid fields', details: [{ field: 'holder', message: 'the account already has a customer record; send neither customerId nor holder' }], traceId: 't-2' } };
+
+  it('theCreationBodyCarriesTheHolderWithItsContactAndTheTerms', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    await firstValueFrom(new ReservationRequesterApi(client).request(selection, 'BANK_TRANSFER', 'key-12345678', [], 'TOTAL', holder));
+    expect(calls[0].body).toEqual({ serviceId: 't-1', salidaId: 'd-1', people: 3, paymentType: 'FULL_PAYMENT', paymentMethod: 'TRANSFER', holder: holderWire });
+    expect(calls[0].headers).toEqual({ 'Idempotency-Key': 'key-12345678' });
+  });
+
+  it('aRefusalNamingTheHolderRepeatsTheCreationOnceWithoutIt', async () => {
+    const { client, calls } = fakeClient(refusedHolder, { ok: detail }, { ok: page([summary]) });
+    const created = await firstValueFrom(new ReservationRequesterApi(client).request(selection, 'BANK_TRANSFER', 'key-12345678', [], '', holder));
+    const posts = calls.filter((c) => c.method === 'POST');
+    expect(posts).toHaveLength(2);
+    expect((posts[0].body as { holder?: unknown }).holder).toEqual(holderWire);
+    expect(posts[1].body).toEqual({ serviceId: 't-1', salidaId: 'd-1', people: 3, paymentMethod: 'TRANSFER' });
+    expect(posts.map((c) => c.headers?.['Idempotency-Key'])).toEqual(['key-12345678', 'key-12345678']);
+    expect(created).toEqual(mine);
+  });
+
+  it('does not repeat for any other refusal, nor a second time', async () => {
+    const other = { fail: { status: 400, code: 'VALIDATION_ERROR', message: 'invalid', details: [{ field: 'paymentMethod', message: 'not enabled' }], traceId: 't-3' } };
+    const a = fakeClient(other);
+    expect(await firstValueFrom(new ReservationRequesterApi(a.client).request(selection, 'BANK_TRANSFER', 'key-12345678', [], '', holder)).catch((e) => e)).toMatchObject({ status: 400 });
+    expect(a.calls).toHaveLength(1);
+    const b = fakeClient(refusedHolder, refusedHolder);
+    expect(await firstValueFrom(new ReservationRequesterApi(b.client).request(selection, 'BANK_TRANSFER', 'key-12345678', [], '', holder)).catch((e) => e)).toMatchObject({ status: 400 });
+    expect(b.calls).toHaveLength(2);
+  });
+
   it('leaves the method out when none was chosen and sends the same key again on a retry', async () => {
     const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) }, { ok: detail }, { ok: page([summary]) });
     const requester = new ReservationRequesterApi(client);
