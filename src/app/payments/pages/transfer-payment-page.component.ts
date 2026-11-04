@@ -3,7 +3,7 @@ import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
+import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { departureLine, formatCop } from '../../shared/format';
 import { FINANCIAL_LABEL } from '../../reservations/data/reservations-source';
@@ -78,7 +78,7 @@ export class TransferPaymentPageComponent {
   protected readonly pending = signal(false); protected readonly refused = signal('');
   private proof: File | null = null; private key = this.keys.generate();
   private readonly requests = new Subject<void>();
-  protected readonly state = toSignal(this.requests.pipe(switchMap(() => defer(() => forkJoin({ all: this.mine.listMine(), bank: this.methods.bankAccount() })).pipe(
+  protected readonly state = toSignal(this.requests.pipe(switchMap(() => defer(() => forkJoin({ all: this.mine.listMine(), bank: this.methods.bankAccount().pipe(catchError((e: { code?: string }) => (e?.code === 'NOT_IN_CONTRACT' ? of(this.text.demoBank) : throwError(() => e)))) })).pipe(
     map(({ all, bank }): State => { const reservation = all.find((r) => r.reservationId === this.params['reservation']); return reservation ? { kind: 'data', reservation, bank } : { kind: 'empty' }; }),
     catchError((error) => of<State>({ kind: 'error', ...readFailure(error) })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
