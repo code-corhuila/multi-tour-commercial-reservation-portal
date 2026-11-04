@@ -37,6 +37,11 @@ export abstract class PaymentMethodsSource {
   abstract bankAccount(): Observable<BankAccount>;
 }
 
+/** The "Cliente titular" of screen 21 (DP-RS5, decided 2026-11-04): the five fields of the mockup and the terms box. Birth date is ISO (yyyy-mm-dd). */
+export interface CheckoutHolder {
+  readonly fullName: string; readonly document: string; readonly phone: string; readonly email: string; readonly birthDate: string; readonly termsAccepted: boolean;
+}
+
 /**
  * PENDING INTEGRATION (G-DEP): adapted to the creation port and calculation of HU-COM-007 once they are
  * in develop, never copied (plan D-03). The service computes the values and checks the capacity (RN-RS6);
@@ -45,7 +50,7 @@ export abstract class PaymentMethodsSource {
 export abstract class ReservationRequester {
   /** The companions of screen 21 travel with the same command (HU-COM-005 D-6): one intention, one key. */
   /** DP-08 (option C): the reservation is born with the payment type and the medium chosen on 21; the service refuses a creation without them. */
-  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions?: readonly CustomerCompanion[], paymentType?: string): Observable<CustomerReservation>;
+  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions?: readonly CustomerCompanion[], paymentType?: string, holder?: CheckoutHolder): Observable<CustomerReservation>;
 }
 
 /** PENDING INTEGRATION (G-DEP): the summary and values of the selection, from the calculation of HU-COM-007 (RN-RS4). */
