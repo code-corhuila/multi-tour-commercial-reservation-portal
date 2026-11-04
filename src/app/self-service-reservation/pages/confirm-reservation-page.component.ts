@@ -228,7 +228,7 @@ export class ConfirmReservationPageComponent {
       // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
       next: (reservation) => this.created.set(reservation),
       error: (error: Partial<ApiError> | null) => this.refusal.set(
-        error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
+        error?.userMessage || (error?.status === 409 || error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : this.text.refused)),
     });
   }
 }
