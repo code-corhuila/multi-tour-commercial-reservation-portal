@@ -187,6 +187,7 @@ const SPECIFIED_TREE = [
   'src/app/my-payments/my-payments-copy.ts',
   'src/app/my-payments/economic-rows.ts',
   'src/app/my-payments/data/my-payments-source.ts',
+  'src/app/my-payments/data/reservations-my-payments.ts',
   'src/app/my-payments/pages/my-payments-page.component.ts',
   'src/app/my-payments/components/my-payments-panel.component.ts',
   'src/app/my-payments/components/reservation-economic-lines.component.ts',
