@@ -67,7 +67,7 @@ async function fillHolder(root: HTMLElement, settle: () => Promise<void>, values
   await settle();
 }
 
-async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys; areas?: readonly string[] } = {}) {
+async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys; areas?: readonly string[]; withPanel?: boolean } = {}) {
   const customer = new CustomerAs(options.standing ?? 'FINAL_CUSTOMER');
   const methods = new ControllablePaymentMethods();
   const requester = new RecordingRequester();
@@ -79,6 +79,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: SelectionQuoteSource, useValue: quoteOf() },
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
+    ...(options.withPanel ? [{ provide: MyReservationsSource, useValue: new ControllableMyReservationsSource() }] : []),
     { provide: TourImages, useValue: new DemoTourImages() },
     ...RESERVATION_FORM_CONTRIBUTIONS,
     ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
@@ -552,6 +553,26 @@ describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () 
     p.requester.calls[1].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
     p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
     expect(p.requester.calls[2].idempotencyKey).toBe(p.requester.calls[1].idempotencyKey);
+  });
+});
+
+describe('afterCreatingTheReservationsListShowsTheCashNotice (AC-RS.14, mockup mis-reservas 17A)', () => {
+  const cashNotice = 'creada en estado Pendiente de pago. Tu intención de pagar en efectivo no es un pago: no confirma la reserva ni aparta cupo. La reserva solo se confirma cuando el equipo del operador reciba y registre el dinero dentro del plazo de pago.';
+  it('shows the notice with the code of the new reservation when the medium was cash', async () => {
+    const p = await openConfirm({ withPanel: true }); await p.showMethods(); await p.fill('CASH_AT_OFFICE'); await p.confirm();
+    p.requester.calls[0].reply({ ...reservationFor(), paymentMethod: 'CASH_AT_OFFICE' }); await p.settle();
+    const panel = TestBed.createComponent(MyReservationsPageComponent); panel.detectChanges(); await panel.whenStable(); panel.detectChanges();
+    expect(panel.nativeElement.textContent).toContain('Reserva #RES-1843 ' + cashNotice);
+  });
+  it('shows no notice when the medium was a transfer', async () => {
+    const p = await openConfirm({ withPanel: true }); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].reply({ ...reservationFor(), paymentMethod: 'BANK_TRANSFER' }); await p.settle();
+    const panel = TestBed.createComponent(MyReservationsPageComponent); panel.detectChanges(); await panel.whenStable(); panel.detectChanges();
+    expect(panel.nativeElement.textContent).not.toContain('Tu intención de pagar en efectivo');
+  });
+  it('shows no notice when the panel is opened without a creation before', async () => {
+    const p = await openPanel();
+    expect(p.element.textContent).not.toContain('Tu intención de pagar en efectivo');
   });
 });
 
