@@ -46,7 +46,7 @@ afterEach(() => TestBed.resetTestingModule());
 
 async function render<T>(component: Type<T>, source: MyPaymentsSource, options: { params?: Record<string, string>; areas?: string[]; roles?: string[] } = {}) {
   const navigation = new PortalNavigation();
-  navigation.register(options.areas ?? [CLIENT_AREA.panel, CLIENT_AREA.payments, 'transfer-payment']);
+  navigation.register(options.areas ?? [CLIENT_AREA.panel, CLIENT_AREA.payments, 'transfer-payment', 'finish']);
   navigation.params.set(options.params ?? {});
   const open = vi.spyOn(navigation, 'open');
   TestBed.configureTestingModule({ providers: [{ provide: MyPaymentsSource, useValue: source }, { provide: PortalNavigation, useValue: navigation },
@@ -246,15 +246,15 @@ describe('aProofInValidationRaisesOneNoticeInNotifications', () => {
 describe('continuePaymentFollowsThePortTargetAndOpensScreen24', () => {
   const TARGET: ContinuePaymentTarget = { reservationId: 'RES-1842', paymentType: 'TOTAL', amountCents: 85_000_000 };
 
-  it('offers Continuar pago for the reservation the port names and opens screen 24 with it', async () => {
+  it('offers Continuar pago for the reservation the port names and opens screen 21 in its second mode with it', async () => {
     const view = await render(ContinuePaymentActionComponent, new SourceDouble(TARGET));
     const button = view.host.querySelector('button')!;
     expect(flat(button.textContent)).toBe('CP Continuar pago Continúa el pago pendiente de una de tus reservas.');
     button.click();
-    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1842', type: 'TOTAL', amount: '85000000' });
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1842' });
   });
 
-  it('is not drawn without a target, nor when the build has no screen 24', async () => {
+  it('is not drawn without a target, nor when the build has no screen 21', async () => {
     expect((await render(ContinuePaymentActionComponent, new SourceDouble(null))).host.querySelector('button')).toBeNull();
     TestBed.resetTestingModule();
     expect((await render(ContinuePaymentActionComponent, new SourceDouble(TARGET), { areas: [CLIENT_AREA.panel] })).host.querySelector('button')).toBeNull();
@@ -267,7 +267,7 @@ describe('continuePaymentClickedTwiceOpensScreen24OnceAndRecordsNothing', () => 
     const button = view.host.querySelector('button')!;
     button.click(); button.click();
     expect(view.open).toHaveBeenCalledTimes(1);
-    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1842', amount: '85000000' });
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1842' });
     const code = withoutComments(readFileSync('src/app/my-payments/components/my-payments-panel.component.ts', 'utf8'));
     expect(code).not.toMatch(/Writer|IdempotencyKeys|register\(/);
   });
@@ -559,11 +559,11 @@ describe('theCardOfMisReservasOffersTheActionsOfTheMockupToTheAreasThatExist', (
   }
   const pay = { ...FULL, paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' };
 
-  it('Continuar pago opens screen 24 with the balance, and Ver pagos y comprobantes opens Mis pagos with the reservation', async () => {
+  it('Continuar pago opens screen 21 in its second mode, and Ver pagos y comprobantes opens Mis pagos with the reservation', async () => {
     const view = await actionsOf(pay);
     expect(view.labels).toEqual(['Continuar pago', 'Ver pagos y comprobantes']);
     view.host.querySelectorAll('button')[0].click();
-    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1842', type: 'TOTAL', amount: '85000000' });
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1842' });
     view.host.querySelectorAll('button')[1].click();
     expect(view.open).toHaveBeenCalledWith(CLIENT_AREA.payments, { reservation: 'RES-1842' });
   });
@@ -612,6 +612,8 @@ describe('thePanelNotificationsCarryTheContentOfTheMockup', () => {
       'Reserva RES-1850: Confirmada con saldo pendiente de $200.000. Plazo para completar el saldo: hasta 20 oct 2026 · 06:00 (antes de la hora de inicio de la salida).',
       'Reserva RES-1851: Pendiente de pago. Plazo de pago: según la configuración del operador, sin superar la hora de inicio de la salida.']);
     expect(Array.from(view.host.querySelectorAll('button'), (b) => flat(b.textContent))).toEqual(['Continuar pago', 'Continuar pago']);
+    view.host.querySelectorAll('button')[0].click();
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1850' });
   });
 
   it('Cancelada: the cause and the treatment of the paid values; the credit balance with the link to Mis pagos', async () => {
