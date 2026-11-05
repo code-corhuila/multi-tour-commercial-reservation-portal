@@ -35,6 +35,8 @@ import { MyReservationsApiSource, ReservationRequesterApi, SelectionQuoteApiSour
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
 import { ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
 import { CancellationApiQuote, CancellationApiWriter } from './http/cancellation-api-sources';
+import { RefundsApiSource, RefundsApiWriter } from './http/refunds-api-sources';
+import { RefundsSource, RefundsWriter } from './refunds/data/refunds-ports';
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
 import { PortalCapabilities } from './shared/portal-capabilities';
 import { PortalApiClient, TENANT_IDENTIFIER } from './shell-contract';
@@ -83,5 +85,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-013: the quote and the cancellation at the customer's request over the service (PROPOSED routes); the penalty, the seat and the decision are the service's.
     { provide: CancellationQuote, useFactory: () => new CancellationApiQuote(client, inject(ReservationsSource)) },
     { provide: CancellationWriter, useFactory: () => { const capabilities = inject(PortalCapabilities); return new CancellationApiWriter(client, inject(ReservationsSource), () => capabilities.roleLabel()); } },
+    // HU-COM-016: the refunds over the decisions and the refunds of the service (PROPOSED routes); the credit balance and the execution (saga) are not routes of this service.
+    { provide: RefundsSource, useFactory: () => new RefundsApiSource(client, inject(ReservationsSource)) },
+    { provide: RefundsWriter, useFactory: () => new RefundsApiWriter(client, inject(RefundsSource)) },
   ];
 }
