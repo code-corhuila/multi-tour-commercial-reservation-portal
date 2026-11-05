@@ -188,7 +188,7 @@ const SPECIFIED_TREE = [
   'src/app/my-payments/pages/my-payments-page.component.ts',
   'src/app/my-payments/components/my-payments-panel.component.ts',
   'src/app/my-payments/components/reservation-economic-lines.component.ts',
-  'src/app/my-payments/components/continue-payment.component.ts',
+  'src/app/self-service-reservation/components/continue-payment.component.ts',
   'src/app/demo/refunds-demo.ts',
   'src/app/refunds/refunds-copy.ts',
   'src/app/refunds/data/refunds-ports.ts',

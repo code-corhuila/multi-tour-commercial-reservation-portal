@@ -348,10 +348,12 @@ function press(host: HTMLElement, label: string): void {
 }
 
 describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
-  it('Continuar pago opens 24 of RES-1842; after the proof, Notificaciones and Mis pagos read it En validación with the same balance', async () => {
+  it('Continuar pago opens 21 in its second mode and Continuar opens 24 of RES-1842; after the proof, Notificaciones and Mis pagos read it En validación with the same balance', async () => {
     const { host, cleanup } = mountDemo();
     try {
       await vi.waitFor(() => press(host, 'CP Continuar pago Continúa el pago pendiente de una de tus reservas.'));
+      await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Completar el pago de la reserva'));
+      press(host, 'Continuar');
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Pago por transferencia'));
       expect(flat(host.textContent)).toContain('Reserva #RES-1842');
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;
