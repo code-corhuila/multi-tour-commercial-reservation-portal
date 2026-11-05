@@ -559,7 +559,7 @@ describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () 
 describe('afterCreatingTheReservationsListShowsTheCashNotice (AC-RS.14, mockup mis-reservas 17A)', () => {
   const cashNotice = 'creada en estado Pendiente de pago. Tu intención de pagar en efectivo no es un pago: no confirma la reserva ni aparta cupo. La reserva solo se confirma cuando el equipo del operador reciba y registre el dinero dentro del plazo de pago.';
   it('shows the notice with the code of the new reservation when the medium was cash', async () => {
-    const p = await openConfirm({ withPanel: true }); await p.showMethods(); await p.fill('CASH_AT_OFFICE'); await p.confirm();
+    const p = await openConfirm({ withPanel: true }); await p.showMethods(); await p.fill('CASH_AT_OFFICE'); buttonNamed(p.element, T.confirmCash)!.click(); await p.settle();
     p.requester.calls[0].reply({ ...reservationFor(), paymentMethod: 'CASH_AT_OFFICE' }); await p.settle();
     const panel = TestBed.createComponent(MyReservationsPageComponent); panel.detectChanges(); await panel.whenStable(); panel.detectChanges();
     expect(panel.nativeElement.textContent).toContain('Reserva #RES-1843 ' + cashNotice);
