@@ -5,7 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
-import { MyReservationsSource } from '../data/my-reservations-source';
+import { CreationNotice, MyReservationsSource } from '../data/my-reservations-source';
 import { CustomerReservation, SELF_SERVICE_TEXT, departureLine, reservationState, travelers } from '../model/self-service-reservation';
 import { PortalSlotOutlet, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS } from '../../shared/portal-slots';
 
@@ -24,6 +24,7 @@ type PanelState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; item
         <p class="crp-page-header-desc">{{ text.panelDesc }}</p>
         <p class="crp-page-header-desc">{{ text.readOnly }}</p>
       </div></header>
+      @if (createdCode) { <p role="status" class="crp-self-service-created">{{ text.cashNotice(createdCode) }}</p> }
       <h2>{{ text.historyTitle }}</h2>
       @if (isCustomer) {
         @let current = state();
@@ -63,6 +64,8 @@ export class MyReservationsPageComponent {
   protected readonly cardExtras = RESERVATION_CARD_EXTRAS;
   protected readonly cardActions = RESERVATION_CARD_ACTIONS;
   protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
+  /** AC-RS.14: the code of the cash reservation created just before arriving here, once. */
+  protected readonly createdCode = inject(CreationNotice).take();
   private readonly source = inject(MyReservationsSource);
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => this.source.listMine().pipe(
