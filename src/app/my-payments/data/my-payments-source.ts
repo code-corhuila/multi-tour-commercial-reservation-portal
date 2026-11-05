@@ -40,3 +40,6 @@ export abstract class MyPaymentsSource {
 
 /** Screen 24 of HU-COM-009 (pago-transferencia.html), where Continuar pago lands (DP-MP5, PROPUESTO). */
 export const TRANSFER_PAYMENT_AREA = 'transfer-payment';
+
+/** Screen 21 (finalizar-reserva.html), where Continuar pago lands in its second mode with { reservation } (AC-RS.13, DP-RS9). It is the key RESERVATION_FLOW.finish names. */
+export const CONTINUE_PAYMENT_AREA = 'finish';
