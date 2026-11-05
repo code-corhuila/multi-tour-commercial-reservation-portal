@@ -247,7 +247,8 @@ export class ConfirmReservationPageComponent {
       // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
       next: (reservation) => this.created.set(reservation),
       error: (error: Partial<ApiError> | null) => this.refusal.set(
-        namesRiskData(error) ? (this.party.highRisk.set(true), this.text.riskNeeded) : error?.userMessage || (error?.status === 409 || error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : this.text.refused)),
+        // The refusal of the service for lack of seats is shown with the authorized Spanish text, never with the English message toPageError copies into userMessage.
+        namesRiskData(error) ? (this.party.highRisk.set(true), this.text.riskNeeded) : error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
     });
   }
 }
