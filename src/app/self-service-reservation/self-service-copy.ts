@@ -67,6 +67,7 @@ export const SELF_SERVICE_TEXT = {
   noCapacity: 'No hay cupos suficientes en esta salida. No se creó ninguna reserva.',
   refused: 'No se creó la reserva. Inténtalo de nuevo.',
   created: 'Reserva creada',
+  cashNotice: (code: string) => `Reserva #${code} creada en estado Pendiente de pago. Tu intención de pagar en efectivo no es un pago: no confirma la reserva ni aparta cupo. La reserva solo se confirma cuando el equipo del operador reciba y registre el dinero dentro del plazo de pago.`,
   seeMine: 'Ver mis reservas',
   notCustomer: 'Solo un cliente con sesión iniciada puede confirmar una reserva aquí.',
   panelEyebrow: 'Portal cliente',
