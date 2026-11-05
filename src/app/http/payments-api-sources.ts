@@ -68,7 +68,7 @@ export class ReservationsWithPaymentsApiSource extends ReservationsApiSource {
 /**
  * POST /reservations/{id}/payments under the Idempotency-Key. A proof makes it a TRANSFER (multipart: the JSON part `payment` and the binary
  * part `proof`), none makes it CASH (JSON). The user and the tenant are the token's; the service judges the file and the 6 MB cap.
- * The saga register-payment (Cash first) is not in this contract: the service records the cash itself until it is.
+ * Cash is refused today with 422 (no verifiable cash session, debt DD-2); the saga register-payment (Cash first) is not in this contract.
  */
 export class PaymentsApiWriter extends PaymentsWriter {
   constructor(private readonly client: PortalApiClient) { super(); }

@@ -39,6 +39,7 @@ import {
 } from './self-service-reservation.double';
 import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
+import { RESERVATION_FORM_CONTRIBUTIONS } from '../src/app/customers/components/reservation-form-sections';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
@@ -78,6 +79,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
     { provide: TourImages, useValue: new DemoTourImages() },
+    ...RESERVATION_FORM_CONTRIBUTIONS,
     ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
@@ -265,6 +267,46 @@ describe('theHolderFieldsAreRequiredAndTravelAsTheHolderOfTheCreation (DP-RS5, A
     await p.fillHolder({ phone: '311 111 1111' }); await p.confirm();
     expect(p.requester.calls[1].holder?.phone).toBe('311 111 1111');
     expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+  });
+});
+
+describe('aRefusalNamingRiskDataShowsTheRiskBlockAndKeepsWhatWasTyped (DP-RS5, mockup finalizar-reserva)', () => {
+  const riskRefusal = () => apiError({ status: 400, code: 'VALIDATION_ERROR', message: 'the request has invalid fields', userMessage: '', details: [{ field: 'bloodType', message: 'bloodType is required' }] });
+  const type = (root: HTMLElement, name: string, value: string) => {
+    const input = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`)!; input.value = value; input.dispatchEvent(new Event('input'));
+  };
+
+  it('starts hidden, shows one card per traveler when the service names risk data, and asks again before sending', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    expect(p.element.querySelector('[data-risk-section]')).toBeNull();
+    await p.confirm(); p.requester.calls[0].fail(riskRefusal()); await p.settle();
+    expect(p.requester.calls[0].risk).toBeUndefined();
+    const block = p.element.querySelector('[data-risk-section]')!;
+    expect(block.querySelector('h2')?.textContent?.trim()).toBe('Requisitos de actividad de riesgo');
+    expect(block.textContent).toContain('Esta actividad requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero.');
+    expect(Array.from(block.querySelectorAll('article strong'), (s) => s.textContent?.trim())).toEqual(['Titular', 'Acompañante 1']);
+    expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.riskNeeded);
+    // What was typed in the rest of the screen stays.
+    expect((p.element.querySelector('#crp-holder-name') as HTMLInputElement).value).toBe(HOLDER.name);
+    // Missing data: nothing is sent and each field says so.
+    await p.confirm();
+    expect(p.requester.calls).toHaveLength(1);
+    expect(block.querySelector('[aria-invalid="true"]')).not.toBeNull();
+    // Typed, then kept and sent.
+    for (const i of [0, 1]) {
+      type(p.element, `bloodType-${i}`, 'O+'); type(p.element, `emergencyContact-${i}`, 'Contacto Ficticio 300'); type(p.element, `physicalRestrictions-${i}`, 'Ninguna');
+      p.element.querySelector<HTMLInputElement>(`[name="informedConsent-${i}"]`)!.click();
+    }
+    await p.settle(); await p.confirm();
+    expect(p.requester.calls).toHaveLength(2);
+    expect(p.requester.calls[1].risk).toEqual([0, 1].map(() => ({ informedConsent: true, bloodType: 'O+', emergencyContact: 'Contacto Ficticio 300', physicalRestrictions: 'Ninguna' })));
+    expect(p.requester.calls[1].holder?.fullName).toBe(HOLDER.name);
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+  });
+  it('does not show the block for any other refusal', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    expect(p.element.querySelector('[data-risk-section]')).toBeNull();
   });
 });
 
