@@ -24,6 +24,7 @@ import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { TourImages } from '../src/app/shared/tour-photo';
 import { DemoTourImages } from '../src/app/demo/tour-photo-demo';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
+import { toPageError } from '../src/app/http/api-paths';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
   ControllableMyReservationsSource,
@@ -359,6 +360,13 @@ describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity({ status: 422, code: 'SEATS_UNAVAILABLE' })); await p.settle();
     expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
+  });
+  it('shows the Spanish text, not the English message of the service, when the refusal went through the real toPageError', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(toPageError({ status: 422, code: 'SEATS_UNAVAILABLE', message: 'not enough seats: 1 seats available', details: [], traceId: 'trace-9' })); await p.settle();
+    const alert = p.element.querySelector('[role="alert"]')?.textContent ?? '';
+    expect(alert).toContain(T.noCapacity);
+    expect(alert).not.toContain('not enough seats');
   });
   it('prefers the message the container decided, when there is one', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
