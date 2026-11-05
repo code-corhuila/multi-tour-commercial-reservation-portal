@@ -31,13 +31,15 @@ describe('theDemoStoreIsOnePerPage', () => {
     host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());
     fillCompanionsIn(host);
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.confirm)!.click();
-    await vi.waitFor(() => expect(host.textContent).toContain('RES-1843'));
+    // The code is the next number of the store, which depends on what ran before in the same worker: the test reads it, it does not assume it.
+    let created = '';
+    await vi.waitFor(() => { created = /RES-\d+/.exec(host.textContent ?? '')?.[0] ?? ''; expect(created).not.toBe(''); });
     unmount();
 
     mountAs(['TENANT_ADMINISTRATOR']);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
     Array.from(host.querySelectorAll<HTMLButtonElement>('nav button')).find((b) => b.textContent?.trim() === 'Reservas')!.click();
-    await vi.waitFor(() => expect(host.querySelector('[data-state="data"]')?.textContent).toContain('#RES-1843'));
+    await vi.waitFor(() => expect(host.querySelector('[data-state="data"]')?.textContent).toContain(`#${created}`));
     expect(host.querySelector('[data-state="data"]')?.textContent).toContain('#RES-1842');
   });
 
