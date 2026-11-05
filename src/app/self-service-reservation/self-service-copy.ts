@@ -159,3 +159,17 @@ export const HOLDER_TEXT = {
   email: { label: 'Correo electrónico', placeholder: 'correo@ejemplo.com' },
   birthdate: { label: 'Fecha de nacimiento', placeholder: '' },
 } as const;
+
+/** finalizar-reserva.html (21) in its second mode, "completar el pago de una reserva existente" (app.js 3500-3640), as the mockup writes it (DP-RS9). */
+export const CONTINUE_PAYMENT_TEXT = {
+  title: 'Completar el pago de la reserva', back: 'Volver a mis reservas',
+  pill: 'Completa el saldo de una reserva existente: no se crea una reserva nueva.',
+  summary: 'Resumen de reserva', paymentCard: 'Tipo de pago, medio de pago y plazo', amount: 'Monto a pagar ahora',
+  existingType: (type: string, balance: string) => `Tipo de pago de la reserva: ${type}. Aquí pagas una parte o todo el saldo pendiente (${balance}).`,
+  hint: (balance: string) => `Saldo pendiente: ${balance}. Puedes pagar una parte o todo el saldo.`,
+  invalidAmount: (balance: string) => `Ingresa un monto válido: mayor a cero y hasta el saldo pendiente (${balance}).`,
+  notFound: 'No encontramos la reserva indicada en tu cuenta.',
+  closed: (id: string) => `La reserva ${id} está Cancelada: no admite nuevos pagos y no puede reactivarse.`,
+  noBalance: (id: string) => `La reserva ${id} no tiene saldo pendiente.`,
+  barReservation: 'Reserva', barTotal: 'Total', next: 'Continuar',
+} as const;
