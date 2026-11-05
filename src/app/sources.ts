@@ -35,6 +35,8 @@ import { PaymentQuoteReader, PaymentsWriter } from './payments/data/payments-wri
 import { PaymentMethodsSource } from './self-service-reservation/data/reservation-confirmation-ports';
 import { MyReservationsApiSource, ReservationRequesterApi, SelectionQuoteApiSource } from './http/self-service-api-sources';
 import { MyReservationsSource } from './self-service-reservation/data/my-reservations-source';
+import { MyPaymentsSource } from './my-payments/data/my-payments-source';
+import { ReservationsMyPayments } from './my-payments/data/reservations-my-payments';
 import { ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
 import { PaymentDeadlineReader } from './payments/data/payment-followup-ports';
 import { CancellationApiQuote, CancellationApiWriter } from './http/cancellation-api-sources';
@@ -88,6 +90,9 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     { provide: PublicDeparturesSource, useFactory: () => { const tenant = inject(TENANT_IDENTIFIER); return new PublicDeparturesApiSource(client, () => tenant); } },
     // HU-COM-006 AC-PO.4: the value in force arrives calculated with each tour; HU-COM-004's pure function stays the service's.
     { provide: TourValueSource, useValue: new PublicTourValueSource() },
+    // HU-COM-014: the economic state of the customer's reservations (type, method, proof, validated values, receipts and their reasons), read from the
+    // reservations and the payments the service serves; the portal computes none of it.
+    { provide: MyPaymentsSource, useFactory: (s: ReservationsSource, m: MyReservationsSource) => new ReservationsMyPayments(s, m), deps: [ReservationsSource, MyReservationsSource] },
     // HU-COM-013: the quote and the cancellation at the customer's request over the service (PROPOSED routes); the penalty, the seat and the decision are the service's.
     { provide: CancellationQuote, useFactory: () => new CancellationApiQuote(client, inject(ReservationsSource)) },
     { provide: CancellationWriter, useFactory: () => { const capabilities = inject(PortalCapabilities); return new CancellationApiWriter(client, inject(ReservationsSource), () => capabilities.roleLabel()); } },
