@@ -81,7 +81,7 @@ export const SELF_SERVICE_TEXT = {
   panelNotCustomer: SIGN_IN_AS_CUSTOMER_NOTICE,
 } as const;
 
-const seatsText = (n: number) => `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`;
+const seatsText = (n: number, total?: number) => (total ? `${n} de ${total} cupos disponibles` : `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`);
 
 /** The texts of reservar-tour.html (authorized screen 20). */
 export const RESERVE_TEXT = {
@@ -93,6 +93,7 @@ export const RESERVE_TEXT = {
   listCopy: 'Cada salida tiene fecha, hora de inicio, hora de finalización estimada y cupos propios. Cada reserva corresponde a una única salida; si quieres viajar en otra salida, crea otra reserva.',
   full: 'Salida llena',
   seats: seatsText,
+  start: (time: string) => `Inicio ${time}`,
   conditionsTitle: 'Condiciones de reserva',
   conditionsCopy: 'Consulta las condiciones aplicables a este tour antes de continuar.',
   seeConditions: 'Ver condiciones',
