@@ -17,6 +17,8 @@ export const PROOF_REVIEW_TEXT = {
   previewAlt: 'Vista previa del comprobante de pago', documentTitle: 'Documento del comprobante abierto',
   file: (name: string | null) => (name ? `Archivo: ${name}` : 'Sin comprobante adjunto'),
   reason: 'Motivo (obligatorio al rechazar o si el monto verificado difiere del declarado)', reasonPlaceholder: 'Describe el motivo de la decisión o de la diferencia',
+  /** PROPUESTO (DP-D10-5): the mockup draws no notice; the reason is free text that travels to the event and can reach the customer. */
+  reasonPrivacy: 'No escribas datos personales en el motivo (nombres, documentos, teléfonos o datos de salud): el motivo queda registrado y puede llegar al cliente.',
   recognized: 'El monto reconocido es el valor verificado en la evidencia. Si supera el valor pendiente de la reserva, solo se aplica lo necesario y el excedente se registra como saldo a favor del cliente dentro del tenant.',
   hint: 'Verifica el monto y decide si apruebas o rechazas el comprobante.',
   reasonRequired: 'Registra el motivo obligatorio del rechazo.', differenceRequired: 'El monto verificado es distinto al declarado en el comprobante: registra el motivo de la diferencia.',
