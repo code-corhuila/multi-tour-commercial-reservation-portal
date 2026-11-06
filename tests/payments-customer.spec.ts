@@ -244,7 +244,7 @@ describe('screen 24, Pago por transferencia', () => {
   // AC-PY.13 (spec 009- V-T8): the amount to pay is the service's; the customer declares the value of the proof; the params carry no amount.
   it('aForgedAmountInTheNavigationParamsIsIgnored', async () => {
     const { element, attach, click, stored } = await transferOf({ reservation: 'RES-1842', type: 'TOTAL', amount: '1' });
-    const text = element.textContent!.replace(/s+/g, ' ');
+    const text = element.textContent!.replace(/\s+/g, ' ');
     expect(text).toContain('Valor a transferir $850.000');
     expect(element.querySelector<HTMLInputElement>('#crp-transfer-amount')?.value).toBe('850000');
     await attach(pdf()); await click('Enviar comprobante para validación');
@@ -264,7 +264,7 @@ describe('screen 24, Pago por transferencia', () => {
       override quote(id: string, type: string) { asked.push([id, type]); return of<PaymentQuote>({ amountToPayCents: 28_333_334, pendingBalanceCents: 85_000_000 }); }
     })();
     const { element } = await transferOf({ reservation: 'RES-1842', type: 'PARTIAL', amount: '5' }, [{ provide: PaymentQuoteReader, useValue: quote }]);
-    const text = element.textContent!.replace(/s+/g, ' ');
+    const text = element.textContent!.replace(/\s+/g, ' ');
     expect(asked).toEqual([['RES-1842', 'PARTIAL']]);
     expect(text).toContain('Saldo pendiente de la reserva $850.000');
     expect(text).toContain('Valor a transferir $283.333,34');
@@ -280,7 +280,7 @@ describe('screen 24, Pago por transferencia', () => {
 
   it('transferScreenShowsYourReservationBankDataAndTheSeatText (the NIT is not served by the contract, DP-06, and is not drawn)', async () => {
     const { element } = await transferOf();
-    const text = element.textContent!.replace(/s+/g, ' ');
+    const text = element.textContent!.replace(/\s+/g, ' ');
     for (const piece of ['Tu reserva', 'Datos bancarios', 'Si es tu primer pago, el cupo se verifica y se aparta al recibir el comprobante, antes de aceptarlo. Si ya no hay cupo, te lo informaremos y no se recibirá el comprobante.']) expect(text, piece).toContain(piece);
     expect(text).not.toContain('NIT');
   });
