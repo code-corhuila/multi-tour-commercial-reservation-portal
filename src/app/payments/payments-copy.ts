@@ -54,7 +54,7 @@ export const CUSTOMER_PAYMENT_TEXT = {
   title: 'Pago por transferencia', reservation: 'Reserva',
   alert: 'Realiza la transferencia y sube el comprobante. El comprobante queda En validación solo cuando lo envías; no es ingreso de caja ni confirma la reserva hasta que un usuario del operador con el permiso Validar comprobantes lo valide, en un plazo máximo de 24 horas corridas.',
   typeName: { TOTAL: 'Pago total', PARTIAL: 'Abono' } as Readonly<Record<string, string>>, transferMethod: ' · Transferencia',
-  yourReservation: 'Tu reserva', tour: 'Tour', departure: 'Salida', travelers: 'Viajeros', typeAndMethod: 'Tipo y medio de pago', toTransfer: 'Valor a transferir',
+  yourReservation: 'Tu reserva', pendingBalance: 'Saldo pendiente de la reserva', declaredValue: 'Valor transferido (según tu comprobante)', tour: 'Tour', departure: 'Salida', travelers: 'Viajeros', typeAndMethod: 'Tipo y medio de pago', toTransfer: 'Valor a transferir',
   seatNote: 'Si es tu primer pago, el cupo se verifica y se aparta al recibir el comprobante, antes de aceptarlo. Si ya no hay cupo, te lo informaremos y no se recibirá el comprobante.',
   bankTitle: 'Datos bancarios', bank: 'Banco', accountType: 'Tipo de cuenta', accountNumber: 'Número de cuenta', holder: 'Titular',
   proofTitle: 'Comprobante de pago', proof: 'Archivo del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)',

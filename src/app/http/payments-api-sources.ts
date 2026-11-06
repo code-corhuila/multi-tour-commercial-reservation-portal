@@ -1,6 +1,6 @@
 import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { PaymentDeadline, PaymentDeadlineReader } from '../payments/data/payment-followup-ports';
-import { PaymentsWriter, RegisterPaymentCommand } from '../payments/data/payments-writer';
+import { PaymentQuote, PaymentQuoteReader, PaymentsWriter, RegisterPaymentCommand } from '../payments/data/payments-writer';
 import { PAYMENTS_TEXT, PAYMENT_REFUSAL_TEXT as R } from '../payments/payments-copy';
 import { PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL } from '../reservations/reservations-copy';
 import { Reservation, ReservationPayment } from '../reservations/model/reservation';
@@ -8,7 +8,7 @@ import { PaymentMethodsSource } from '../self-service-reservation/data/reservati
 import { PaymentMethod } from '../self-service-reservation/model/self-service-reservation';
 import { ApiError, PortalApiClient } from '../shell-contract';
 import { API_BASE, call, listAll, notInContract, reservationsPath } from './api-paths';
-import { METHOD_IN, ReservationDto, ReservationsApiSource, SummaryDto, TYPE_IN, reservationFrom, rowsOf } from './reservations-api-sources';
+import { METHOD_IN, ReservationDto, ReservationsApiSource, SummaryDto, TYPE_IN, TYPE_OUT, reservationFrom, rowsOf } from './reservations-api-sources';
 
 export const paymentsPath = (reservationId: string): string => `${reservationsPath(reservationId)}/payments`;
 export const paymentParametersPath = (): string => `${API_BASE}/payment-parameters`;
@@ -136,5 +136,15 @@ export class PaymentDeadlineApiReader extends PaymentDeadlineReader {
       map((d): PaymentDeadline | null => ({ dueAt: d.effectiveDeadline, departureStartsAt: d.departureStartsAt })),
       catchError((error: { status?: number }) => (error.status === 404 ? of(null) : throwError(() => error))),
     );
+  }
+}
+
+/** AC-PY.13 over GET /reservations/{id}/payment-quote?type= (PROPOSED): the service computes the amount to pay and the pending balance; the portal adds nothing up. */
+export class PaymentQuoteApiReader extends PaymentQuoteReader {
+  constructor(private readonly client: PortalApiClient) { super(); }
+  override quote(reservationId: string, type: string): Observable<PaymentQuote> {
+    const wire = TYPE_OUT[type];
+    return call<{ amountToPayCents?: number; pendingBalanceCents: number }>(this.client, `${reservationsPath(reservationId)}/payment-quote${wire ? `?type=${wire}` : ''}`)
+      .pipe(map((q): PaymentQuote => ({ amountToPayCents: q.amountToPayCents ?? null, pendingBalanceCents: q.pendingBalanceCents })));
   }
 }

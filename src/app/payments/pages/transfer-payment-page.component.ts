@@ -10,16 +10,16 @@ import { FINANCIAL_LABEL } from '../../reservations/data/reservations-source';
 import { MyReservationsSource } from '../../self-service-reservation/data/my-reservations-source';
 import { BankAccount, CustomerReservation, PaymentMethodsSource, reservationState } from '../../self-service-reservation/data/reservation-confirmation-ports';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
-import { parseMinorUnits } from '../../shared/money';
+import { minorUnitsToField, parseMoney } from '../../shared/money';
 import { TRANSFER_PAYMENT_LINES, PortalSlotOutlet } from '../../shared/portal-slots';
-import { PaymentsWriter } from '../data/payments-writer';
+import { PaymentQuote, PaymentQuoteReader, PaymentsWriter } from '../data/payments-writer';
 import { proofProblem } from '../model/payment';
 import { PAYMENT_RESULT_AREA } from '../payment-result-copy';
 import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT, viajeros } from '../payments-copy';
 
-type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservation: CustomerReservation; bank: BankAccount };
+type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservation: CustomerReservation; bank: BankAccount; quote: PaymentQuote };
 
-/** Screen 24 (pago-transferencia.html), opened by Continuar al pago of 21 with { reservation, type, amount }; only the customer's own reservation. */
+/** Screen 24 (pago-transferencia.html), opened by Continuar al pago of 21 with { reservation, type }; only the customer's own reservation. The amount to pay is the service's (AC-PY.13), never a navigation param. */
 @Component({
   selector: 'app-transfer-payment-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, PortalSlotOutlet],
   template: `
@@ -38,11 +38,14 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
               <article class="crp-booking-card"><h2>{{ text.yourReservation }}</h2>
                 <div class="crp-transfer-summary"><div><span>{{ text.reservation }}</span>&ngsp;<strong>#{{ r.reservationId }}</strong></div><div><span>{{ text.tour }}</span>&ngsp;<strong>{{ r.tourName }}</strong></div>
                   <div><span>{{ text.departure }}</span>&ngsp;<strong>{{ departure(r.departureAt) }}</strong></div><div><span>{{ text.travelers }}</span>&ngsp;<strong>{{ travelers(r.people) }}</strong></div>
-                  <div><span>{{ text.typeAndMethod }}</span>&ngsp;<strong>{{ typeName }}{{ text.transferMethod }}</strong></div><div><span>{{ text.toTransfer }}</span>&ngsp;<strong>{{ amount === null ? "" : cop(amount) }}</strong></div></div></article>
+                  <div><span>{{ text.typeAndMethod }}</span>&ngsp;<strong>{{ typeName }}{{ text.transferMethod }}</strong></div><div><span>{{ text.pendingBalance }}</span>&ngsp;<strong>{{ cop(s.quote.pendingBalanceCents) }}</strong></div><div><span>{{ text.toTransfer }}</span>&ngsp;<strong>{{ s.quote.amountToPayCents === null ? '' : cop(s.quote.amountToPayCents) }}</strong></div></div></article>
               <article class="crp-booking-card"><h2>{{ text.bankTitle }}</h2>
                 <dl class="crp-transfer-bank"><div><dt>{{ text.bank }}</dt><dd>{{ s.bank.bank }}</dd></div><div><dt>{{ text.accountType }}</dt><dd>{{ s.bank.accountType }}</dd></div>
                   <div><dt>{{ text.accountNumber }}</dt><dd>{{ s.bank.accountNumber }}</dd></div><div><dt>{{ text.holder }}</dt><dd>{{ s.bank.holder }}</dd></div></dl></article>
               <article class="crp-booking-card crp-transfer-proof"><h2>{{ text.proofTitle }}</h2>
+                <label for="crp-transfer-amount">{{ text.declaredValue }}</label>
+                <input id="crp-transfer-amount" name="amount" type="text" inputmode="decimal" [value]="declared() ?? (s.quote.amountToPayCents === null ? '' : field(s.quote.amountToPayCents))" (input)="declared.set($any($event.target).value)"
+                  [attr.aria-invalid]="amountInvalid() ? 'true' : null" />
                 <label for="crp-transfer-proof">{{ text.proof }}</label>
                 <input id="crp-transfer-proof" name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="choose($any($event.target).files?.[0] ?? null)"
                   [attr.aria-invalid]="invalid() ? 'true' : null" aria-describedby="crp-transfer-proof-feedback" />
@@ -72,14 +75,18 @@ export class TransferPaymentPageComponent {
   protected readonly text = CUSTOMER_PAYMENT_TEXT; protected readonly common = PAYMENTS_TEXT; protected readonly financial: Readonly<Record<string, string>> = FINANCIAL_LABEL;
   protected readonly lines = TRANSFER_PAYMENT_LINES; protected readonly reservations = CLIENT_AREA.reservations;
   protected readonly cop = formatCop; protected readonly departure = departureLine; protected readonly travelers = viajeros;
-  /** The amount travels as navigation text: only a positive safe integer of cents is ever sent (pillar 3). */
-  protected readonly typeName = CUSTOMER_PAYMENT_TEXT.typeName[this.params['type']] ?? ''; protected readonly amount = parseMinorUnits(this.params['amount']);
+  /** AC-PY.13: the amount to pay is the service's; the customer declares the value of the proof, read in cents (pillar 3). */
+  protected readonly typeName = CUSTOMER_PAYMENT_TEXT.typeName[this.params['type']] ?? ''; protected readonly field = minorUnitsToField;
+  private readonly quotes = inject(PaymentQuoteReader); protected readonly declared = signal<string | null>(null); protected readonly amountInvalid = signal(false);
   protected readonly feedback = signal(''); protected readonly invalid = signal(false);
   protected readonly pending = signal(false); protected readonly refused = signal('');
   private proof: File | null = null; private key = this.keys.generate();
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(switchMap(() => defer(() => forkJoin({ all: this.mine.listMine(), bank: this.methods.bankAccount().pipe(catchError((e: { code?: string }) => (e?.code === 'NOT_IN_CONTRACT' ? of(this.text.demoBank) : throwError(() => e)))) })).pipe(
-    map(({ all, bank }): State => { const reservation = all.find((r) => r.reservationId === this.params['reservation']); return reservation ? { kind: 'data', reservation, bank } : { kind: 'empty' }; }),
+    switchMap(({ all, bank }) => {
+      const reservation = all.find((r) => r.reservationId === this.params['reservation']);
+      return reservation ? this.quotes.quote(reservation.reservationId, this.params['type'] ?? '').pipe(map((quote): State => ({ kind: 'data', reservation, bank, quote }))) : of<State>({ kind: 'empty' });
+    }),
     catchError((error) => of<State>({ kind: 'error', ...readFailure(error) })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   constructor() { this.reload(); }
@@ -98,9 +105,11 @@ export class TransferPaymentPageComponent {
     const s = this.state();
     if (this.pending() || s.kind !== 'data') return;
     if (!this.choose(this.proof)) { this.focusFirstErrorOnRender(); return; }
-    if (this.amount === null) { this.refused.set(this.common.amountRequired); return; }
+    const declared = parseMoney(this.declared() ?? (s.quote.amountToPayCents === null ? '' : this.field(s.quote.amountToPayCents)));
+    this.amountInvalid.set(declared.kind !== 'valid' || declared.minorUnits <= 0);
+    if (declared.kind !== 'valid' || declared.minorUnits <= 0) { this.refused.set(this.common.amountRequired); this.focusFirstErrorOnRender(); return; }
     this.pending.set(true); this.refused.set('');
-    const command = { reservationId: s.reservation.reservationId, amountCents: this.amount, proof: this.proof, paymentType: this.params['type'] };
+    const command = { reservationId: s.reservation.reservationId, amountCents: declared.minorUnits, proof: this.proof, paymentType: this.params['type'] };
     this.writer.register(command, this.key).subscribe({
       next: () => { this.pending.set(false); if (!this.navigation?.open(PAYMENT_RESULT_AREA.received, { reservation: command.reservationId })) this.navigation?.open(CLIENT_AREA.panel); },
       error: (e: { userMessage?: string }) => { this.refused.set(e?.userMessage || this.common.failed); this.pending.set(false); },

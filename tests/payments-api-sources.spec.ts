@@ -2,9 +2,9 @@ import { Injector } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { API_BASE } from '../src/app/http/api-paths';
-import { PaymentMethodsApiSource, PaymentsApiWriter, ReservationsWithPaymentsApiSource } from '../src/app/http/payments-api-sources';
+import { PaymentMethodsApiSource, PaymentQuoteApiReader, PaymentsApiWriter, ReservationsWithPaymentsApiSource } from '../src/app/http/payments-api-sources';
 import { ReservationsApiSource } from '../src/app/http/reservations-api-sources';
-import { PaymentsWriter } from '../src/app/payments/data/payments-writer';
+import { PaymentQuoteReader, PaymentsWriter } from '../src/app/payments/data/payments-writer';
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
 import { PaymentMethodsSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { sourceProviders } from '../src/app/sources';
@@ -67,6 +67,20 @@ describe('paymentsWriterOverTheApiClient', () => {
   });
 });
 
+describe('paymentQuoteOverTheApiClient', () => {
+  it('asks the service for the amount to pay of the type and keeps the pending balance (AC-PY.13: the portal computes nothing)', async () => {
+    const { client, calls } = fakeClient({ ok: { enabledTypes: ['DEPOSIT'], enabledMethods: ['TRANSFER'], paymentType: 'DEPOSIT', amountToPayCents: 3_000_000, minimumDepositCents: 3_000_000, pendingBalanceCents: 10_000_000 } });
+    expect(await firstValueFrom(new PaymentQuoteApiReader(client).quote('r-1', 'PARTIAL'))).toEqual({ amountToPayCents: 3_000_000, pendingBalanceCents: 10_000_000 });
+    expect(calls[0]).toEqual({ path: API_BASE + '/reservations/r-1/payment-quote?type=DEPOSIT' });
+  });
+
+  it('quotes a total payment as FULL_PAYMENT and answers no amount when the service gives none (no type enabled)', async () => {
+    const { client, calls } = fakeClient({ ok: { enabledTypes: [], enabledMethods: [], pendingBalanceCents: 10_000_000 } });
+    expect(await firstValueFrom(new PaymentQuoteApiReader(client).quote('r-1', 'TOTAL'))).toEqual({ amountToPayCents: null, pendingBalanceCents: 10_000_000 });
+    expect(calls[0].path).toBe(API_BASE + '/reservations/r-1/payment-quote?type=FULL_PAYMENT');
+  });
+});
+
 describe('reservationsWithPaymentsOverTheApiClient', () => {
   it('reads the payments of each reservation, oldest first, with the proof state in the words of the screens and the decision when there is one', async () => {
     const decided = attempt({ paymentId: 'p-2', validationStatus: 'REJECTED', decidedBy: 'u-2', decidedAt: '2026-11-01T12:00:00Z', decisionReason: 'Ilegible' });
@@ -83,6 +97,7 @@ describe('sourceProvidersOfThePayments', () => {
     const injector = Injector.create({ providers: sourceProviders(fakeClient().client) });
     expect(injector.get(PaymentMethodsSource)).toBeInstanceOf(PaymentMethodsApiSource);
     expect(injector.get(PaymentsWriter)).toBeInstanceOf(PaymentsApiWriter);
+    expect(injector.get(PaymentQuoteReader)).toBeInstanceOf(PaymentQuoteApiReader);
     expect(injector.get(ReservationsSource)).toBeInstanceOf(ReservationsApiSource);
     expect(injector.get(ReservationsSource)).toBeInstanceOf(ReservationsWithPaymentsApiSource);
   });
