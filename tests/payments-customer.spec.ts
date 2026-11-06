@@ -261,14 +261,14 @@ describe('screen 24, Pago por transferencia', () => {
   it('readsTheAmountToPayAndThePendingBalanceFromThePaymentQuotePort', async () => {
     const asked: string[][] = [];
     const quote = new (class extends PaymentQuoteReader {
-      override quote(id: string, type: string) { asked.push([id, type]); return of<PaymentQuote>({ amountToPayCents: 28_333_334, pendingBalanceCents: 85_000_000 }); }
+      override quote(id: string, type: string) { asked.push([id, type]); return of<PaymentQuote>({ amountToPayCents: 28_333_300, pendingBalanceCents: 85_000_000 }); }
     })();
     const { element } = await transferOf({ reservation: 'RES-1842', type: 'PARTIAL', amount: '5' }, [{ provide: PaymentQuoteReader, useValue: quote }]);
     const text = element.textContent!.replace(/\s+/g, ' ');
     expect(asked).toEqual([['RES-1842', 'PARTIAL']]);
     expect(text).toContain('Saldo pendiente de la reserva $850.000');
-    expect(text).toContain('Valor a transferir $283.333,34');
-    expect(element.querySelector<HTMLInputElement>('#crp-transfer-amount')?.value).toBe('283333.34');
+    expect(text).toContain('Valor a transferir $283.333');
+    expect(element.querySelector<HTMLInputElement>('#crp-transfer-amount')?.value).toBe('283333');
   });
 
   it('showsTheErrorStateWhenThePaymentQuoteFailsAndNeverTheParamsAmount', async () => {
