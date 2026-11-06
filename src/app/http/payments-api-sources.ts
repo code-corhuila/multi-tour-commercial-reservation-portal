@@ -1,11 +1,12 @@
 import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { PaymentDeadline, PaymentDeadlineReader } from '../payments/data/payment-followup-ports';
 import { PaymentsWriter, RegisterPaymentCommand } from '../payments/data/payments-writer';
+import { PAYMENTS_TEXT, PAYMENT_REFUSAL_TEXT as R } from '../payments/payments-copy';
 import { PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL } from '../reservations/reservations-copy';
 import { Reservation, ReservationPayment } from '../reservations/model/reservation';
 import { PaymentMethodsSource } from '../self-service-reservation/data/reservation-confirmation-ports';
 import { PaymentMethod } from '../self-service-reservation/model/self-service-reservation';
-import { PortalApiClient } from '../shell-contract';
+import { ApiError, PortalApiClient } from '../shell-contract';
 import { API_BASE, call, listAll, notInContract, reservationsPath } from './api-paths';
 import { METHOD_IN, ReservationDto, ReservationsApiSource, SummaryDto, TYPE_IN, reservationFrom, rowsOf } from './reservations-api-sources';
 
@@ -67,6 +68,41 @@ export class ReservationsWithPaymentsApiSource extends ReservationsApiSource {
 }
 
 /**
+ * The service answers payment refusals in English with the envelope {status, code, message, details[{field, message}]}; every business rule shares
+ * the code BUSINESS_RULE_VIOLATION, so the rule is told by its message (status 422) and a field error by its field (status 400). Anything unknown
+ * is the generic Spanish text, never the English message.
+ */
+const BY_MESSAGE: Readonly<Record<string, string>> = {
+  'there is no open cash session': R.noCashSession,
+  'the departure has no availability': R.noSeats,
+  'the departure has already started': PAYMENTS_TEXT.started,
+  'the payment deadline has expired': R.deadlineExpired,
+  'the departure was cancelled': R.departureCancelled,
+  'the reservation does not accept payments in its current state': R.reservationClosed,
+  'the reservation has no pending balance': PAYMENTS_TEXT.closedNote['settled'],
+};
+const BY_FIELD: Readonly<Record<string, string>> = {
+  'amountCents|the first deposit cannot be below the minimum deposit': R.belowMinimum,
+  'amountCents|the transfer cannot exceed the pending balance': R.aboveBalance,
+  'amountCents|amountCents must be greater than zero': PAYMENTS_TEXT.amountRequired,
+  'paymentMethod|the payment type or method is not enabled': R.methodNotEnabled,
+};
+const BY_STATUS: Readonly<Record<number, string>> = {
+  403: PAYMENTS_TEXT.readOnly, 404: PAYMENTS_TEXT.notFound, 413: R.proofTooLarge, 415: PAYMENTS_TEXT.proofRule, 429: R.tooManyRequests, 503: R.unavailable,
+};
+
+function refusalText(error: ApiError): string {
+  if (error.code === 'SEATS_UNAVAILABLE') return R.noSeats;
+  const detail = error.details[0] as { field?: string; message?: string } | undefined;
+  return (error.status === 422 ? BY_MESSAGE[error.message] : undefined)
+    ?? (error.status === 400 && detail ? BY_FIELD[`${detail.field}|${detail.message}`] : undefined)
+    ?? BY_STATUS[error.status] ?? PAYMENTS_TEXT.failed;
+}
+
+/** The same refusal with the Spanish text the pages show; the portal's own declared failures (NOT_IN_CONTRACT) are already Spanish. */
+const paymentRefusal = (error: ApiError): ApiError => (error.code === 'NOT_IN_CONTRACT' ? error : { ...error, userMessage: refusalText(error) });
+
+/**
  * POST /reservations/{id}/payments under the Idempotency-Key. A proof makes it a TRANSFER (multipart: the JSON part `payment` and the binary
  * part `proof`), none makes it CASH (JSON). The user and the tenant are the token's; the service judges the file and the 6 MB cap.
  * Cash is refused today with 422 (no verifiable cash session, debt DD-2); the saga register-payment (Cash first) is not in this contract.
@@ -82,7 +118,7 @@ export class PaymentsApiWriter extends PaymentsWriter {
       body.append('proof', command.proof, command.proof.name);
     }
     return call<PaymentDto>(this.client, paymentsPath(command.reservationId), { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } })
-      .pipe(switchMap(() => readReservation(this.client, command.reservationId)));
+      .pipe(catchError((error: ApiError) => throwError(() => paymentRefusal(error))), switchMap(() => readReservation(this.client, command.reservationId)));
   }
 }
 
