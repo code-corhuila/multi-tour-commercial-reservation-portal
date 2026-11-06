@@ -26,6 +26,8 @@ import { PublicDeparturesApiSource, PublicEstablishmentsApiSource, PublicOfferAp
 import { PublicDeparturesSource, PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from './public-offer/data/public-offer-sources';
 import { PaymentDeadlineApiReader, PaymentMethodsApiSource, PaymentQuoteApiReader, PaymentsApiWriter, ReservationsWithPaymentsApiSource } from './http/payments-api-sources';
 import { PendingProofsApiSource, ProofReviewApiWriter } from './http/proof-review-api-sources';
+import { ProofFileApiSource } from './http/proof-file-api-source';
+import { ProofFileSource } from './payments/data/proof-file-source';
 import { PendingProofsSource, ProofReviewWriter } from './payments/data/proof-review-ports';
 import { PaymentParametersApiSource, PaymentParametersApiWriter } from './http/payment-parameters-api-sources';
 import { PaymentParametersSource, PaymentParametersWriter } from './payment-parameters/data/payment-parameters-ports';
@@ -71,6 +73,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-010: the panel of proofs and the decision (approve or reject) over the proof routes.
     { provide: PendingProofsSource, useValue: new PendingProofsApiSource(client) },
     { provide: ProofReviewWriter, useValue: new ProofReviewApiWriter(client) },
+    // HU-COM-010: the file of a proof, read through the container client as a Blob (the type is judged by the service).
+    { provide: ProofFileSource, useValue: new ProofFileApiSource(client) },
     // HU-COM-009: the payment parameters (the Administrator's screen) and the minimum deposit of a reservation.
     { provide: PaymentParametersSource, useValue: new PaymentParametersApiSource(client) },
     { provide: PaymentParametersWriter, useValue: new PaymentParametersApiWriter(client) },
