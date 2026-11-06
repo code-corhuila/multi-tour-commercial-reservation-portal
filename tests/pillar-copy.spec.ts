@@ -12,7 +12,8 @@ const GUARDED = [{ prefix: 'src/app/reservations/', copy: 'src/app/reservations/
   { prefix: 'src/app/discounts/', copy: 'src/app/discounts/discounts-copy.ts' },
   { prefix: 'src/app/current-discounts/', copy: 'src/app/current-discounts/current-discounts-copy.ts' },
   { prefix: 'src/app/customers/', copy: 'src/app/customers/customers-copy.ts' },
-  { prefix: 'src/app/payments/', copy: 'src/app/payments/payments-copy.ts' }];
+  { prefix: 'src/app/payments/', copy: 'src/app/payments/payments-copy.ts' },
+  { prefix: 'src/app/my-payments/', copy: 'src/app/my-payments/my-payments-copy.ts' }];
 const TEXT_ATTRIBUTES = /\s(?:aria-label|aria-description|placeholder|title|alt|label)="([^"]*)"/g;
 /** Text that is not a sentence: symbols and units a template may draw by itself. Kept minimal on purpose. */
 const ALLOWED = new Set(['✓', '·', '—', 'COP', '#', '%']);
