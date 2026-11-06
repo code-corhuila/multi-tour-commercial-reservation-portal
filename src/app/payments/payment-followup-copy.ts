@@ -4,7 +4,7 @@ import type { PaymentDeadline } from './data/payment-followup-ports';
 
 /** Texts of admin-registrar-seguimiento.html, of the "Saldo pendiente" rows of admin-pagos.html (13) and of 24, as the mockup writes them. */
 export const PAYMENT_FOLLOWUP_TEXT = {
-  eyebrow: 'Control de cobro', title: 'Registrar seguimiento', back: 'Volver a pagos', pendingBalance: 'Saldo pendiente',
+  notApplicableCancelled: 'No aplica por reserva cancelada', eyebrow: 'Control de cobro', title: 'Registrar seguimiento', back: 'Volver a pagos', pendingBalance: 'Saldo pendiente',
   contextEyebrow: '01. Contexto del pago', contextTitle: 'Estado actual de la reserva',
   fields: ['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valores validados', 'Saldo pendiente', 'Situación financiera'], departure: 'Salida', deadline: 'Plazo de pago vigente',
   /** Improvement of the owner (2026-10-21), spec 011- amendment: the phone of the customer as a link that calls, so the Colaborador does not look for it. */

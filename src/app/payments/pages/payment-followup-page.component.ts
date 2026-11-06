@@ -100,7 +100,7 @@ export class PaymentFollowupPageComponent {
   /** Reserva, Cliente, Modalidad de pago, Valor recibido, Saldo pendiente, Estado actual: the values come resolved. */
   protected context(d: { reservation: Reservation; labels: PaymentLabels }): string[] {
     const r = d.reservation;
-    return [`#${r.id}`, r.leadCustomerName, modalityOf(r, d.labels), formatCop(r.validatedCents ?? 0), formatCop(r.balanceCents), r.status === 'CANCELADA' && !r.validatedCents ? 'No aplica por reserva cancelada' : FINANCIAL_LABEL[r.financialStatus]];
+    return [`#${r.id}`, r.leadCustomerName, modalityOf(r, d.labels), formatCop(r.validatedCents ?? 0), formatCop(r.balanceCents), r.status === 'CANCELADA' && !r.validatedCents ? PAYMENT_FOLLOWUP_TEXT.notApplicableCancelled : FINANCIAL_LABEL[r.financialStatus]];
   }
   /** The number as a `tel:` target: digits and the leading plus only, so the spaces typed by hand never break the call. */
   protected callable(phone: string): string { return phone.replace(/(?!^\+)[^\d]/g, ''); }
