@@ -56,6 +56,7 @@ const BACK_DELAY_MS = 1600;
               @if (canDecide) { <div class="crp-proof-review-wide"><label for="crp-proof-review-reason">{{ t.reason }}</label>
                 <textarea id="crp-proof-review-reason" name="reason" required [disabled]="locked" [placeholder]="t.reasonPlaceholder" (input)="reason.set(value($event)); keyFor = null"
                   [attr.aria-invalid]="errors().reason ? 'true' : null" aria-describedby="crp-proof-review-reason-error"></textarea>
+                <small id="crp-proof-review-reason-privacy" class="crp-operator-copy">{{ t.reasonPrivacy }}</small>
                 <p id="crp-proof-review-reason-error" class="crp-payments-error">{{ errors().reason }}</p></div> }
             </div>
             <p class="crp-operator-copy">{{ t.recognized }}</p>
