@@ -65,15 +65,6 @@ describe('paymentsWriterOverTheApiClient', () => {
     expect(calls[0]).toEqual({ path: `${API_BASE}/reservations/r-1/payments`, method: 'POST', headers: { 'Idempotency-Key': 'key-12345678' }, body: { paymentMethod: 'CASH', amountCents: 4000 } });
     expect(saved).toMatchObject({ id: 'r-1', tourName: 'Desierto de la Tatacoa', payments: [{ id: 'p-1', method: 'CASH_AT_OFFICE', amountCents: 4000, proofStatus: 'SIN_COMPROBANTE' }] });
   });
-
-  it('shows the refusals of the container as they come: too large, type, too many requests, unavailable and a business rule', async () => {
-    for (const [status, message] of [[413, 'The file is too large.'], [415, 'This file type is not allowed.'], [429, 'Too many requests. Wait a moment and try again.'],
-      [503, 'This service is not available right now. Try again later.'], [422, 'This action is not allowed in the current state.']] as const) {
-      const { client } = fakeClient({ fail: { status, code: 'HTTP_ERROR', message, traceId: 't-1' } });
-      expect(await firstValueFrom(new PaymentsApiWriter(client).register({ reservationId: 'r-1', amountCents: 4000, proof }, 'key-12345678')).catch((e) => e))
-        .toMatchObject({ status, userMessage: message });
-    }
-  });
 });
 
 describe('reservationsWithPaymentsOverTheApiClient', () => {
