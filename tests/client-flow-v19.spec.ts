@@ -15,7 +15,7 @@ import { PaymentMethodsSource, ReservationRequester, ReservationSelectionSource,
 import { RESERVATION_FLOW } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
-import { PaymentsWriter } from '../src/app/payments/data/payments-writer';
+import { PaymentQuoteReader, PaymentsWriter } from '../src/app/payments/data/payments-writer';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import { ControllablePaymentMethods, CustomerAs, METHODS, QUOTE, RecordingRequester, SELECTION, quoteOf, reservationFor, selectionAt } from './self-service-reservation.double';
 
@@ -103,7 +103,7 @@ describe('pago-transferencia.html v1.9 (screen 24)', () => {
     const nav = navigationWith(areas, { reservation: 'RES-1842', type: 'PARTIAL', amount: '30000000' });
     return mount(TransferPaymentPageComponent, [
       { provide: MyReservationsSource, useValue: { listMine: () => of([reservation]) } }, { provide: PaymentMethodsSource, useValue: new ControllablePaymentMethods() },
-      { provide: PaymentsWriter, useValue: { register: () => of(undefined) } }, { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() }, { provide: PortalNavigation, useValue: nav },
+      { provide: PaymentsWriter, useValue: { register: () => of(undefined) } }, { provide: PaymentQuoteReader, useValue: { quote: () => of({ amountToPayCents: 30_000_000, pendingBalanceCents: 85_000_000 }) } }, { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() }, { provide: PortalNavigation, useValue: nav },
     ]).then((view) => ({ ...view, nav }));
   };
 
