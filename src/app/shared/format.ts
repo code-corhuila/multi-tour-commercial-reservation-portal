@@ -22,6 +22,11 @@ export function departureLine(isoDateTime: string): string {
   return time ? `${formatDate(isoDateTime)} · ${time}` : formatDate(isoDateTime);
 }
 
+/** `2026-09-18T06:30:00-05:00` to `06:30`, read as written; empty for a date alone. */
+export function timeOf(isoDateTime: string): string {
+  return /T(\d{2}:\d{2})/.exec(isoDateTime)?.[1] ?? '';
+}
+
 /** `01 sep 2026 - 30 sep 2026`. */
 export function formatDateRange(startIsoDate: string, endIsoDate: string): string {
   return `${formatDate(startIsoDate)} - ${formatDate(endIsoDate)}`;

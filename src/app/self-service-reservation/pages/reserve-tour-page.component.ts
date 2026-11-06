@@ -9,7 +9,7 @@ import { DeparturesSource } from '../../reservations/data/departures-source';
 import { DepartureCapacity } from '../../reservations/data/departure-capacity';
 import { Departure, openDepartures } from '../../reservations/data/departures-source';
 import { Clock, tenantDay } from '../../shared/clock';
-import { formatCop, formatDate } from '../../shared/format';
+import { formatCop, formatDate, timeOf } from '../../shared/format';
 import { SelectionQuoteSource } from '../data/reservation-confirmation-ports';
 import { RESERVATION_FLOW, RESERVE_TEXT, SELF_SERVICE_TEXT, ReservationSelection, sameTour, travelers } from '../model/self-service-reservation';
 
@@ -48,7 +48,7 @@ type Loaded = { kind: 'loading' | 'error' } | { kind: 'empty'; noTour: boolean }
               @for (d of s.departures; track d.id) {
                 <label class="crp-departure-option" [class.crp-is-active]="d === departure()" [class.crp-is-full]="!seatRule.hasSeats(d)">
                   <input type="radio" name="departure" [value]="d.id" [checked]="d === departure()" (change)="chosen.set(d.id)" />
-                  <strong>{{ date(d.date) }}</strong>&ngsp;<span>{{ !seatRule.hasSeats(d) ? t.full : t.seats(d.effectiveCapacity) }}</span>
+                  <strong>{{ date(d.date) }}</strong>&ngsp;@if (timeOf(d.date); as time) { <small>{{ t.start(time) }}</small>&ngsp; }<span>{{ !seatRule.hasSeats(d) ? t.full : t.seats(d.effectiveCapacity, d.totalSeats) }}</span>
                 </label>
               }
             </div>
@@ -91,7 +91,7 @@ export class ReserveTourPageComponent {
   protected readonly t = RESERVE_TEXT;
   protected readonly text = SELF_SERVICE_TEXT;
   protected readonly cop = formatCop;
-  protected readonly date = formatDate;
+  protected readonly date = formatDate; protected readonly timeOf = timeOf;
   protected readonly travelers = travelers;
   protected readonly Math = Math;
   private readonly navigation = inject(PortalNavigation, { optional: true });
