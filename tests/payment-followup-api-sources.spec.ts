@@ -141,7 +141,7 @@ describe('theFollowupScreenShowsWhatTheServiceKeeps', () => {
     ]);
   };
   const flat = (element: Element) => (element.textContent ?? '').replace(/s+/g, ' ').trim();
-  const reader = (extension?: object): PaymentDeadlineReader => ({ deadlineOf: () => of({ dueAt: '2026-10-17T09:00:00-05:00', departureStartsAt: '2026-11-07T00:00:00-05:00', ...(extension ? { extension } : {}) }) });
+  const reader = (extension?: { hours: number; actorLabel: string; grantedAt: string }): PaymentDeadlineReader => ({ deadlineOf: () => of({ dueAt: '2026-10-17T09:00:00-05:00', departureStartsAt: '2026-11-07T00:00:00-05:00', ...(extension ? { extension } : {}) }) });
 
   it('draws the history of the service in the table, over the empty one of the reservation', async () => {
     const { element } = await screen({ of: () => of([{ note: 'Prometió pagar el viernes', actorLabel: 'u-1', contactedAt: '2026-10-12T10:30:00-05:00' }]) }, reader());
