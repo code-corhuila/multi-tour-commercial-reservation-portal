@@ -11,14 +11,15 @@ import { Clock } from '../shared/clock';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import { lookupOf } from './payment-parameters-demo';
 import type { DemoReservationsStore } from './reservations-demo';
+import { demoDate } from './demo-fixtures';
 
 // DEMO (spec 011- DD-1, DP-PP1, G-OPS): deadlines and follow-ups live on the reservations of the one store of HU-COM-007 (plan D-02).
 const HOUR = 60 * 60 * 1000;
 /** DP-PP1 NO DEFINIDO: the initial wait comes from the payment parameters (009- AC-PY.17); the demo seed is 72 hours. */
 /** RES-1842 within its departure; RES-1841 with the single extension of AC3 already granted (T-04; no control grants it, DP-PP6). */
 const SEEDED: Readonly<Record<string, Reservation['deadline']>> = {
-  'RES-1842': { dueAt: '2026-10-16T09:00:00-05:00' },
-  'RES-1841': { dueAt: '2026-10-15T09:00:00-05:00', extendedUntil: '2026-10-18T09:00:00-05:00' },
+  'RES-1842': { dueAt: demoDate('2026-10-16T09:00:00-05:00') },
+  'RES-1841': { dueAt: demoDate('2026-10-15T09:00:00-05:00'), extendedUntil: demoDate('2026-10-18T09:00:00-05:00') },
 };
 /** Colombian time, as the screens read it. */
 const bogota = (ms: number) => `${new Date(ms - 5 * HOUR).toISOString().slice(0, 19)}-05:00`;
