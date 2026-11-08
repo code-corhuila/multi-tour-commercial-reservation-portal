@@ -94,7 +94,7 @@ export class PaymentFollowupPageComponent {
   /** A service that keeps the history and the extension apart (payment_followups, payment_deadline) hands them over its ports; the list holds neither. */
   private withServiceRecords(r: Reservation, deadline: PaymentDeadline | null, followups: Reservation['followups'] | null): Reservation {
     const extension = deadline?.extension;
-    return { ...r, ...(followups ? { followups } : {}), ...(!r.deadline && deadline && extension ? { deadline: { dueAt: deadline.dueAt, extendedUntil: deadline.dueAt, extension } } : {}) };
+    return { ...r, ...(followups ? { followups } : {}), ...(deadline && extension ? { deadline: { dueAt: r.deadline?.dueAt ?? deadline.dueAt, extendedUntil: deadline.dueAt, extension } } : {}) };
   }
   /** The reservation as the writer answered it; the newest answer wins over the list. */
   private readonly saved = signal<Reservation | null>(null);
