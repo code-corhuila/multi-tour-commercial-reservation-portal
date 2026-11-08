@@ -3,6 +3,7 @@ import { DemoCatalogStore } from './demo-sources';
 import { DiscountRulesSource } from '../discounts/data/discount-rules-source';
 import { DiscountRulesWriter } from '../discounts/data/discount-rules-writer';
 import { DiscountRule, DiscountRuleCommand, DiscountValidity } from '../discounts/model/discount-rule';
+import { demoDate } from './demo-fixtures';
 
 /** DEMO: DP-PD2, the badge of a rule against the day the store reads (the service would resolve it). */
 export function validityOn(rule: Pick<DiscountRule, 'status' | 'startsOn' | 'endsOn'>, today: string): DiscountValidity {
@@ -15,11 +16,11 @@ type RawRule = Omit<DiscountRule, 'validity'>;
 export class DemoDiscountRulesStore extends DiscountRulesSource {
   constructor(private readonly today: () => string = () => new Date().toLocaleDateString('en-CA')) { super(); }
   private stored: readonly RawRule[] = [
-    { id: 'demo-discount-1', tourId: 'demo-svc-1', tourName: 'Desierto de la Tatacoa al atardecer', startsOn: '2026-09-01', endsOn: '2026-12-31', priority: 1,
+    { id: 'demo-discount-1', tourId: 'demo-svc-1', tourName: 'Desierto de la Tatacoa al atardecer', startsOn: demoDate('2026-09-01'), endsOn: demoDate('2026-12-31'), priority: 1,
       calculationBase: 'ORIGINAL_VALUE', percentageBasisPoints: 2000, stackable: false, status: 'ACTIVE' },
-    { id: 'demo-discount-2', tourId: 'demo-svc-2', tourName: 'Ruta del café en Pitalito', startsOn: '2026-12-15', endsOn: '2027-01-15', priority: 2,
+    { id: 'demo-discount-2', tourId: 'demo-svc-2', tourName: 'Ruta del café en Pitalito', startsOn: demoDate('2026-12-15'), endsOn: demoDate('2027-01-15'), priority: 2,
       calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1500, capCents: 8_000_000, stackable: true, status: 'ACTIVE' },
-    { id: 'demo-discount-3', tourId: 'demo-svc-3', tourName: 'Canotaje en el Río Suaza', startsOn: '2026-07-01', endsOn: '2026-08-31', priority: 3,
+    { id: 'demo-discount-3', tourId: 'demo-svc-3', tourName: 'Canotaje en el Río Suaza', startsOn: demoDate('2026-07-01'), endsOn: demoDate('2026-08-31'), priority: 3,
       calculationBase: 'ORIGINAL_VALUE', percentageBasisPoints: 1250, stackable: false, status: 'INACTIVE' },
   ];
   /** The rules with their badge resolved on the day the store reads. */
