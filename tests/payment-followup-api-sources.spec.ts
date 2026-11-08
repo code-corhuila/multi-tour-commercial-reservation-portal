@@ -140,7 +140,7 @@ describe('theFollowupScreenShowsWhatTheServiceKeeps', () => {
       { provide: PaymentFollowupsHistory, useValue: history }, { provide: PaymentDeadlineReader, useValue: deadline },
     ]);
   };
-  const flat = (element: Element) => (element.textContent ?? '').replace(/s+/g, ' ').trim();
+  const flat = (element: Element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim();
   const reader = (extension?: { hours: number; actorLabel: string; grantedAt: string }): PaymentDeadlineReader => ({ deadlineOf: () => of({ dueAt: '2026-10-17T09:00:00-05:00', departureStartsAt: '2026-11-07T00:00:00-05:00', ...(extension ? { extension } : {}) }) });
 
   it('draws the history of the service in the table, over the empty one of the reservation', async () => {
