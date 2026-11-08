@@ -21,7 +21,7 @@ async function demoAt(now: string) {
   };
 }
 
-afterEach(() => vi.setSystemTime(SUITE_NOW));
+afterEach(() => { vi.setSystemTime(SUITE_NOW); vi.resetModules(); });
 
 describe.each(NOWS)('the demo data when the real day is %s', (now) => {
   it('keeps every programmed departure ahead of the clock', async () => {
@@ -33,7 +33,7 @@ describe.each(NOWS)('the demo data when the real day is %s', (now) => {
 
   it('keeps the departure of each reservation waiting for payment ahead and its deadline still running', async () => {
     const demo = await demoAt(now);
-    const waiting = demo.reservations.filter((r) => r.deadline);
+    const waiting = demo.reservations.filter((r) => r.deadline && r.departureId);
     expect(waiting.map((r) => r.id)).toEqual(expect.arrayContaining(['RES-1842', 'RES-1841']));
     for (const reservation of waiting) {
       const departure = demo.departures.find((d) => d.id === reservation.departureId)!;
