@@ -18,10 +18,11 @@ import { discountLabelOf } from './discount-label-demo';
 import type { DemoReservationsStore } from './reservations-demo';
 import { TourValueSource } from '../public-offer/data/public-offer-sources';
 import { PublicTour, TourValue } from '../public-offer/model/public-offer';
+import { demoDate } from './demo-fixtures';
 
 // DEMO (DD-1, G-API): invented services and HU-COM-003 rules in memory until the API exists. No real person appears.
 const rule = (_id: string, name: string, priority: number, extra: Partial<ApplicableRule>): ApplicableRule => ({ name, priority,
-  startsOn: '2026-01-01', endsOn: '2026-12-31', calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', type: 'PERCENTAGE', percentageBasisPoints: 1000,
+  startsOn: demoDate('2026-01-01'), endsOn: demoDate('2026-12-31'), calculationBase: 'ORIGINAL_VALUE', status: 'ACTIVE', type: 'PERCENTAGE', percentageBasisPoints: 1000,
   ...extra } as ApplicableRule);
 const SERVICES: readonly PricedService[] = [
   { serviceId: 'demo-svc-1', serviceName: 'Desierto de la Tatacoa al atardecer', baseCents: 18_000_000, rules: [
@@ -29,7 +30,7 @@ const SERVICES: readonly PricedService[] = [
     rule('demo-rule-2', 'Grupo familiar', 2, { calculationBase: 'PREVIOUS_SUBTOTAL', type: 'FIXED_AMOUNT', amountCents: 1_000_000, percentageBasisPoints: undefined }),
   ] },
   { serviceId: 'demo-svc-2', serviceName: 'Ruta del café en Pitalito', baseCents: 14_500_000, rules: [
-    rule('demo-rule-3', 'Promoción de lanzamiento', 1, { endsOn: '2025-12-31' }),
+    rule('demo-rule-3', 'Promoción de lanzamiento', 1, { endsOn: demoDate('2025-12-31') }),
     rule('demo-rule-4', 'Convenio suspendido', 2, { status: 'INACTIVE' }),
   ] },
   { serviceId: 'demo-svc-3', serviceName: 'Traslado aeropuerto Neiva', baseCents: 9_000_000, rules: [] },

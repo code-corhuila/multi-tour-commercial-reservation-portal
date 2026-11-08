@@ -2,6 +2,7 @@ import { Observable, map } from 'rxjs';
 import { PublicEstablishmentsSource, PublicOfferSource } from '../public-offer/data/public-offer-sources';
 import { PublicEstablishment, PublicTour } from '../public-offer/model/public-offer';
 import { DemoCatalogStore, DemoEstablishmentsStore } from './demo-sources';
+import { demoDate } from './demo-fixtures';
 
 // DEMO (plan D-05): the public offer reads the same in-memory stores as the management screens; no data is duplicated.
 // Debt: the public endpoints of the -api replace these adapters (spec G-API); enablement per date is G-SAL.
@@ -14,7 +15,7 @@ export function seedTransportTour(store: DemoCatalogStore): void {
   store.add({
     serviceId: TRANSPORT_TOUR_ID, serviceType: 'TOUR', commercialName: 'San Agustín con traslado incluido', catalogStatus: 'ACTIVE',
     baseRateCents: 26_000_000, baseOperationalCostCents: 15_600_000, configuredCapacity: 14, transportRequired: true, highRisk: false,
-    validFrom: '2026-09-01', validTo: '2026-12-31', createdAt: '2026-10-01T09:00:00Z', updatedAt: '2026-10-01T09:00:00Z',
+    validFrom: demoDate('2026-09-01'), validTo: demoDate('2026-12-31'), createdAt: demoDate('2026-10-01T09:00:00Z'), updatedAt: demoDate('2026-10-01T09:00:00Z'),
   });
 }
 
