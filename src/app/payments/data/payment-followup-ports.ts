@@ -4,7 +4,11 @@ import { Reservation } from '../../reservations/data/reservations-source';
 /** HU-COM-011 plan D-02: a follow-up as payment_followups keeps it (G-B); the note is DP-PP3, the actor a label (G-USR). */
 export type PaymentFollowup = NonNullable<Reservation['followups']>[number];
 /** Plan D-04: the effective deadline already resolved (RN-RES-006, RN-EJE-001) and the departure start; ISO with offset. */
-export type PaymentDeadline = { readonly dueAt: string; readonly departureStartsAt: string };
+export type PaymentDeadline = { readonly dueAt: string; readonly departureStartsAt: string;
+  /** RN-RES-006: the single extension the service recorded, with the person and the instant; absent while none was granted. */
+  readonly extension?: { readonly hours: number; readonly actorLabel: string; readonly grantedAt: string } };
+/** The history of a reservation as the service keeps it (payment_followups), newest first; a source that keeps it on the reservation needs no such port. */
+export abstract class PaymentFollowupsHistory { abstract of(reservationId: string): Observable<PaymentFollowup[]>; }
 export type RegisterFollowupCommand = { readonly reservationId: string; readonly note: string };
 
 /** Plan D-03: the reservations pending payment with nothing that counts as payment (RN-PP3), already filtered. */
