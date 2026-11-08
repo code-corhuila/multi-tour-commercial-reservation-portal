@@ -145,7 +145,7 @@ describe('theFollowupScreenShowsWhatTheServiceKeeps', () => {
 
   it('draws the history of the service in the table, over the empty one of the reservation', async () => {
     const { element } = await screen({ of: () => of([{ note: 'Prometió pagar el viernes', actorLabel: 'u-1', contactedAt: '2026-10-12T10:30:00-05:00' }]) }, reader());
-    expect(flat(element)).toContain('12 oct 2026 10:30 u-1 Prometió pagar el viernes');
+    expect(Array.from(element.querySelectorAll('tbody tr td'), (td) => flat(td))).toEqual(['12 oct 2026', '10:30', 'u-1', 'Prometió pagar el viernes']);
     expect(flat(element)).not.toContain('Aún no se han registrado seguimientos');
   });
 
