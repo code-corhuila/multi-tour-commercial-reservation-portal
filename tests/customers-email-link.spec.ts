@@ -26,3 +26,18 @@ describe('aNormalizedEmailOfAVerifiedAccountLinksTheCustomer', () => {
     expect(store.nameOf(store.register(typed))).toBe('Camila Ortega (demo)');
   });
 });
+
+describe('aRegisteredTitularKeepsItsEmailAndReturnsItsCustomerId', () => {
+  it('keeps the e-mail typed on the new record and returns the id of that record', () => {
+    const store = new DemoCustomersStore();
+    const id = store.register({ ...typed, document: 'DEMO-9002', email: 'nuevo.titular@example.test' });
+    expect(id).toMatch(/^demo-cus-/);
+    expect(store.all().find((customer) => customer.id === id)?.email).toBe('nuevo.titular@example.test');
+    expect(store.nameOf(id)).toBe('Titular Ficticio');
+  });
+  it('returns the same id for the same titular registered again', () => {
+    const store = new DemoCustomersStore();
+    const first = store.register({ ...typed, document: 'DEMO-9003', email: 'otro.titular@example.test' });
+    expect(store.register({ ...typed, document: 'DEMO-9003', email: 'otro.titular@example.test' })).toBe(first);
+  });
+});

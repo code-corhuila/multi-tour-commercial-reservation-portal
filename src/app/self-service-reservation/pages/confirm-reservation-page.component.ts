@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { focusFirstError } from '../../shared/focus';
@@ -14,6 +14,9 @@ import { HOLDER_TEXT } from '../self-service-copy';
 import { TourImages } from '../../shared/tour-photo';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
+import { Clock, tenantDay } from '../../shared/clock';
+import { CustomerCompanionFieldsComponent } from '../../shared/customer-companion-fields.component';
+import { CompanionIssues, CustomerCompanion, companionIssues, companionsFor, paddedCompanions, withCompanionField } from '../../shared/customer-companions';
 
 type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
 
@@ -23,7 +26,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
  */
 @Component({
   selector: 'app-confirm-reservation-page',
-  imports: [ReadErrorComponent, PortalSlotOutlet],
+  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let current = state();
@@ -50,7 +53,11 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
                 <p id="crp-holder-pending" class="crp-self-service-note">{{ text.holderPending }}</p>
               </article>
               <article class="crp-booking-card crp-finish-travelers"><h2>{{ text.travelersTitle }}</h2>&ngsp;<span>{{ companions(selection!.people) }}</span>
-                <p class="crp-self-service-note">{{ text.travelersCopy }}</p></article>
+                <p class="crp-self-service-note">{{ text.travelersCopy }}</p>
+                @if (needed > 0) {
+                  <app-customer-companion-fields [companions]="companionList()" [today]="today()" [issues]="issues()" (changed)="companionChanged($event)" />
+                  <p data-companions-feedback class="crp-customers-error" aria-live="polite">{{ issues()?.message }}</p>
+                }</article>
               <article class="crp-booking-card crp-finish-conditions"><h2>{{ text.conditionsTitle }}</h2>
                 <p class="crp-self-service-note">{{ text.conditionsCopy }}</p>
                 <ul>@for (line of text.conditionLines; track line) { <li>{{ line }}</li> }</ul>
@@ -146,6 +153,16 @@ export class ConfirmReservationPageComponent {
     { key: 'conditions', label: SELF_SERVICE_TEXT.acceptConditions },
     { key: 'terms', label: SELF_SERVICE_TEXT.acceptTerms },
   ] as const;
+  private readonly clock = inject(Clock);
+  protected readonly today = computed(() => tenantDay(this.clock.now()));
+  /** HU-COM-005 AC-PC.13/14: the companions of the selection, checked among themselves before anything is sent (the titular fields stay disabled, DP-005-V19-2). */
+  protected readonly needed = companionsFor(injectSelection()?.people ?? 1);
+  private readonly typedCompanions = signal<readonly CustomerCompanion[]>([]);
+  protected readonly companionList = computed(() => paddedCompanions(this.typedCompanions(), this.needed));
+  protected readonly issues = signal<CompanionIssues | null>(null);
+  protected companionChanged(change: { index: number; field: keyof CustomerCompanion; value: string }): void {
+    this.typedCompanions.set(withCompanionField(this.companionList(), this.needed, change.index, change.field, change.value));
+  }
   private readonly customer = inject(CustomerContext);
   protected readonly standing = this.customer.standing;
   protected readonly selection = injectSelection();
@@ -195,11 +212,13 @@ export class ConfirmReservationPageComponent {
     const { conditions, terms } = this.accepted();
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
-    if (this.missing() || this.unaccepted()) { this.focusFirstErrorOnRender(); return; }
+    const found = this.needed ? companionIssues(this.companionList(), '', tenantDay(this.clock.now())) : null;
+    this.issues.set(found);
+    if (this.missing() || this.unaccepted() || found?.message) { this.focusFirstErrorOnRender(); return; }
     if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
-    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method() }))).pipe(
+    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method(), companions: this.companionList() }), this.companionList())).pipe(
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({

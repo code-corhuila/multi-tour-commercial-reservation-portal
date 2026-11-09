@@ -42,6 +42,18 @@ import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
 
+/** Screen 21 asks the data of each companion before it confirms (AC-PC.13): the people of the selection minus the titular. */
+async function fillCompanions(root: HTMLElement, settle: () => Promise<void>) {
+  const data: Record<string, string> = { fullName: 'Acompañante Ficticio', document: 'DEMO-5', birthDate: '2001-05-01', emergency: 'Contacto Ficticio 300' };
+  for (let i = 0; root.querySelector(`[name="companion-fullName-${i}"]`); i += 1) {
+    for (const [field, value] of Object.entries(data)) {
+      const input = root.querySelector<HTMLInputElement>(`[name="companion-${field}-${i}"]`)!;
+      input.value = field === 'document' ? `${value}${i}` : value; input.dispatchEvent(new Event('input'));
+    }
+  }
+  await settle();
+}
+
 async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys; areas?: readonly string[] } = {}) {
   const customer = new CustomerAs(options.standing ?? 'FINAL_CUSTOMER');
   const methods = new ControllablePaymentMethods();
@@ -71,7 +83,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     for (const box of Array.from(element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))) { box.click(); }
     await settle();
   };
-  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); };
+  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); await fillCompanions(element, settle); };
   const confirm = async () => { buttonNamed(element, T.confirm)!.click(); await settle(); };
   return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm };
 }

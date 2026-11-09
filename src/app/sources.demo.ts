@@ -13,6 +13,7 @@ import { PortalApiClient } from './shell-contract';
 import { DemoPublicEstablishmentsSource, DemoPublicOfferSource, seedTransportTour } from './demo/public-offer-demo';
 import { PublicEstablishmentsSource, PublicOfferSource } from './public-offer/data/public-offer-sources';
 import { currentDiscountsProviders } from './demo/current-discounts-demo';
+import { customerCompanionsDemoProviders } from './demo/customer-companions-demo';
 import { customersDemoProviders } from './demo/customers-demo';
 import { reservationDemoProviders } from './demo/reservations-demo';
 import { selfServiceDemoProviders } from './demo/self-service-reservation-demo';
@@ -59,6 +60,7 @@ function demoStores(): Provider[] {
     { provide: PublicEstablishmentsSource, useValue: new DemoPublicEstablishmentsSource(establishments) },
     ...currentDiscountsProviders(),
     ...customersDemoProviders(),
+    ...customerCompanionsDemoProviders(),
     ...reservationDemoProviders(),
     ...selfServiceDemoProviders(),
     ...paymentsDemoProviders(),

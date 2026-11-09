@@ -88,6 +88,14 @@ describe('reservationRequesterOverTheApiClient', () => {
     expect(created).toEqual(mine);
   });
 
+  it('adds the companions with the three fields the contract has, and not the phone or the emergency contact (gap G-B)', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    const companion = { fullName: 'Acompañante Ficticio Uno', document: 'DEMO-2001', birthDate: '2001-05-01', phone: '300 000 2001', emergency: 'Contacto Ficticio 300' };
+    await firstValueFrom(new ReservationRequesterApi(client).request(selection, 'BANK_TRANSFER', 'key-12345678', [companion]));
+    expect(calls[0].body).toEqual({ serviceId: 't-1', salidaId: 'd-1', people: 3, paymentMethod: 'TRANSFER',
+      companions: [{ fullName: 'Acompañante Ficticio Uno', documentNumber: 'DEMO-2001', birthDate: '2001-05-01' }] });
+  });
+
   it('leaves the method out when none was chosen and sends the same key again on a retry', async () => {
     const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) }, { ok: detail }, { ok: page([summary]) });
     const requester = new ReservationRequesterApi(client);

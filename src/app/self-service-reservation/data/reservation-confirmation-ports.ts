@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { CustomerCompanion } from '../../shared/customer-companions';
 import { PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuote, selectionFromParams } from '../model/self-service-reservation';
 
@@ -42,7 +43,8 @@ export abstract class PaymentMethodsSource {
  * a refusal arrives as an ApiError of shell-contract.ts. The key is reused while the same intention is retried.
  */
 export abstract class ReservationRequester {
-  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string): Observable<CustomerReservation>;
+  /** The companions of screen 21 travel with the same command (HU-COM-005 D-6): one intention, one key. */
+  abstract request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions?: readonly CustomerCompanion[]): Observable<CustomerReservation>;
 }
 
 /** PENDING INTEGRATION (G-DEP): the summary and values of the selection, from the calculation of HU-COM-007 (RN-RS4). */

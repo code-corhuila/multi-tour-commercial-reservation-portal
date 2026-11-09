@@ -1,4 +1,5 @@
 import { Observable, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { CustomerCompanion } from '../shared/customer-companions';
 import { STATUS_CODE } from '../reservations/data/reservations-source';
 import { Reservation } from '../reservations/model/reservation';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
@@ -71,8 +72,10 @@ export class SelectionQuoteApiSource extends SelectionQuoteSource {
  */
 export class ReservationRequesterApi extends ReservationRequester {
   constructor(private readonly client: PortalApiClient) { super(); }
-  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string): Observable<CustomerReservation> {
-    const body = { serviceId: selection.serviceIds[0], salidaId: selection.departureId, people: selection.people, ...(paymentMethod ? { paymentMethod: METHOD_OUT[paymentMethod] ?? paymentMethod } : {}) };
+  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = []): Observable<CustomerReservation> {
+    // Only the three fields the contract has; the phone and the emergency contact stay on the screen (gap G-B, HU-COM-005 D-6).
+    const body = { serviceId: selection.serviceIds[0], salidaId: selection.departureId, people: selection.people, ...(paymentMethod ? { paymentMethod: METHOD_OUT[paymentMethod] ?? paymentMethod } : {}),
+      ...(companions.length ? { companions: companions.map((c) => ({ fullName: c.fullName, documentNumber: c.document, birthDate: c.birthDate })) } : {}) };
     return call<ReservationDto>(this.client, reservationsPath(), { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } }).pipe(
       switchMap((dto) => rowsOf(this.client).pipe(map((rows) => customerReservationFrom(reservationFrom(dto, rows.find((row) => row.reservationId === dto.reservationId)), dto.serviceId)))),
     );

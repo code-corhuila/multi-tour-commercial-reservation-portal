@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { fillCompanionsIn } from './customer-companions.double';
 import { firstValueFrom, of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -88,7 +89,7 @@ describe('theHolderFieldsAreDrawnDisabledAndNothingIsSent', () => {
     const select = element.querySelector('select') as HTMLSelectElement;
     select.value = 'BANK_TRANSFER'; select.dispatchEvent(new Event('change'));
     element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());
-    await settle();
+    fillCompanionsIn(element); await settle();
     Array.from(element.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Confirmar reserva')!.click(); await settle();
     expect(requester.calls).toHaveLength(1);
     expect(Object.keys(requester.calls[0].selection).sort()).toEqual(['departureId', 'people', 'serviceIds']);
