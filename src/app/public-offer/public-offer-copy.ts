@@ -11,7 +11,7 @@ export const PUBLIC_OFFER_COPY = {
   toursList: 'Listado de tours disponibles',
   from: 'Desde',
   before: 'Antes:',
-  discountTag: (pct: number) => `${pct}% de descuento`,
+  discountTag: (pct: number | string) => `${pct}% de descuento`,
   transportIncluded: 'Transporte incluido',
   detail: 'Ver detalle',
   backToTours: 'Volver a tours',
@@ -19,6 +19,8 @@ export const PUBLIC_OFFER_COPY = {
   validityTitle: 'Vigencia, capacidad y restricciones',
   validity: 'Vigencia',
   availableOnDay: 'Disponible el',
+  capacity: 'Capacidad',
+  maxTravelers: (travelers: number) => `Hasta ${travelers} viajeros`,
   transport: 'Transporte',
   conditionsTitle: 'Condiciones de reserva',
   conditions: [

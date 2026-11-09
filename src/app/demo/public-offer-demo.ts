@@ -27,6 +27,7 @@ export class DemoPublicOfferSource extends PublicOfferSource {
       .map((item): PublicTour => ({
         serviceId: item.serviceId, commercialName: item.commercialName, baseRateCents: item.baseRateCents,
         transportIncluded: item.transportRequired, available: true,
+        ...(item.configuredCapacity ? { maxTravelers: item.configuredCapacity } : {}),
       }))));
   }
 }
