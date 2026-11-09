@@ -1,6 +1,6 @@
 /** Texts of admin-pagos.html and admin-validar-soporte.html (13), and of 10, 10A, 13 and 24, as the current mockup (PDR v1.9) writes them. */
 export const PROOF_REVIEW_TEXT = {
-  eyebrow: 'Control de cobro', title: 'Pagos y devoluciones', reservations: 'Ver reservas',
+  eyebrow: 'Control de cobro', title: 'Pagos y devoluciones', reservations: 'Ver reservas', parameters: 'Parámetros de pago',
   heroEyebrow: 'Validación', heroTitle: 'Confirma pagos sin perder trazabilidad.',
   heroCopy: 'Valida o rechaza comprobantes, registra seguimientos y autoriza devoluciones cuando corresponda. La revisión de cada comprobante tiene un máximo de 24 horas corridas.',
   listEyebrow: 'Comprobantes y seguimiento', listTitle: 'Pagos pendientes', pending: (n: number) => `${n} pendiente${n === 1 ? '' : 's'}`,

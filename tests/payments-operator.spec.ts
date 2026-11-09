@@ -382,9 +382,9 @@ describe('payment capabilities and wiring', () => {
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Gestión de pago'));
       expect(host.querySelector('nav .crp-is-active')?.textContent?.trim()).toBe('Reservas');
       const amount = host.querySelector<HTMLInputElement>('[name="amount"]')!;
-      amount.value = '50000'; amount.dispatchEvent(new Event('input'));
+      amount.value = '150000'; amount.dispatchEvent(new Event('input'));
       press('Registrar pago recibido');
-      await vi.waitFor(() => expect(host.querySelector('.crp-payments-lines li')?.textContent).toContain('$50.000'));
+      await vi.waitFor(() => expect(host.querySelector('.crp-payments-lines li')?.textContent).toContain('$150.000'));
       press('Volver a la reserva');
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toContain('Detalle de reserva'));
       expect(host.querySelector('.crp-reservations-detail')?.textContent).toContain(`#${CASH}`);

@@ -2,7 +2,7 @@ import { Provider } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { RegisteringUser } from '../payments/data/payments-writer';
 import { PAYMENT_PARAMETERS_COPY as T } from '../payment-parameters/payment-parameters-copy';
-import { ParameterAuditLine, ParameterRow, PaymentParametersSource, PaymentParametersView, PaymentParametersWriter, SaveParametersCommand } from '../payment-parameters/data/payment-parameters-ports';
+import { DepositSubject, ParameterAuditLine, ParameterRow, PaymentParametersSource, PaymentParametersView, PaymentParametersWriter, SaveParametersCommand } from '../payment-parameters/data/payment-parameters-ports';
 import {
   EMPTY_CONFIG, EffectiveParameters, PARAMETER_FIELDS, ParameterOverrides, ParametersConfig, ReservationParametersLookup, SEED_LOOKUP, applyPatch, firstProblem,
   minimumDepositCents, parametersOf, tenantParameters,
@@ -41,8 +41,8 @@ export class DemoPaymentParametersStore extends PaymentParametersSource implemen
   }
 
   override read(services: readonly string[]): Observable<PaymentParametersView> { return of(this.view(services)); }
-  override minimumDepositCents(finalCents: number, service: string): Observable<number> {
-    return of(minimumDepositCents(finalCents, parametersOf(this.config, service).minDepositPercent));
+  override minimumDepositCents(reservation: DepositSubject): Observable<number> {
+    return of(minimumDepositCents(reservation.quote.finalCents, this.forReservation(reservation).minDepositPercent));
   }
 }
 

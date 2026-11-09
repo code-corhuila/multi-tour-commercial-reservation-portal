@@ -4,6 +4,9 @@ import { EffectiveParameters, ParameterOverrides, ParameterPatch } from '../mode
 /** Sub-screen of Catálogos (and Pagos) opened with PortalNavigation.open; no sidebar item (amendment A.1, P14). */
 export const PAYMENT_PARAMETERS_AREA = 'payment-parameters';
 
+/** What the minimum deposit needs of a reservation: which one it is (its parameters were fixed at creation), its service and its final value after discounts. */
+export type DepositSubject = { readonly id: string; readonly tourName: string; readonly quote: { readonly finalCents: number } };
+
 /** One row of the grid: what the row defines itself and what applies to it (the grey placeholder of the mockup). */
 export type ParameterRow = { readonly scope: 'tenant' | 'service'; readonly service: string; readonly own: ParameterOverrides; readonly applied: EffectiveParameters };
 /** One line of the audit: who changed which record, why, and the values before and after (AC-PY.17). */
@@ -22,8 +25,8 @@ export type SaveParametersCommand = { readonly tenant: ParameterPatch; readonly 
 export abstract class PaymentParametersSource {
   /** The tenant row first, then one row per service name given (the catalog's tours). */
   abstract read(services: readonly string[]): Observable<PaymentParametersView>;
-  /** AC-PY.12: the minimum deposit of a final value after discounts, under the parameters of the service. */
-  abstract minimumDepositCents(finalCents: number, service: string): Observable<number>;
+  /** AC-PY.12: the minimum deposit of the reservation, over its final value after discounts, under the parameters it was created with. */
+  abstract minimumDepositCents(reservation: DepositSubject): Observable<number>;
 }
 
 /**
