@@ -20,10 +20,14 @@ export type Quote = {
   readonly projectedCents: number; readonly discounts: readonly AppliedDiscount[]; readonly discountCents: number; readonly finalCents: number;
 };
 /** The titular typed in section 01 of 10B and each companion of section 03; the shape HU-COM-005 hands to the form (structural, no import of its model). */
-export type ReservationLead = { readonly fullName: string; readonly document: string; readonly email: string; readonly phone: string; readonly birthDate: string };
-export type ReservationCompanion = { readonly fullName: string; readonly document: string; readonly birthDate: string };
+/** RN-CLI-002, RN-CLI-003: what a high-risk tour asks of each person; sensitive, sent once and never shown back. Present only for a high-risk tour. */
+export type ReservationRiskData = { readonly informedConsent: boolean; readonly bloodType: string; readonly emergencyContact: string; readonly physicalRestrictions: string };
+export type ReservationLead = { readonly fullName: string; readonly document: string; readonly email: string; readonly phone: string; readonly birthDate: string; readonly highRisk?: ReservationRiskData };
+export type ReservationCompanion = { readonly fullName: string; readonly document: string; readonly birthDate: string; readonly highRisk?: ReservationRiskData };
 export type CreateReservationCommand = {
   readonly leadCustomerId?: string; readonly lead?: ReservationLead; readonly companions?: readonly ReservationCompanion[];
+  /** The confirmation of the conditions given in 10B, sent as the terms of a typed titular (RN-CLI-001); absent when a customer was chosen. */
+  readonly acceptedTerms?: boolean;
   readonly departureId: string; readonly serviceIds: readonly string[]; readonly people: number;
   /** v1.9 (mockup 04, PROPUESTO until the contract, G-B): the expected type and method, chosen apart; codes of PaymentMethodsSource. */
   readonly paymentType?: string; readonly paymentMethod?: string;

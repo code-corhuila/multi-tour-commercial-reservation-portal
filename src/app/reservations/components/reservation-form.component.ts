@@ -206,7 +206,8 @@ export class ReservationFormComponent {
     const d = this.draft(), departure = o.departures.find((x) => x.id === d.departureId), q = this.preview();
     if (Object.keys(validateReservation(d, departure, this.seatRule)).length || !this.party.valid() || !departure || !q) { this.party.rejected.update((n) => n + 1); this.focusFirstErrorOnRender(); return; }
     // 007- H-D8: the command carries no value; the service quotes again and is the authority.
-    const command = { ...this.party.command(), departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod };
+    const command = { ...this.party.command(), departureId: departure.id, serviceIds: [d.serviceId], people: peopleOf(d.people)!, paymentType: d.paymentType, paymentMethod: d.paymentMethod,
+      ...(this.party.picked() ? {} : { acceptedTerms: d.accepted }) };
     this.pending.set(true);
     defer(() => this.writer.create(command, this.intention.keyFor(command))).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
       next: (reservation) => this.created.emit(reservation),
