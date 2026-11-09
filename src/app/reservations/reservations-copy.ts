@@ -19,6 +19,7 @@ export const RESERVATION_TEXT = {
   offerEyebrow02: '02. Tour, salida y viajeros', tour: 'Tour', scheduled: 'Salida programada', vehicles: 'Vehículo(s) de la salida', vehiclesValue: 'Se define con la salida',
   chooseTour: 'Selecciona un tour', chooseTourFirst: 'Selecciona primero un tour', chooseScheduled: 'Selecciona una salida programada',
   departureHint: 'La reserva pertenece a una única salida. Una salida llena no admite nuevas reservas y la creación no aparta cupo: el cupo se aparta con el primer pago.',
+  departureFull: 'Salida llena',
   tenantLabel: 'Operador activo', tenantNote: 'Todos los catálogos, condiciones, cupos y valores se consultan en este contexto.',
   payEyebrow: '04. Condiciones y pago', payType: 'Tipo de pago esperado', payMethod: 'Medio de pago esperado', chooseType: 'Selecciona el tipo de pago', chooseMethod: 'Selecciona el medio de pago',
   accept: 'Confirmo que el cliente acepta las condiciones aplicables a esta reserva.',
