@@ -394,6 +394,28 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(detail.querySelector('.crp-offer-validity'))).toBe('Vigente del 01 sep 2026 al 30 sep 2026.');
   });
 
+  it('writes the capacity card of detalle-tour.html, "Capacidad: Hasta N viajeros", in the facts and in the summary (AC-PO.6)', async () => {
+    const page = await openPage();
+    await page.chooseDate('2026-11-22');
+    page.tours.requests[1].reply([tourNamed('Suaza', { maxTravelers: 12, transportIncluded: true })]);
+    await page.settle();
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    const detail = page.host.querySelector('[data-part="detail"]')!;
+    expect(text(detail.querySelector('.crp-offer-facts'))).toBe('Vigencia Disponible el 22 nov 2026 Capacidad Hasta 12 viajeros Transporte Transporte incluido');
+    expect(text(detail.querySelector('.crp-offer-summary .crp-offer-facts'))).toBe('Vigencia Disponible el 22 nov 2026 Capacidad Hasta 12 viajeros');
+    expect(detail.textContent).not.toMatch(/cupos? (disponibles?|apartados?)|costo|Estado/i);
+  });
+
+  it('draws no capacity card when the offer port gives no maximum: nothing is invented', async () => {
+    const page = await openPage();
+    page.tours.requests[0].reply([tourNamed('Suaza')]);
+    await page.settle();
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    expect(page.host.querySelector('[data-part="detail"]')!.textContent).not.toMatch(/Capacidad|viajeros/);
+  });
+
   it('draws Reservar tour only when the shell can open Reservar tour of HU-COM-008, and opens it on the tour', async () => {
     const page = await openPage({ areas: [CLIENT_AREA.tours, 'reserve'] });
     page.tours.requests[0].reply([tourNamed('Suaza')]);
