@@ -66,7 +66,7 @@ describe('theCreateCommandCarriesNoValues', () => {
     await fill(); quotes.requests.at(-1)!.reply(SERVICE_QUOTE); await settle();
     await submit();
     expect(writer.calls).toHaveLength(1);
-    expect(Object.keys(writer.calls[0].command).sort()).toEqual(['companions', 'departureId', 'lead', 'paymentMethod', 'paymentType', 'people', 'serviceIds']);
+    expect(Object.keys(writer.calls[0].command).sort()).toEqual(['acceptedTerms', 'companions', 'departureId', 'lead', 'paymentMethod', 'paymentType', 'people', 'serviceIds']);
   });
 });
 

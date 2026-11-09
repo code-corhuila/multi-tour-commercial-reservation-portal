@@ -35,11 +35,74 @@ describe('additionalDiscountSourcesOverTheApiClient', () => {
     expect(preview).toEqual({ newValueCents: 8_100_000, excessCents: 300_000 });
   });
 
-  it('answers the reservation context with a declared error because the contract has no reservation read yet', async () => {
-    const { client, calls } = fakeClient();
+  const detail = { reservationId: 'res-1', customerId: 'c-1', serviceId: 't-1', salidaId: 'd-1', people: 2, reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'PARTIAL',
+    tourLine: { amountCents: 10_000_000 }, projectedValueCents: 10_000_000, discounts: [{ order: 1, name: 'Temporada', calculationBase: 'ORIGINAL_VALUE', baseCents: 10_000_000, amountCents: 1_000_000, subtotalCents: 9_000_000 }],
+    finalValueCents: 9_000_000, pendingBalanceCents: 5_000_000, validatedValueCents: 4_000_000, seatHeld: true, createdAt: '2026-10-30T10:00:00Z' };
+  const row = { reservationId: 'res-1', customerName: 'Camila Ortega', tourName: 'Ruta Andina', departureStartsAt: '2026-11-07T06:30:00Z', reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'PARTIAL', pendingBalanceCents: 5_000_000 };
+
+  it('reads the reservation of the contract and the names of its row to build the context of the screen', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, page(row));
+    const context = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1'));
+    expect(calls[0]).toEqual({ path: `${API_BASE}/reservations/res-1` });
+    expect(calls[1].path).toBe(`${API_BASE}/reservations?page=1&limit=100&scope=all`);
+    expect(context).toMatchObject({ reservationId: 'res-1', customerName: 'Camila Ortega', serviceName: 'Ruta Andina', currentValueCents: 9_000_000, generalDiscountCents: 1_000_000,
+      paidCents: 4_000_000, eligible: true, stateLabel: 'Pendiente de pago' });
+  });
+
+  it('marks a reservation that is not pending or confirmed as not eligible, and a missing validated value as nothing paid', async () => {
+    const { client } = fakeClient({ ok: { ...detail, reservationStatus: 'CANCELLED', validatedValueCents: undefined } }, page({ ...row, reservationStatus: 'CANCELLED' }));
+    const context = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1'));
+    expect(context).toMatchObject({ eligible: false, paidCents: 0, stateLabel: 'Cancelada' });
+  });
+
+  const author = '3f1b6d0e-0000-4000-8000-000000000001';
+  const current = { breakdown, previousFinalValueCents: 9_000_000, newFinalValueCents: 8_100_000, excessCents: 300_000,
+    additionalDiscount: { authorId: author, registeredAt: '2026-10-30T15:00:00Z' } };
+
+  it('reads the current breakdown of the reservation and shows the additional discount it already has as applied and not eligible', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, page(row), { ok: current });
+    const context = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1'));
+    expect(calls.map((c) => c.path)).toContain(`${API_BASE}/reservations/res-1/discount-breakdown`);
+    expect(context?.applied).toEqual({ basisPoints: 1000, appliedAt: '2026-10-30T15:00:00Z', appliedBy: author });
+    expect(context?.eligible).toBe(false);
+  });
+
+  it('leaves applied empty and keeps the state rule when the breakdown has no additional discount', async () => {
+    const { client } = fakeClient({ ok: detail }, page(row), { ok: { breakdown: { ...breakdown, lines: [breakdown.lines[0]] } } });
+    const context = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1'));
+    expect(context?.applied).toBeUndefined();
+    expect(context?.eligible).toBe(true);
+  });
+
+  it('hands a failure of the breakdown read to the page', async () => {
+    const { client } = fakeClient({ ok: detail }, page(row), { fail: { status: 500, code: 'X', message: 'down', traceId: 't' } });
     const error = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1')).catch((e) => e);
-    expect(error).toMatchObject({ code: 'NOT_IN_CONTRACT' });
-    expect(calls).toEqual([]);
+    expect(error).toMatchObject({ status: 500, userMessage: 'down' });
+  });
+
+  it('fills the author, the date and the excess of the registration from the breakdown read after it', async () => {
+    const { client, calls } = fakeClient(page(reason('r-2', 'Fidelización')), { ok: breakdown }, { ok: current });
+    const applied = await firstValueFrom(new AdditionalDiscountApiWriter(client).register(command, 'key-12345678'));
+    expect(calls[2]).toEqual({ path: `${API_BASE}/reservations/res-1/discount-breakdown` });
+    expect(applied).toMatchObject({ appliedBy: author, appliedAt: '2026-10-30T15:00:00Z', excessCents: 300_000, amountCents: 900_000, newValueCents: 8_100_000 });
+  });
+
+  it('still answers the registration when the read after it fails, with the author and the date empty and no excess', async () => {
+    const { client } = fakeClient(page(reason('r-2', 'Fidelización')), { ok: breakdown }, { fail: { status: 500, code: 'X', message: 'down', traceId: 't' } });
+    const applied = await firstValueFrom(new AdditionalDiscountApiWriter(client).register(command, 'key-12345678'));
+    expect(applied).toMatchObject({ appliedBy: '', appliedAt: '', excessCents: 0, newValueCents: 8_100_000 });
+  });
+
+  it('answers null when the service says the reservation does not exist', async () => {
+    const { client, calls } = fakeClient({ fail: { status: 404, code: 'NOT_FOUND', message: 'not found', traceId: 't' } });
+    expect(await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-9'))).toBeNull();
+    expect(calls).toHaveLength(1);
+  });
+
+  it('hands any other failure of the read to the page', async () => {
+    const { client } = fakeClient({ fail: { status: 500, code: 'X', message: 'down', traceId: 't' } });
+    const error = await firstValueFrom(new AdditionalDiscountApiContexts(client).of('res-1')).catch((e) => e);
+    expect(error).toMatchObject({ status: 500, userMessage: 'down' });
   });
 
   it('registers with the enabled reason id and the Idempotency-Key, and reads the additional line of the breakdown', async () => {
