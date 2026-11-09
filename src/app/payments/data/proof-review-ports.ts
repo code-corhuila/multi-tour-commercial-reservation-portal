@@ -11,7 +11,10 @@ export type DecideProofCommand = {
 export abstract class ProofReviewWriter { abstract decide(command: DecideProofCommand, idempotencyKey: string): Observable<Reservation>; }
 
 /** A row of "Pagos pendientes": a proof (decided ones too, as the mockup lists them), its reservation and the Revisión vencida mark (RN-RES-006C), resolved. */
-export type PendingProof = { readonly reservation: Reservation; readonly payment: ReservationPayment; readonly overdue: boolean };
+export type PendingProof = {
+  readonly reservation: Pick<Reservation, 'id' | 'leadCustomerName' | 'paymentType' | 'paymentMethod'>;
+  readonly payment: Pick<ReservationPayment, 'id' | 'amountCents' | 'proofStatus'>; readonly overdue: boolean;
+};
 export type PendingProofs = { readonly rows: readonly PendingProof[]; readonly overdueCount: number };
 
 /** Plan D-03: the rows and the overdue count (proofs En validación) come resolved; the view never computes a balance or a mark. */
