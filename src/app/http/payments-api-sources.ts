@@ -39,7 +39,7 @@ export interface PaymentDto {
   readonly paymentId: string; readonly paymentMethod: string; readonly amountCents: number; readonly validationStatus?: string; readonly registeredBy: string; readonly registeredAt: string;
   readonly decidedBy?: string; readonly decidedAt?: string; readonly decisionReason?: string; readonly verifiedAmountCents?: number;
 }
-const PROOF: Record<string, ReservationPayment['proofStatus']> = { IN_VALIDATION: 'EN_VALIDACION', APPROVED: 'APROBADO', REJECTED: 'RECHAZADO' };
+export const PROOF: Record<string, ReservationPayment['proofStatus']> = { IN_VALIDATION: 'EN_VALIDACION', APPROVED: 'APROBADO', REJECTED: 'RECHAZADO' };
 
 export function paymentFrom(dto: PaymentDto): ReservationPayment {
   const proofStatus = PROOF[dto.validationStatus ?? ''] ?? 'SIN_COMPROBANTE', decided = proofStatus === 'APROBADO' || proofStatus === 'RECHAZADO';
