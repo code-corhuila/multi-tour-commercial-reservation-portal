@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRend
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { PaymentParametersSource } from '../../payment-parameters/data/payment-parameters-ports';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
 import { DeparturesSource } from '../../reservations/data/departures-source';
@@ -16,12 +17,12 @@ import { PAYMENT_MANAGEMENT_ACTIONS, PAYMENT_MANAGEMENT_NOTES, PortalSlotOutlet 
 import { PaymentLabels, modalityOf, paymentLabels } from '../components/reservation-payments-block.component';
 import { PaymentDeadlineReader } from '../data/payment-followup-ports';
 import { PaymentsWriter } from '../data/payments-writer';
-import { paymentEntryOf, proofProblem } from '../model/payment';
+import { depositBelowMinimum, paymentEntryOf, proofProblem } from '../model/payment';
 import { deadlineText, tenantDateTime } from '../payment-followup-copy';
 import { PAYMENTS_TEXT, departureText } from '../payments-copy';
 
 type Info = { readonly departure: string; readonly deadline: string };
-type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservation: Reservation; labels: PaymentLabels; info: Info };
+type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservation: Reservation; labels: PaymentLabels; info: Info; minimumCents: number | null };
 
 /** Screen 13 (admin-gestion-pago.html), a sub-screen of Reservas opened from 10A or 10C with { reservation }. Validating is HU-COM-010. */
 @Component({
@@ -58,9 +59,10 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
               <form class="crp-payments-form" novalidate (submit)="$event.preventDefault(); send(r)">
                 <label for="crp-payments-amount">{{ text.amount }}</label>
                 <input id="crp-payments-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" [value]="amount()" [disabled]="locked"
-                  [placeholder]="kind === 'partial' ? text.partialAmount : text.amount" (input)="edit({ amount: $any($event.target).value })"
+                  [placeholder]="placeholderOf(r, s.minimumCents)" (input)="edit({ amount: $any($event.target).value })"
                   [attr.aria-invalid]="errors().amount ? 'true' : null" aria-describedby="crp-payments-amount-error" />
                 <p id="crp-payments-amount-error" class="crp-payments-error">{{ errors().amount }}</p>
+                @if (r.paymentType === 'PARTIAL' && s.minimumCents !== null) { <p class="crp-payments-feedback" data-payment-minimum>{{ text.minimumHint(money(s.minimumCents)) }}</p> }
                 @if (kind === 'transfer') {
                   <label for="crp-payments-proof">{{ text.proof }}</label>
                   <input id="crp-payments-proof" name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" [disabled]="locked" (change)="edit({ proof: $any($event.target).files?.[0] ?? null })"
@@ -91,6 +93,7 @@ export class PaymentManagementPageComponent {
   private readonly id = this.navigation?.params()['reservation'];
   private readonly source = inject(ReservationsSource); private readonly methods = inject(PaymentMethodsSource);
   private readonly departures = inject(DeparturesSource, { optional: true }); private readonly deadlines = inject(PaymentDeadlineReader, { optional: true });
+  private readonly parameters = inject(PaymentParametersSource, { optional: true });
   private readonly writer = inject(PaymentsWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
   protected readonly canRegister = inject(PortalCapabilities).canRegisterPayment();
@@ -107,7 +110,9 @@ export class PaymentManagementPageComponent {
     switchMap(({ all, labels, departures }) => { const reservation = all.find((r) => r.id === this.id);
       if (!reservation) return of<State>({ kind: 'empty' });
       const state = departures.find((d) => d.id === reservation.departureId)?.state;
-      return (this.deadlines?.deadlineOf(reservation.id).pipe(catchError(() => of(null))) ?? of(null)).pipe(map((d): State => ({ kind: 'data', reservation, labels,
+      const deadline = this.deadlines?.deadlineOf(reservation.id).pipe(catchError(() => of(null))) ?? of(null);
+      const minimum = this.parameters?.minimumDepositCents(reservation).pipe(catchError(() => of(null))) ?? of(null);
+      return forkJoin({ d: deadline, minimumCents: minimum }).pipe(map(({ d, minimumCents }): State => ({ kind: 'data', reservation, labels, minimumCents,
         info: { departure: departureText(reservation, state), deadline: d ? deadlineText(d) : '' } }))); }),
     catchError((error) => of<State>({ kind: 'error', ...readFailure(error) })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   /** The reservation as the writer answered it; the newest answer wins over the list. */
@@ -115,6 +120,11 @@ export class PaymentManagementPageComponent {
   protected readonly state = computed((): State => { const s = this.loaded(), saved = this.saved(); return s.kind === 'data' && saved ? { ...s, reservation: saved } : s; });
 
   constructor() { this.reload(); }
+  /** "Monto del abono (mínimo $X)" while the parameters give X to an Abono (P4). */
+  protected placeholderOf(r: Reservation, minimumCents: number | null): string {
+    if (this.kindOf(r) !== 'partial') return this.text.amount;
+    return minimumCents === null ? this.text.partialAmount : this.text.partialAmountMinimum(formatCop(minimumCents));
+  }
   protected reload(): void { this.saved.set(null); this.requests.next(); }
 
   /** The form of 13 follows the reservation's modality (DP-PY3); none means nothing can be registered. */
@@ -130,11 +140,11 @@ export class PaymentManagementPageComponent {
   }
 
   protected send(r: Reservation): void {
-    const kind = this.kindOf(r);
+    const kind = this.kindOf(r), minimum = (this.state() as { minimumCents?: number | null }).minimumCents ?? null;
     if (this.pending() || !kind || this.entryOf(r) !== 'open') return;
     const parsed = parseMoney(this.amount()), amountCents = parsed.kind === 'valid' ? parsed.minorUnits : 0;
     const errors = {
-      amount: amountCents > 0 ? undefined : this.text.amountRequired,
+      amount: amountCents <= 0 ? this.text.amountRequired : depositBelowMinimum(r, amountCents, minimum) ? this.text.belowMinimum(formatCop(minimum!)) : undefined,
       proof: kind !== 'transfer' ? undefined : this.proof ? proofProblem(this.proof) ?? undefined : this.text.proofRequired,
     };
     this.errors.set(errors);
