@@ -1,5 +1,5 @@
 import { Observable, EMPTY, defer, expand, reduce, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { ApiError, PortalApiClient } from '../shell-contract';
 
 /** The gateway route of this service; it may change with the gateway decision. Only the path: the container client owns the host. */
@@ -19,7 +19,8 @@ export const reservationsPath = (reservationId?: string): string => [`${API_BASE
 export const publicOfferPath = (identifier: string, resource: 'tours' | 'associated-establishments', id?: string): string =>
   [`${API_BASE}/public/tenants/${encodeURIComponent(identifier)}`, resource, id].filter(Boolean).join('/');
 
-interface Page<T> { readonly data: readonly T[]; readonly meta: { readonly page: number; readonly totalPages: number } }
+/** A page of a list; `overdueCount` is the total the proof list adds for the whole list, not for the page. */
+export interface Page<T> { readonly data: readonly T[]; readonly meta: { readonly page: number; readonly totalPages: number }; readonly overdueCount?: number }
 type Init = Parameters<PortalApiClient['request']>[1];
 
 /** The container rejects with {status, code, message, details?, traceId}; the pages read `userMessage`, which is the same message. */
@@ -36,8 +37,8 @@ export function call<T>(client: PortalApiClient, path: string, init?: Init): Obs
   return defer(() => client.request<T>(path, init)).pipe(catchError((error) => throwError(() => toPageError(error))));
 }
 
-/** Every page of a paginated list (the contract caps a page at 100). */
-export function listAll<T>(client: PortalApiClient, path: string, filters: Record<string, string | undefined> = {}): Observable<readonly T[]> {
+/** Every page of a paginated list, as the service answered them (the contract caps a page at 100). */
+export function listPages<T>(client: PortalApiClient, path: string, filters: Record<string, string | undefined> = {}): Observable<readonly Page<T>[]> {
   const page = (n: number) => {
     const query = new URLSearchParams({ page: String(n), limit: '100' });
     for (const [key, value] of Object.entries(filters)) if (value) query.set(key, value);
@@ -45,8 +46,13 @@ export function listAll<T>(client: PortalApiClient, path: string, filters: Recor
   };
   return page(1).pipe(
     expand((result) => (result.meta.page < result.meta.totalPages ? page(result.meta.page + 1) : EMPTY)),
-    reduce((all, result) => [...all, ...result.data], [] as readonly T[]),
+    reduce((all, result) => [...all, result], [] as readonly Page<T>[]),
   );
+}
+
+/** Every row of a paginated list. */
+export function listAll<T>(client: PortalApiClient, path: string, filters: Record<string, string | undefined> = {}): Observable<readonly T[]> {
+  return listPages<T>(client, path, filters).pipe(map((pages) => pages.flatMap((result) => result.data)));
 }
 
 /** The failure of an operation the contract does not publish yet; the page shows it in its error state. */
