@@ -27,7 +27,7 @@ export const SELF_SERVICE_TEXT = {
   backToReserve: 'Volver a salida y viajeros',
   pill: 'Tu reserva se crea Pendiente de pago. Elige por separado el tipo de pago y el medio de pago habilitados.',
   holderTitle: 'Cliente titular',
-  holderPending: 'Pendiente de definición: estos datos aún no se registran (DP-RS5).',
+  holderPending: 'Pendiente de definición: estos datos aún no se registran.',
   travelersTitle: 'Viajeros',
   travelersCopy: 'La cantidad total de viajeros determina los acompañantes que deben registrarse. Los documentos no pueden repetirse dentro de la misma reserva.',
   conditionLines: ['La modificación o cancelación depende de las condiciones vigentes del tour.', 'La disponibilidad y los valores se validan antes de registrar la reserva.'],

@@ -63,10 +63,15 @@ export interface MountProps {
   commercialName?: string;
   /** Who draws the navigation chrome: 'container' means the container draws the sidebar and the portal only shows its content; absent, the portal draws its own. */
   chrome?: 'container';
+  /** Set only with `chrome: 'container'` (multi-tour-front `core/client/types.ts`): the portal calls it with the sidebar entry it shows as current, so the container marks it. */
+  onAreaChange?: (area: string) => void;
 }
 
 /** The container's `navigate` as the screens read it; null when the container does not offer it. */
 export const CONTAINER_NAVIGATION = new InjectionToken<((target: PortalTarget) => void) | null>('CONTAINER_NAVIGATION', { factory: () => null });
+
+/** The container's `onAreaChange`, or null: the shell reports the sidebar entry it shows whenever it changes (only with the container chrome). */
+export const CONTAINER_AREA_REPORTER = new InjectionToken<((area: string) => void) | null>('CONTAINER_AREA_REPORTER', { factory: () => null });
 
 /** The commercial name the container sent, or null; screens draw their strip only when it is there (007- V3, amended). */
 export const COMMERCIAL_NAME = new InjectionToken<string | null>('COMMERCIAL_NAME', { factory: () => null });

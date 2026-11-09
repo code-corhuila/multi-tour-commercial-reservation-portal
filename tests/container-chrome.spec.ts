@@ -53,6 +53,42 @@ describe('portalChromeOfTheContainer', () => {
     expect(landing).not.toBe('Descuentos');
   });
 
+  // The container marks its sidebar entry from what the portal reports (MountProps.onAreaChange), so a button of one area that opens another moves it.
+  describe('reportsTheAreaItShowsToTheContainer', () => {
+    const press = (label: string) => Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.trim() === label)!.click();
+
+    it('reports the area it opens at mount', async () => {
+      const reported: string[] = [];
+      mountWith({ chrome: 'container', initialParams: { area: 'payments' }, onAreaChange: (area) => reported.push(area) });
+      await expect.poll(() => host.querySelector('.crp-operator-content h1')?.textContent).toBe('Pagos y devoluciones');
+      expect(reported.at(-1)).toBe('payments');
+    });
+
+    it('reports the new area when a button of one area opens another one ("Ver reservas" of Pagos)', async () => {
+      const reported: string[] = [];
+      mountWith({ chrome: 'container', initialParams: { area: 'payments' }, onAreaChange: (area) => reported.push(area) });
+      await expect.poll(() => host.querySelector('.crp-operator-content h1')?.textContent).toBe('Pagos y devoluciones');
+      press('Ver reservas');
+      await expect.poll(() => reported.at(-1)).toBe('reservations');
+      expect(host.querySelector('.crp-operator-content h1')?.textContent).toBe('Reservas');
+    });
+
+    it('reports the parent entry of a sub-screen, as the sidebar of the portal marked it', async () => {
+      const reported: string[] = [];
+      mountWith({ chrome: 'container', initialParams: { area: 'payments' }, onAreaChange: (area) => reported.push(area) });
+      await expect.poll(() => host.querySelector('.crp-operator-content h1')?.textContent).toBe('Pagos y devoluciones');
+      press('Parámetros de pago');
+      await expect.poll(() => reported.at(-1)).toBe('catalog');
+    });
+
+    it('does not report anything when the portal draws its own sidebar', async () => {
+      const reported: string[] = [];
+      mountWith({ onAreaChange: (area) => reported.push(area) });
+      await expect.poll(() => host.querySelector('.crp-operator-sidebar')).toBeTruthy();
+      expect(reported).toEqual([]);
+    });
+  });
+
   it('lays the shell out in one column without the sidebar, also on small screens', () => {
     expect(css).toMatch(/\.crp-root \.crp-operator-shell\.crp-no-sidebar \{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/);
   });

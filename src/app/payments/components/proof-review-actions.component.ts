@@ -20,7 +20,7 @@ abstract class ProofLink {
 }
 /** 10 (admin-reservas.html): " · Validar comprobante" after "Ver detalle" on a reservation whose proof is En validación (AC-PV.3). */
 @Component({ selector: 'app-proof-row-link', changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (proof()) { · <button type="button" (click)="open()">{{ canDecide ? t.validate : t.view }}</button> }` })
+  template: `@if (proof()) { <span class="crp-row-sep"> · </span><button type="button" (click)="open()">{{ canDecide ? t.validate : t.view }}</button> }` })
 export class ProofRowLinkComponent extends ProofLink {}
 /** 10A (admin-detalle-reserva.html): the action "Validar comprobante" in the header while the proof is En validación. */
 @Component({ selector: 'app-proof-detail-action', changeDetection: ChangeDetectionStrategy.OnPush,

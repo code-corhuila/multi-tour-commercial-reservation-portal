@@ -44,13 +44,13 @@ import { PortalSlotOutlet, RESERVATION_DETAIL_BLOCKS } from '../../shared/portal
     } @else {
       <div class="crp-reservations-detail">
         <section class="crp-operator-panel crp-reservations-hero">
-          <div><p class="crp-operator-eyebrow">#{{ r.id }}</p><h2>{{ r.tourName }}</h2><p>{{ v.departureNote }} {{ line(r.departureDate) }} · {{ travelers(r.people) }}</p></div>
+          <div><p class="crp-operator-eyebrow">#{{ r.id }}</p><h2>{{ r.tourName }}</h2><p>{{ r.departureCode ? v.departureWithCode(r.departureCode) : v.departureNote }} {{ line(r.departureDate) }} · {{ travelers(r.people) }}</p></div>
           <span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span>
         </section>
         <p class="crp-operator-copy">{{ v.detailNote }}</p>
         <div class="crp-reservations-panels">
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ v.leadAndTravelers }}</p><h2>{{ r.leadCustomerName }}</h2>
-            <dl class="crp-reservations-lines"><div><dt>{{ v.registeredTravelers }}</dt><dd>{{ persons(r.people) }}</dd></div><div><dt>{{ v.registeredCompanions }}</dt><dd>{{ companions(r.people) }}</dd></div></dl>
+            <dl class="crp-reservations-lines">@if (r.leadEmail) { <div><dt>{{ v.email }}</dt><dd>{{ r.leadEmail }}</dd></div> }<div><dt>{{ v.registeredTravelers }}</dt><dd>{{ persons(r.people) }}</dd></div><div><dt>{{ v.registeredCompanions }}</dt><dd>{{ companions(r.people) }}</dd></div></dl>
           </section>
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ v.economic }}</p><h2>{{ money(r.balanceCents) }} {{ r.balanceCents === 0 ? v.noBalance : v.pending }}</h2>
             <dl class="crp-reservations-lines"><div><dt>{{ text.projected }}</dt><dd>{{ money(r.quote.projectedCents) }}</dd></div><div><dt>{{ text.applied }}</dt><dd>{{ money(-r.quote.discountCents) }}</dd></div>
