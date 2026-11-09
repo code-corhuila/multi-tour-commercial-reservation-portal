@@ -10,14 +10,12 @@ import { FINANCIAL_LABEL } from '../../reservations/data/reservations-source';
 import { MyReservationsSource } from '../../self-service-reservation/data/my-reservations-source';
 import { BankAccount, CustomerReservation, PaymentMethodsSource, reservationState } from '../../self-service-reservation/data/reservation-confirmation-ports';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
+import { parseMinorUnits } from '../../shared/money';
 import { TRANSFER_PAYMENT_LINES, PortalSlotOutlet } from '../../shared/portal-slots';
 import { PaymentsWriter } from '../data/payments-writer';
 import { proofProblem } from '../model/payment';
 import { PAYMENT_RESULT_AREA } from '../payment-result-copy';
 import { CUSTOMER_PAYMENT_TEXT, PAYMENTS_TEXT, viajeros } from '../payments-copy';
-
-/** The amount travels as navigation text: only a positive safe integer of cents is ever sent (pillar 3). */
-const amountOf = (text: string | undefined): number | null => { const n = /^[0-9]+$/.test(text ?? '') ? Number(text) : NaN; return Number.isSafeInteger(n) && n > 0 ? n : null; };
 
 type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservation: CustomerReservation; bank: BankAccount };
 
@@ -74,7 +72,8 @@ export class TransferPaymentPageComponent {
   protected readonly text = CUSTOMER_PAYMENT_TEXT; protected readonly common = PAYMENTS_TEXT; protected readonly financial: Readonly<Record<string, string>> = FINANCIAL_LABEL;
   protected readonly lines = TRANSFER_PAYMENT_LINES; protected readonly reservations = CLIENT_AREA.reservations;
   protected readonly cop = formatCop; protected readonly departure = departureLine; protected readonly travelers = viajeros;
-  protected readonly typeName = CUSTOMER_PAYMENT_TEXT.typeName[this.params['type']] ?? ''; protected readonly amount = amountOf(this.params['amount']);
+  /** The amount travels as navigation text: only a positive safe integer of cents is ever sent (pillar 3). */
+  protected readonly typeName = CUSTOMER_PAYMENT_TEXT.typeName[this.params['type']] ?? ''; protected readonly amount = parseMinorUnits(this.params['amount']);
   protected readonly feedback = signal(''); protected readonly invalid = signal(false);
   protected readonly pending = signal(false); protected readonly refused = signal('');
   private proof: File | null = null; private key = this.keys.generate();
