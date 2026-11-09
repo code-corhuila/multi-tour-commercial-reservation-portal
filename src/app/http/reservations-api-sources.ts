@@ -13,16 +13,16 @@ type Financial = Reservation['financialStatus'];
 const STATUS: Record<string, Status> = { PENDING_PAYMENT: 'PENDIENTE_DE_PAGO', CONFIRMED: 'CONFIRMADA', IN_EXECUTION: 'EN_EJECUCION', COMPLETED: 'FINALIZADA', CANCELLED: 'CANCELADA' };
 /** BALANCE_PENDING (the deposit is validated and the rest is still due) reads as the deposit received: the portal model has no sixth situation. */
 const FINANCIAL: Record<string, Financial> = { NO_PAYMENT: 'SIN_PAGO', PARTIAL: 'PARCIAL', DEPOSIT_RECEIVED: 'ABONO_RECIBIDO', BALANCE_PENDING: 'ABONO_RECIBIDO', FULLY_PAID: 'PAGO_COMPLETO' };
-const TYPE_IN: Record<string, string> = { FULL_PAYMENT: 'TOTAL', DEPOSIT: 'PARTIAL' };
-const METHOD_IN: Record<string, string> = { TRANSFER: 'BANK_TRANSFER', CASH: 'CASH_AT_OFFICE' };
+export const TYPE_IN: Record<string, string> = { FULL_PAYMENT: 'TOTAL', DEPOSIT: 'PARTIAL' };
+export const METHOD_IN: Record<string, string> = { TRANSFER: 'BANK_TRANSFER', CASH: 'CASH_AT_OFFICE' };
 const invert = (codes: Record<string, string>) => Object.fromEntries(Object.entries(codes).map(([wire, own]) => [own, wire]));
-const TYPE_OUT = invert(TYPE_IN), METHOD_OUT = invert(METHOD_IN);
+export const TYPE_OUT = invert(TYPE_IN), METHOD_OUT = invert(METHOD_IN);
 
 /** ReservationSummary of the contract (PROPOSED): the row of screen 10, which carries the names the detail lacks. */
 export interface SummaryDto { readonly reservationId: string; readonly customerName: string; readonly tourName: string; readonly departureStartsAt: string }
 /** ReservationResponse of the contract (PROPOSED): the values and the context fixed at creation, never recalculated (RN-RES-003). */
 export interface ReservationDto extends ReservationQuoteDto {
-  readonly reservationId: string; readonly salidaId: string; readonly people: number; readonly reservationStatus: string; readonly paymentStatus: string;
+  readonly reservationId: string; readonly serviceId: string; readonly salidaId: string; readonly people: number; readonly reservationStatus: string; readonly paymentStatus: string;
   readonly paymentType?: string; readonly paymentMethod?: string; readonly pendingBalanceCents: number; readonly validatedValueCents?: number;
   readonly paymentDeadline?: string; readonly seatHeld: boolean; readonly conditions?: string | null;
 }
@@ -48,7 +48,7 @@ export const rowsOf = (client: PortalApiClient) => listAll<SummaryDto>(client, r
  * DEBT: one read per row (the row has no values and the detail has no names); a service-side list with both would remove it.
  */
 export class ReservationsApiSource extends ReservationsSource {
-  constructor(private readonly client: PortalApiClient) { super(); }
+  constructor(protected readonly client: PortalApiClient) { super(); }
   override list(): Observable<readonly Reservation[]> {
     return rowsOf(this.client).pipe(switchMap((rows) => (rows.length
       ? forkJoin(rows.map((row) => call<ReservationDto>(this.client, reservationsPath(row.reservationId)).pipe(map((dto) => reservationFrom(dto, row)))))
