@@ -29,7 +29,7 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = RESERVATION_HEA
       <div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ headers[v.kind][0] }}</p><h1 class="crp-page-header-title crp-h1">{{ headers[v.kind][1] }}</h1></div>
       @if (v.kind === 'list') { @if (canCreate) { <button type="button" class="crp-operator-primary crp-page-header-action" (click)="view.set({ kind: 'create' })">{{ text.create }}</button> } }
       @else if (v.kind === 'create') { <button type="button" class="crp-operator-outline crp-page-header-action" (click)="view.set({ kind: 'list' })">{{ text.cancel }}</button> }
-      @else { @if (v.kind === 'detail') { <ng-container *crpSlot="detailActions; inputs: { reservation: v.reservation }" /> }<button type="button" class="crp-operator-outline crp-page-header-action" (click)="view.set({ kind: 'list' })">{{ text.back }}</button> }
+      @else { <span class="crp-page-header-action crp-header-actions">@if (v.kind === 'detail') { <ng-container *crpSlot="detailActions; inputs: { reservation: v.reservation }" /> }<button type="button" class="crp-operator-outline" (click)="view.set({ kind: 'list' })">{{ text.back }}</button></span> }
     </header>
     @switch (v.kind) {
       @case ('create') { @if (canCreate) { <app-reservation-form (created)="onCreated($event)" (cancelled)="view.set({ kind: 'list' })" /> } }
@@ -54,8 +54,8 @@ const HEADERS: Record<View['kind'], readonly [string, string]> = RESERVATION_HEA
                     <td><span class="crp-operator-status {{ badge[r.status] }}">{{ status[r.status] }}</span></td><td><small class="crp-reservations-meta">{{ paymentState(r) }}</small><br><strong>{{ money(r.balanceCents) }}</strong></td>
                     <td><button type="button" (click)="view.set({ kind: 'detail', reservation: r })">{{ text.view }}</button>@if (modeOpen) { <ng-container *crpSlot="modeActions; inputs: { reservation: r, mode: mode }" /> } @else {
                     <ng-container *crpSlot="rowActions; inputs: { reservation: r }" />
-                    @if (payLabel(r); as label) { <span> · </span><button type="button" (click)="open('payment-management', r)">{{ label }}</button> }
-                    @if (reschedulable(r)) { <span> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> } }</td></tr>
+                    @if (payLabel(r); as label) { <span class="crp-row-sep"> · </span><button type="button" (click)="open('payment-management', r)">{{ label }}</button> }
+                    @if (reschedulable(r)) { <span class="crp-row-sep"> · </span><button type="button" (click)="open(rescheduling, r)">{{ text.reschedule }}</button> } }</td></tr>
                 }</tbody>
               </table></div>
             }

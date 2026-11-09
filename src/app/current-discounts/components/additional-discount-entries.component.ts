@@ -22,7 +22,7 @@ export class AdditionalDiscountSearchComponent {
 /** 10 in mode: "Aplicar descuento" in the Acción cell of a reservation the port admits, that opens the screen with { reservation }. */
 @Component({
   selector: 'app-additional-discount-row-action', changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (offered()) { <span> · </span><button type="button" (click)="navigation?.open(area, { reservation: reservation().id })">{{ t.apply }}</button> }`,
+  template: `@if (offered()) { <span class="crp-row-sep"> · </span><button type="button" (click)="navigation?.open(area, { reservation: reservation().id })">{{ t.apply }}</button> }`,
 })
 export class AdditionalDiscountRowActionComponent {
   readonly reservation = input.required<{ readonly id: string; readonly status: string }>();
