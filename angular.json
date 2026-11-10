@@ -59,7 +59,8 @@
             "buildTarget": "commercial-reservation-portal:esbuild:development",
             "tsConfig": "tsconfig.spec.json",
             "runner": "vitest",
-            "include": ["../tests/**/*.spec.ts"]
+            "include": ["../tests/**/*.spec.ts"],
+            "setupFiles": ["tests/setup-clock.ts"]
           }
         }
       }
