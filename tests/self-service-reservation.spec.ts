@@ -1,3 +1,4 @@
+import { PaymentTypeChoice } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { resolvedPortalCss } from './css-tokens';
@@ -266,6 +267,11 @@ describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
     expect(p.element.textContent).not.toContain(T.created);
     expect(buttonNamed(p.element, T.confirm)!.disabled).toBe(false);
   });
+  it('reads the refusal 422 SEATS_UNAVAILABLE of the service as the same lack of seats', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(noCapacity({ status: 422, code: 'SEATS_UNAVAILABLE' })); await p.settle();
+    expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
+  });
   it('prefers the message the container decided, when there is one', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity({ userMessage: 'Sold out for that date.' })); await p.settle();
@@ -450,5 +456,21 @@ describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () 
     p.requester.calls[1].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
     p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
     expect(p.requester.calls[2].idempotencyKey).toBe(p.requester.calls[1].idempotencyKey);
+  });
+});
+
+describe('theReservationIsBornWithPaymentTypeAndMethod (HU-COM-008 DP-08, option C)', () => {
+  it('sends the first enabled type when the customer did not touch the card, with the medium chosen', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].paymentType).toBe('TOTAL');
+    expect(p.requester.calls[0].paymentMethod).toBe('BANK_TRANSFER');
+  });
+
+  it('sends the type the card holds when the customer chose another one', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    TestBed.inject(PaymentTypeChoice).type.set('PARTIAL');
+    await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].paymentType).toBe('PARTIAL');
   });
 });

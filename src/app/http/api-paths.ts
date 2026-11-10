@@ -12,6 +12,8 @@ export const establishmentsPath = (associationId?: string, action?: 'inactivate'
 /** HU-COM-007 (PROPOSED routes): the departures of one tour, the quote of a selection and the reservations. */
 export const departuresPath = (serviceId: string): string => `${catalogPath(serviceId)}/departures`;
 export const reservationQuotesPath = (): string => `${API_BASE}/reservation-quotes`;
+/** The Final Customer's own door to the same quote (PROPOSED, HU-COM-008 DP-12): the tenant comes from the token. */
+export const ownReservationQuotesPath = (): string => `${API_BASE}/own/reservation-quotes`;
 export const reservationsPath = (reservationId?: string): string => [`${API_BASE}/reservations`, reservationId].filter(Boolean).join('/');
 /** A public GET route of the offer (PROPOSED): the tenant identifier travels in the path, never in a header or a body (ADR-004 D5). */
 export const publicOfferPath = (identifier: string, resource: 'tours' | 'associated-establishments', id?: string): string =>

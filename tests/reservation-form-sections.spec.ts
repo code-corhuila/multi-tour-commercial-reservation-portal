@@ -142,11 +142,22 @@ describe('theBirthDateIsTypedAsDdMmAaaaAndTravelsAsIso', () => {
     }
   });
 
-  it('sends the dates as ISO, and accepts a date in the future (that is AC-PC.13)', async () => {
+  it('sends the dates as ISO', async () => {
     const { ready, party, type, submit, writer } = await openForm();
-    await ready('2'); await party(); await type('holderBirth', '15/03/1990'); await type('companionBirth-0', '01/01/2999'); await submit();
+    await ready('2'); await party(); await type('holderBirth', '15/03/1990'); await type('companionBirth-0', '01/01/2010'); await submit();
     expect(writer.calls[0].command.lead!.birthDate).toBe('1990-03-15');
-    expect(writer.calls[0].command.companions![0].birthDate).toBe('2999-01-01');
+    expect(writer.calls[0].command.companions![0].birthDate).toBe('2010-01-01');
+  });
+
+  it('refuses a future date beside the field with the text of AC-PC.13 and sends nothing (the service refuses it too, AC-05.13)', async () => {
+    const { element, ready, party, type, submit, writer } = await openForm();
+    await ready('2'); await party(); await type('holderBirth', '15/03/1990'); await type('companionBirth-0', '01/01/2999'); await submit();
+    expect(errorBeside(element, 'companionBirth-0')).toBe('La fecha de nacimiento del acompañante 1 no puede ser futura.');
+    expect(errorBeside(element, 'holderBirth')).toBe('');
+    await type('holderBirth', '01/01/2999'); await type('companionBirth-0', '01/01/2010'); await submit();
+    expect(errorBeside(element, 'holderBirth')).toBe('La fecha de nacimiento del titular no puede ser futura.');
+    expect(errorBeside(element, 'companionBirth-0')).toBe('');
+    expect(writer.calls).toHaveLength(0);
   });
 
   it('refuses a date that does not exist or is not dd/mm/aaaa, beside the field, and sends nothing', async () => {

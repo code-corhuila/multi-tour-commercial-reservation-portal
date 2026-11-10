@@ -66,12 +66,12 @@ export class ControllablePaymentMethods extends PaymentMethodsSource {
 }
 
 export class RecordingRequester extends ReservationRequester {
-  readonly calls: (Pending<CustomerReservation> & { selection: ReservationSelection; paymentMethod: string; idempotencyKey: string; companions: readonly CustomerCompanion[] })[] = [];
-  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = []): Observable<CustomerReservation> {
+  readonly calls: (Pending<CustomerReservation> & { selection: ReservationSelection; paymentMethod: string; paymentType: string; idempotencyKey: string; companions: readonly CustomerCompanion[] })[] = [];
+  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = [], paymentType = ''): Observable<CustomerReservation> {
     const pending: Pending<CustomerReservation>[] = [];
     return new Observable<CustomerReservation>((subscriber) => {
       const inner = controllable(pending).subscribe(subscriber);
-      this.calls.push({ ...pending[0], selection, paymentMethod, idempotencyKey, companions });
+      this.calls.push({ ...pending[0], selection, paymentMethod, paymentType, idempotencyKey, companions });
       return inner;
     });
   }

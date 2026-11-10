@@ -70,13 +70,13 @@ export class DemoSelectionQuotes extends SelectionQuoteSource {
  */
 export class DemoReservationRequester extends ReservationRequester {
   constructor(private readonly writer: ReservationsWriter, private readonly mine: DemoMyReservations, private readonly store: DemoReservationsStore) { super(); }
-  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = []): Observable<CustomerReservation> {
+  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = [], paymentType = ''): Observable<CustomerReservation> {
     const { departureId, serviceIds, people } = selection;
     return this.writer.create({ leadCustomerId: DEMO_FINAL_CUSTOMER, departureId, serviceIds, people,
       ...(companions.length ? { companions: companions.map(({ fullName, document, birthDate }) => ({ fullName, document, birthDate })) } : {}) }, idempotencyKey).pipe(
       map((created) => {
         // HU-COM-009 DP-PY3: the method chosen on 21 stays with the reservation (mockup finalizar-reserva.html).
-        const kept = { ...created, paymentMethod };
+        const kept = { ...created, paymentMethod, ...(paymentType ? { paymentType } : {}) };
         this.store.items = this.store.items.map((r) => (r.id === created.id ? kept : r));
         this.mine.selections.set(created.id, selection); return asCustomer(kept, selection);
       }),

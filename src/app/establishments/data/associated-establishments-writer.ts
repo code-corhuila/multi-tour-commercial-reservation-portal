@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { AssociatedEstablishment, EstablishmentType } from '../model/associated-establishment';
 
-/** PROPOSED registration contract: the file and promotional fields are one intention. */
+/** Registration of the published contract (multipart): the file and promotional fields are one intention. */
 export interface RegisterEstablishmentCommand {
   readonly establishmentType: EstablishmentType;
   readonly commercialName: string;

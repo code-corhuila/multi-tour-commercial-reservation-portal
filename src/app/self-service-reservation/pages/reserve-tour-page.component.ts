@@ -3,18 +3,20 @@ import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
-import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
+import { PublicDeparturesSource, PublicOfferSource } from '../../public-offer/data/public-offer-sources';
 import { DeparturesSource } from '../../reservations/data/departures-source';
 import { DepartureCapacity } from '../../reservations/data/departure-capacity';
 import { Departure, openDepartures } from '../../reservations/data/departures-source';
+import { Clock, tenantDay } from '../../shared/clock';
 import { formatCop, formatDate } from '../../shared/format';
 import { SelectionQuoteSource } from '../data/reservation-confirmation-ports';
 import { RESERVATION_FLOW, RESERVE_TEXT, SELF_SERVICE_TEXT, ReservationSelection, sameTour, travelers } from '../model/self-service-reservation';
 
+/** What the screen reads of a public tour (the model of the offer belongs to another story). */
+type OfferedTour = { readonly serviceId: string; readonly commercialName: string; readonly baseRateCents: number };
 type Loaded = { kind: 'loading' | 'error' } | { kind: 'empty'; noTour: boolean }
-  | { kind: 'data'; tour: CatalogItem; departures: readonly Departure[] };
+  | { kind: 'data'; tour: OfferedTour; departures: readonly Departure[] };
 
 /**
  * HU-COM-008 as reservar-tour.html (screen 20): the open departures of the tour, from the DeparturesSource of
@@ -95,16 +97,18 @@ export class ReserveTourPageComponent {
   private readonly navigation = inject(PortalNavigation, { optional: true });
   /** DP-RS1, 008- H-D10: the tour "Reservar tour" opened this area with; the portal reads no address. */
   private readonly tourId = this.navigation?.params()['tour'] ?? '';
-  private readonly catalog = inject(CatalogItemsSource);
-  private readonly departures = inject(DeparturesSource);
+  /** The Final Customer cannot read the operator's catalog or departures (403): the tour and its departures come from the public routes. */
+  private readonly offer = inject(PublicOfferSource);
+  private readonly clock = inject(Clock);
+  private readonly departures = inject(PublicDeparturesSource, { optional: true }) ?? inject(DeparturesSource);
   protected readonly seatRule = inject(DepartureCapacity);
   private readonly requests = new Subject<void>();
   protected readonly chosen = signal('');
   protected readonly people = signal(1);
 
-  readonly loaded = toSignal(this.requests.pipe(switchMap(() => forkJoin({ items: this.catalog.list(), all: this.departures.list() }).pipe(
+  readonly loaded = toSignal(this.requests.pipe(switchMap(() => forkJoin({ items: this.offer.listAvailable(tenantDay(this.clock.now())), all: this.departures.list() }).pipe(
     map(({ items, all }): Loaded => {
-      const tour = items.find((item) => item.serviceId === this.tourId && item.serviceType === 'TOUR' && item.catalogStatus === 'ACTIVE');
+      const tour = items.find((item) => item.serviceId === this.tourId);
       const departures = tour ? openDepartures(all).filter((d) => sameTour(d.tourName, tour.commercialName)).sort((a, b) => a.date.localeCompare(b.date)) : [];
       if (!tour || !departures.length) return { kind: 'empty', noTour: !tour };
       return { kind: 'data', tour, departures };

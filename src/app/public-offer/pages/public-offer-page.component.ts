@@ -7,7 +7,7 @@ import { Observable, Subject, catchError, map, of, startWith, switchMap, throwEr
 import { DeparturesSource, Departure, openDepartures } from '../../reservations/data/departures-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop, formatDate, formatDateRange } from '../../shared/format';
-import { PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
+import { PublicDeparturesSource, PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
 import { PublicTour, TourValue } from '../model/public-offer';
 import { PUBLIC_OFFER_COPY, matchesSearch, sameName } from '../public-offer-copy';
 import { DepartureCapacity } from '../../reservations/data/departure-capacity';
@@ -32,7 +32,7 @@ export function partOf<A, T>(requests: Subject<A>, read: (arg: A) => Observable<
 }
 
 /** The open departures a port lists, or null without a port or when it fails: the page then draws no departures. */
-function openDeparturesOf(port: DeparturesSource | null): Observable<readonly Departure[] | null> {
+function openDeparturesOf(port: { list(): Observable<readonly Departure[]> } | null): Observable<readonly Departure[] | null> {
   const read: Observable<readonly Departure[] | null> = port ? port.list() : of(null);
   return read.pipe(map((all) => (all ? openDepartures(all) : null)), catchError(() => of(null)));
 }
@@ -167,7 +167,7 @@ export class PublicOfferPageComponent {
   protected readonly chosen = signal<PricedTour | null>(null);
   private readonly dates = new Subject<string>();
   /** The open departures of HU-COM-007/008, or null where the container has no departures port or it fails (then no section is drawn). */
-  private readonly departures = toSignal(openDeparturesOf(inject(DeparturesSource, { optional: true })), { initialValue: null });
+  private readonly departures = toSignal(openDeparturesOf(inject(PublicDeparturesSource, { optional: true }) ?? inject(DeparturesSource, { optional: true })), { initialValue: null });
 
   protected readonly toursState = partOf(this.dates, (date) => (this.offer?.listAvailable(date) ?? unavailable()).pipe(
     // RN-PO2: whatever the port answers, what is not available for the date is not listed.

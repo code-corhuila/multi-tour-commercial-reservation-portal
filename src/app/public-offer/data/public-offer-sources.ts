@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { PublicEstablishment, PublicTour, TourValue } from '../model/public-offer';
+import type { Departure } from '../../reservations/data/departures-source';
 
 /** The tours the service declares available on a date (plan D-04). The container supplies it; the demo reads the catalog store. */
 export abstract class PublicOfferSource {
@@ -17,4 +18,12 @@ export abstract class PublicEstablishmentsSource {
  */
 export abstract class TourValueSource {
   abstract valueOf(tour: PublicTour, date: string): TourValue;
+}
+
+/**
+ * The open departures a visitor can see, read from the public tour detail (HU-COM-006 portal spec A.6b, decision of 2026-11-03).
+ * Optional: where the container provides none, the page falls back to the departures port of HU-COM-007.
+ */
+export abstract class PublicDeparturesSource {
+  abstract list(): Observable<readonly Departure[]>;
 }

@@ -16,6 +16,7 @@ import { PortalNavigation } from '../src/app/portal-navigation';
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
+import { PaymentTypeChoice } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { PaymentMethodsSource, ReservationRequester } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerReservation } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ActorContext } from '../src/app/shared/actor-context';
@@ -121,6 +122,12 @@ describe('the Tipo de pago y plazo block of 21', () => {
     expect(element.querySelector('[role="alert"]')?.textContent).toContain('No se pudo completar la solicitud.');
     button('Reintentar')!.click(); await settle();
     expect(element.querySelectorAll('input[name="paymentType"]')).toHaveLength(2);
+  });
+
+  it('tells the page of 21 the type the customer chose, so the reservation is created with it (DP-08, option C)', async () => {
+    const { choose } = await blockOf(null);
+    await choose('PARTIAL');
+    expect(TestBed.inject(PaymentTypeChoice).type()).toBe('PARTIAL');
   });
 });
 
@@ -249,6 +256,16 @@ describe('customer payment wiring', () => {
     expect(created.paymentMethod).toBe('CASH_AT_OFFICE');
     const stored = (await firstValueFrom(TestBed.inject(ReservationsSource).list())).find((r) => r.id === created.reservationId);
     expect(stored?.paymentMethod).toBe('CASH_AT_OFFICE');
+  });
+
+  it('keeps the type chosen on 21 with the reservation, so the creation can send it (DP-08, option C)', async () => {
+    TestBed.configureTestingModule({ providers: [
+      { provide: CustomerContext, useValue: customerContextFor(['FINAL_CUSTOMER'], () => undefined) },
+      { provide: CatalogItemsSource, useValue: new DemoCatalogStore() }, ...reservationDemoProviders(), ...selfServiceDemoProviders(),
+    ] });
+    const created = await firstValueFrom(TestBed.inject(ReservationRequester).request({ departureId: 'demo-dep-1', serviceIds: ['demo-svc-1'], people: 1 }, 'CASH_AT_OFFICE', 'k-2', [], 'PARTIAL'));
+    const stored = (await firstValueFrom(TestBed.inject(ReservationsSource).list())).find((r) => r.id === created.reservationId);
+    expect(stored?.paymentType).toBe('PARTIAL');
   });
 
   it('page 21 hands the chosen medium to the block, which shows its note before Confirmar reserva (AC-PY.2)', async () => {

@@ -211,7 +211,7 @@ export class ReservationFormComponent {
     this.pending.set(true);
     defer(() => this.writer.create(command, this.intention.keyFor(command))).pipe(takeUntilDestroyed(this.lifetime), finalize(() => this.pending.set(false))).subscribe({
       next: (reservation) => this.created.emit(reservation),
-      error: (error: Partial<ApiError> | null) => error?.code === 'insufficient-capacity'
+      error: (error: Partial<ApiError> | null) => error?.code === 'insufficient-capacity' || error?.code === 'SEATS_UNAVAILABLE'
         ? this.refusedForCapacity.set(this.seatRule.refusal(departure)) : this.failure.set(error?.userMessage ?? this.text.failed),
     });
   }

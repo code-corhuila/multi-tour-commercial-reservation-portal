@@ -16,7 +16,7 @@ const blank = (value: string) => !value.trim();
 export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 const normalized = (document: string) => document.replace(/[\s.]+/g, '').toLowerCase();
 
-/** dd/mm/aaaa (as the person types it) to ISO, or null when it is not a real calendar date; the future is not judged here (AC-PC.13). */
+/** dd/mm/aaaa (as the person types it) to ISO, or null when it is not a real calendar date; the future is judged by `partyMessages` (AC-PC.13). */
 export function birthToIso(text: string): string | null {
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text.trim());
   if (!m) return null;
@@ -28,7 +28,7 @@ export const isoToBirth = (iso: string): string => iso.split('-').reverse().join
 export const companionsRequired = (travelers: number): number => Math.max(0, travelers - 1);
 
 /** Every refusal beside its field. `duplicates` is true when only the repeated documents are wanted (they show before the submit). */
-export function partyMessages(lead: LeadFields, companions: readonly CompanionFields[], duplicatesOnly = false, risk: readonly RiskFields[] = []): PartyMessages {
+export function partyMessages(lead: LeadFields, companions: readonly CompanionFields[], duplicatesOnly = false, risk: readonly RiskFields[] = [], today: string = new Date().toLocaleDateString('en-CA')): PartyMessages {
   const messages: PartyMessages = { lead: {}, companions: companions.map(() => ({})), risk: risk.map(() => ({})) };
   const documents = [lead.document, ...companions.map((c) => c.document)];
   const repeated = (index: number) => !blank(documents[index]) && documents.some((other, i) => i !== index && normalized(other) === normalized(documents[index]));
@@ -38,7 +38,9 @@ export function partyMessages(lead: LeadFields, companions: readonly CompanionFi
   for (const field of Object.keys(BLANK_LEAD) as (keyof LeadFields)[]) if (blank(lead[field])) messages.lead[field] = CUSTOMERS_COPY.required;
   if (!messages.lead.email && !EMAIL.test(lead.email.trim())) messages.lead.email = CUSTOMERS_COPY.invalidEmail;
   if (!messages.lead.birthDate && !birthToIso(lead.birthDate)) messages.lead.birthDate = CUSTOMERS_COPY.invalidDate;
-  companions.forEach((c, i) => { for (const field of Object.keys(BLANK_COMPANION) as (keyof CompanionFields)[]) if (blank(c[field])) messages.companions[i][field] = CUSTOMERS_COPY.required; if (!messages.companions[i].birthDate && !birthToIso(c.birthDate)) messages.companions[i].birthDate = CUSTOMERS_COPY.invalidDate; });
+  // AC-PC.13 and the service (AC-05.13): nobody is born after today; ISO dates compare as text.
+  if (!messages.lead.birthDate && (birthToIso(lead.birthDate) ?? '') > today) messages.lead.birthDate = CUSTOMERS_COPY.futureLead;
+  companions.forEach((c, i) => { for (const field of Object.keys(BLANK_COMPANION) as (keyof CompanionFields)[]) if (blank(c[field])) messages.companions[i][field] = CUSTOMERS_COPY.required; if (!messages.companions[i].birthDate && !birthToIso(c.birthDate)) messages.companions[i].birthDate = CUSTOMERS_COPY.invalidDate; if (!messages.companions[i].birthDate && (birthToIso(c.birthDate) ?? '') > today) messages.companions[i].birthDate = CUSTOMERS_COPY.futureCompanion(i + 1); });
   risk.forEach((fields, i) => { for (const field of missingHighRiskData(fields, true)) messages.risk[i][field] = CUSTOMERS_COPY.riskRequired; });
   return messages;
 }

@@ -1,23 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
-import { CatalogItem } from '../src/app/catalog/model/catalog-item';
+import { PublicOfferSource } from '../src/app/public-offer/data/public-offer-sources';
+import { PublicTour } from '../src/app/public-offer/model/public-offer';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
 import { DepartureCapacity } from '../src/app/reservations/data/departure-capacity';
 import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
+import { PublicDeparturesSource } from '../src/app/public-offer/data/public-offer-sources';
 import { DeparturesSource } from '../src/app/reservations/data/departures-source';
 import { Departure } from '../src/app/reservations/model/reservation';
 import { SelectionQuoteSource } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { RESERVATION_FLOW, ReservationSelection, SelectionQuote } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ReserveTourPageComponent } from '../src/app/self-service-reservation/pages/reserve-tour-page.component';
 
-const TOUR: CatalogItem = {
-  serviceId: 'svc-1', serviceType: 'TOUR', commercialName: 'Ruta del café en Pitalito', catalogStatus: 'ACTIVE', baseRateCents: 14_500_000,
-  baseOperationalCostCents: 9_000_000, configuredCapacity: 12, transportRequired: false, highRisk: false,
-  createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z',
+/** The public tour of the contract: the Final Customer cannot read the operator's catalog (403), so the catalog port here always refuses. */
+const TOUR: PublicTour = {
+  serviceId: 'svc-1', commercialName: 'Ruta del café en Pitalito', baseRateCents: 14_500_000, transportIncluded: false, available: true,
 };
 const departure = (id: string, date: string, overrides: Partial<Departure> = {}): Departure => ({
   id, tourName: 'Ruta del cafe en Pitalito', date, state: 'PROGRAMADA', openForReservations: true, effectiveCapacity: 3,
@@ -41,7 +42,7 @@ class RecordingQuotes extends SelectionQuoteSource {
   }
 }
 
-interface Options { tour?: string; departures?: Observable<readonly Departure[]>; catalog?: readonly CatalogItem[]; areas?: readonly string[]; discount?: number }
+interface Options { tour?: string; departures?: Observable<readonly Departure[]>; catalog?: readonly PublicTour[]; areas?: readonly string[]; discount?: number; publicDepartures?: boolean }
 
 async function openReserve(options: Options = {}) {
   const navigation = new PortalNavigation();
@@ -51,9 +52,11 @@ async function openReserve(options: Options = {}) {
   quotes.discount = options.discount ?? 0;
   TestBed.configureTestingModule({ providers: [
     { provide: PortalNavigation, useValue: navigation },
-    { provide: CatalogItemsSource, useValue: { list: () => of(options.catalog ?? [TOUR]) } },
+    { provide: CatalogItemsSource, useValue: { list: () => throwError(() => ({ status: 403, code: 'FORBIDDEN' })) } },
+    { provide: PublicOfferSource, useValue: { listAvailable: () => of(options.catalog ?? [TOUR]) } },
     { provide: DepartureCapacity, useValue: new DemoDepartureCapacity() },
-    { provide: DeparturesSource, useValue: { list: () => options.departures ?? of(DEPARTURES) } },
+    { provide: DeparturesSource, useValue: { list: () => (options.publicDepartures ? throwError(() => ({ status: 403, code: 'FORBIDDEN' })) : options.departures ?? of(DEPARTURES)) } },
+    ...(options.publicDepartures ? [{ provide: PublicDeparturesSource, useValue: { list: () => of(DEPARTURES) } }] : []),
     { provide: SelectionQuoteSource, useValue: quotes },
   ] });
   const fixture = TestBed.createComponent(ReserveTourPageComponent);
@@ -90,6 +93,7 @@ describe('reservarTourIsItsOwnCustomerArea (reservar-tour.html, screen 20)', () 
 describe('theDepartureListOffersOnlyTheOpenDeparturesOfTheTour (reservar-tour.html v1.9, DeparturesSource of HU-COM-007)', () => {
   const options = (p: { host: HTMLElement }) => Array.from(p.host.querySelectorAll('.crp-departure-option'), (o) => o.textContent?.replace(/\s+/g, ' ').trim());
 
+it('reads the tour and its departures from the public routes when the operator reader answers 403', async () => {    const p = await openReserve({ publicDepartures: true });    expect(p.text('.crp-booking-card-head h2')).toBe('Ruta del café en Pitalito');    expect(options(p)).toHaveLength(2);  });
   it('lists the open departures by date as radios, with their seats, the first one chosen, and no calendar', async () => {
     const p = await openReserve();
     expect(p.text('.crp-booking-card-head p')).toBe('Elige una de las salidas programadas.');
