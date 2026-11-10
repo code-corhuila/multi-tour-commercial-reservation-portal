@@ -99,7 +99,7 @@ export class CreditBalanceApiWriter extends CreditBalanceWriter {
       map(lineOf));
   }
 
-  override recordExcess(reservation: Reservation, approvedCents: number): Observable<ExcessSplit> {
+  override recordExcess(reservation: Reservation, approvedCents: number, _idempotencyKey: string): Observable<ExcessSplit> {
     const appliedCents = Math.min(approvedCents, reservation.balanceCents);
     return of({ appliedCents, pendingCents: reservation.balanceCents - appliedCents, excess: null });
   }
