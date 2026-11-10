@@ -87,11 +87,11 @@ describe('refundsWriterOverTheApiClient', () => {
     expect(none.calls).toHaveLength(1);
   });
 
-  it('leaves the credit balance and the execution to their own stories', async () => {
+  it('leaves the credit balance, and an execution with no money out, to their own stories', async () => {
     const { client, calls } = fakeClient();
     const writer = new RefundsApiWriter(client, new RefundsApiSource(client, reservations, () => NOW));
     await expect(firstValueFrom(writer.keepAsCreditBalance())).rejects.toMatchObject({ code: 'NOT_IN_CONTRACT' });
-    await expect(firstValueFrom(writer.executeRefund())).rejects.toMatchObject({ code: 'NOT_IN_CONTRACT' });
+    await expect(firstValueFrom(writer.executeRefund('r-1', null, 'execute-key-0009'))).rejects.toMatchObject({ code: 'NOT_IN_CONTRACT' });
     expect(calls).toEqual([]);
   });
 });
