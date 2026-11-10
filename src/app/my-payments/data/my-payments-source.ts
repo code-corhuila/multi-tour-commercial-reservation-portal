@@ -23,8 +23,8 @@ export interface CustomerPaymentSummary {
   readonly receipts?: readonly ProofReceipt[];
 }
 
-/** One proof as mis-pagos.html lists it. The portal holds no file to download, so no Descargar is offered (blocked by contract). */
-export interface ProofReceipt { readonly support: string; readonly amountCents: number; readonly status: string; readonly rejectionReason?: string }
+/** One proof as mis-pagos.html lists it. `paymentId` is present only for a payment with a file (a transfer): the service serves it to its owner and the portal holds none. */
+export interface ProofReceipt { readonly paymentId?: string; readonly support: string; readonly amountCents: number; readonly status: string; readonly rejectionReason?: string }
 
 /** DP-MP4: a notice the service already chose for Notificaciones, with what the mockup's notification (app.js 4758) reads of the reservation. */
 export type PaymentNotice = { readonly reservationId: string; readonly proofStatus: string } & Partial<Pick<CustomerPaymentSummary,
