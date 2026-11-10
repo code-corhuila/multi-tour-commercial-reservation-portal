@@ -7,7 +7,7 @@ import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, swi
 import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
-import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
+import { PaymentMethodsSource, PaymentTypeChoice, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
 import { HOLDER_TEXT } from '../self-service-copy';
@@ -18,7 +18,7 @@ import { Clock, tenantDay } from '../../shared/clock';
 import { CustomerCompanionFieldsComponent } from '../../shared/customer-companion-fields.component';
 import { CompanionIssues, CustomerCompanion, companionIssues, companionsFor, paddedCompanions, withCompanionField } from '../../shared/customer-companions';
 
-type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
+type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; types: readonly PaymentMethod[]; quote: SelectionQuote };
 
 /**
  * HU-COM-008 as finalizar-reserva.html (screen 21), without Método y plazo de pago (payments story): the customer
@@ -169,6 +169,7 @@ export class ConfirmReservationPageComponent {
   private readonly methods = inject(PaymentMethodsSource);
   private readonly quotes = inject(SelectionQuoteSource);
   private readonly requester = inject(ReservationRequester);
+  private readonly typeChoice = inject(PaymentTypeChoice);
   private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
   /** Plan D-05: the key follows the body: kept across retries of the same data, new when the data is corrected. */
@@ -183,9 +184,9 @@ export class ConfirmReservationPageComponent {
   protected readonly created = signal<CustomerReservation | null>(null);
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => forkJoin({
-    methods: this.methods.listEnabled(), quote: this.quotes.quote(this.selection!),
+    methods: this.methods.listEnabled(), types: this.methods.listTypes(), quote: this.quotes.quote(this.selection!),
   }).pipe(
-    map(({ methods, quote }): ConfirmState => (methods.length ? { kind: 'data', methods, quote } : { kind: 'empty' })),
+    map(({ methods, types, quote }): ConfirmState => (methods.length ? { kind: 'data', methods, types, quote } : { kind: 'empty' })),
     catchError((error) => of<ConfirmState>({ kind: 'error', ...readFailure(error) })),
     startWith<ConfirmState>({ kind: 'loading' }),
   ))), { initialValue: (this.selection ? { kind: 'loading' } : { kind: 'empty' }) as ConfirmState });
@@ -218,14 +219,16 @@ export class ConfirmReservationPageComponent {
     if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
-    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method(), companions: this.companionList() }), this.companionList())).pipe(
+    // DP-08 (option C): the type of the card of 21, else the first one the tenant enabled, which the card shows checked.
+    const current = this.state(), type = this.typeChoice.type() || (current.kind === 'data' ? current.types[0]?.code : '') || '';
+    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method(), type, companions: this.companionList() }), this.companionList(), type)).pipe(
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({
       // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
       next: (reservation) => this.created.set(reservation),
       error: (error: Partial<ApiError> | null) => this.refusal.set(
-        error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
+        error?.userMessage || (error?.status === 409 || error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : this.text.refused)),
     });
   }
 }

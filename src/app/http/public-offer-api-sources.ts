@@ -1,9 +1,10 @@
-import { Observable, map, throwError } from 'rxjs';
-import { PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '../public-offer/data/public-offer-sources';
+import { Observable, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { PublicDeparturesSource, PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '../public-offer/data/public-offer-sources';
 import { PublicEstablishment, PublicTour, TourValue } from '../public-offer/model/public-offer';
 import { PUBLIC_OFFER_COPY } from '../public-offer/public-offer-copy';
 import { ApiError, PortalApiClient } from '../shell-contract';
-import { listAll, publicOfferPath } from './api-paths';
+import type { Departure } from '../reservations/data/departures-source';
+import { call, listAll, publicOfferPath } from './api-paths';
 
 /** PublicTour of the contract (PROPOSED). `maxTravelers` is the plain maximum of travellers (AC-PO.6); every other field the portal does not show is left out on purpose. */
 interface PublicTourDto {
@@ -68,5 +69,32 @@ export class PublicTourValueSource extends TourValueSource {
     return current < tour.baseRateCents && bp > 0
       ? { baseRateCents: tour.baseRateCents, currentValueCents: current, discountLabel: PUBLIC_OFFER_COPY.discountTag(percentOf(bp)) }
       : { baseRateCents: tour.baseRateCents, currentValueCents: current };
+  }
+}
+
+/** PublicTourDetail of the contract (PROPOSED): the tour plus its open departures; no end time, no capacity configuration. */
+interface PublicTourDetailDto extends PublicTourDto {
+  readonly departures: ReadonlyArray<{ readonly departureId: string; readonly startsAt: string; readonly availableSeats: number }>;
+}
+
+/**
+ * The departures of a visitor: the public tour list, then the public detail of each tour (`departures`). The service returns only open
+ * departures with seats, so every one is Programada and open. The authenticated reader of HU-COM-007 is never called (a visitor has no token).
+ */
+export class PublicDeparturesApiSource extends PublicDeparturesSource {
+  constructor(private readonly client: PortalApiClient, private readonly identifier: () => string | null) { super(); }
+  override list(): Observable<readonly Departure[]> {
+    const tenant = this.identifier();
+    if (!tenant) { return noTenant(); }
+    return listAll<PublicTourDto>(this.client, publicOfferPath(tenant, 'tours')).pipe(
+      switchMap((tours) => (tours.length ? forkJoin(tours.map((tour) => this.departuresOf(tenant, tour))) : of([] as Departure[][]))),
+      map((perTour) => perTour.flat()),
+    );
+  }
+  private departuresOf(tenant: string, tour: PublicTourDto): Observable<Departure[]> {
+    return call<PublicTourDetailDto>(this.client, publicOfferPath(tenant, 'tours', tour.serviceId)).pipe(map((detail) => detail.departures.map((d): Departure => ({
+      id: d.departureId, tourName: tour.commercialName, date: d.startsAt, state: 'PROGRAMADA', openForReservations: true,
+      effectiveCapacity: d.availableSeats, transportPerPersonCents: 0, conditions: '',
+    }))));
   }
 }

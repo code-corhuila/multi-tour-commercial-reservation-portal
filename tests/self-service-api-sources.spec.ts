@@ -54,10 +54,10 @@ describe('myReservationsOverTheApiClient', () => {
 });
 
 describe('selectionQuoteOverTheApiClient', () => {
-  it('quotes the selection and reads the tour and its departure from the public route of the tenant: the customer cannot read the catalog', async () => {
+  it('quotes the selection on the own route of the Final Customer and reads the tour and its departure from the public route of the tenant: the customer cannot read the catalog', async () => {
     const { client, calls } = fakeClient({ ok: quote }, { ok: publicTour });
     const summaryOfSelection = await firstValueFrom(new SelectionQuoteApiSource(client, () => TENANT).quote(selection));
-    expect(calls[0]).toEqual({ path: `${API_BASE}/reservation-quotes`, method: 'POST', body: { serviceId: 't-1', salidaId: 'd-1', people: 3 } });
+    expect(calls[0]).toEqual({ path: `${API_BASE}/own/reservation-quotes`, method: 'POST', body: { serviceId: 't-1', salidaId: 'd-1', people: 3 } });
     expect(calls[1]).toEqual({ path: `${API_BASE}/public/tenants/${TENANT}/tours/t-1` });
     expect(summaryOfSelection).toEqual({
       tourName: 'Desierto de la Tatacoa', departureAt: '2026-11-07T06:30:00Z', baseValueCents: 5997, discountCents: 600, finalValueCents: 5397,
@@ -86,6 +86,12 @@ describe('reservationRequesterOverTheApiClient', () => {
     expect(calls[0]).toEqual({ path: `${API_BASE}/reservations`, method: 'POST', headers: { 'Idempotency-Key': 'key-12345678' },
       body: { serviceId: 't-1', salidaId: 'd-1', people: 3, paymentMethod: 'TRANSFER' } });
     expect(created).toEqual(mine);
+  });
+
+  it('sends the payment type and the method chosen on 21 with the wire codes of the contract (DP-08, option C)', async () => {
+    const { client, calls } = fakeClient({ ok: detail }, { ok: page([summary]) });
+    await firstValueFrom(new ReservationRequesterApi(client).request(selection, 'BANK_TRANSFER', 'key-12345678', [], 'PARTIAL'));
+    expect(calls[0].body).toEqual({ serviceId: 't-1', salidaId: 'd-1', people: 3, paymentType: 'DEPOSIT', paymentMethod: 'TRANSFER' });
   });
 
   it('adds the companions with the three fields the contract has, and not the phone or the emergency contact (gap G-B)', async () => {
