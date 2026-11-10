@@ -6,6 +6,10 @@ import * as entry from '../src/mount-entry';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
 import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
+import { Clock as CancellationClock } from '../src/app/reservation-changes/data/cancellation-ports';
+import { FixedClock as ChangesClock } from '../src/app/demo/reservation-changes-demo';
+import { creditBalanceDemoProviders } from '../src/app/demo/credit-balance-demo';
+import { DemoReservationsStore } from '../src/app/demo/reservations-demo';
 import { DemoProofReviewWriter, proofReviewDemoProviders } from '../src/app/demo/proof-review-demo';
 import { reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { DemoPaymentMethods } from '../src/app/demo/self-service-reservation-demo';
@@ -420,10 +424,12 @@ describe('rejection, retry and excess (T-04)', () => {
   });
 
   it('approvalAppliesOnlyThePendingBalanceAndHandsTheExcess (AC-PV.8; the credit balance is HU-COM-017)', async () => {
-    TestBed.configureTestingModule({ providers: providers() });
+    TestBed.configureTestingModule({ providers: providers({ extra: [...creditBalanceDemoProviders(), { provide: CancellationClock, useValue: new ChangesClock('2026-10-13T09:00:00-05:00') }] }) });
     const after = await decide({ verifiedAmountCents: 40_000_000 });
     expect(after).toMatchObject({ status: 'CONFIRMADA', financialStatus: 'PAGO_COMPLETO', validatedCents: 30_000_000, balanceCents: 0 });
-    expect((TestBed.inject(ProofReviewWriter) as DemoProofReviewWriter).handedExcess).toEqual([{ reservationId: EXAMPLE, amountCents: 10_000_000 }]);
+    // The excess is a line of the credit balance store (RN-PV7); the writer keeps no copy of its own.
+    expect((TestBed.inject(ReservationsSource) as DemoReservationsStore).creditBalances.at(-1)).toMatchObject({ reservationId: EXAMPLE, amountCents: 10_000_000, origin: 'EXCEDENTE' });
+    expect('handedExcess' in (TestBed.inject(ProofReviewWriter) as DemoProofReviewWriter)).toBe(false);
   });
 });
 
