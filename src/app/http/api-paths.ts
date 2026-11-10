@@ -4,6 +4,8 @@ import { ApiError, PortalApiClient } from '../shell-contract';
 
 /** The gateway route of this service; it may change with the gateway decision. Only the path: the container client owns the host. */
 export const API_BASE = '/api/v1/commercial-reservation';
+/** The gateway door of the sagas (HU-WFL-003): one route per saga, outside the service's own base. */
+export const executeRefundSagaPath = (sagaId?: string): string => ['/api/v1/sagas/execute-refund', sagaId].filter(Boolean).join('/');
 
 export const catalogPath = (serviceId?: string, action?: 'inactivate' | 'reactivate'): string =>
   [`${API_BASE}/catalog/services`, serviceId, action].filter(Boolean).join('/');
