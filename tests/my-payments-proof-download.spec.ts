@@ -60,13 +60,13 @@ describe('myPaymentsOffersDescargarForTheProofsThatHaveAFile', () => {
   it('draws the link only on the proof that carries a payment id, and none on a cash payment', async () => {
     const view = await render(new Files(() => of(new Blob(['x'], { type: 'application/pdf' }))));
     const items = Array.from(view.host.querySelectorAll('.crp-my-payments-receipts li'), (li) => flat(li.textContent));
-    expect(items).toEqual(['comprobante-1.pdf · $850.000 · En validación Descargar', 'efectivo · $1.000 · Aprobado']);
+    expect(items).toEqual(['comprobante-1.pdf · $850.000 · En validación · Descargar', 'efectivo · $10 · Aprobado']);
   });
 
   it('reads the file by payment id and hands it to the browser named after the payment', async () => {
     const files = new Files(() => of(new Blob(['x'], { type: 'application/pdf' })));
     const view = await render(files);
-    (view.host.querySelector('.crp-my-payments-receipts a') as HTMLElement).click(); await view.settle();
+    view.host.querySelector('.crp-my-payments-receipts a')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); await view.settle();
     expect(files.asked).toEqual(['p-1']);
     expect(saved).toEqual([{ download: 'receipt-p-1.pdf', href: 'blob:proof' }]);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:proof');
@@ -74,7 +74,7 @@ describe('myPaymentsOffersDescargarForTheProofsThatHaveAFile', () => {
 
   it('says the file could not be downloaded when the service refuses, and keeps the list', async () => {
     const view = await render(new Files(() => throwError(() => ({ status: 404 }))));
-    (view.host.querySelector('.crp-my-payments-receipts a') as HTMLElement).click(); await view.settle();
+    view.host.querySelector('.crp-my-payments-receipts a')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); await view.settle();
     expect(saved).toEqual([]);
     expect(flat(view.host.querySelector('[role="alert"]')?.textContent)).toBe('No pudimos descargar el comprobante.');
     expect(view.host.querySelectorAll('.crp-my-payments-receipts li')).toHaveLength(2);

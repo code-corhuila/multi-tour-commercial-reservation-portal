@@ -17,7 +17,7 @@ const summaryOf = (r: Reservation): CustomerPaymentSummary => ({
   people: r.people, finalValueCents: r.quote.finalCents, refundedCents: r.refund?.execution ? r.refund.amountCents : 0, creditBalanceCents: 0,
   pendingTreatmentCents: r.financialDecision?.outcome === null ? (r.financialDecision.refundableCents ?? r.validatedCents ?? 0) : 0,
   deadlineAt: r.deadline?.extendedUntil ?? r.deadline?.dueAt, reschedulingPending: r.reschedulingPending, continueAction: r.continueAction,
-  receipts: (r.payments ?? []).map((p) => ({ support: p.proofName ?? '', amountCents: p.amountCents, status: p.proofStatus,
+  receipts: (r.payments ?? []).map((p) => ({ ...(p.proofName != null && { paymentId: p.id }), support: p.proofName ?? '', amountCents: p.amountCents, status: p.proofStatus,
     ...(p.review?.decision === 'RECHAZADO' && { rejectionReason: p.review.reason }) })),
 });
 

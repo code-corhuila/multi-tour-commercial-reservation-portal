@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
+import { Subject, catchError, map, of, startWith, switchMap, take } from 'rxjs';
+import { ProofFileSource } from '../../payments/data/proof-file-source';
 import { PortalNavigation } from '../../portal-navigation';
 import { CustomerContext } from '../../self-service-reservation/data/customer-context';
 import { departureLine, formatCop } from '../../shared/format';
@@ -10,6 +11,8 @@ import { PageState } from '../../shared/page-state';
 import { CustomerPaymentSummary, MyPaymentsSource } from '../data/my-payments-source';
 import { gridRows } from '../economic-rows';
 import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
+
+const EXTENSION: Record<string, string> = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' };
 
 /** mis-pagos.html, opened from 17: one card per own reservation, read only (RN-MP4). With { reservation }, only that own one (AC-MP.5). */
 @Component({ imports: [ReadErrorComponent],
@@ -38,7 +41,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
                 <div class="crp-my-payments-meta">@for (row of rows(r); track row[0]) { <span>{{ row[0] }}: {{ row[1] }}</span>&ngsp; }</div>&ngsp;
                 @if (r.receipts?.length) {
                   <div class="crp-my-payments-receipts"><strong>{{ t.receipts }}</strong>&ngsp;<ul>@for (p of r.receipts; track $index) {
-                    <li>{{ p.support }} · {{ cop(p.amountCents) }} · <strong>{{ label('proof', p.status) }}</strong>@if (p.rejectionReason) { ({{ t.reason }}: {{ p.rejectionReason }}) }</li>
+                    <li>{{ p.support }} · {{ cop(p.amountCents) }} · <strong>{{ label('proof', p.status) }}</strong>@if (p.rejectionReason) { ({{ t.reason }}: {{ p.rejectionReason }}) }@if (p.paymentId) { &ngsp;·&ngsp;<a href="#" (click)="download($event, p.paymentId)">{{ t.download }}</a> @if (failed() === p.paymentId) { <small role="alert" data-state="download-error">{{ t.downloadFailed }}</small> } }</li>
                   }</ul></div>
                 } @else if (r.proofStatus === 'SIN_COMPROBANTE') {
                   <div class="crp-my-payments-receipts"><strong>{{ t.receipts }}</strong>&ngsp;<small>{{ t.noReceipts }}</small></div>
@@ -63,6 +66,20 @@ export class MyPaymentsPageComponent {
   private readonly only = inject(PortalNavigation, { optional: true })?.params()['reservation'];
   private readonly source = inject(MyPaymentsSource);
   private readonly requests = new Subject<void>();
+  private readonly files = inject(ProofFileSource, { optional: true });
+  protected readonly failed = signal<string | null>(null);
+
+  /** Descargar of mis-pagos.html: the owner's file from the service, handed to the browser as receipt-<paymentId>.<extension> and released at once. */
+  protected download(event: Event, paymentId: string): void {
+    event.preventDefault(); this.failed.set(null);
+    this.files?.read(paymentId).pipe(take(1)).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob), link = document.createElement('a');
+        link.href = url; link.download = `receipt-${paymentId}.${EXTENSION[blob.type] ?? 'pdf'}`; link.click(); URL.revokeObjectURL(url);
+      },
+      error: () => this.failed.set(paymentId),
+    });
+  }
   protected readonly state = toSignal(this.requests.pipe(switchMap(() => this.source.listMine().pipe(
     map((all): PageState<CustomerPaymentSummary> => {
       const items = this.only ? all.filter((r) => r.reservationId === this.only) : all;
