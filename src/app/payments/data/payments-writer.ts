@@ -16,3 +16,8 @@ export abstract class CashSessionStatus { abstract isOpen(): boolean; }
 
 /** D-07 (G-USR): the label of who registers; the service takes the real user from the token. */
 export abstract class RegisteringUser { abstract label(): string; }
+
+/** AC-PY.13: what the service says the reservation pays now; the view computes nothing. The amount is null when no payment type is enabled. */
+export type PaymentQuote = { readonly amountToPayCents: number | null; readonly pendingBalanceCents: number };
+/** GET /reservations/{id}/payment-quote for the portal type (`TOTAL`, `PARTIAL`): the minimum deposit on a first deposit, else the pending balance. */
+export abstract class PaymentQuoteReader { abstract quote(reservationId: string, type: string): Observable<PaymentQuote>; }

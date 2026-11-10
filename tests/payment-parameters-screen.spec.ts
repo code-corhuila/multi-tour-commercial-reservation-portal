@@ -69,6 +69,8 @@ describe('thePaymentParametersScreenDrawsTheMockup', () => {
     const s = await screen();
     expect(s.flat(s.host.querySelector('h1'))).toBe('Parámetros de pago del tenant');
     expect(s.flat(s.host.querySelector('.crp-operator-access-note'))).toContain('Solo el Administrador del tenant define plazos y condiciones de pago.');
+    expect(s.flat(s.host.querySelector('.crp-operator-access-note'))).toContain('Los cambios se aplican a cada reserva en el momento del pago y exigen motivo.');
+    expect(s.flat(s.host.querySelector('.crp-operator-access-note'))).not.toContain('auditados');
     const heads = Array.from(s.host.querySelectorAll('thead')[0].querySelectorAll('th'), (h) => h.textContent!.trim());
     expect(heads).toEqual(['Servicio', 'Inicial pago total (h)', 'Inicial abono (h)', 'Abono mínimo (%)', 'Ampliación (h)', 'Saldo (h antes)', 'Penalidad (%)']);
     expect(Array.from(s.host.querySelectorAll('tbody')[0].querySelectorAll('tr'), (r) => r.querySelector('th,td')!.textContent!.trim())).toEqual(['Predeterminado del tenant', ...TOURS]);
@@ -199,7 +201,7 @@ describe('parametersAreBoundedNeedAReasonAndLeaveAnAuditLine', () => {
     await s.submit();
     expect(s.spy.saved).toHaveLength(1);
     expect(s.spy.saved[0].command).toEqual({ tenant: { minDepositPercent: 50 }, services: { [TOURS[1]]: { cancellationPenaltyPercent: 20 } }, reason: 'Política de temporada' });
-    expect(s.flat(s.host.querySelector('[data-payment-params-feedback]'))).toContain('Parámetros guardados y auditados.');
+    expect(s.flat(s.host.querySelector('[data-payment-params-feedback]'))).toBe('Parámetros guardados. Se aplican a cada reserva en el momento del pago.');
     expect(s.flat(s.host.querySelector('[data-payment-params-meta]'))).toContain('Última modificación:');
     expect(s.flat(s.host.querySelector('[data-payment-params-meta]'))).toContain('Administrador del tenant (demo)');
     expect(Array.from(s.host.querySelectorAll('[data-payment-params-history] tr'), (r) => Array.from(r.querySelectorAll('td'), (c) => c.textContent!.trim()).slice(1)))

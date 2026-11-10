@@ -13,8 +13,12 @@ export const PROOF_REVIEW_TEXT = {
   accessNote: 'Acción disponible para el Administrador del tenant y para cualquier Colaborador operativo al que el Administrador haya asignado el permiso Validar comprobantes. Gerente, Contador y Analista no pueden recibir este permiso. El comprobante se revisa dentro de 24 horas corridas; pasado ese plazo queda marcado como revisión vencida, sin cancelar la reserva ni liberar el cupo.',
   proofEyebrow: 'Comprobante de pago', heading: 'Revisa el comprobante antes de decidir', readOnlyHeading: 'Consulta del comprobante de pago',
   reservation: 'Reserva', customer: 'Cliente', modality: 'Tipo y medio de pago', declared: 'Valor declarado', amount: 'Monto verificado', status: 'Estado del comprobante', proof: 'Comprobante de pago',
+  /** The alternative text of the preview and the title of the opened document, as admin-validar-soporte.html writes them. */
+  previewAlt: 'Vista previa del comprobante de pago', documentTitle: 'Documento del comprobante abierto',
   file: (name: string | null) => (name ? `Archivo: ${name}` : 'Sin comprobante adjunto'),
   reason: 'Motivo (obligatorio al rechazar o si el monto verificado difiere del declarado)', reasonPlaceholder: 'Describe el motivo de la decisión o de la diferencia',
+  /** PROPUESTO (DP-D10-5): the mockup draws no notice; the reason is free text that travels to the event and can reach the customer. */
+  reasonPrivacy: 'No escribas datos personales en el motivo (nombres, documentos, teléfonos o datos de salud): el motivo queda registrado y puede llegar al cliente.',
   recognized: 'El monto reconocido es el valor verificado en la evidencia. Si supera el valor pendiente de la reserva, solo se aplica lo necesario y el excedente se registra como saldo a favor del cliente dentro del tenant.',
   hint: 'Verifica el monto y decide si apruebas o rechazas el comprobante.',
   reasonRequired: 'Registra el motivo obligatorio del rechazo.', differenceRequired: 'El monto verificado es distinto al declarado en el comprobante: registra el motivo de la diferencia.',

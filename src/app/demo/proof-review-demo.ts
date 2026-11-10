@@ -2,6 +2,8 @@ import { Optional, Provider } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { CreditBalanceWriter } from '../credit-balance/data/credit-balance-ports';
 import { RegisteringUser } from '../payments/data/payments-writer';
+import { ProofFileSource } from '../payments/data/proof-file-source';
+import { DemoProofFileSource } from './proof-file-demo';
 import { DecideProofCommand, PendingProofs, PendingProofsSource, ProofReviewWriter } from '../payments/data/proof-review-ports';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { Reservation } from '../reservations/model/reservation';
@@ -76,6 +78,7 @@ export function proofReviewDemoProviders(): Provider[] {
   const clock = new DemoClock(), answered = new Map<string, Reservation>();
   return [
     { provide: Clock, useValue: clock },
+    { provide: ProofFileSource, useValue: new DemoProofFileSource() },
     { provide: PendingProofsSource, useFactory: (s: ReservationsSource, c: Clock) => new DemoPendingProofs(s as DemoReservationsStore, c), deps: [ReservationsSource, Clock] },
     { provide: ProofReviewWriter, useFactory: (s: ReservationsSource, k: PortalCapabilities, u: RegisteringUser, c: Clock, credit: CreditBalanceWriter | null, p: PaymentParametersSource | null) =>
       new DemoProofReviewWriter(s as DemoReservationsStore, k, u, c, answered, credit ?? undefined, lookupOf(p)),

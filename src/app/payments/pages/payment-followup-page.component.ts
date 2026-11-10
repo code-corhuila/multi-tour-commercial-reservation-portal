@@ -98,7 +98,7 @@ export class PaymentFollowupPageComponent {
   /** Reserva, Cliente, Modalidad de pago, Valor recibido, Saldo pendiente, Estado actual: the values come resolved. */
   protected context(d: { reservation: Reservation; labels: PaymentLabels }): string[] {
     const r = d.reservation;
-    return [`#${r.id}`, r.leadCustomerName, modalityOf(r, d.labels), formatCop(r.validatedCents ?? 0), formatCop(r.balanceCents), r.status === 'CANCELADA' && !r.validatedCents ? 'No aplica por reserva cancelada' : FINANCIAL_LABEL[r.financialStatus]];
+    return [`#${r.id}`, r.leadCustomerName, modalityOf(r, d.labels), formatCop(r.validatedCents ?? 0), formatCop(r.balanceCents), r.status === 'CANCELADA' && !r.validatedCents ? PAYMENT_FOLLOWUP_TEXT.notApplicableCancelled : FINANCIAL_LABEL[r.financialStatus]];
   }
   protected departure(d: { reservation: Reservation; departure?: string }): string { return departureText(d.reservation, d.departure); }
   protected value(event: Event): string { return (event.target as HTMLTextAreaElement).value; }
