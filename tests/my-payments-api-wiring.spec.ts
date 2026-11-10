@@ -38,8 +38,8 @@ describe('myPaymentsOverTheRealService', () => {
     expect(mine).toHaveLength(1);
     expect(mine[0]).toMatchObject({ reservationId: 'r-1', tourName: 'Desierto de la Tatacoa', reservationStatus: 'PENDING_PAYMENT', paymentType: 'PARTIAL',
       paymentMethod: 'BANK_TRANSFER', proofStatus: 'RECHAZADO', balanceCents: 5997, validatedCents: 0 });
-    expect(mine[0].receipts).toEqual([{ support: '', amountCents: 1000, status: 'EN_VALIDACION' },
-      { support: '', amountCents: 2000, status: 'RECHAZADO', rejectionReason: 'Comprobante ilegible' }]);
+    expect(mine[0].receipts).toEqual([{ paymentId: 'p-1', support: '', amountCents: 1000, status: 'EN_VALIDACION' },
+      { paymentId: 'p-2', support: '', amountCents: 2000, status: 'RECHAZADO', rejectionReason: 'Comprobante ilegible' }]);
   });
 
   it('names the notice and the reservation the customer continues, as the service shows them', async () => {
