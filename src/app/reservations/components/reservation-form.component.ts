@@ -52,7 +52,7 @@ type OptionsState = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; op
                 <label for="reservation-departure">{{ text.scheduled }}</label>
                 <select id="reservation-departure" name="departureId" [disabled]="!draft().serviceId" (change)="set('departureId', $event)" [attr.aria-invalid]="e.departureId ? true : null" [attr.aria-describedby]="e.departureId ? 'reservation-departure-error' : null">
                   <option value="">{{ draft().serviceId ? text.chooseScheduled : text.chooseTourFirst }}</option>
-                  @for (d of o.departures; track d.id) { <option [value]="d.id" [selected]="d.id === draft().departureId">{{ d.tourName }} · {{ date(d.date) }} · {{ seatsOf(d) }}</option> }
+                  @for (d of o.departures; track d.id) { <option [value]="d.id" [disabled]="!seatRule.hasSeats(d)" [selected]="d.id === draft().departureId">{{ d.tourName }} · {{ date(d.date) }} · {{ seatRule.hasSeats(d) ? seatsOf(d) : text.departureFull }}</option> }
                 </select>
                 <small data-departure-hint>{{ draft().serviceId ? text.departureHint : text.chooseTourFirst }}</small>
                 @if (e.departureId) { <p id="reservation-departure-error" class="crp-reservations-error">{{ e.departureId }}</p> }
@@ -120,7 +120,7 @@ export class ReservationFormComponent {
   readonly cancelled = output<void>();
   private readonly departures = inject(DeparturesSource); private readonly party = inject(ReservationParty);
   private readonly catalog = inject(CatalogItemsSource); private readonly quotes = inject(ReservationQuoteSource);
-  private readonly seatRule = inject(DepartureCapacity);
+  protected readonly seatRule = inject(DepartureCapacity);
   private readonly writer = inject(ReservationsWriter); private readonly lifetime = inject(DestroyRef);
   /** The key follows the body: reused by every retry of the same data, new when the person corrects it (AC-RC.8). */
   private readonly intention = new IntentionKey(inject(IdempotencyKeys));

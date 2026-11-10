@@ -34,6 +34,17 @@ describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
   });
 });
 
+// HU-COM-007 AC-RC.5 (mockup 10B): a full departure is listed as "Salida llena" and cannot be chosen.
+describe('aFullDepartureIsListedAsFullAndDisabled', () => {
+  it('keeps an open departure without seats in the list, reads Salida llena and disables it', async () => {
+    const full = departureOf(5, { effectiveCapacity: 0, totalSeats: 12 });
+    const { element } = await openForm({ departures: new StubDepartures(() => of([departureOf(1), full])) });
+    const option = Array.from((within(element).getByLabelText('Salida programada') as HTMLSelectElement).options).find((o) => o.value === 'dep-5')!;
+    expect(option.textContent).toContain('Salida llena');
+    expect(option.disabled).toBe(true);
+  });
+});
+
 describe('noTransportItemIsOfferedAsAService', () => {
   it('offers the active tours of the catalog and leaves out an active transportation item', async () => {
     const { element } = await openForm({ services: [serviceOf('Kayak', 1999), serviceOf('Traslado aeropuerto', 500, { serviceType: 'TRANSPORTATION' })] });
