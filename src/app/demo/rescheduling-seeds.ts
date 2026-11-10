@@ -6,7 +6,7 @@ import type { Departure, Reservation } from '../reservations/model/reservation';
 const ANDINA = 'Ruta Andina';
 const at = (day: number) => `2026-10-${day}T06:30:00-05:00`;
 const departure = (n: number, day: number, state: Departure['state'], effectiveCapacity: number): Departure => ({ id: `demo-dep-${n}`, tourName: ANDINA,
-  date: at(day), state, openForReservations: state === 'PROGRAMADA', effectiveCapacity, transportPerPersonCents: 0, conditions: 'Texto de demostración.' });
+  date: at(day), state, openForReservations: state === 'PROGRAMADA', effectiveCapacity, totalSeats: Math.max(effectiveCapacity, 12), transportPerPersonCents: 0, conditions: 'Texto de demostración.' });
 
 /** The seeded cancelled departure, one with seats, one with a single seat (AC-RP.3) and the one already proposed. */
 export const RESCHEDULING_DEPARTURES: readonly Departure[] = [

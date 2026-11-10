@@ -1,4 +1,4 @@
-import { RESERVATION_STATE_LABEL, RESERVATION_STATE_UNKNOWN } from '../self-service-copy';
+import { RESERVATION_STATE_LABEL, SELF_SERVICE_TEXT, RESERVATION_STATE_UNKNOWN } from '../self-service-copy';
 
 export { RESERVE_TEXT, SELF_SERVICE_TEXT, companions, travelers } from '../self-service-copy';
 
@@ -69,6 +69,23 @@ export function selectionFromQuery(query: string): ReservationSelection | null {
 }
 
 /** The keys of the client areas of this story that a page opens with parameters (PortalNavigation.open). */
+export const HOLDER_KEYS = ['name', 'document', 'phone', 'email', 'birthdate'] as const;
+export type HolderKey = (typeof HOLDER_KEYS)[number];
+export type HolderValues = Readonly<Record<HolderKey, string>>;
+/** The service names the risk data it lacks (the Final Customer cannot read the risk mark of a tour): `bloodType`, `emergencyContact`, `mobilityRestrictions` or `informedConsentSigned`, maybe prefixed `companions[n].`. */
+export const namesRiskData = (error: { details?: readonly { field: string }[] } | null): boolean =>
+  !!error?.details?.some((d) => /(^|\.)(bloodType|emergencyContact|mobilityRestrictions|informedConsentSigned)$/.test(d.field));
+
+export const BLANK_HOLDER: HolderValues = { name: '', document: '', phone: '', email: '', birthdate: '' };
+
+/** DP-RS5: the five fields are required; the e-mail has a shape; the birth date (ISO) is not after the tenant's `today`. One sentence, the fields to mark. */
+export function holderIssues(values: HolderValues, today: string): { message: string; fields: readonly HolderKey[] } | null {
+  const blank = HOLDER_KEYS.filter((key) => !values[key].trim());
+  if (blank.length) return { message: SELF_SERVICE_TEXT.holderMissing, fields: blank };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) return { message: SELF_SERVICE_TEXT.holderEmail, fields: ['email'] };
+  return values.birthdate > today ? { message: SELF_SERVICE_TEXT.holderFuture, fields: ['birthdate'] } : null;
+}
+
 export const RESERVATION_FLOW = Object.freeze({ reserve: 'reserve', finish: 'finish' } as const);
 
 /** DP-RS1 inside the shell: the parameters of the last opening, read as the URL query is. */

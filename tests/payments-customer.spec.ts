@@ -180,6 +180,24 @@ describe('screen 24, Pago por transferencia', () => {
     expect(text).not.toMatch(/PENDING_PAYMENT|SIN_PAGO|undefined/);
   });
 
+  // Audit F2 of HU-COM-009: over HTTP the service does not publish the operator's bank data, and the whole screen used to fail with it.
+  it('in HTTP mode the bank data the service does not publish falls back to the marked demo account and the screen still opens', async () => {
+    const missing = new (class extends DemoPaymentMethods {
+      override bankAccount() { return throwError(() => ({ status: 0, code: 'NOT_IN_CONTRACT', message: 'x', details: [], traceId: '', userMessage: 'x' })); }
+    })();
+    const { element } = await transferOf(TOTAL, [{ provide: PaymentMethodsSource, useValue: missing }]);
+    expect(element.querySelector('[data-state="error"]')).toBeNull();
+    const text = element.textContent!.replace(/\s+/g, ' ');
+    for (const piece of ['Datos bancarios', 'Banco de ejemplo (datos de demostración)', 'Ahorros', '000-000-000', 'Travesía Natural', 'Reserva #RES-1842']) expect(text, piece).toContain(piece);
+  });
+
+  it('any other failure of the bank data keeps the error state, never a made-up account', async () => {
+    const broken = new (class extends DemoPaymentMethods { override bankAccount() { return throwError(() => ({ status: 503, code: 'UNAVAILABLE' })); } })();
+    const { element } = await transferOf(TOTAL, [{ provide: PaymentMethodsSource, useValue: broken }]);
+    expect(element.querySelector('[data-state="error"]')).not.toBeNull();
+    expect(element.textContent).not.toContain('000-000-000');
+  });
+
   it('a customer reaches only their own reservations: another one gets the empty state (AC-PY.9)', async () => {
     const { element } = await transferOf({ reservation: 'RES-1841', type: 'TOTAL', amount: '100' });
     expect(element.querySelector('[data-state="empty"]')).not.toBeNull();

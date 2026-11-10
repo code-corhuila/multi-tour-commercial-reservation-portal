@@ -61,6 +61,8 @@ export const CUSTOMER_PAYMENT_TEXT = {
   proofState: 'Estado del comprobante:', financial: 'Situación financiera:', send: 'Enviar comprobante para validación', panel: 'Volver a mis reservas',
   chooseProof: 'Selecciona un comprobante para continuar.', validProof: 'Archivo válido. El comprobante quedará En validación solo cuando lo envíes.',
   none: 'No hay una reserva pendiente de transferencia. Vuelve a Explorar para crear una reserva.',
+  /** The account of the mockup, marked as demo: the service does not publish the operator's bank data (portal spec P9). */
+  demoBank: { bank: 'Banco de ejemplo (datos de demostración)', accountType: 'Ahorros', accountNumber: '000-000-000', holder: 'Travesía Natural' },
 };
 
 const DEPARTURE_STATE: Readonly<Record<string, string>> = { PROGRAMADA: 'Programada', EN_CURSO: 'En ejecución', FINALIZADA: 'Finalizada', CANCELADA: 'Cancelada' };

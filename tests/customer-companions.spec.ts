@@ -56,6 +56,8 @@ async function openConfirm(people = 3) {
     const select = element.querySelector('select') as HTMLSelectElement;
     select.value = 'BANK_TRANSFER'; select.dispatchEvent(new Event('change'));
     for (const box of Array.from(element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))) box.click();
+    // The titular is required on screen 21 (DP-RS5); the companions are typed by each test.
+    for (const [key, value] of Object.entries({ name: 'Titular Ficticio', document: HOLDER_DOCUMENT, phone: '300 000 0000', email: 'titular@example.invalid', birthdate: '1990-04-12' })) type(element.querySelector<HTMLInputElement>('#crp-holder-' + key)!, value);
     await settle();
   };
   const fillCompanion = async (index: number, data: CustomerCompanion) => { for (const key of ALL_FIELDS) type(field(element, key, index), data[key]); await settle(); };
