@@ -88,3 +88,6 @@ export class PortalSlotOutlet implements OnChanges {
     }
   }
 }
+
+/** Markup of a quick-action row of the client panel (screen 17): no text of its own, every word comes from the item. */
+export const QUICK_ITEM = `<button type="button" class="crp-panel-quick-item" (click)="go()"><span class="crp-panel-quick-icon" aria-hidden="true">{{ item.icon }}</span>&ngsp;<span class="crp-panel-quick-copy"><strong>{{ item.title }}</strong>&ngsp;<span>{{ item.copy }}</span></span></button>`;

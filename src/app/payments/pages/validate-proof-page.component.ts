@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ProofFileViewComponent } from '../components/proof-file-view.component';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -24,9 +25,9 @@ const BACK_DELAY_MS = 1600;
 
 /**
  * admin-validar-soporte.html (13, titled Validar comprobante), opened with { reservation, payment }; without Validar comprobantes,
- * the mockup's "Ver comprobante" mode. The preview of the file (image or PDF viewer) is blocked by contract: the port gives its name only.
+ * the mockup's "Ver comprobante" mode. The proof is the file of a transfer (the service never sends its name; a cash payment has none): crp-proof-file reads it through ProofFileSource.
  */
-@Component({ imports: [ReadErrorComponent],
+@Component({ imports: [ReadErrorComponent, ProofFileViewComponent],
   selector: 'app-validate-proof-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.eyebrow }}</p><h1 class="crp-page-header-title crp-h1">{{ canDecide ? t.validate : t.view }}</h1></div>
@@ -51,10 +52,11 @@ const BACK_DELAY_MS = 1600;
                   [attr.aria-invalid]="errors().amount ? 'true' : null" aria-describedby="crp-proof-review-amount-error">
                 <p id="crp-proof-review-amount-error" class="crp-payments-error">{{ errors().amount }}</p></div>
               <div><label for="crp-proof-review-status">{{ t.status }}</label><input id="crp-proof-review-status" readonly [value]="common.proofStatus[p.proofStatus]"></div>
-              <div class="crp-proof-review-wide"><span>{{ t.proof }}</span><p>{{ t.file(p.proofName) }}</p></div>
+              <div class="crp-proof-review-wide"><span>{{ t.proof }}</span>@if (p.proofName === null) { <p>{{ t.file(null) }}</p> } @else { <crp-proof-file [paymentId]="p.id" [name]="p.proofName" /> }</div>
               @if (canDecide) { <div class="crp-proof-review-wide"><label for="crp-proof-review-reason">{{ t.reason }}</label>
                 <textarea id="crp-proof-review-reason" name="reason" required [disabled]="locked" [placeholder]="t.reasonPlaceholder" (input)="reason.set(value($event)); keyFor = null"
                   [attr.aria-invalid]="errors().reason ? 'true' : null" aria-describedby="crp-proof-review-reason-error"></textarea>
+                <small id="crp-proof-review-reason-privacy" class="crp-operator-copy">{{ t.reasonPrivacy }}</small>
                 <p id="crp-proof-review-reason-error" class="crp-payments-error">{{ errors().reason }}</p></div> }
             </div>
             <p class="crp-operator-copy">{{ t.recognized }}</p>

@@ -27,6 +27,7 @@ describe('transferAmountReadsThroughSharedMoney', () => {
   it('the transfer page keeps no regex of its own for the amount', () => {
     const page = withoutComments(readFileSync('src/app/payments/pages/transfer-payment-page.component.ts', 'utf8'));
     expect(page).not.toMatch(/\[0-9\]\+|\d\+/);
-    expect(page).toContain('parseMinorUnits');
+    expect(page).toContain('parseMoney');
+    expect(page).not.toContain("params['amount']");
   });
 });

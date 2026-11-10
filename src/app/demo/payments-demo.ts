@@ -2,7 +2,7 @@ import { Optional, Provider } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
-import { CashSessionStatus, PaymentsWriter, RegisterPaymentCommand, RegisteringUser } from '../payments/data/payments-writer';
+import { CashSessionStatus, PaymentQuote, PaymentQuoteReader, PaymentsWriter, RegisterPaymentCommand, RegisteringUser } from '../payments/data/payments-writer';
 import { paymentEntryOf, proofProblem } from '../payments/model/payment';
 import { minimumPartial, situation } from './proof-review-demo';
 import { PaymentParametersSource } from '../payment-parameters/data/payment-parameters-ports';
@@ -77,6 +77,17 @@ export class DemoPaymentsWriter extends PaymentsWriter {
   }
 }
 
+/** AC-PY.13 (demo): the amount to pay the service would quote: the minimum deposit on a first deposit, else the pending balance. */
+export class DemoPaymentQuotes extends PaymentQuoteReader {
+  constructor(private readonly store: DemoReservationsStore, private readonly parameters: ReservationParametersLookup = SEED_LOOKUP) { super(); }
+  override quote(id: string, type: string): Observable<PaymentQuote> {
+    const r = this.store.items.find((x) => x.id === id);
+    if (!r) return refuse('reservation-not-found', PAYMENTS_TEXT.notFound);
+    const firstDeposit = (type || r.paymentType) === 'PARTIAL' && !(r.validatedCents ?? 0);
+    return of({ amountToPayCents: firstDeposit ? Math.min(minimumPartial(r, this.parameters), r.balanceCents) : r.balanceCents, pendingBalanceCents: r.balanceCents });
+  }
+}
+
 /** Registered in sources.demo.ts after reservationDemoProviders(), over its stores; the answered keys belong to the page. */
 export function paymentsDemoProviders(): Provider[] {
   const cash = new DemoCashSession(), answered = new Map<string, Reservation>();
@@ -86,5 +97,7 @@ export function paymentsDemoProviders(): Provider[] {
     { provide: PaymentsWriter, useFactory: (s: ReservationsSource, d: DeparturesSource, u: RegisteringUser, p: PaymentParametersSource | null) =>
       new DemoPaymentsWriter(s as DemoReservationsStore, d as DemoDeparturesStore, cash, u, answered, lookupOf(p)),
       deps: [ReservationsSource, DeparturesSource, RegisteringUser, [new Optional(), PaymentParametersSource]] },
+    { provide: PaymentQuoteReader, useFactory: (s: ReservationsSource, p: PaymentParametersSource | null) => new DemoPaymentQuotes(s as DemoReservationsStore, lookupOf(p)),
+      deps: [ReservationsSource, [new Optional(), PaymentParametersSource]] },
   ];
 }

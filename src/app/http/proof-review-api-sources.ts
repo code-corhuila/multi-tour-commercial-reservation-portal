@@ -6,7 +6,7 @@ import { API_BASE, call, listAll } from './api-paths';
 import { readReservation } from './payments-api-sources';
 import { rowsOf } from './reservations-api-sources';
 
-export const paymentProofsPath = (paymentId?: string, action?: 'approve' | 'reject'): string => [`${API_BASE}/payment-proofs`, paymentId, action].filter(Boolean).join('/');
+export const paymentProofsPath = (paymentId?: string, action?: 'approve' | 'reject' | 'file'): string => [`${API_BASE}/payment-proofs`, paymentId, action].filter(Boolean).join('/');
 
 /** PaymentProofSummary of the contract (PROPOSED): the row of the panel; `reviewOverdue` is the mark the service derives from its clock. */
 interface ProofRowDto { readonly paymentId: string; readonly reservationId: string; readonly reviewOverdue: boolean }

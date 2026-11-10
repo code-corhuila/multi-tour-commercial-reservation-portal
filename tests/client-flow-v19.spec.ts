@@ -15,7 +15,7 @@ import { PaymentMethodsSource, ReservationRequester, ReservationSelectionSource,
 import { RESERVATION_FLOW } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ConfirmReservationPageComponent } from '../src/app/self-service-reservation/pages/confirm-reservation-page.component';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
-import { PaymentsWriter } from '../src/app/payments/data/payments-writer';
+import { PaymentQuoteReader, PaymentsWriter } from '../src/app/payments/data/payments-writer';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import { ControllablePaymentMethods, CustomerAs, METHODS, QUOTE, RecordingRequester, SELECTION, quoteOf, reservationFor, selectionAt } from './self-service-reservation.double';
 
@@ -103,7 +103,7 @@ describe('pago-transferencia.html v1.9 (screen 24)', () => {
     const nav = navigationWith(areas, { reservation: 'RES-1842', type: 'PARTIAL', amount: '30000000' });
     return mount(TransferPaymentPageComponent, [
       { provide: MyReservationsSource, useValue: { listMine: () => of([reservation]) } }, { provide: PaymentMethodsSource, useValue: new ControllablePaymentMethods() },
-      { provide: PaymentsWriter, useValue: { register: () => of(undefined) } }, { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() }, { provide: PortalNavigation, useValue: nav },
+      { provide: PaymentsWriter, useValue: { register: () => of(undefined) } }, { provide: PaymentQuoteReader, useValue: { quote: () => of({ amountToPayCents: 30_000_000, pendingBalanceCents: 85_000_000 }) } }, { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() }, { provide: PortalNavigation, useValue: nav },
     ]).then((view) => ({ ...view, nav }));
   };
 
@@ -111,7 +111,7 @@ describe('pago-transferencia.html v1.9 (screen 24)', () => {
     const p = await transfer();
     expect(p.text('.crp-transfer-alert p')).toBe('Realiza la transferencia y sube el comprobante. El comprobante queda En validación solo cuando lo envías; no es ingreso de caja ni confirma la reserva hasta que un usuario del operador con el permiso Validar comprobantes lo valide, en un plazo máximo de 24 horas corridas.');
     const rows = Array.from(p.element.querySelectorAll('.crp-transfer-summary > div'), (d) => flat(d.textContent));
-    expect(rows).toEqual(['Reserva #RES-1842', 'Tour Ruta Andina', 'Salida 18 sep 2026 · 06:30', 'Viajeros 2 viajeros', 'Tipo y medio de pago Abono · Transferencia', 'Valor a transferir $300.000']);
+    expect(rows).toEqual(['Reserva #RES-1842', 'Tour Ruta Andina', 'Salida 18 sep 2026 · 06:30', 'Viajeros 2 viajeros', 'Tipo y medio de pago Abono · Transferencia', 'Saldo pendiente de la reserva $850.000', 'Valor a transferir $300.000']);
     expect(p.text('.crp-transfer-proof h2')).toBe('Comprobante de pago');
     expect(p.text('label[for="crp-transfer-proof"]')).toBe('Archivo del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)');
     expect(p.element.textContent).toContain('Si es tu primer pago, el cupo se verifica y se aparta al recibir el comprobante, antes de aceptarlo. Si ya no hay cupo, te lo informaremos y no se recibirá el comprobante.');

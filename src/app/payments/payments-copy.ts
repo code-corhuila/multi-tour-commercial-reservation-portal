@@ -29,7 +29,7 @@ export const PAYMENTS_TEXT = {
     settled: 'No existen valores pendientes por registrar para esta reserva.' } as Readonly<Record<string, string>>,
   /** Spec 009- section 5: 13 has no text for En ejecución and Finalizada; the mockup's own sentence for them (app.js 6079). */
   closedState: (status: string) => `Esta reserva está en estado "${status}" y ya no admite modificaciones.`,
-  amountRequired: 'Registra un monto mayor a $0.', proofRequired: 'Adjunta el comprobante de transferencia para enviarlo a validación.',
+  proofRule: 'El comprobante debe ser PDF, JPG, JPEG o PNG y no superar 5 MB.', amountRequired: 'Registra un monto mayor a $0.', proofRequired: 'Adjunta el comprobante de transferencia para enviarlo a validación.',
   registeredBy: 'Registrado por', noModality: 'Sin modalidad definida', noProof: 'Sin comprobante',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   notFound: 'No se encontró la reserva seleccionada. Vuelve a Reservas u Operación e ingresa nuevamente por Gestionar pago.',
@@ -54,7 +54,7 @@ export const CUSTOMER_PAYMENT_TEXT = {
   title: 'Pago por transferencia', reservation: 'Reserva',
   alert: 'Realiza la transferencia y sube el comprobante. El comprobante queda En validación solo cuando lo envías; no es ingreso de caja ni confirma la reserva hasta que un usuario del operador con el permiso Validar comprobantes lo valide, en un plazo máximo de 24 horas corridas.',
   typeName: { TOTAL: 'Pago total', PARTIAL: 'Abono' } as Readonly<Record<string, string>>, transferMethod: ' · Transferencia',
-  yourReservation: 'Tu reserva', tour: 'Tour', departure: 'Salida', travelers: 'Viajeros', typeAndMethod: 'Tipo y medio de pago', toTransfer: 'Valor a transferir',
+  yourReservation: 'Tu reserva', pendingBalance: 'Saldo pendiente de la reserva', declaredValue: 'Valor transferido (según tu comprobante)', tour: 'Tour', departure: 'Salida', travelers: 'Viajeros', typeAndMethod: 'Tipo y medio de pago', toTransfer: 'Valor a transferir',
   seatNote: 'Si es tu primer pago, el cupo se verifica y se aparta al recibir el comprobante, antes de aceptarlo. Si ya no hay cupo, te lo informaremos y no se recibirá el comprobante.',
   bankTitle: 'Datos bancarios', bank: 'Banco', accountType: 'Tipo de cuenta', accountNumber: 'Número de cuenta', holder: 'Titular',
   proofTitle: 'Comprobante de pago', proof: 'Archivo del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)',
@@ -69,3 +69,18 @@ const DEPARTURE_STATE: Readonly<Record<string, string>> = { PROGRAMADA: 'Program
 /** "Salida" of 13 and of the follow-up (app.js 10170, 5072): tour, date and state; the SAL- code is not in the contract (blocked). */
 export const departureText = (r: { tourName: string; departureDate: string }, state?: string) =>
   `${r.tourName} · ${departureLine(r.departureDate)}${state ? ` (${DEPARTURE_STATE[state] ?? state})` : ''}`;
+
+/** Spanish answers for the refusals of the payment operations (AC-PY.4, AC-PY.5, AC-PY.7); the service answers in English, so the writer maps them. */
+export const PAYMENT_REFUSAL_TEXT = {
+  noCashSession: 'No hay una sesión de caja abierta: el pago en efectivo no se registró.',
+  noSeats: 'La salida no tiene cupo suficiente: el sistema no recibe el primer pago ni aparta cupo.',
+  deadlineExpired: 'El plazo de pago venció: la reserva ya no admite pagos ni comprobantes.',
+  departureCancelled: 'La salida fue cancelada: no se aceptan pagos.',
+  reservationClosed: 'Esta reserva ya no admite pagos.',
+  belowMinimum: 'El abono no puede ser menor al abono mínimo del servicio.',
+  aboveBalance: 'El valor transferido no puede superar el saldo pendiente.',
+  methodNotEnabled: 'El tipo o el medio de pago no está habilitado para este servicio.',
+  proofTooLarge: 'El comprobante supera el tamaño máximo de 5 MB.',
+  tooManyRequests: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.',
+  unavailable: 'El servicio no está disponible en este momento. Intenta más tarde.',
+};

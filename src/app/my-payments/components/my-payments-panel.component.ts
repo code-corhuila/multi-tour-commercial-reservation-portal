@@ -3,13 +3,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { CustomerContext } from '../../self-service-reservation/data/customer-context';
-import { CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS, contribute } from '../../shared/portal-slots';
+import { CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, QUICK_ITEM, RESERVATION_CARD_ACTIONS, RESERVATION_CARD_EXTRAS, contribute } from '../../shared/portal-slots';
 import { ContinuePaymentTarget, MyPaymentsSource, PaymentNotice, TRANSFER_PAYMENT_AREA, CONTINUE_PAYMENT_AREA } from '../data/my-payments-source';
 import { NoticeLine, noticeLines } from '../economic-rows';
 import { MY_PAYMENTS_TEXT } from '../my-payments-copy';
 import { ReservationEconomicActionsComponent, ReservationEconomicLinesComponent } from './reservation-economic-lines.component';
-
-const QUICK_ITEM = `<button type="button" class="crp-panel-quick-item" (click)="go()"><span class="crp-panel-quick-icon" aria-hidden="true">{{ item.icon }}</span>&ngsp;<span class="crp-panel-quick-copy"><strong>{{ item.title }}</strong>&ngsp;<span>{{ item.copy }}</span></span></button>`;
 
 /** "Continuar pago" of 17 (CP): only for the reservation the port names (DP-MP3); opens screen 21 in its second mode once and records nothing (RN-MP5). */
 @Component({
