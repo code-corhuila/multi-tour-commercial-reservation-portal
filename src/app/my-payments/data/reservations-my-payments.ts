@@ -16,7 +16,7 @@ const summaryOf = (r: Reservation): CustomerPaymentSummary => ({
   // v1.9 fields the store can answer. The store keeps no credit balance (HU-017 has no portal), so none is ever available here.
   people: r.people, finalValueCents: r.quote.finalCents, refundedCents: r.refund?.execution ? r.refund.amountCents : 0, creditBalanceCents: 0,
   pendingTreatmentCents: r.financialDecision?.outcome === null ? (r.financialDecision.refundableCents ?? r.validatedCents ?? 0) : 0,
-  deadlineAt: r.deadline?.extendedUntil ?? r.deadline?.dueAt, reschedulingPending: r.reschedulingPending,
+  deadlineAt: r.deadline?.extendedUntil ?? r.deadline?.dueAt, reschedulingPending: r.reschedulingPending, continueAction: r.continueAction,
   receipts: (r.payments ?? []).map((p) => ({ support: p.proofName ?? '', amountCents: p.amountCents, status: p.proofStatus,
     ...(p.review?.decision === 'RECHAZADO' && { rejectionReason: p.review.reason }) })),
 });
