@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCop, formatDate, formatDateRange } from '../src/app/shared/format';
+import { formatCop, formatDate, formatDateRange, timeOf } from '../src/app/shared/format';
 import { pctOff } from '../src/app/demo/discount-label-demo';
 
 // Authorized screens, section 3: money `$1.039.200` / `-$259.800`; dates `15 sep 2026`; ranges with " - ".
@@ -51,5 +51,13 @@ describe('pctOff', () => {
     expect(pctOff(129_900_000, 103_920_000)).toBe(20);
     expect(pctOff(18_000_000, 18_000_000)).toBe(0);
     expect(pctOff(0, 0)).toBe(0);
+  });
+});
+
+describe('timeOf', () => {
+  it('reads the hh:mm of a date-time as written, and nothing from a date alone', () => {
+    expect(timeOf('2026-09-18T06:30:00-05:00')).toBe('06:30');
+    expect(timeOf('2027-01-15T13:00:00Z')).toBe('13:00');
+    expect(timeOf('2026-09-18')).toBe('');
   });
 });

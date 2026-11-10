@@ -67,6 +67,7 @@ export const SELF_SERVICE_TEXT = {
   noCapacity: 'No hay cupos suficientes en esta salida. No se creó ninguna reserva.',
   refused: 'No se creó la reserva. Inténtalo de nuevo.',
   created: 'Reserva creada',
+  cashNotice: (code: string) => `Reserva #${code} creada en estado Pendiente de pago. Tu intención de pagar en efectivo no es un pago: no confirma la reserva ni aparta cupo. La reserva solo se confirma cuando el equipo del operador reciba y registre el dinero dentro del plazo de pago.`,
   seeMine: 'Ver mis reservas',
   notCustomer: 'Solo un cliente con sesión iniciada puede confirmar una reserva aquí.',
   panelEyebrow: 'Portal cliente',
@@ -80,7 +81,7 @@ export const SELF_SERVICE_TEXT = {
   panelNotCustomer: SIGN_IN_AS_CUSTOMER_NOTICE,
 } as const;
 
-const seatsText = (n: number) => `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`;
+const seatsText = (n: number, total?: number) => (total ? `${n} de ${total} cupos disponibles` : `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`);
 
 /** The texts of reservar-tour.html (authorized screen 20). */
 export const RESERVE_TEXT = {
@@ -92,6 +93,7 @@ export const RESERVE_TEXT = {
   listCopy: 'Cada salida tiene fecha, hora de inicio, hora de finalización estimada y cupos propios. Cada reserva corresponde a una única salida; si quieres viajar en otra salida, crea otra reserva.',
   full: 'Salida llena',
   seats: seatsText,
+  start: (time: string) => `Inicio ${time}`,
   conditionsTitle: 'Condiciones de reserva',
   conditionsCopy: 'Consulta las condiciones aplicables a este tour antes de continuar.',
   seeConditions: 'Ver condiciones',
@@ -157,4 +159,18 @@ export const HOLDER_TEXT = {
   phone: { label: 'Teléfono', placeholder: 'Teléfono' },
   email: { label: 'Correo electrónico', placeholder: 'correo@ejemplo.com' },
   birthdate: { label: 'Fecha de nacimiento', placeholder: '' },
+} as const;
+
+/** finalizar-reserva.html (21) in its second mode, "completar el pago de una reserva existente" (app.js 3500-3640), as the mockup writes it (DP-RS9). */
+export const CONTINUE_PAYMENT_TEXT = {
+  title: 'Completar el pago de la reserva', back: 'Volver a mis reservas',
+  pill: 'Completa el saldo de una reserva existente: no se crea una reserva nueva.',
+  summary: 'Resumen de reserva', paymentCard: 'Tipo de pago, medio de pago y plazo', amount: 'Monto a pagar ahora',
+  existingType: (type: string, balance: string) => `Tipo de pago de la reserva: ${type}. Aquí pagas una parte o todo el saldo pendiente (${balance}).`,
+  hint: (balance: string) => `Saldo pendiente: ${balance}. Puedes pagar una parte o todo el saldo.`,
+  invalidAmount: (balance: string) => `Ingresa un monto válido: mayor a cero y hasta el saldo pendiente (${balance}).`,
+  notFound: 'No encontramos la reserva indicada en tu cuenta.',
+  closed: (id: string) => `La reserva ${id} está Cancelada: no admite nuevos pagos y no puede reactivarse.`,
+  noBalance: (id: string) => `La reserva ${id} no tiene saldo pendiente.`,
+  barReservation: 'Reserva', barTotal: 'Total', next: 'Continuar',
 } as const;

@@ -7,6 +7,7 @@ import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, swi
 import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
+import { CreationNotice } from '../data/my-reservations-source';
 import { ReservationParty } from '../../customers/data/reservation-party';
 import { CheckoutHolder, PaymentMethodsSource, PaymentTypeChoice, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
@@ -15,6 +16,7 @@ import { HOLDER_TEXT } from '../self-service-copy';
 import { TourImages } from '../../shared/tour-photo';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
 import { CHECKOUT_BLOCKS, CHECKOUT_TRAVELER_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
+import { ContinuePaymentComponent } from '../components/continue-payment.component';
 import { Clock, tenantDay } from '../../shared/clock';
 import { CustomerCompanionFieldsComponent } from '../../shared/customer-companion-fields.component';
 import { CompanionIssues, CustomerCompanion, companionIssues, companionsFor, paddedCompanions, withCompanionField } from '../../shared/customer-companions';
@@ -27,10 +29,11 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
  */
 @Component({
   selector: 'app-confirm-reservation-page',
-  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent],
+  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent, ContinuePaymentComponent],
   providers: [ReservationParty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (continuing; as reservation) { <crp-continue-payment [reservationId]="reservation" /> } @else {
     @let current = state();
     <form class="crp-self-service-confirm" aria-labelledby="self-service-confirm-title" (submit)="$event.preventDefault(); confirm()" novalidate>
       <header class="crp-booking-topbar">
@@ -125,6 +128,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
         </aside>
       }
     </form>
+    }
   `,
 })
 export class ConfirmReservationPageComponent {
@@ -156,6 +160,8 @@ export class ConfirmReservationPageComponent {
   /** Volver a fecha y viajeros: only when the shell can open Reservar tour. */
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly back = this.navigation?.has(RESERVATION_FLOW.reserve) ? this.navigation : null;
+  /** AC-RS.13 / DP-RS9: Continuar pago opens this screen with { reservation }, which draws its second mode. */
+  protected readonly continuing = this.navigation?.params()['reservation'] ?? '';
   /** Ver mis reservas after success: only when the shell can open Mis reservas. */
   protected readonly mine = this.navigation?.has(CLIENT_AREA.reservations) ? this.navigation : null;
   protected readonly area = CLIENT_AREA;
@@ -194,6 +200,7 @@ export class ConfirmReservationPageComponent {
   protected readonly asked = signal(false);
   protected readonly refusal = signal('');
   protected readonly created = signal<CustomerReservation | null>(null);
+  private readonly creationNotice = inject(CreationNotice);
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => forkJoin({
     methods: this.methods.listEnabled(), types: this.methods.listTypes(), quote: this.quotes.quote(this.selection!),
@@ -245,7 +252,7 @@ export class ConfirmReservationPageComponent {
       finalize(() => this.pending.set(false)),
     ).subscribe({
       // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
-      next: (reservation) => this.created.set(reservation),
+      next: (reservation) => { this.created.set(reservation); this.creationNotice.record(reservation); },
       error: (error: Partial<ApiError> | null) => this.refusal.set(
         // The refusal of the service for lack of seats is shown with the authorized Spanish text, never with the English message toPageError copies into userMessage.
         namesRiskData(error) ? (this.party.highRisk.set(true), this.text.riskNeeded) : error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
