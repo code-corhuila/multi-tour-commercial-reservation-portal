@@ -19,26 +19,27 @@ function fakeClient(...replies: Array<{ ok: unknown } | { fail: unknown }>) {
   };
   return { client, calls };
 }
-const response = { discountRuleId: 'r1', name: 'Descuento tour-1', validFrom: '2026-01-01', validTo: '2026-12-31', priority: 2,
+const tour = { serviceId: 'tour-1', commercialName: 'Desierto de la Tatacoa' };
+const response = { discountRuleId: 'r1', name: 'Desierto de la Tatacoa', stackable: true, validFrom: '2026-01-01', validTo: '2026-12-31', priority: 2,
   calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250, serviceCoverage: 'SELECTED', serviceIds: ['tour-1'], capCents: 5_000_000, ruleStatus: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' };
 const command = { tourId: 'tour-1', percentageBasisPoints: 1250, calculationBase: 'PREVIOUS_SUBTOTAL', startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 2, stackable: true, capCents: 5_000_000 } as const;
 
 describe('discountRulesSourcesOverTheApiClient', () => {
   it('creates with the contract fields and the Idempotency-Key, and maps the answer to the portal rule', async () => {
-    const { client, calls } = fakeClient({ ok: response });
+    const { client, calls } = fakeClient({ ok: tour }, { ok: response });
     const rule = await firstValueFrom(new DiscountRulesApiWriter(client).create(command, 'key-12345678'));
-    expect(calls).toEqual([{ path: `${API_BASE}/discount-rules`, method: 'POST', headers: { 'Idempotency-Key': 'key-12345678' },
-      body: { name: 'Descuento tour-1', validFrom: '2026-01-01', validTo: '2026-12-31', priority: 2, calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250,
+    expect(calls).toEqual([{ path: `${API_BASE}/catalog/services/tour-1` }, { path: `${API_BASE}/discount-rules`, method: 'POST', headers: { 'Idempotency-Key': 'key-12345678' },
+      body: { name: 'Desierto de la Tatacoa', stackable: true, validFrom: '2026-01-01', validTo: '2026-12-31', priority: 2, calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250,
         serviceCoverage: 'SELECTED', serviceIds: ['tour-1'], capCents: 5_000_000 } }]);
-    expect(rule).toMatchObject({ id: 'r1', tourId: 'tour-1', capCents: 5_000_000, startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 2, percentageBasisPoints: 1250, calculationBase: 'PREVIOUS_SUBTOTAL', status: 'ACTIVE', stackable: false });
+    expect(rule).toMatchObject({ id: 'r1', tourId: 'tour-1', capCents: 5_000_000, startsOn: '2026-01-01', endsOn: '2026-12-31', priority: 2, percentageBasisPoints: 1250, calculationBase: 'PREVIOUS_SUBTOTAL', status: 'ACTIVE', tourName: 'Desierto de la Tatacoa', stackable: true });
   });
 
   it('sends the same key again when the form retries the same creation', async () => {
-    const { client, calls } = fakeClient({ fail: { status: 500, code: 'X', message: 'down', traceId: 't' } }, { ok: response });
+    const { client, calls } = fakeClient({ ok: tour }, { fail: { status: 500, code: 'X', message: 'down', traceId: 't' } }, { ok: tour }, { ok: response });
     const writer = new DiscountRulesApiWriter(client);
     await firstValueFrom(writer.create(command, 'same-key-1')).catch(() => undefined);
     await firstValueFrom(writer.create(command, 'same-key-1'));
-    expect(calls.map((c) => c.headers?.['Idempotency-Key'])).toEqual(['same-key-1', 'same-key-1']);
+    expect(calls.map((c) => c.headers?.['Idempotency-Key'])).toEqual([undefined, 'same-key-1', undefined, 'same-key-1']);
   });
 
   it('reads one rule by id and inactivates it with POST', async () => {
@@ -50,11 +51,35 @@ describe('discountRulesSourcesOverTheApiClient', () => {
     expect(calls.map((c) => [c.method ?? 'GET', c.path])).toEqual([['GET', `${API_BASE}/discount-rules/r1`], ['POST', `${API_BASE}/discount-rules/r1/inactivate`]]);
   });
 
-  it('never calls PATCH: the update is not published and answers a declared error', async () => {
-    const { client, calls } = fakeClient();
-    const error = await firstValueFrom(new DiscountRulesApiWriter(client).update('r1', command, 'k-update-1')).catch((e) => e);
-    expect(error).toMatchObject({ code: 'NOT_IN_CONTRACT' });
-    expect(calls).toEqual([]);
+  it('updates with PATCH: the name of the chosen tour, the flag and the cap, and no Idempotency-Key', async () => {
+    const { client, calls } = fakeClient({ ok: tour }, { ok: { ...response, stackable: false } });
+    const rule = await firstValueFrom(new DiscountRulesApiWriter(client).update('r1', { ...command, stackable: false }, 'k-update-1'));
+    expect(calls).toEqual([{ path: `${API_BASE}/catalog/services/tour-1` }, { path: `${API_BASE}/discount-rules/r1`, method: 'PATCH',
+      body: { name: 'Desierto de la Tatacoa', validFrom: '2026-01-01', validTo: '2026-12-31', priority: 2, calculationBase: 'PREVIOUS_SUBTOTAL', percentageBasisPoints: 1250,
+        serviceCoverage: 'SELECTED', serviceIds: ['tour-1'], capCents: 5_000_000, stackable: false } }]);
+    expect(rule).toMatchObject({ id: 'r1', stackable: false });
+  });
+
+  it('removes the cap with a null when the command has none', async () => {
+    const { client, calls } = fakeClient({ ok: tour }, { ok: { ...response, capCents: undefined } });
+    const { capCents: _cap, ...withoutCap } = command;
+    await firstValueFrom(new DiscountRulesApiWriter(client).update('r1', withoutCap, 'k-update-2'));
+    expect((calls[1].body as Record<string, unknown>)['capCents']).toBeNull();
+  });
+
+  it('does not write anything when the name of the tour cannot be read', async () => {
+    const { client, calls } = fakeClient({ fail: { status: 404, code: 'NOT_FOUND', message: 'resource not found', traceId: 't' } }, { fail: { status: 404, code: 'NOT_FOUND', message: 'resource not found', traceId: 't' } });
+    const writer = new DiscountRulesApiWriter(client);
+    expect(await firstValueFrom(writer.create(command, 'key-12345678')).catch((e) => e)).toMatchObject({ status: 404 });
+    expect(await firstValueFrom(writer.update('r1', command, 'k-update-3')).catch((e) => e)).toMatchObject({ status: 404 });
+    expect(calls.map((c) => c.method ?? 'GET')).toEqual(['GET', 'GET']);
+  });
+
+  it('reactivates with POST and reads an amount rule without inventing a percentage', async () => {
+    const { client, calls } = fakeClient({ ok: { ...response, percentageBasisPoints: undefined, amountCents: 900_000, ruleStatus: 'ACTIVE' } });
+    const rule = await firstValueFrom(new DiscountRulesApiWriter(client).reactivate('r1', 'k-reactivate-1'));
+    expect(calls).toEqual([{ path: `${API_BASE}/discount-rules/r1/reactivate`, method: 'POST' }]);
+    expect(rule).toMatchObject({ status: 'ACTIVE', validity: { inForce: true }, percentageBasisPoints: 0 });
   });
 
   it('reads a rule that covers all services without inventing a tour', async () => {
@@ -62,17 +87,9 @@ describe('discountRulesSourcesOverTheApiClient', () => {
     expect(await firstValueFrom(new DiscountRulesApiSource(client).get('r1'))).toMatchObject({ tourId: '', capCents: undefined });
   });
 
-  it('never calls a reactivation route and keeps an amount rule readable', async () => {
-    const { client, calls } = fakeClient({ ok: { ...response, percentageBasisPoints: undefined, amountCents: 900_000 } });
-    const error = await firstValueFrom(new DiscountRulesApiWriter(client).reactivate('r1', 'k-reactivate-1')).catch((e) => e);
-    expect(error).toMatchObject({ code: 'NOT_IN_CONTRACT' });
-    expect(calls).toEqual([]);
-    expect(await firstValueFrom(new DiscountRulesApiSource(client).get('r1'))).toMatchObject({ percentageBasisPoints: 0 });
-  });
-
   it('hands a refusal to the page with userMessage and details', async () => {
     const details = [{ field: 'validTo', message: 'bad' }];
-    const { client } = fakeClient({ fail: { status: 400, code: 'E', message: 'refused', details, traceId: 'tr' } });
+    const { client } = fakeClient({ ok: tour }, { fail: { status: 400, code: 'E', message: 'refused', details, traceId: 'tr' } });
     const error = await firstValueFrom(new DiscountRulesApiWriter(client).create(command, 'key-12345678')).catch((e) => e);
     expect(error).toMatchObject({ status: 400, userMessage: 'refused', details, traceId: 'tr' });
   });

@@ -8,7 +8,7 @@ import {
 export type Departure = {
   readonly id: string; readonly tourName: string; readonly date: string;
   readonly state: 'PROGRAMADA' | 'EN_CURSO' | 'FINALIZADA' | 'CANCELADA'; readonly openForReservations: boolean;
-  readonly effectiveCapacity: number; readonly transportPerPersonCents: number; readonly conditions: string;
+  readonly effectiveCapacity: number; readonly totalSeats?: number; readonly transportPerPersonCents: number; readonly conditions: string;
 };
 /** Pending HU-COM-005: the lead customer is chosen here, registered there. */
 export type LeadCustomer = { readonly id: string; readonly fullName: string };

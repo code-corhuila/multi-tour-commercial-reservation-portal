@@ -91,7 +91,7 @@ export const DEPARTURE_STATE_LABEL: Record<Departure['state'], string> = { PROGR
 export const RESERVATION_LINE_TEXT = {
   undefinedPayment: 'Sin definir', notExecuted: 'No ejecutada', pendingExecution: 'Pendiente de ejecución',
 } as const;
-export const seats = (n: number) => `${n} ${n === 1 ? 'cupo disponible' : 'cupos disponibles'}`;
+export const seats = (n: number, total?: number) => `${n}${total ? ` de ${total}` : ''} ${n === 1 && !total ? 'cupo disponible' : 'cupos disponibles'}`;
 /** "1 viajero" or "N viajeros"; "1 persona" or "N personas". */
 export const travelers = (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
 export const persons = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;

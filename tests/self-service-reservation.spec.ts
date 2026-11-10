@@ -24,6 +24,7 @@ import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { TourImages } from '../src/app/shared/tour-photo';
 import { DemoTourImages } from '../src/app/demo/tour-photo-demo';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
+import { toPageError } from '../src/app/http/api-paths';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
   ControllableMyReservationsSource,
@@ -39,6 +40,7 @@ import {
 } from './self-service-reservation.double';
 import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
+import { RESERVATION_FORM_CONTRIBUTIONS } from '../src/app/customers/components/reservation-form-sections';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
@@ -51,6 +53,16 @@ async function fillCompanions(root: HTMLElement, settle: () => Promise<void>) {
       const input = root.querySelector<HTMLInputElement>(`[name="companion-${field}-${i}"]`)!;
       input.value = field === 'document' ? `${value}${i}` : value; input.dispatchEvent(new Event('input'));
     }
+  }
+  await settle();
+}
+
+/** The five fields of "Cliente titular" (AC-08.13, DP-RS5 decided 2026-11-04). */
+const HOLDER = { name: 'Laura Gómez (demo)', document: 'DEMO-1001', phone: '300 000 0000', email: 'laura@example.invalid', birthdate: '1990-04-12' };
+async function fillHolder(root: HTMLElement, settle: () => Promise<void>, values: Partial<typeof HOLDER> = {}) {
+  for (const [field, value] of Object.entries({ ...HOLDER, ...values })) {
+    const input = root.querySelector<HTMLInputElement>(`#crp-holder-${field}`)!;
+    input.value = value; input.dispatchEvent(new Event('input'));
   }
   await settle();
 }
@@ -68,6 +80,7 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
     { provide: TourImages, useValue: new DemoTourImages() },
+    ...RESERVATION_FORM_CONTRIBUTIONS,
     ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
@@ -84,9 +97,9 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     for (const box of Array.from(element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))) { box.click(); }
     await settle();
   };
-  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); await fillCompanions(element, settle); };
+  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); await fillHolder(element, settle); await fillCompanions(element, settle); };
   const confirm = async () => { buttonNamed(element, T.confirm)!.click(); await settle(); };
-  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm };
+  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm, fillHolder: (values?: Partial<typeof HOLDER>) => fillHolder(element, settle, values) };
 }
 
 async function openPanel(standing: CustomerStanding = 'FINAL_CUSTOMER', areas?: readonly string[]) {
@@ -222,6 +235,82 @@ describe('aMissingFieldShowsItsErrorBesideItAndSubmitWaits', () => {
   });
 });
 
+describe('theHolderFieldsAreRequiredAndTravelAsTheHolderOfTheCreation (DP-RS5, AC-08.13)', () => {
+  it('draws the five fields enabled, with no pending note, and sends nothing while one is missing', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.accept(); await fillCompanions(p.element, p.settle);
+    const inputs = Array.from(p.element.querySelectorAll<HTMLInputElement>('.crp-finish-holder input'));
+    expect(inputs).toHaveLength(5);
+    expect(inputs.every((input) => !input.disabled && input.required)).toBe(true);
+    expect(p.element.textContent).not.toContain('Pendiente de definición');
+    await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.querySelector('.crp-finish-holder [data-holder-feedback]')?.textContent).toContain(T.holderMissing);
+    expect(p.element.querySelector('.crp-finish-holder [aria-invalid="true"]')).not.toBeNull();
+  });
+  it('refuses an e-mail without shape and a future birth date, beside the holder card', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    await p.fillHolder({ email: 'sin-arroba' }); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.querySelector('[data-holder-feedback]')?.textContent).toContain(T.holderEmail);
+    await p.fillHolder({ email: HOLDER.email, birthdate: '2999-01-01' }); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.querySelector('[data-holder-feedback]')?.textContent).toContain(T.holderFuture);
+  });
+  it('refuses a companion that repeats the document of the holder', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    await p.fillHolder({ document: 'DEMO-50' }); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+  });
+  it('sends the holder and the terms box with the creation, and a corrected holder gets a new key', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].holder).toEqual({ fullName: HOLDER.name, document: HOLDER.document, phone: HOLDER.phone, email: HOLDER.email, birthDate: HOLDER.birthdate, termsAccepted: true });
+    p.requester.calls[0].fail(apiError({ status: 503 })); await p.settle();
+    await p.fillHolder({ phone: '311 111 1111' }); await p.confirm();
+    expect(p.requester.calls[1].holder?.phone).toBe('311 111 1111');
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+  });
+});
+
+describe('aRefusalNamingRiskDataShowsTheRiskBlockAndKeepsWhatWasTyped (DP-RS5, mockup finalizar-reserva)', () => {
+  const riskRefusal = () => apiError({ status: 400, code: 'VALIDATION_ERROR', message: 'the request has invalid fields', userMessage: '', details: [{ field: 'bloodType', message: 'bloodType is required' }] });
+  const type = (root: HTMLElement, name: string, value: string) => {
+    const input = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`)!; input.value = value; input.dispatchEvent(new Event('input'));
+  };
+
+  it('starts hidden, shows one card per traveler when the service names risk data, and asks again before sending', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    expect(p.element.querySelector('[data-risk-section]')).toBeNull();
+    await p.confirm(); p.requester.calls[0].fail(riskRefusal()); await p.settle();
+    expect(p.requester.calls[0].risk).toBeUndefined();
+    const block = p.element.querySelector('[data-risk-section]')!;
+    expect(block.querySelector('h2')?.textContent?.trim()).toBe('Requisitos de actividad de riesgo');
+    expect(block.textContent).toContain('Esta actividad requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero.');
+    expect(Array.from(block.querySelectorAll('article strong'), (s) => s.textContent?.trim())).toEqual(['Titular', 'Acompañante 1']);
+    expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.riskNeeded);
+    // What was typed in the rest of the screen stays.
+    expect((p.element.querySelector('#crp-holder-name') as HTMLInputElement).value).toBe(HOLDER.name);
+    // Missing data: nothing is sent and each field says so.
+    await p.confirm();
+    expect(p.requester.calls).toHaveLength(1);
+    expect(block.querySelector('[aria-invalid="true"]')).not.toBeNull();
+    // Typed, then kept and sent.
+    for (const i of [0, 1]) {
+      type(p.element, `bloodType-${i}`, 'O+'); type(p.element, `emergencyContact-${i}`, 'Contacto Ficticio 300'); type(p.element, `physicalRestrictions-${i}`, 'Ninguna');
+      p.element.querySelector<HTMLInputElement>(`[name="informedConsent-${i}"]`)!.click();
+    }
+    await p.settle(); await p.confirm();
+    expect(p.requester.calls).toHaveLength(2);
+    expect(p.requester.calls[1].risk).toEqual([0, 1].map(() => ({ informedConsent: true, bloodType: 'O+', emergencyContact: 'Contacto Ficticio 300', physicalRestrictions: 'Ninguna' })));
+    expect(p.requester.calls[1].holder?.fullName).toBe(HOLDER.name);
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+  });
+  it('does not show the block for any other refusal', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    expect(p.element.querySelector('[data-risk-section]')).toBeNull();
+  });
+});
+
 describe('aRetriedConfirmationReusesItsIdempotencyKey', () => {
   it('a double click sends one request', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill();
@@ -271,6 +360,13 @@ describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
     p.requester.calls[0].fail(noCapacity({ status: 422, code: 'SEATS_UNAVAILABLE' })); await p.settle();
     expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
+  });
+  it('shows the Spanish text, not the English message of the service, when the refusal went through the real toPageError', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(toPageError({ status: 422, code: 'SEATS_UNAVAILABLE', message: 'not enough seats: 1 seats available', details: [], traceId: 'trace-9' })); await p.settle();
+    const alert = p.element.querySelector('[role="alert"]')?.textContent ?? '';
+    expect(alert).toContain(T.noCapacity);
+    expect(alert).not.toContain('not enough seats');
   });
   it('prefers the message the container decided, when there is one', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();

@@ -21,6 +21,8 @@ export const RESERVATION_ROW_ACTIONS: PortalSlotToken = new InjectionToken('RESE
 export const RESERVATION_MODE_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_MODE_ACTIONS');
 /** 21 (finalizar-reserva): blocks of the main column after the payment method card. Inputs: quote, method (the chosen code), reservation (once created). */
 export const CHECKOUT_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_BLOCKS');
+/** 21 (finalizar-reserva): blocks of the main column after "Viajeros" and before "Condiciones de reserva", such as the risk requirements. Input: customer (true). */
+export const CHECKOUT_TRAVELER_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_TRAVELER_BLOCKS');
 /** 10B (admin-crear-reserva): sections of the form hosted by HU-COM-007, by order. Inputs of the outlet: crpSlotFrom, crpSlotUntil (the order range it draws).
  * HU-COM-005 contributes 01 (order 10) before 02 and 03 (order 30) after it, so the form draws the outlet twice, split at AFTER_OFFER. */
 export const RESERVATION_FORM_SECTIONS: PortalSlotToken = new InjectionToken('RESERVATION_FORM_SECTIONS');
