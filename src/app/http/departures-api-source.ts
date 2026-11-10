@@ -11,7 +11,7 @@ interface DepartureDto { readonly departureId: string; readonly startsAt: string
 
 /**
  * The open departures of every active tour over the route of the departures of a tour (HU-COM-007 plan D-03). The service returns only
- * scheduled departures not yet started, so every one is Programada; a full one stays and is not open. TODO(G-B): the contract carries
+ * scheduled departures not yet started, so every one is Programada; a full one stays, open and with no seats: the screens read it as full and do not let it be chosen (AC-RC.5, AC-RS.10). TODO(G-B): the contract carries
  * neither the transport fare of the tour (it comes with the quote) nor the conditions (DP-06), so both stay empty.
  */
 export class DeparturesApiSource extends DeparturesSource {
@@ -27,7 +27,7 @@ export class DeparturesApiSource extends DeparturesSource {
 
   private departuresOf(tour: CatalogItem): Observable<Departure[]> {
     return listAll<DepartureDto>(this.client, departuresPath(tour.serviceId)).pipe(map((found) => found.map((d): Departure => ({
-      id: d.departureId, tourName: tour.commercialName, date: d.startsAt, state: 'PROGRAMADA', openForReservations: !d.full,
+      id: d.departureId, tourName: tour.commercialName, date: d.startsAt, state: 'PROGRAMADA', openForReservations: true,
       effectiveCapacity: d.availableSeats, totalSeats: d.totalSeats, transportPerPersonCents: 0, conditions: '',
     }))));
   }

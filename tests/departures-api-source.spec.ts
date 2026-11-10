@@ -20,7 +20,7 @@ describe('departuresOverTheApiClient', () => {
       `${API_BASE}/catalog/services/t-1/departures?page=1&limit=100`, `${API_BASE}/catalog/services/t-2/departures?page=1&limit=100`]);
     expect(all).toEqual([
       { id: 'd-1', tourName: 'Tatacoa', date: '2026-11-07T06:30:00Z', state: 'PROGRAMADA', openForReservations: true, effectiveCapacity: 4, totalSeats: 10, transportPerPersonCents: 0, conditions: '' },
-      { id: 'd-2', tourName: 'Café', date: '2026-11-07T06:30:00Z', state: 'PROGRAMADA', openForReservations: false, effectiveCapacity: 0, totalSeats: 10, transportPerPersonCents: 0, conditions: '' },
+      { id: 'd-2', tourName: 'Café', date: '2026-11-07T06:30:00Z', state: 'PROGRAMADA', openForReservations: true, effectiveCapacity: 0, totalSeats: 10, transportPerPersonCents: 0, conditions: '' },
     ]);
   });
 
