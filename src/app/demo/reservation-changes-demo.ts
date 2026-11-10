@@ -9,6 +9,7 @@ import { PaymentParametersSource } from '../payment-parameters/data/payment-para
 import { ReservationParametersLookup, SEED_LOOKUP } from '../payment-parameters/model/payment-parameters';
 import { lookupOf } from './payment-parameters-demo';
 import { DemoReservationsStore } from './reservations-demo';
+import { demoDate } from './demo-fixtures';
 
 // DEMO (spec DD-1, G-B): the cancellation over the one reservations store of HU-COM-007; the service will decide it.
 export interface PaymentLine { readonly amountCents: number; readonly validated: boolean }
@@ -73,7 +74,7 @@ export class FixedClock extends Clock {
 
 /** Over the store of reservationDemoProviders(); one Idempotency-Key map per page, the user label of each mount. */
 export function reservationChangesDemoProviders(): Provider[] {
-  const byKey = new Map<string, CancellationOutcome>(), clock = new FixedClock('2026-10-13T09:30:00-05:00');
+  const byKey = new Map<string, CancellationOutcome>(), clock = new FixedClock(demoDate('2026-10-13T09:30:00-05:00'));
   return [
     { provide: Clock, useValue: clock },
     { provide: CancellationQuote, useFactory: (s: ReservationsSource, p: PaymentParametersSource | null) => new DemoCancellationQuote(s, undefined, lookupOf(p)), deps: [ReservationsSource, [new Optional(), PaymentParametersSource]] },

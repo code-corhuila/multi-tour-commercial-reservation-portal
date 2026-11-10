@@ -7,18 +7,19 @@ import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '..
 import { AssociatedEstablishmentsEditor, UpdateEstablishmentCommand } from '../establishments/data/associated-establishments-editor';
 import { AssociatedEstablishment, EstablishmentChange, EstablishmentChangeKind, EstablishmentFilters } from '../establishments/model/associated-establishment';
 import { tenantWallTime } from '../shared/clock';
+import { demoDate } from './demo-fixtures';
 
 // DEMO: in-memory data so the shell can show the screens. Debt: replace with sources over props.apiClient.
-const NOW = '2026-10-01T09:00:00Z';
+const NOW = demoDate('2026-10-01T09:00:00Z');
 const item = (n: number, serviceType: CatalogItem['serviceType'], commercialName: string, catalogStatus: CatalogItem['catalogStatus'], rate: number): CatalogItem => ({
   serviceId: `demo-svc-${n}`, serviceType, commercialName, catalogStatus, baseRateCents: rate, baseOperationalCostCents: Math.round(rate * 0.6),
   configuredCapacity: serviceType === 'TOUR' ? 12 : null, transportRequired: serviceType === 'TRANSPORTATION', highRisk: n === 3,
-  validFrom: '2026-09-01', validTo: '2026-09-30', createdAt: NOW, updatedAt: NOW,
+  validFrom: demoDate('2026-09-01'), validTo: demoDate('2026-09-30'), createdAt: NOW, updatedAt: NOW,
 });
 const place = (n: number, establishmentType: AssociatedEstablishment['establishmentType'], commercialName: string, associationStatus: AssociatedEstablishment['associationStatus'], commercialInformation: string): AssociatedEstablishment =>
   ({ associationId: `demo-est-${n}`, establishmentType, commercialName, commercialInformation, imageReference: `demo://image-${n}.jpg`, associationStatus,
-    changes: [{ kind: 'REGISTERED', at: '2026-09-01T08:00:00', by: 'Fernanda Robayo (Administrador del tenant)' },
-      ...(associationStatus === 'INACTIVE' ? [{ kind: 'INACTIVATED' as const, at: '2026-09-20T10:30:00', by: 'Fernanda Robayo (Administrador del tenant)' }] : [])] });
+    changes: [{ kind: 'REGISTERED', at: demoDate('2026-09-01T08:00:00'), by: 'Fernanda Robayo (Administrador del tenant)' },
+      ...(associationStatus === 'INACTIVE' ? [{ kind: 'INACTIVATED' as const, at: demoDate('2026-09-20T10:30:00'), by: 'Fernanda Robayo (Administrador del tenant)' }] : [])] });
 
 export class DemoCatalogStore extends CatalogItemsSource {
   private items: CatalogItem[] = [

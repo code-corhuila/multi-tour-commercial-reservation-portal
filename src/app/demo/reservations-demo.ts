@@ -20,6 +20,7 @@ import { AppliedDiscount, CreateReservationCommand, Departure, Reservation, Rese
 import { RESCHEDULING_DEPARTURES, RESCHEDULING_SEEDS } from './rescheduling-seeds';
 import type { CreditBalance, CreditRequest } from '../credit-balance/data/credit-balance-ports';
 import type { CreditApplication } from './credit-overview-demo';
+import { demoDate } from './demo-fixtures';
 
 // DEMO (gaps G-DEMO, G-OPS, G-DEP): invented departures, customers and reservations, in memory.
 const seatRule = new DemoDepartureCapacity();
@@ -28,14 +29,14 @@ const departure = (n: number, tourName: string, date: string, state: Departure['
   ({ id: `demo-dep-${n}`, tourName, date, state, openForReservations: open, effectiveCapacity, totalSeats: Math.max(effectiveCapacity, 12), transportPerPersonCents: transport, conditions: CONDITIONS });
 /** Two reservations already registered, so the list shows screen 10 with data. */
 const SEEDED: Reservation[] = [
-  { id: 'RES-1842', leadCustomerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa al atardecer', departureDate: '2026-11-07', conditions: CONDITIONS, people: 2,
+  { id: 'RES-1842', leadCustomerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa al atardecer', departureDate: demoDate('2026-11-07'), conditions: CONDITIONS, people: 2,
     quote: { services: [{ name: 'Guianza (demo)', cents: 80_000_000 }], transportCents: 5_000_000, projectedCents: 85_000_000, discounts: [], discountCents: 0, finalCents: 85_000_000 }, balanceCents: 85_000_000,
     status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'demo-dep-1', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER',
-    leadEmail: 'laura.gomez@ejemplo.com', departureCode: 'SAL-001', deadline: { dueAt: '2026-10-16T09:00:00-05:00' } },
-  { id: 'RES-1841', leadCustomerName: 'Mateo Ríos (demo)', tourName: 'Ruta del café en Pitalito', departureDate: '2026-11-14', conditions: CONDITIONS, people: 1,
+    leadEmail: 'laura.gomez@ejemplo.com', departureCode: 'SAL-001', deadline: { dueAt: demoDate('2026-10-16T09:00:00-05:00') } },
+  { id: 'RES-1841', leadCustomerName: 'Mateo Ríos (demo)', tourName: 'Ruta del café en Pitalito', departureDate: demoDate('2026-11-14'), conditions: CONDITIONS, people: 1,
     quote: { services: [{ name: 'Guianza (demo)', cents: 40_000_000 }], transportCents: 1_800_000, projectedCents: 41_800_000, discounts: [], discountCents: 0, finalCents: 41_800_000 }, balanceCents: 41_800_000,
     status: 'PENDIENTE_DE_PAGO', financialStatus: 'SIN_PAGO', seatHeld: false, departureId: 'demo-dep-2', paymentType: 'PARTIAL', paymentMethod: 'CASH_AT_OFFICE',
-    leadEmail: 'mateo.rios@ejemplo.com', departureCode: 'SAL-002', deadline: { dueAt: '2026-10-15T09:00:00-05:00', extendedUntil: '2026-10-18T09:00:00-05:00' } },
+    leadEmail: 'mateo.rios@ejemplo.com', departureCode: 'SAL-002', deadline: { dueAt: demoDate('2026-10-15T09:00:00-05:00'), extendedUntil: demoDate('2026-10-18T09:00:00-05:00') } },
 ];
 /** HU-COM-014: the demo customer's situations of the mockup's demo data (app.js 2621-2626), coded below the writer's sequence. */
 const ownAs = (id: string, tourName: string, departureDate: string, finalCents: number, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, tourName,
@@ -43,16 +44,16 @@ const ownAs = (id: string, tourName: string, departureDate: string, finalCents: 
   quote: { services: [{ name: 'Guianza (demo)', cents: finalCents }], transportCents: 0, projectedCents: finalCents, discounts: [], discountCents: 0, finalCents } });
 const proofOf = (id: string, amountCents: number, proofStatus: ReservationPayment['proofStatus'], presentedAt?: string): ReservationPayment[] =>
   [{ id: `${id}-P1`, method: 'BANK_TRANSFER', amountCents, proofName: `comprobante-transferencia-${id}.pdf`, proofStatus, registeredBy: 'Cliente (demo)', ...(presentedAt ? { presentedAt } : {}) }];
-SEEDED.push(ownAs('RES-1840', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION', '2026-10-13T08:30:00-05:00') }),
+SEEDED.push(ownAs('RES-1840', 'Ruta Andina', demoDate('2026-09-18T06:30:00'), 129_900_000, { payments: proofOf('RES-1840', 129_900_000, 'EN_VALIDACION', demoDate('2026-10-13T08:30:00-05:00')) }),
   // HU-COM-004: this confirmed reservation already carries an additional discount (20 % of 37.500.000 = 7.500.000), so the detail 10A draws its block and no second one is offered.
-  ownAs('RES-1832', 'Tour de ejemplo', '2026-09-20T07:00:00', 30_000_000, { status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', paymentType: 'PARTIAL',
+  ownAs('RES-1832', 'Tour de ejemplo', demoDate('2026-09-20T07:00:00'), 30_000_000, { status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', paymentType: 'PARTIAL',
     validatedCents: 10_000_000, balanceCents: 20_000_000, payments: proofOf('RES-1832', 10_000_000, 'APROBADO'),
-    additionalDiscount: { basisPoints: 2000, reason: 'Fidelización', appliedBy: 'Administrador del tenant (demo)', appliedAt: '2026-10-14T10:00:00-05:00',
+    additionalDiscount: { basisPoints: 2000, reason: 'Fidelización', appliedBy: 'Administrador del tenant (demo)', appliedAt: demoDate('2026-10-14T10:00:00-05:00'),
       previousValueCents: 37_500_000, amountCents: 7_500_000 } }),
-  ownAs('RES-1831', 'Ruta Andina', '2026-09-22T06:30:00', 120_000_000, { status: 'CANCELADA', seatHeld: false, financialStatus: 'PARCIAL', paymentType: 'PARTIAL',
+  ownAs('RES-1831', 'Ruta Andina', demoDate('2026-09-22T06:30:00'), 120_000_000, { status: 'CANCELADA', seatHeld: false, financialStatus: 'PARCIAL', paymentType: 'PARTIAL',
     validatedCents: 120_000_000, balanceCents: 0, payments: proofOf('RES-1831', 120_000_000, 'APROBADO'),
-    cancellation: { cause: 'Cancelada por falta de pago', by: 'Administrador del tenant (demo)', at: '2026-09-15T09:00:00-05:00' } }),
-  ownAs('RES-1830', 'Ruta Andina', '2026-09-18T06:30:00', 129_900_000, { status: 'CONFIRMADA', financialStatus: 'PAGO_COMPLETO', validatedCents: 129_900_000,
+    cancellation: { cause: 'Cancelada por falta de pago', by: 'Administrador del tenant (demo)', at: demoDate('2026-09-15T09:00:00-05:00') } }),
+  ownAs('RES-1830', 'Ruta Andina', demoDate('2026-09-18T06:30:00'), 129_900_000, { status: 'CONFIRMADA', financialStatus: 'PAGO_COMPLETO', validatedCents: 129_900_000,
     balanceCents: 0, payments: proofOf('RES-1830', 129_900_000, 'APROBADO') }));
 /** HU-COM-013 (tasks T-08): one reservation per state the cancellation tells apart; codes below the writer's sequence. */
 const inState = (id: string, status: Reservation['status'], over: Partial<Reservation> = {}): Reservation =>
@@ -65,9 +66,9 @@ const proof = (id: string, amountCents: number, presentedAt: string, over: Parti
   ({ id, method: 'BANK_TRANSFER', amountCents, proofName: 'soporte-demo.pdf', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)', presentedAt, ...over });
 const ofAbono = (id: string, over: Partial<Reservation>): Reservation => ({ ...SEEDED[0], id, departureId: undefined, paymentType: 'PARTIAL', seatHeld: true, balanceCents: 30_000_000, quote: { services: [{ name: 'Guianza (demo)', cents: 30_000_000 }], transportCents: 0, projectedCents: 30_000_000, discounts: [], discountCents: 0, finalCents: 30_000_000 }, ...over });
 SEEDED.push(ofAbono('RES-1834', { leadCustomerName: 'Juliana Cruz (demo)', status: 'CONFIRMADA', financialStatus: 'ABONO_RECIBIDO', validatedCents: 10_000_000, balanceCents: 20_000_000,
-  payments: [proof('RES-1834-P1', 10_000_000, '2026-10-10T09:00:00-05:00', { proofStatus: 'APROBADO', review: { decision: 'APROBADO', verifiedAmountCents: 10_000_000,
-    reason: 'Soporte legible (demo)', actorLabel: 'Administrador del tenant (demo)', decidedAt: '2026-10-10T15:00:00.000Z' } }), proof('RES-1834-P2', 5_000_000, '2026-10-12T09:00:00-05:00')] }),
-  ofAbono('RES-1833', { leadCustomerName: 'Sofía Herrera (demo)', payments: [proof('RES-1833-P1', 10_000_000, '2026-10-13T09:00:00-05:00')] }));
+  payments: [proof('RES-1834-P1', 10_000_000, demoDate('2026-10-10T09:00:00-05:00'), { proofStatus: 'APROBADO', review: { decision: 'APROBADO', verifiedAmountCents: 10_000_000,
+    reason: 'Soporte legible (demo)', actorLabel: 'Administrador del tenant (demo)', decidedAt: demoDate('2026-10-10T15:00:00.000Z') } }), proof('RES-1834-P2', 5_000_000, demoDate('2026-10-12T09:00:00-05:00'))] }),
+  ofAbono('RES-1833', { leadCustomerName: 'Sofía Herrera (demo)', payments: [proof('RES-1833-P1', 10_000_000, demoDate('2026-10-13T09:00:00-05:00'))] }));
 /** HU-COM-018 (spec section 6): the affected reservations of the seeded cancelled departure. */
 SEEDED.push(...RESCHEDULING_SEEDS);
 /** HU-COM-017 AC-CB.3 (tasks T-07): Confirmada with $300.000 pending and a $500.000 proof En validación; approving it leaves a $200.000 excess. */
@@ -77,11 +78,11 @@ SEEDED.push(inState('RES-1822', 'CONFIRMADA', { leadCustomerName: 'Paula Rojas (
 
 export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [
-    departure(1, 'Desierto de la Tatacoa al atardecer', '2026-11-07', 'PROGRAMADA', true, 10, 2_500_000),
-    departure(2, 'Ruta del café en Pitalito', '2026-11-14', 'PROGRAMADA', true, 2, 1_800_000),
-    departure(9, 'Ruta del café en Pitalito', '2026-12-05', 'PROGRAMADA', true, 0, 1_800_000),
-    departure(3, 'Canotaje en el río Suaza', '2026-11-21', 'PROGRAMADA', false, 8, 2_000_000),
-    departure(4, 'Caminata al Nevado del Huila', '2026-10-30', 'CANCELADA', true, 12, 3_000_000),
+    departure(1, 'Desierto de la Tatacoa al atardecer', demoDate('2026-11-07'), 'PROGRAMADA', true, 10, 2_500_000),
+    departure(2, 'Ruta del café en Pitalito', demoDate('2026-11-14'), 'PROGRAMADA', true, 2, 1_800_000),
+    departure(9, 'Ruta del café en Pitalito', demoDate('2026-12-05'), 'PROGRAMADA', true, 0, 1_800_000),
+    departure(3, 'Canotaje en el río Suaza', demoDate('2026-11-21'), 'PROGRAMADA', false, 8, 2_000_000),
+    departure(4, 'Caminata al Nevado del Huila', demoDate('2026-10-30'), 'CANCELADA', true, 12, 3_000_000),
     ...RESCHEDULING_DEPARTURES,
   ];
   override list(): Observable<readonly Departure[]> { return of([...this.items]); }

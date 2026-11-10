@@ -2,7 +2,7 @@ import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import { DecideProofCommand, PendingProof, PendingProofs, PendingProofsSource, ProofReviewWriter } from '../payments/data/proof-review-ports';
 import { Reservation } from '../reservations/model/reservation';
 import { PortalApiClient } from '../shell-contract';
-import { API_BASE, call, listAll } from './api-paths';
+import { API_BASE, call, listPages } from './api-paths';
 import { readReservation } from './payments-api-sources';
 import { rowsOf } from './reservations-api-sources';
 
@@ -15,14 +15,15 @@ interface DecisionDto { readonly appliedAmountCents?: number; readonly excessAmo
 
 /**
  * The proofs of every status (the mockup lists the decided ones too), each with its reservation and payments, read once per reservation.
- * The overdue count is the number of rows the service marked; the portal derives no mark. DEBT: one read per reservation.
+ * The overdue count is the one the service answers for the proofs in validation (`overdueCount` of the first page); the portal derives no mark.
+ * DEBT: one read per reservation.
  */
 export class PendingProofsApiSource extends PendingProofsSource {
   constructor(private readonly client: PortalApiClient) { super(); }
   override list(): Observable<PendingProofs> {
-    return forkJoin(['IN_VALIDATION', 'APPROVED', 'REJECTED'].map((status) => listAll<ProofRowDto>(this.client, paymentProofsPath(), { status }))).pipe(
-      map((byStatus) => byStatus.flat()),
-      switchMap((proofs) => {
+    return forkJoin(['IN_VALIDATION', 'APPROVED', 'REJECTED'].map((status) => listPages<ProofRowDto>(this.client, paymentProofsPath(), { status }))).pipe(
+      switchMap((byStatus) => {
+        const proofs = byStatus.flatMap((pages) => pages.flatMap((result) => result.data)), overdueCount = byStatus[0][0]?.overdueCount ?? 0;
         if (!proofs.length) { return of<PendingProofs>({ rows: [], overdueCount: 0 }); }
         const ids = [...new Set(proofs.map((p) => p.reservationId))];
         return rowsOf(this.client).pipe(
@@ -32,7 +33,7 @@ export class PendingProofsApiSource extends PendingProofsSource {
               const reservation = reservations.find((r) => r.id === proof.reservationId), payment = reservation?.payments?.find((p) => p.id === proof.paymentId);
               return reservation && payment ? [{ reservation, payment, overdue: proof.reviewOverdue }] : [];
             });
-            return { rows, overdueCount: rows.filter((row) => row.overdue).length };
+            return { rows, overdueCount };
           }),
         );
       }),

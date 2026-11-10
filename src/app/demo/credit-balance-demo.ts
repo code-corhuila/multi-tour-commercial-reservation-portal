@@ -11,6 +11,7 @@ import { lookupOf } from './payment-parameters-demo';
 import { DEMO_TENANT, applyCredit, overviewOf } from './credit-overview-demo';
 import type { DemoDeparturesStore, DemoReservationsStore } from './reservations-demo';
 import { refundFactsOf, resolveRefund } from './refunds-demo';
+import { demoDate } from './demo-fixtures';
 
 // DEMO (spec 017- DD-1, G-B): credit balances are lines of the one reservations store of HU-COM-007 (plan D-02).
 
@@ -76,8 +77,8 @@ type Answer = CreditBalance | ExcessSplit | CreditApplyOutcome;
 /** Registered in sources.demo.ts after reservationChangesDemoProviders(), over the same store and clock; the answered keys belong to the page. */
 /** DP-CB9 (PROPUESTO): the delivered demo shows data; the mockup book starts empty. Each seed once per page, on a cancelled reservation of a customer who has another one to pay. */
 const SEEDS: readonly CreditBalance[] = [
-  { id: 'SAF-1', reservationId: 'RES-1836', tenant: DEMO_TENANT, amountCents: 30_000_000, origin: 'TRATAMIENTO', status: 'PENDIENTE', recordedBy: 'Administrador del tenant (demo)', recordedAt: '2026-10-12T09:00:00-05:00', appliedTo: null },
-  { id: 'SAF-2', reservationId: 'RES-1831', tenant: DEMO_TENANT, amountCents: 15_000_000, origin: 'EXCEDENTE', status: 'PENDIENTE', recordedBy: 'Administrador del tenant (demo)', recordedAt: '2026-10-13T16:30:00-05:00', appliedTo: null },
+  { id: 'SAF-1', reservationId: 'RES-1836', tenant: DEMO_TENANT, amountCents: 30_000_000, origin: 'TRATAMIENTO', status: 'PENDIENTE', recordedBy: 'Administrador del tenant (demo)', recordedAt: demoDate('2026-10-12T09:00:00-05:00'), appliedTo: null },
+  { id: 'SAF-2', reservationId: 'RES-1831', tenant: DEMO_TENANT, amountCents: 15_000_000, origin: 'EXCEDENTE', status: 'PENDIENTE', recordedBy: 'Administrador del tenant (demo)', recordedAt: demoDate('2026-10-13T16:30:00-05:00'), appliedTo: null },
 ];
 const seeded = (s: DemoReservationsStore) => { if (!s.creditBalances.length) s.creditBalances = [...SEEDS]; return s; };
 

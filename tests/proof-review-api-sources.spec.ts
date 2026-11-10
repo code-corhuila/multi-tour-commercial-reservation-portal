@@ -34,6 +34,13 @@ describe('pendingProofsOverTheApiClient', () => {
     expect(proofs.rows[0]).toMatchObject({ overdue: true, reservation: { id: 'r-1', leadCustomerName: 'Laura Gómez (demo)' }, payment: { id: 'p-1', proofStatus: 'EN_VALIDACION', amountCents: 4000 } });
   });
 
+  it('shows the overdue count the service answers for the whole list, not the marks of the rows it happened to read', async () => {
+    const { client } = fakeClient({ ok: { ...page([row({ reviewOverdue: true })]), overdueCount: 3 } }, { ok: { ...page([]), overdueCount: 9 } }, { ok: page([]) }, { ok: page([summary]) }, { ok: detail }, { ok: page([attempt()]) });
+    const proofs = await firstValueFrom(new PendingProofsApiSource(client).list());
+    expect(proofs.overdueCount).toBe(3);
+    expect(proofs.rows).toHaveLength(1);
+  });
+
   it('answers an empty panel without reading any reservation, and shows a refusal as the page error', async () => {
     const empty = fakeClient({ ok: page([]) }, { ok: page([]) }, { ok: page([]) });
     expect(await firstValueFrom(new PendingProofsApiSource(empty.client).list())).toEqual({ rows: [], overdueCount: 0 });

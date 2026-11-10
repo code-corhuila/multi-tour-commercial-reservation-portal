@@ -7,6 +7,7 @@ import type { RefundAct } from '../reservations/model/reservation';
 import { ExecuteOutcome, Refund, RefundMethod, RefundsSource, RefundsWriter } from '../refunds/data/refunds-ports';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import type { DemoReservationsStore } from './reservations-demo';
+import { demoDate } from './demo-fixtures';
 
 // DEMO (spec 016- DD-1, DD-2, DD-3, G-OPS, G-USR): refunds live on the reservations of the one store of HU-COM-007 (plan D-02).
 type Facts = NonNullable<Reservation['refund']>;
@@ -114,10 +115,10 @@ export class DemoRefundsWriter extends RefundsWriter {
 }
 
 /** Invented refunds (spec section 6) on cancelled reservations, with codes no other story seeds; RES-1818 ends its execution with the cash step failed (AC-RF.4). */
-const at = (day: number, hour: string) => `2026-10-${String(day).padStart(2, '0')}T${hour}:00-05:00`;
+const at = (day: number, hour: string) => demoDate(`2026-10-${String(day).padStart(2, '0')}T${hour}:00-05:00`);
 const ADMIN = 'Administrador del tenant (demo)', BY_ADMIN = (day: number, hour: string) => ({ by: ADMIN, at: at(day, hour) });
 const cancelled = (id: string, leadCustomerName: string, tourName: string, cents: number, refund: Facts, over: Partial<Reservation> = {}): Reservation => ({ id, leadCustomerName, tourName,
-  departureDate: '2026-11-21', conditions: 'Cancelación según la política del tour (texto de demostración).', people: 2, validatedCents: cents, balanceCents: 0, status: 'CANCELADA',
+  departureDate: demoDate('2026-11-21'), conditions: 'Cancelación según la política del tour (texto de demostración).', people: 2, validatedCents: cents, balanceCents: 0, status: 'CANCELADA',
   quote: { services: [{ name: 'Guianza (demo)', cents }], transportCents: 0, projectedCents: cents, discounts: [], discountCents: 0, finalCents: cents }, financialStatus: 'PARCIAL',
   seatHeld: false, cancellation: { cause: refund.reason, by: ADMIN, at: refund.recognizedAt }, refund: { ...refund, amountCents: cents }, ...over });
 const SEEDS: readonly Reservation[] = [
