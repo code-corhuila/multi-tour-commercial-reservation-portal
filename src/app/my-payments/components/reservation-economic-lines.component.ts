@@ -3,7 +3,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, filter, map, of, switchMap } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop } from '../../shared/format';
-import { CustomerPaymentSummary, MyPaymentsSource, TRANSFER_PAYMENT_AREA } from '../data/my-payments-source';
+import { CustomerPaymentSummary, MyPaymentsSource, TRANSFER_PAYMENT_AREA, CONTINUE_PAYMENT_AREA } from '../data/my-payments-source';
 import { deadlineText, detailRows, paymentAction } from '../economic-rows';
 import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
 
@@ -40,7 +40,7 @@ export class ReservationEconomicLinesComponent {
 @Component({
   selector: 'crp-my-payments-card-actions', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (line(); as r) {
-    @let act = canPay ? action(r) : null;
+    @let act = allowed(action(r));
     @if (act || canSee) {
       <div class="crp-my-payments-card-actions">
         @if (act) { <button type="button" class="crp-primary" (click)="pay(r)">{{ act === 'pay' ? t.payAction : t.presentAction }}</button> }
@@ -54,12 +54,14 @@ export class ReservationEconomicActionsComponent {
   protected readonly t = MY_PAYMENTS_TEXT;
   protected readonly action = paymentAction;
   private readonly navigation = inject(PortalNavigation, { optional: true });
-  protected readonly canPay = this.navigation?.has(TRANSFER_PAYMENT_AREA) ?? false;
+  /** Continuar pago opens 21 in its second mode; Presentar nuevo comprobante opens 24. */
+  protected readonly allowed = (act: 'pay' | 'present' | null) => (act && this.navigation?.has(act === 'pay' ? CONTINUE_PAYMENT_AREA : TRANSFER_PAYMENT_AREA) ? act : null);
   protected readonly canSee = this.navigation?.has(CLIENT_AREA.payments) ?? false;
   protected readonly line = lineOf(inject(MyPaymentsSource), this.reservationId);
 
   protected pay(r: CustomerPaymentSummary): void {
-    this.navigation?.open(TRANSFER_PAYMENT_AREA, { reservation: r.reservationId, ...(r.paymentType && { type: r.paymentType }), amount: String(r.balanceCents) });
+    if (this.action(r) === 'pay') this.navigation?.open(CONTINUE_PAYMENT_AREA, { reservation: r.reservationId });
+    else this.navigation?.open(TRANSFER_PAYMENT_AREA, { reservation: r.reservationId, ...(r.paymentType && { type: r.paymentType }), amount: String(r.balanceCents) });
   }
 
   protected see(r: CustomerPaymentSummary): void { this.navigation?.open(CLIENT_AREA.payments, { reservation: r.reservationId }); }

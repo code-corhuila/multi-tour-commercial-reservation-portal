@@ -631,6 +631,7 @@
 .crp-root .crp-departure-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--crp-space-3); margin-top: var(--crp-space-3); }
 .crp-root .crp-departure-option { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--crp-space-1) var(--crp-space-3); padding: var(--crp-space-3) var(--crp-space-4); border: 1px solid var(--crp-line); border-radius: var(--crp-radius-control); background: var(--crp-surface); cursor: pointer; }
 .crp-root .crp-departure-option > input { grid-row: 1 / span 2; }
+.crp-root .crp-departure-option small { grid-column: 2; color: var(--crp-soft); font-size: 0.78rem; }
 .crp-root .crp-departure-option span { grid-column: 2; color: var(--crp-soft); font-size: 0.8rem; font-weight: 600; }
 .crp-root .crp-departure-option.crp-is-active { border-color: var(--crp-accent); box-shadow: 0 0 0 2px var(--crp-accent-soft); }
 .crp-root .crp-departure-option.crp-is-full { background: var(--crp-muted); }

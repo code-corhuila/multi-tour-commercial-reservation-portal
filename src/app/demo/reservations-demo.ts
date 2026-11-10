@@ -79,6 +79,7 @@ export class DemoDeparturesStore extends DeparturesSource {
   readonly items: Departure[] = [
     departure(1, 'Desierto de la Tatacoa al atardecer', '2026-11-07', 'PROGRAMADA', true, 10, 2_500_000),
     departure(2, 'Ruta del café en Pitalito', '2026-11-14', 'PROGRAMADA', true, 2, 1_800_000),
+    departure(9, 'Ruta del café en Pitalito', '2026-12-05', 'PROGRAMADA', true, 0, 1_800_000),
     departure(3, 'Canotaje en el río Suaza', '2026-11-21', 'PROGRAMADA', false, 8, 2_000_000),
     departure(4, 'Caminata al Nevado del Huila', '2026-10-30', 'CANCELADA', true, 12, 3_000_000),
     ...RESCHEDULING_DEPARTURES,

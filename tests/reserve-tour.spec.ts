@@ -112,6 +112,24 @@ it('reads the tour and its departures from the public routes when the operator r
     expect(p.host.querySelector('.crp-departure-option.crp-is-active')?.textContent).toContain('05 dic 2026');
   });
 
+  it('draws the start time of each departure (AC-RS.10) and the seats as N de M when the service says the total', async () => {
+    const p = await openReserve({ departures: of([
+      departure('dep-a', '2026-11-14T06:30:00-05:00', { effectiveCapacity: 3, totalSeats: 12 }),
+      departure('dep-b', '2026-12-05T14:00:00-05:00', { effectiveCapacity: 0, totalSeats: 12 }),
+      departure('dep-c', '2026-12-20T08:15:00-05:00'),
+    ]) });
+    expect(options(p)).toEqual([
+      '14 nov 2026 Inicio 06:30 3 de 12 cupos disponibles',
+      '05 dic 2026 Inicio 14:00 Salida llena',
+      '20 dic 2026 Inicio 08:15 3 cupos disponibles',
+    ]);
+  });
+
+  it('does not invent the estimated end: the service does not deliver it yet', async () => {
+    const p = await openReserve({ departures: of([departure('dep-a', '2026-11-14T06:30:00-05:00')]) });
+    expect(p.host.querySelector('.crp-departure-option')?.textContent).not.toContain('Finalización estimada');
+  });
+
   it('a full departure says so, is not chosen first and cannot be continued', async () => {
     const p = await openReserve({ departures: of([departure('dep-a', '2026-11-14', { effectiveCapacity: 0 }), departure('dep-b', '2026-12-05')]) });
     expect(options(p)).toEqual(['14 nov 2026 Salida llena', '05 dic 2026 3 cupos disponibles']);

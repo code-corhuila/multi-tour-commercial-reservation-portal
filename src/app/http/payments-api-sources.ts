@@ -1,4 +1,5 @@
-import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { PaymentDeadline, PaymentDeadlineReader } from '../payments/data/payment-followup-ports';
 import { PaymentsWriter, RegisterPaymentCommand } from '../payments/data/payments-writer';
 import { PAYMENT_METHOD_LABEL, PAYMENT_TYPE_LABEL } from '../reservations/reservations-copy';
 import { Reservation, ReservationPayment } from '../reservations/model/reservation';
@@ -82,5 +83,22 @@ export class PaymentsApiWriter extends PaymentsWriter {
     }
     return call<PaymentDto>(this.client, paymentsPath(command.reservationId), { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } })
       .pipe(switchMap(() => readReservation(this.client, command.reservationId)));
+  }
+}
+
+/** ReservationPaymentDeadline of the contract (PROPOSED): the service resolves the effective deadline (RN-RES-006); the portal adds nothing up. */
+interface PaymentDeadlineDto { readonly effectiveDeadline: string; readonly departureStartsAt: string }
+
+/**
+ * The deadline line of screens 21 and 24 over GET /reservations/{id}/payment-deadline. The customer reads their own reservation; a reservation
+ * without a deadline row, or of another customer or tenant, answers 404, which is "no line" (null) and not an error.
+ */
+export class PaymentDeadlineApiReader extends PaymentDeadlineReader {
+  constructor(private readonly client: PortalApiClient) { super(); }
+  override deadlineOf(reservationId: string): Observable<PaymentDeadline | null> {
+    return call<PaymentDeadlineDto>(this.client, `${reservationsPath(reservationId)}/payment-deadline`).pipe(
+      map((d): PaymentDeadline | null => ({ dueAt: d.effectiveDeadline, departureStartsAt: d.departureStartsAt })),
+      catchError((error: { status?: number }) => (error.status === 404 ? of(null) : throwError(() => error))),
+    );
   }
 }

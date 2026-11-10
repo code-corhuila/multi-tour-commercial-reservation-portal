@@ -65,3 +65,14 @@ export function parseMinorUnits(text: string | undefined): number | null {
   const minorUnits = /^\d+$/.test(text ?? '') ? Number(text) : NaN;
   return Number.isSafeInteger(minorUnits) && minorUnits > 0 ? minorUnits : null;
 }
+
+/** The text of an amount of minor units as the pesos field of a form shows it (the port speaks cents, the mockup's field pesos). */
+export function minorUnitsToField(minorUnits: number): string {
+  return String(minorUnits / 10 ** MINOR_UNIT_DIGITS);
+}
+
+/** What a person may pay now: the amount typed, in minor units, only if it is above zero and within the balance; otherwise null. */
+export function amountWithinBalance(typed: string, balanceMinorUnits: number): number | null {
+  const parsed = parseMoney(typed);
+  return parsed.kind === 'valid' && parsed.minorUnits > 0 && parsed.minorUnits <= balanceMinorUnits ? parsed.minorUnits : null;
+}

@@ -74,12 +74,12 @@ export class PublicTourValueSource extends TourValueSource {
 
 /** PublicTourDetail of the contract (PROPOSED): the tour plus its open departures; no end time, no capacity configuration. */
 interface PublicTourDetailDto extends PublicTourDto {
-  readonly departures: ReadonlyArray<{ readonly departureId: string; readonly startsAt: string; readonly availableSeats: number }>;
+  readonly departures: ReadonlyArray<{ readonly departureId: string; readonly startsAt: string; readonly availableSeats: number; readonly full?: boolean }>;
 }
 
 /**
  * The departures of a visitor: the public tour list, then the public detail of each tour (`departures`). The service returns only open
- * departures with seats, so every one is Programada and open. The authenticated reader of HU-COM-007 is never called (a visitor has no token).
+ * departures, full ones included (`full`, api #187): every one is Programada and open, and a full one has no seats so the screens say "Salida llena" and do not let it continue. The authenticated reader of HU-COM-007 is never called (a visitor has no token).
  */
 export class PublicDeparturesApiSource extends PublicDeparturesSource {
   constructor(private readonly client: PortalApiClient, private readonly identifier: () => string | null) { super(); }
@@ -94,7 +94,7 @@ export class PublicDeparturesApiSource extends PublicDeparturesSource {
   private departuresOf(tenant: string, tour: PublicTourDto): Observable<Departure[]> {
     return call<PublicTourDetailDto>(this.client, publicOfferPath(tenant, 'tours', tour.serviceId)).pipe(map((detail) => detail.departures.map((d): Departure => ({
       id: d.departureId, tourName: tour.commercialName, date: d.startsAt, state: 'PROGRAMADA', openForReservations: true,
-      effectiveCapacity: d.availableSeats, transportPerPersonCents: 0, conditions: '',
+      effectiveCapacity: d.full ? 0 : d.availableSeats, transportPerPersonCents: 0, conditions: '',
     }))));
   }
 }
