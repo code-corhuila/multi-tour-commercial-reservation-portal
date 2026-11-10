@@ -37,12 +37,12 @@ describe('creditBalanceSourceOverTheApiClient', () => {
     expect(calls.map((c) => c.path)).toEqual([`${API_BASE}/credit-balances?page=1&limit=100`, `${API_BASE}/credit-balance-summary`,
       `${API_BASE}/financial-decisions?page=1&limit=100`, `${API_BASE}/credit-balances/c-1`]);
     expect(overview).toMatchObject({ availableCents: 35000, customersWithBalance: 2, pendingDecisions: 1 });
-    const laura = overview.customers[0];
+    const laura = overview.customers[1];
     expect(laura).toMatchObject({ name: 'Laura Gómez', availableCents: 15000, suggestedCents: 15000 });
     expect(laura.sources).toEqual([{ reservationId: 'r-1', balanceCents: 20000, requestedCents: 5000, availableCents: 15000 }]);
     expect(laura.targets).toEqual([{ reservationId: 'r-3', balanceCents: 50000 }]);
     expect(laura.history.map((m) => [m.kind, m.amountCents])).toEqual([['DEVOLUCION', -5000], ['APLICACION', -10000], ['ORIGEN', 30000]]);
-    expect(overview.customers[1]).toMatchObject({ name: 'Pedro Ruiz', availableCents: 20000, targets: [], suggestedCents: 0 });
+    expect(overview.customers[0]).toMatchObject({ name: 'Pedro Ruiz', availableCents: 20000, targets: [], suggestedCents: 0 });
     expect(overview.requests).toEqual([expect.objectContaining({ id: 'd-1', reservationId: 'r-1', customer: 'Laura Gómez', amountCents: 5000, state: 'PENDIENTE_DE_AUTORIZACION' })]);
   });
 
