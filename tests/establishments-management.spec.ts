@@ -18,8 +18,8 @@ import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
 // HU-COM-002 (spec 002-, one screen for hotels and restaurants, AC-PE.12): admin-gestionar-hospedaje.html / -alimentacion.html — "Estado y último cambio",
 // "Gestionar" on each row, the bitácora de cambios and the configuration of the information, all on the same screen.
 const flat = (text: string | null | undefined) => (text ?? '').replace(/\s+/g, ' ').trim();
-const OLD = { kind: 'INACTIVATED' as const, at: '2026-09-20T10:30:00', by: 'Fernanda Robayo (Administrador del tenant)' };
-const FIRST = { kind: 'REGISTERED' as const, at: '2026-09-01T08:00:00', by: 'Fernanda Robayo (Administrador del tenant)' };
+const OLD = { kind: 'INACTIVATED' as const, at: '2026-09-20T10:30:00', by: 'Administrador Demo (Administrador del tenant)' };
+const FIRST = { kind: 'REGISTERED' as const, at: '2026-09-01T08:00:00', by: 'Administrador Demo (Administrador del tenant)' };
 const withChanges = (name: string, over: Partial<AssociatedEstablishment> = {}): AssociatedEstablishment => ({ ...establishmentNamed(name), changes: [FIRST, OLD], associationStatus: 'INACTIVE', ...over });
 
 class ControllableEditor extends AssociatedEstablishmentsEditor {
@@ -57,7 +57,7 @@ describe('theStatusColumnTellsTheLastChange', () => {
     expect(flat(element.querySelector('thead')!.textContent)).toContain('Estado y último cambio');
     const cell = flat(element.querySelector('tbody tr td:nth-child(3)')!.textContent);
     expect(cell).toContain('Inactivo');
-    expect(cell).toContain('Último cambio: Inactivado por Fernanda Robayo (Administrador del tenant) · 20 sep 2026 · 10:30');
+    expect(cell).toContain('Último cambio: Inactivado por Administrador Demo (Administrador del tenant) · 20 sep 2026 · 10:30');
   });
 
   it('says that no change was recorded for an establishment with no bitácora', async () => {
@@ -98,8 +98,8 @@ describe('gestionarOpensTheEstablishmentOnTheSameScreen', () => {
     expect(Array.from(section.querySelectorAll('.crp-establishment-log th')).map((th) => flat(th.textContent))).toEqual(['Fecha', 'Responsable', 'Cambio']);
     const rows = Array.from(section.querySelectorAll('.crp-establishment-log tbody tr')).map((row) => Array.from(row.querySelectorAll('td')).map((td) => flat(td.textContent)));
     expect(rows).toEqual([
-      ['20 sep 2026 · 10:30', 'Fernanda Robayo (Administrador del tenant)', 'Inactivado'],
-      ['01 sep 2026 · 08:00', 'Fernanda Robayo (Administrador del tenant)', 'Registrado'],
+      ['20 sep 2026 · 10:30', 'Administrador Demo (Administrador del tenant)', 'Inactivado'],
+      ['01 sep 2026 · 08:00', 'Administrador Demo (Administrador del tenant)', 'Registrado'],
     ]);
   });
 
@@ -143,7 +143,7 @@ describe('configurarEditsTheInformationOfTheSameEstablishment', () => {
     const { editor, type, click, panel, element, settle } = await open();
     await type('Nombre del establecimiento', 'Hostal Real');
     await click('Guardar cambios', panel()!);
-    editor.calls[0].reply({ ...withChanges('Hostal La Tatacoa', { commercialName: 'Hostal Real' }), changes: [FIRST, OLD, { kind: 'UPDATED', at: '2026-10-22T09:00:00', by: 'Fernanda Robayo (Administrador del tenant)' }] });
+    editor.calls[0].reply({ ...withChanges('Hostal La Tatacoa', { commercialName: 'Hostal Real' }), changes: [FIRST, OLD, { kind: 'UPDATED', at: '2026-10-22T09:00:00', by: 'Administrador Demo (Administrador del tenant)' }] });
     await settle();
     expect(flat(element.querySelector('tbody tr td')!.textContent)).toContain('Hostal Real');
     expect(flat(panel()!.querySelector('[role="status"]')!.textContent)).toBe('Información actualizada correctamente.');
