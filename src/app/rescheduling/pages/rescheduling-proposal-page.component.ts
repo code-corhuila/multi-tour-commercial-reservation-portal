@@ -35,10 +35,13 @@ type State = PageState<ReschedulingEpisodeView>;
           <dl class="crp-rescheduling-details">
             <div><dt>{{ t.original }}</dt><dd>{{ line(e.original.startsAt) }}</dd></div>
             <div><dt>{{ t.proposed }}</dt><dd>{{ e.proposal ? line(e.proposal.startsAt) : '' }}</dd></div>
+            @if (e.notice; as n) { <div><dt>{{ t.notified }}</dt><dd>{{ line(n.notifiedAt) }}</dd></div> }
             <div><dt>{{ t.travelers }}</dt><dd>{{ t.people(e.people) }}</dd></div>
           </dl>
-          <p class="crp-rescheduling-copy">{{ t.held }}</p>
-          <p class="crp-rescheduling-copy">{{ t.deadline }}</p>
+          @if (e.notice; as n) {
+            <p class="crp-rescheduling-copy">{{ t.held(e.people) }}</p>
+            <p class="crp-rescheduling-copy">{{ t.deadline(line(n.dueAt), line(n.windowEndsAt), line(n.episodeEndsAt), line(n.startsAt)) }}</p>
+          }
           @if (e.answer === null) {
             <div class="crp-form-actions"><button type="button" class="crp-primary" [disabled]="pending()" (click)="answer(e, 'ACCEPTED')">{{ t.accept }}</button>
               <button type="button" class="crp-outline" [disabled]="pending()" (click)="answer(e, 'REJECTED')">{{ t.reject }}</button></div>
