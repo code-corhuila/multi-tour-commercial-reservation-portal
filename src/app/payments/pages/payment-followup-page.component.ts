@@ -39,7 +39,7 @@ type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadli
               <div class="crp-payment-followup-wide"><label for="crp-payment-followup-departure">{{ t.departure }}</label>
                 <input id="crp-payment-followup-departure" readonly [disabled]="missing" [value]="d ? departure(d) : ''"></div>
               @if (!settled) { <div class="crp-payment-followup-wide"><label for="crp-payment-followup-deadline">{{ t.deadline }}</label>
-                <input id="crp-payment-followup-deadline" readonly [disabled]="missing" [value]="d?.deadline ? deadlineLine(d!.deadline!) : ''"></div> }
+                <input id="crp-payment-followup-deadline" readonly [disabled]="missing" [value]="d?.deadline ? (d!.deadline!.frozen ? t.frozenDeadline : deadlineLine(d!.deadline!)) : ''"></div> }
             </div>
           </section>
           @if (!settled) {
@@ -54,7 +54,7 @@ type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadli
           <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back()">{{ t.back }}</button>
             @if (!settled) { <button type="submit" class="crp-operator-primary" [disabled]="pending() || missing">{{ t.title }}</button> }</div>
         </form>
-        @if (r && !settled && extender && r.status === 'PENDIENTE_DE_PAGO' && d?.deadline) { @let ext = r.deadline?.extension; @let used = !!ext || !!r.deadline?.extendedUntil;
+        @if (r && !settled && extender && r.status === 'PENDIENTE_DE_PAGO' && d?.deadline && !d!.deadline!.frozen) { @let ext = r.deadline?.extension; @let used = !!ext || !!r.deadline?.extendedUntil;
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.extension.eyebrow }}</p><h2>{{ t.extension.title }}</h2>
             <p class="crp-operator-copy">{{ ext ? t.extension.granted(ext.hours, ext.actorLabel, when(ext.grantedAt)) : r.deadline?.extendedUntil ? t.extension.grantedUntil(when(r.deadline!.extendedUntil!)) : t.extension.offer(t.extension.suggested) }}</p>
             <form novalidate (submit)="$event.preventDefault(); extend(r)"><label for="crp-payment-followup-hours">{{ t.extension.hours }}</label>
