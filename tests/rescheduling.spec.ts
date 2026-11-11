@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { Injector, Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Observable, Subject, firstValueFrom } from 'rxjs';
+import { Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
@@ -38,6 +38,7 @@ const heldOn = (store: DemoReservationsStore, departureId: string) => store.item
   .reduce((n, r) => n + r.reschedulingEpisode!.proposal!.heldSeats, 0);
 
 class ControllableSource extends ReschedulingSource {
+  override list(): Observable<readonly ReschedulingEpisodeView[]> { return of([]); }
   readonly requests: Subject<ReschedulingEpisodeView | null>[] = [];
   override episode(): Observable<ReschedulingEpisodeView | null> { const s = new Subject<ReschedulingEpisodeView | null>(); this.requests.push(s); return s; }
 }
