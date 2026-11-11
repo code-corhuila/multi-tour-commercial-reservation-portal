@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -90,7 +90,7 @@ export class PaymentFollowupPageComponent {
       const reservation = found && this.withServiceRecords(found, deadline, followups);
       const departure = departures.find((d) => d.id === reservation?.departureId)?.state;
       return reservation ? { kind: 'data', items: [{ reservation, labels, deadline, departure }] } : { kind: 'empty' }; }))))).pipe(
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   /** A service that keeps the history and the extension apart (payment_followups, payment_deadline) hands them over its ports; the list holds neither. */
   private withServiceRecords(r: Reservation, deadline: PaymentDeadline | null, followups: Reservation['followups'] | null): Reservation {
     const extension = deadline?.extension;

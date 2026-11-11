@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Injector, inject } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { formatCop } from '../../shared/format';
@@ -36,7 +36,7 @@ export class RefundAlertsComponent {
   private readonly source = inject(RefundsSource); private readonly proofs = inject(PendingProofsSource, { optional: true }); private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => combineLatest([this.source.list(), this.proofs?.list() ?? of(null)]).pipe(
     map(([all, proofs]): State => { const items = [...proofAlerts(proofs), ...alertsOf(all)]; return items.length ? { kind: 'data', items } : { kind: 'empty' }; }),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 }
 
 const alertsOf = (all: readonly Refund[]): Alert[] => {
