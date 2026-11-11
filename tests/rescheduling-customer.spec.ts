@@ -102,14 +102,14 @@ describe('everyReschedulingScreenShowsOneOfTheFourStates', () => {
 });
 
 describe('customerAnswersTheirOwnProposalOn24A', () => {
-  it('draws 24A as the mockup: reservation, tour, original and proposed departures, travellers and the deadline texts', async () => {
+  it('draws 24A as the mockup: reservation, tour, original and proposed departures, the notification, travellers and the deadline with its three instants', async () => {
     const s = await proposal();
     expect(s.host.querySelector('[data-state="data"] .crp-operator-eyebrow')?.textContent).toBe('Reserva RES-1829');
     expect(s.host.querySelector('[data-state="data"] h2')?.textContent).toBe('Ruta Andina');
     expect(Array.from(s.host.querySelectorAll('dl div'), (d) => d.textContent?.replace(/\s+/g, ' ').trim()))
-      .toEqual(['Salida original cancelada16 oct 2026 · 06:30', 'Salida propuesta23 oct 2026 · 06:30', 'Viajeros2 viajeros']);
-    expect(s.flat()).toContain('Los cupos de la salida propuesta quedan apartados durante el plazo de respuesta.');
-    expect(s.flat()).toContain('El plazo de respuesta es el menor entre 72 horas corridas, el tiempo restante del episodio de reprogramación y la hora de inicio de la salida propuesta; el episodio tiene un límite absoluto de 96 horas.');
+      .toEqual(['Salida original cancelada16 oct 2026 · 06:30', 'Salida propuesta23 oct 2026 · 06:30', 'Propuesta notificada el12 oct 2026 · 21:00', 'Viajeros2 viajeros']);
+    expect(s.flat()).toContain('Tus 2 cupos están apartados en la salida propuesta hasta el vencimiento. Se liberan si rechazas, si vence el plazo, si la salida propuesta se cancela o si se alcanza el límite del episodio de 96 horas.');
+    expect(s.flat()).toContain('Vence el 15 oct 2026 · 21:00. Se calcula como el menor entre: 72 horas corridas desde la notificación de la propuesta (15 oct 2026 · 21:00); límite de 96 horas del episodio de reprogramación (16 oct 2026 · 19:30); hora de inicio de la salida propuesta (23 oct 2026 · 06:30).');
     expect(s.host.querySelector('.crp-page-header-desc')?.textContent).toBe('La salida original fue cancelada por una causa no atribuible al cliente. Revisa la alternativa y responde dentro del plazo.');
     for (const raw of ['demo-dep', 'CONFIRMADA', 'T06:30', 'undefined']) expect(s.flat()).not.toContain(raw);
   });
