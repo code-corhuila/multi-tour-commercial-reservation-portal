@@ -54,9 +54,9 @@ export const PROPOSAL_COPY = {
   desc: 'La salida original fue cancelada por una causa no atribuible al cliente. Revisa la alternativa y responde dentro del plazo.',
   reservation: 'Reserva', original: 'Salida original cancelada', proposed: 'Salida propuesta', travelers: 'Viajeros',
   people: (n: number) => `${n} ${n === 1 ? 'viajero' : 'viajeros'}`,
-  held: 'Los cupos de la salida propuesta quedan apartados durante el plazo de respuesta.',
-  deadline: 'El plazo de respuesta es el menor entre 72 horas corridas, el tiempo restante del episodio de reprogramación y la hora de inicio de la salida propuesta; '
-    + 'el episodio tiene un límite absoluto de 96 horas.',
+  notified: 'Propuesta notificada el',
+  held: (n: number) => `Tus ${n} cupos están apartados en la salida propuesta hasta el vencimiento. Se liberan si rechazas, si vence el plazo, si la salida propuesta se cancela o si se alcanza el límite del episodio de 96 horas.`,
+  deadline: (due: string, window: string, episode: string, start: string) => `Vence el ${due}. Se calcula como el menor entre: 72 horas corridas desde la notificación de la propuesta (${window}); límite de 96 horas del episodio de reprogramación (${episode}); hora de inicio de la salida propuesta (${start}).`,
   accept: 'Aceptar propuesta', reject: 'Rechazar propuesta', back: 'Volver a mis reservas',
   /** The mockup writes "sigue Confirmada"; the view writes the reservation's real state (spec section 5). */
   accepted: (state: string) => `Propuesta aceptada. La reserva sigue ${state} con la nueva salida.`,
