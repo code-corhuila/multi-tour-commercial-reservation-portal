@@ -18,15 +18,17 @@ export interface CustomerPaymentSummary {
   readonly deadlineAt?: string;
   /** The HU-COM-018 mark: the economic deadlines are frozen while the customer answers a proposal. */
   readonly reschedulingPending?: boolean;
+  /** HU-COM-014 (AC-14.8): the next action the service names; when present the portal follows it and applies no rule of its own. */
+  readonly continueAction?: 'CONTINUE_PAYMENT' | 'PRESENT_NEW_RECEIPT' | 'NONE';
   readonly receipts?: readonly ProofReceipt[];
 }
 
-/** One proof as mis-pagos.html lists it. The portal holds no file to download, so no Descargar is offered (blocked by contract). */
-export interface ProofReceipt { readonly support: string; readonly amountCents: number; readonly status: string; readonly rejectionReason?: string }
+/** One proof as mis-pagos.html lists it. `paymentId` is present only for a payment with a file (a transfer): the service serves it to its owner and the portal holds none. */
+export interface ProofReceipt { readonly paymentId?: string; readonly support: string; readonly amountCents: number; readonly status: string; readonly rejectionReason?: string }
 
 /** DP-MP4: a notice the service already chose for Notificaciones, with what the mockup's notification (app.js 4758) reads of the reservation. */
 export type PaymentNotice = { readonly reservationId: string; readonly proofStatus: string } & Partial<Pick<CustomerPaymentSummary,
-  'reservationStatus' | 'paymentType' | 'balanceCents' | 'deadlineAt' | 'reschedulingPending' | 'cancellationCause' | 'pendingTreatmentCents' | 'creditBalanceCents'>>;
+  'reservationStatus' | 'paymentType' | 'balanceCents' | 'deadlineAt' | 'reschedulingPending' | 'continueAction' | 'cancellationCause' | 'pendingTreatmentCents' | 'creditBalanceCents'>>;
 
 /** DP-MP3: the reservation Continuar pago opens on screen 24, with what 24 expects. */
 export interface ContinuePaymentTarget { readonly reservationId: string; readonly paymentType?: string; readonly amountCents: number }

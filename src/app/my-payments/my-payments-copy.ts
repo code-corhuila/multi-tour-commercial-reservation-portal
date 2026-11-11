@@ -10,7 +10,7 @@ export const MY_PAYMENTS_TEXT = {
   status: 'Estado de la reserva', type: 'Tipo de pago', method: 'Medio de pago', proof: 'Estado del comprobante', financial: 'Situación financiera',
   final: 'Valor final', validated: 'Valores validados', balance: 'Saldo pendiente', refunded: 'Valores devueltos', credit: 'Saldo a favor',
   treatment: 'En tratamiento pendiente', departure: 'Salida', travelers: 'Viajeros', deadline: 'Plazo', lineBalance: 'Saldo',
-  receipts: 'Comprobantes', noReceipts: 'Sin comprobantes registrados.', reason: 'motivo', detail: 'Ver detalle de la reserva',
+  receipts: 'Comprobantes', download: 'Descargar', downloadFailed: 'No pudimos descargar el comprobante.', noReceipts: 'Sin comprobantes registrados.', reason: 'motivo', detail: 'Ver detalle de la reserva',
   noCredit: 'No tienes saldo a favor. Si una modificación, cancelación o pago validado genera un excedente a tu favor, aparecerá aquí.',
   creditAvailable: 'Saldo a favor disponible', creditOrigin: 'origen: reserva', creditNote: 'No vence en Fase 1.',
   notApplicable: 'No aplica por reserva cancelada', unknown: 'Por definir',

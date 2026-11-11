@@ -18,6 +18,12 @@ export const METHOD_IN: Record<string, string> = { TRANSFER: 'BANK_TRANSFER', CA
 const invert = (codes: Record<string, string>) => Object.fromEntries(Object.entries(codes).map(([wire, own]) => [own, wire]));
 export const TYPE_OUT = invert(TYPE_IN), METHOD_OUT = invert(METHOD_IN);
 
+/** The two cause codes the contract names (HU-COM-011, HU-COM-013); any other value is the customer's own words and is shown as it comes. */
+const CAUSE: Record<string, { text: string; origin: 'non-payment' | 'not-attributable' }> = {
+  PAYMENT_EXPIRY: { text: 'Cancelada por falta de pago', origin: 'non-payment' },
+  NOT_ATTRIBUTABLE_TO_CUSTOMER: { text: 'Cancelada por una causa no atribuible al cliente', origin: 'not-attributable' },
+};
+
 /** ReservationSummary of the contract (PROPOSED): the row of screen 10, which carries the names the detail lacks. */
 export interface SummaryDto { readonly reservationId: string; readonly customerName: string; readonly tourName: string; readonly departureStartsAt: string }
 /** ReservationResponse of the contract (PROPOSED): the values and the context fixed at creation, never recalculated (RN-RES-003). */
@@ -25,6 +31,8 @@ export interface ReservationDto extends ReservationQuoteDto {
   readonly reservationId: string; readonly serviceId: string; readonly salidaId: string; readonly people: number; readonly reservationStatus: string; readonly paymentStatus: string;
   readonly paymentType?: string; readonly paymentMethod?: string; readonly pendingBalanceCents: number; readonly validatedValueCents?: number;
   readonly paymentDeadline?: string; readonly seatHeld: boolean; readonly conditions?: string | null;
+  /** HU-COM-014 (PROPOSED): what the service decides for the customer; the cause is a code with no label (DP-14-05, OPEN). */
+  readonly continueAction?: Reservation['continueAction']; readonly cancellationCause?: string;
 }
 
 /** The reservation the screens read: the response of the service and, for the names it does not carry, the row of the list. */
@@ -38,6 +46,8 @@ export function reservationFrom(dto: ReservationDto, row?: SummaryDto): Reservat
     ...(dto.paymentMethod ? { paymentMethod: METHOD_IN[dto.paymentMethod] ?? dto.paymentMethod } : {}),
     ...(dto.validatedValueCents !== undefined ? { validatedCents: dto.validatedValueCents } : {}),
     ...(dto.paymentDeadline ? { deadline: { dueAt: dto.paymentDeadline } } : {}),
+    ...(dto.continueAction ? { continueAction: dto.continueAction } : {}),
+    ...(dto.cancellationCause ? { cancellation: { cause: CAUSE[dto.cancellationCause]?.text ?? dto.cancellationCause, by: '', at: '', ...(CAUSE[dto.cancellationCause] ? { origin: CAUSE[dto.cancellationCause].origin } : {}) } } : {}),
   };
 }
 
