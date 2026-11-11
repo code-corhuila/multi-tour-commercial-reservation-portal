@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ProofFileViewComponent } from '../components/proof-file-view.component';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -87,7 +87,7 @@ export class ValidateProofPageComponent {
       const overdue = marks.rows.some((row) => row.payment.id === payment?.id && row.overdue);
       return reservation && payment ? { kind: 'data', items: [{ reservation, payment, labels, overdue }] } : { kind: 'empty' };
     }),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   /** The reservation as the writer answered it; the newest answer wins over the list. */
   private readonly saved = signal<Reservation | null>(null);
   protected readonly state = computed((): State => {
