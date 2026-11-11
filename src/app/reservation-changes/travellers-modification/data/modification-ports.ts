@@ -15,6 +15,14 @@ export interface TravellersChange { readonly added: number; readonly removed: nu
 export interface Recalculation {
   readonly quote: Reservation['quote']; readonly balanceCents: number; readonly differenceCents: number; readonly excessCents: number;
 }
+/**
+ * What the screen draws under the fields (mockup "Valor proyectado", "Descuentos", "Valor final", "Saldo pendiente"), already resolved by the service.
+ * The projected value and the discounts are null when the service answers only the totals; the view never fills them in.
+ */
+export interface ModificationLines {
+  readonly allowed: boolean; readonly projectedCents: number | null; readonly discountCents: number | null; readonly finalCents: number;
+  readonly balanceCents: number; readonly differenceCents: number; readonly excessCents: number; readonly seatsAvailable: boolean;
+}
 /** RN-MD8 (AC-MD.6); RN-MD6: the excess opens "Excedente por modificación" (06-data decisionKind), never refunded here. */
 export interface ModificationTrace {
   readonly reservationCode: string; readonly originalCents: number; readonly recalculatedCents: number; readonly balanceCents: number;
@@ -26,6 +34,8 @@ export interface ModificationTrace {
 export abstract class ModificationQuote {
   abstract admits(code: string): Observable<Admission | null>;
   abstract preview(code: string, change: TravellersChange): Observable<Recalculation | null>;
+  /** The lines of the change, null when the reservation is unknown (AC-MD.1, AC-MD.3, AC-MD.5). */
+  abstract lines(code: string, change: TravellersChange): Observable<ModificationLines | null>;
 }
 
 /** RN-MD3 (DP-MD3): the per-person transport fare; the rule is NO DEFINIDO, the demo answers a seeded fare. */

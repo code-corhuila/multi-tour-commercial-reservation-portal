@@ -60,6 +60,7 @@ class ControllableModificationQuote extends ModificationQuote {
   readonly requests: Subject<Admission | null>[] = [];
   override admits(): Observable<Admission | null> { const s = new Subject<Admission | null>(); this.requests.push(s); return s; }
   override preview() { return of(null); }
+  override lines() { return of(null); }
 }
 
 function pageProviders(o: { code?: string; role?: string; quotes?: ModificationQuote } = {}) {
