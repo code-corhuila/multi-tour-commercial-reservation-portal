@@ -5,6 +5,8 @@ import { Reservation } from '../../reservations/data/reservations-source';
 export type PaymentFollowup = NonNullable<Reservation['followups']>[number];
 /** Plan D-04: the effective deadline already resolved (RN-RES-006, RN-EJE-001) and the departure start; ISO with offset. */
 export type PaymentDeadline = { readonly dueAt: string; readonly departureStartsAt: string;
+  /** RN-RES-006, AC-PP.12: the service froze the deadline (the departure was cancelled or interrupted for a cause not attributable to the customer); present only when true. */
+  readonly frozen?: boolean;
   /** RN-RES-006: the single extension the service recorded, with the person and the instant; absent while none was granted. */
   readonly extension?: { readonly hours: number; readonly actorLabel: string; readonly grantedAt: string } };
 /** The history of a reservation as the service keeps it (payment_followups), newest first; a source that keeps it on the reservation needs no such port. */
