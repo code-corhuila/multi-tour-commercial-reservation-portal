@@ -22,6 +22,7 @@ import { CREDIT_BALANCE_PAYMENTS_LINK } from './app/credit-balance/components/cr
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
+import { MODIFICATION_HISTORY_BLOCK } from './app/reservation-changes/travellers-modification/components/modification-history.component';
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
 import { PAYMENT_FOLLOWUP_CONTRIBUTIONS } from './app/payments/components/pending-payment-rows.component';
@@ -92,6 +93,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
       contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),
       { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
+      // HU-COM-012 AC-MD.6: "Modificaciones registradas" of 10A after the HU-COM-013 blocks; only with the history source of the build.
+      contribute(RESERVATION_DETAIL_BLOCKS, MODIFICATION_HISTORY_BLOCK),
       // HU-COM-009: Método y plazo de pago of 21.
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
       // HU-COM-010: Validar comprobante of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.

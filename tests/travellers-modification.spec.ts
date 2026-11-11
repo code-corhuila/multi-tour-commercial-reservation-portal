@@ -107,7 +107,7 @@ const NOT_ALLOWED = 'La política del tour no admite la modificación de viajero
 describe('portalDeclaresNoHttpClientOfItsOwn', () => {
   it('covers travellers-modification/ and its demo with no HTTP client, request or storage of its own', () => {
     const files = listSourceFiles().filter((f) => f.startsWith('src/app/reservation-changes/travellers-modification/') || f === 'src/app/demo/reservation-modification-demo.ts');
-    expect(files).toHaveLength(5);
+    expect(files).toHaveLength(6);
     const offenders = files.filter((f) => /\bHttpClient\b|\bfetch\s*\(|XMLHttpRequest|localStorage|sessionStorage/.test(withoutComments(readFileSync(f, 'utf8'))));
     expect(offenders).toEqual([]);
   });

@@ -2,9 +2,9 @@ import { Observable, catchError, map, of, switchMap, throwError } from 'rxjs';
 import { ApiError, PortalApiClient } from '../shell-contract';
 import { Reservation, ReservationsSource } from '../reservations/data/reservations-source';
 import {
-  Admission, ModificationLines, ModificationOutcome, ModificationQuote, ModificationTrace, ModifyCommand, Recalculation, ReservationModificationWriter, TravellersChange,
+  Admission, ModificationHistorySource, ModificationLines, ModificationOutcome, ModificationQuote, ModificationTrace, ModifyCommand, Recalculation, ReservationModificationWriter, TravellersChange,
 } from '../reservation-changes/travellers-modification/data/modification-ports';
-import { call, notInContract, reservationsPath } from './api-paths';
+import { call, listAll, notInContract, reservationsPath } from './api-paths';
 
 /** ModificationQuote of the contract (PROPOSED, HU-COM-012): the service recomputes with the terms fixed at creation; a refused quote answers the values as they are. */
 interface QuoteDto {
@@ -58,6 +58,21 @@ export class ModificationApiQuote extends ModificationQuote {
   }
 }
 
+/** RN-MD8, G-USR: the person of a record is the user id of the token, the only identity the service returns. */
+const traceOf = (code: string, r: RecordDto): ModificationTrace => ({ reservationCode: code, originalCents: r.originalFinalValueCents, recalculatedCents: r.newFinalValueCents,
+  balanceCents: r.resultingPendingBalanceCents, differenceCents: r.newFinalValueCents - r.originalFinalValueCents, cause: r.reason, by: r.modifiedBy, at: r.modifiedAt,
+  decision: r.excessDecisionOpened ? { kind: 'MODIFICATION_EXCESS', excessCents: r.excessCents, outcome: null } : null });
+
+/** The history over GET /reservations/{id}/modifications (PROPOSED): every page, in the order the service answers, newest first. A reservation it does not know has none. */
+export class ModificationApiHistory extends ModificationHistorySource {
+  constructor(private readonly client: PortalApiClient) { super(); }
+  override list(code: string): Observable<readonly ModificationTrace[]> {
+    return listAll<RecordDto>(this.client, writePath(code)).pipe(
+      map((records) => records.map((record) => traceOf(code, record))),
+      catchError((error: ApiError) => (error.status === 404 ? of([]) : throwError(() => error))));
+  }
+}
+
 /** A 422 of the write is a refusal that changed nothing: the state, the capacity or the terms of the tour; any other failure goes to the page. */
 function refusalOf(error: ApiError): Extract<ModificationOutcome, { kind: 'refused' }> | null {
   if (error.status !== 422) return null;
@@ -78,16 +93,9 @@ export class ModificationApiWriter extends ReservationModificationWriter {
       const people = before ? peopleAfter(before, change) : 0;
       if (!before || people < 1) return throwError(() => new Error('Unknown reservation or no traveller left'));
       return call<RecordDto>(this.client, writePath(code), { method: 'POST', body: { ...bodyOf(people), reason: cause }, headers: { 'Idempotency-Key': idempotencyKey } }).pipe(
-        switchMap((record) => find(this.reservations, code).pipe(map((reservation): ModificationOutcome => ({ kind: 'modified', reservation: reservation!, trace: this.trace(code, record) })))),
+        switchMap((record) => find(this.reservations, code).pipe(map((reservation): ModificationOutcome => ({ kind: 'modified', reservation: reservation!, trace: traceOf(code, record) })))),
         catchError((error: ApiError) => { const refused = refusalOf(error); return refused ? of(refused) : throwError(() => error); }),
       );
     }));
-  }
-
-  /** G-USR: the person of the record is the user id of the token, the only identity the service returns. */
-  private trace(code: string, r: RecordDto): ModificationTrace {
-    return { reservationCode: code, originalCents: r.originalFinalValueCents, recalculatedCents: r.newFinalValueCents, balanceCents: r.resultingPendingBalanceCents,
-      differenceCents: r.newFinalValueCents - r.originalFinalValueCents, cause: r.reason, by: r.modifiedBy, at: r.modifiedAt,
-      decision: r.excessDecisionOpened ? { kind: 'MODIFICATION_EXCESS', excessCents: r.excessCents, outcome: null } : null };
   }
 }
