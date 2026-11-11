@@ -60,6 +60,7 @@ describe('httpEpisodesListAsksTheServiceWithTheFilters', () => {
 });
 
 async function screen(params: Record<string, string>, role: ActorRole = 'TENANT_ADMINISTRATOR') {
+  TestBed.resetTestingModule();
   const d = demo(), navigation = new PortalNavigation();
   navigation.register(['reservations', RESCHEDULING_AREA]);
   navigation.params.set(params);
