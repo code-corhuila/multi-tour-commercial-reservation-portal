@@ -125,7 +125,7 @@ export class PaymentsApiWriter extends PaymentsWriter {
 /** ReservationPaymentDeadline of the contract (PROPOSED): the service resolves the effective deadline (RN-RES-006); the portal adds nothing up. */
 interface PaymentDeadlineDto {
   readonly effectiveDeadline: string; readonly departureStartsAt: string;
-  readonly extensionHours?: number; readonly extensionGrantedAt?: string; readonly extensionGrantedBy?: string;
+  readonly extensionHours?: number; readonly extensionGrantedAt?: string; readonly extensionGrantedBy?: string; readonly frozen?: boolean;
 }
 
 /**
@@ -136,7 +136,7 @@ export class PaymentDeadlineApiReader extends PaymentDeadlineReader {
   constructor(private readonly client: PortalApiClient) { super(); }
   override deadlineOf(reservationId: string): Observable<PaymentDeadline | null> {
     return call<PaymentDeadlineDto>(this.client, `${reservationsPath(reservationId)}/payment-deadline`).pipe(
-      map((d): PaymentDeadline | null => ({ dueAt: d.effectiveDeadline, departureStartsAt: d.departureStartsAt,
+      map((d): PaymentDeadline | null => ({ dueAt: d.effectiveDeadline, departureStartsAt: d.departureStartsAt, ...(d.frozen ? { frozen: true } : {}),
         ...(d.extensionHours && d.extensionGrantedAt ? { extension: { hours: d.extensionHours, actorLabel: d.extensionGrantedBy ?? '', grantedAt: d.extensionGrantedAt } } : {}) })),
       catchError((error: { status?: number }) => (error.status === 404 ? of(null) : throwError(() => error))),
     );
