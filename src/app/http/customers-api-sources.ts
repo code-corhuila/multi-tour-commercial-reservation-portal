@@ -1,4 +1,4 @@
-import { Observable, map } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { CustomersSource } from '../customers/data/customers-source';
 import { CustomersWriter } from '../customers/data/customers-writer';
 import { CustomerGroup, CustomerMatch, LeadCommand, PersonCommand } from '../customers/model/customer-group';
@@ -6,6 +6,7 @@ import { PortalApiClient } from '../shell-contract';
 import { API_BASE, call, notInContract } from './api-paths';
 
 /** Customers over the container client (openapi: POST /customers, PROPOSED field names; G-A). Sensitive data is sent, never returned, logged or kept. */
+const MIN_SEARCH = 2;
 export const customersPath = (customerId?: string): string => [`${API_BASE}/customers`, customerId].filter(Boolean).join('/');
 
 /** CustomerResponse of the contract: ordinary data only. */
@@ -33,8 +34,14 @@ export class CustomersApiSource extends CustomersSource {
   constructor(private readonly _client: PortalApiClient) { super(); }
   /** TODO(G-B): the draft group belongs to the reservation (HU-COM-007); the contract has no read of it. */
   override current(): Observable<CustomerGroup | null> { return notInContract('El servicio aún no publica el grupo de personas de la reserva.'); }
-  /** TODO(G-B): the contract has no customer search; it reads a customer by id only. */
-  override search(_text: string): Observable<readonly CustomerMatch[]> { return notInContract('El servicio aún no publica la búsqueda de clientes.'); }
+  /** GET /customers?search= (PROPOSED, api spec 005 F-18 amended): by the start of the name, first page, ordinary data. Document and e-mail are not searched yet (DP-D5-2, DP-D5-3); the service sends no verified-e-mail mark, so a match reads as not verified. */
+  override search(text: string): Observable<readonly CustomerMatch[]> {
+    const term = text.trim();
+    if (term.length < MIN_SEARCH) return of([]);
+    return call<{ readonly data: readonly CustomerDto[] }>(this._client, `${customersPath()}?${new URLSearchParams({ search: term })}`).pipe(
+      map((page) => page.data.map((dto): CustomerMatch => ({ id: dto.customerId, fullName: dto.fullName, document: dto.documentNumber, email: dto.contact.email,
+        phone: dto.contact.phone, birthDate: dto.birthDate ?? '', verified: false }))));
+  }
 }
 
 export class CustomersApiWriter extends CustomersWriter {

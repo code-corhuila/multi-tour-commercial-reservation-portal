@@ -68,11 +68,35 @@ describe('customersOverTheApiClient', () => {
     expect(calls).toEqual([]);
   });
 
-  it('answers the draft group and the search with a declared error because the contract has neither', async () => {
+  it('answers the draft group with a declared error because the contract has no read of it', async () => {
     const { client, calls } = fakeClient();
-    const source = new CustomersApiSource(client);
-    expect(await firstValueFrom(source.current()).catch((e) => e)).toMatchObject({ code: 'NOT_IN_CONTRACT' });
-    expect(await firstValueFrom(source.search('per')).catch((e) => e)).toMatchObject({ code: 'NOT_IN_CONTRACT' });
+    expect(await firstValueFrom(new CustomersApiSource(client).current()).catch((e) => e)).toMatchObject({ code: 'NOT_IN_CONTRACT' });
+    expect(calls).toEqual([]);
+  });
+
+  it('searches the customers by name over GET /customers?search= and maps each one to the five fields of the titular', async () => {
+    const { client, calls } = fakeClient({ ok: { data: [response, { ...response, customerId: 'c-2', fullName: 'Persona Ficticia Dos', birthDate: undefined, age: 40 }], next: null } });
+    const found = await firstValueFrom(new CustomersApiSource(client).search('  Persona Fic '));
+    expect(calls).toEqual([{ path: `${API_BASE}/customers?search=Persona+Fic` }]);
+    expect(found).toEqual([
+      { id: 'c-1', fullName: 'Persona Ficticia Uno', document: 'DOC-0000', email: 'persona.uno@example.invalid', phone: '3000000000', birthDate: '1990-05-01', verified: false },
+      { id: 'c-2', fullName: 'Persona Ficticia Dos', document: 'DOC-0000', email: 'persona.uno@example.invalid', phone: '3000000000', birthDate: '', verified: false },
+    ]);
+  });
+
+  it('answers an empty list when the service finds nobody', async () => {
+    const { client } = fakeClient({ ok: { data: [], next: null } });
+    expect(await firstValueFrom(new CustomersApiSource(client).search('zz'))).toEqual([]);
+  });
+
+  it('shows the refusal of the search as the page error', async () => {
+    const { client } = fakeClient({ fail: { status: 403, code: 'FORBIDDEN', message: 'Sin permiso.', traceId: 't-2' } });
+    expect(await firstValueFrom(new CustomersApiSource(client).search('per')).catch((e) => e)).toMatchObject({ status: 403, code: 'FORBIDDEN', userMessage: 'Sin permiso.' });
+  });
+
+  it('sends nothing for a text shorter than two characters', async () => {
+    const { client, calls } = fakeClient();
+    expect(await firstValueFrom(new CustomersApiSource(client).search(' p '))).toEqual([]);
     expect(calls).toEqual([]);
   });
 
