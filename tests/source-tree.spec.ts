@@ -41,6 +41,7 @@ const SPECIFIED_TREE = [
   'src/app/http/establishments-api-sources.ts',
   'src/app/http/public-offer-api-sources.ts',
   'src/app/http/refunds-api-sources.ts',
+  'src/app/http/rescheduling-api-writers.ts',
   'src/app/http/reservation-quote-api-source.ts',
   'src/app/http/payment-followup-api-sources.ts',
   'src/app/http/payments-api-sources.ts',
