@@ -87,6 +87,10 @@ export interface PortalArea {
 const has = (injector: Injector, ...ports: readonly AbstractType<unknown>[]) => ports.every((port) => injector.get(port, null) !== null);
 const isCustomerOrVisitor = (injector: Injector) => injector.get(CustomerContext).standing !== 'OTHER';
 
+/** HU-COM-020: what the restricted access of an inactive tenant opens, the two entries the container keeps: Reservas and Pagos (proofs, cancellations, refunds, episodes). */
+const RESTRICTED_ENTRIES: readonly string[] = ['reservations', 'payments'];
+export const allowedInRestrictedAccess = (area: PortalArea) => RESTRICTED_ENTRIES.includes(area.key) || RESTRICTED_ENTRIES.includes(area.parent ?? '');
+
 /** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
 export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTAL_AREA_LIST', { factory: () => PORTAL_AREAS });
 
