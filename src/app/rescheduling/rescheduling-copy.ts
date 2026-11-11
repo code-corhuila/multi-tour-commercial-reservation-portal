@@ -1,5 +1,5 @@
 import { formatDate } from '../shared/format';
-import type { ReschedulingRefusal } from './data/rescheduling-ports';
+import type { ReschedulingEpisodeView, ReschedulingRefusal } from './data/rescheduling-ports';
 
 /** Spanish copy of admin-reprogramar-reserva.html (mockup), HU-COM-018; PROPUESTO marks a text the mockup does not have (spec section 5). */
 export const RESCHEDULING_COPY = {
@@ -14,6 +14,8 @@ export const RESCHEDULING_COPY = {
   /** PROPUESTO: the mockup draws no feedback for these two buttons. */
   sent: 'Propuesta enviada al cliente.',
   cancelled: (amount: string) => `La reserva queda Cancelada y se devuelve el 100 % de los valores pagados y validados: ${amount}.`,
+  listEyebrow: 'Episodios', listTitle: 'Reservas con salida cancelada o interrumpida', listColumns: ['Reserva', 'Cliente', 'Salida original', 'Estado', 'Plazo', 'Acción'], view: 'Ver',
+  listEmpty: 'No hay episodios de reprogramación. Se abren cuando una salida con reservas se cancela o se interrumpe por una causa no atribuible al cliente.',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   /** PROPUESTO: the reservation has no rescheduling episode. */
   none: 'Esta reserva no tiene un episodio de reprogramación.',
@@ -52,3 +54,14 @@ export const PROPOSAL_COPY = {
   notice: 'la salida fue cancelada por una causa no atribuible al cliente. Hay una propuesta de nueva salida pendiente de tu respuesta dentro del plazo aplicable.',
   noticeLink: 'Responder propuesta de reprogramación',
 } as const;
+
+/** The state of one episode in the list, as the mockup words it (app.js 11727). */
+export function episodeStateText(e: Pick<ReschedulingEpisodeView, 'answer' | 'proposal'>): string {
+  if (e.answer) return { ACCEPTED: 'Aceptada', REJECTED: 'Rechazada', NO_ALTERNATIVE: 'Sin alternativa' }[e.answer];
+  return e.proposal ? 'Propuesta enviada' : 'Pendiente de propuesta';
+}
+
+/** The deadline column: the hours the port resolved, or a dash once the episode has an answer. */
+export function dueText(e: Pick<ReschedulingEpisodeView, 'dueIn'>): string {
+  return e.dueIn ? `${e.dueIn.kind === 'propose' ? 'Proponer' : 'Respuesta'} en ${e.dueIn.hours} h` : '—';
+}
