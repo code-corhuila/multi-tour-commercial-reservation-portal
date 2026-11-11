@@ -11,6 +11,8 @@ interface QuoteDto {
   readonly allowed: boolean; readonly refusalReason?: 'NO_POLICY' | 'NOT_ALLOWED' | 'TOO_LATE' | 'NO_AVAILABILITY';
   readonly originalFinalValueCents: number; readonly newFinalValueCents: number; readonly differenceCents: number; readonly newPendingBalanceCents: number;
   readonly excessCents: number; readonly seatsAvailable: boolean;
+  /** The value before discounts and the discounts taken off, as the service computed them (api quote, HU-COM-012); absent from an older service. */
+  readonly projectedValueCents?: number; readonly discountCents?: number;
 }
 /** ReservationModificationRecord of the contract (PROPOSED): the record of one applied change, never edited. */
 interface RecordDto {
@@ -44,12 +46,12 @@ export class ModificationApiQuote extends ModificationQuote {
 
   override lines(code: string, change: TravellersChange): Observable<ModificationLines | null> {
     return find(this.reservations, code).pipe(switchMap((reservation) => (reservation ? this.ask(code, peopleAfter(reservation, change)) : of(null))), map((dto) => (dto === null ? null : {
-      allowed: dto.allowed, projectedCents: null, discountCents: null, finalCents: dto.newFinalValueCents, balanceCents: dto.newPendingBalanceCents,
+      allowed: dto.allowed, projectedCents: dto.projectedValueCents ?? null, discountCents: dto.discountCents ?? null, finalCents: dto.newFinalValueCents, balanceCents: dto.newPendingBalanceCents,
       differenceCents: dto.differenceCents, excessCents: dto.excessCents, seatsAvailable: dto.seatsAvailable,
     })));
   }
 
-  /** The service answers the totals only: no projected value or discount lines, so the preview of the demo has no equivalent here. */
+  /** The service answers the totals and the two lines of `lines()`, not the per-service quote of the demo preview, which has no equivalent here. */
   override preview(): Observable<Recalculation | null> { return notInContract('El servicio responde los totales de la modificación, no las líneas de la cotización.'); }
 
   private ask(code: string, people: number): Observable<QuoteDto | null> {
