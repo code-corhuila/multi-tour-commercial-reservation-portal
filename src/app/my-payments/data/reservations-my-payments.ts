@@ -40,7 +40,10 @@ export class ReservationsMyPayments extends MyPaymentsSource {
    * one whose proof is already En validación waits for the operator, so it is not offered. */
   override continuePaymentTarget(): Observable<ContinuePaymentTarget | null> {
     return this.listMine().pipe(map((all) => {
-      const next = all.filter((r) => r.reservationStatus === 'PENDING_PAYMENT' && r.paymentMethod === 'BANK_TRANSFER' && r.proofStatus !== 'EN_VALIDACION')
+      // AC-14.8: when the service names the next action the portal follows it; its own rule only serves a source that does not answer.
+      const offered = (r: CustomerPaymentSummary): boolean => (r.continueAction ? r.continueAction === 'CONTINUE_PAYMENT'
+        : r.reservationStatus === 'PENDING_PAYMENT' && r.paymentMethod === 'BANK_TRANSFER' && r.proofStatus !== 'EN_VALIDACION');
+      const next = all.filter(offered)
         .sort((a, b) => a.departureAt.localeCompare(b.departureAt))[0];
       return next ? { reservationId: next.reservationId, paymentType: next.paymentType, amountCents: next.balanceCents } : null;
     }));
