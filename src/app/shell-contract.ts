@@ -32,6 +32,8 @@ export interface MountSession {
   displayName?: string;
   /** One or two uppercase letters for the avatar; the portal derives them from displayName when absent. */
   initials?: string;
+  /** Set when the token is a temporary or restricted credential (multi-tour-front `core/client/types.ts`); `restricted` is the Administrator of an inactive tenant (HU-COM-020). */
+  access?: 'password-change' | 'restricted';
   open(answer: unknown): void;
   close(): void;
 }
@@ -80,6 +82,8 @@ export const COMMERCIAL_NAME = new InjectionToken<string | null>('COMMERCIAL_NAM
 export const CONTAINER_CHROME = new InjectionToken<boolean>('CONTAINER_CHROME', { factory: () => false });
 
 /** The area the container asked to open at mount (MountProps.initialParams.area), or null. */
+/** HU-COM-020: the session is the restricted access of an inactive tenant; the operator menu keeps only the regularization areas. */
+export const RESTRICTED_ACCESS = new InjectionToken<boolean>('RESTRICTED_ACCESS', { factory: () => false });
 export const INITIAL_AREA = new InjectionToken<string | null>('INITIAL_AREA', { factory: () => null });
 
 export type PortalApiClient = MountProps['apiClient'];
