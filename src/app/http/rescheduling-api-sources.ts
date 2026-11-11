@@ -3,6 +3,7 @@ import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import type { Departure, Reservation } from '../reservations/model/reservation';
 import { EpisodeAnswer, MyProposalsSource, ProposedDeparture, ReschedulingEpisodeView, ReschedulingSource } from '../rescheduling/data/rescheduling-ports';
+import { CHANNEL_LABEL } from '../rescheduling/rescheduling-copy';
 import { PortalApiClient } from '../shell-contract';
 import { API_BASE, listAll } from './api-paths';
 
@@ -15,6 +16,7 @@ export interface ReschedulingDto {
   readonly reschedulingId: string; readonly reservationId: string; readonly originalDepartureId: string;
   readonly state: 'OPEN' | 'RESCHEDULED' | 'CANCELLED'; readonly closingReason?: string;
   readonly proposalDeadlineAt: string; readonly episodeLimitAt: string; readonly frozen: boolean; readonly proposals: readonly ProposalDto[];
+  readonly history?: readonly { readonly at: string; readonly actor?: string; readonly action: string; readonly detail?: string }[];
 }
 export const reschedulingsPath = `${API_BASE}/reschedulings`;
 const HOUR = 3_600_000;
@@ -25,6 +27,14 @@ export const shownProposal = (e: ReschedulingDto): ProposalDto | undefined =>
 
 const answerOf = (e: ReschedulingDto, p: ProposalDto | undefined): EpisodeAnswer | null =>
   e.closingReason === 'NO_ALTERNATIVE' ? 'NO_ALTERNATIVE' : p?.state === 'ACCEPTED' ? 'ACCEPTED' : p?.state === 'REJECTED' ? 'REJECTED' : null;
+
+/** The history of the service: codes for the action and the channel (never the evidence, AC-18.19), written in the words of the screens. */
+const ACTION: Record<string, string> = { EPISODE_OPENED: 'Episodio abierto', PROPOSAL_SENT: 'Propuesta enviada', PROPOSAL_ACCEPTED: 'Propuesta aceptada', PROPOSAL_REJECTED: 'Propuesta rechazada',
+  PROPOSAL_VOID: 'Propuesta sin efecto', PROPOSAL_EXPIRED: 'Propuesta vencida', EPISODE_RESCHEDULED: 'Reprogramación aceptada', EPISODE_CANCELLED: 'Episodio cancelado' };
+function historyOf(e: ReschedulingDto): ReschedulingEpisodeView['history'] {
+  return (e.history ?? []).map((h) => { const [source, channel] = (h.detail ?? '').split(':');
+    return { at: h.at, actor: h.actor ? 'Usuario' : 'Sistema', action: ACTION[h.action] ?? h.action, detail: channel ? `Canal: ${CHANNEL_LABEL[channel] ?? channel}` : source === 'CUSTOMER' ? 'Respuesta del cliente' : '' }; });
+}
 
 /** Everything the screens need that the episode does not carry (tour, travellers, departures) is joined from the reservation and the open departures. */
 export function viewOf(e: ReschedulingDto, reservation: Reservation, departures: readonly Departure[], now: number): ReschedulingEpisodeView {
@@ -41,6 +51,7 @@ export function viewOf(e: ReschedulingDto, reservation: Reservation, departures:
       remainingHours: Math.max(0, Math.floor((Date.parse(e.episodeLimitAt) - now) / HOUR)) },
     options: departures.filter((d) => d.tourName === reservation.tourName && d.id !== e.originalDepartureId).map(as),
     // AC-RP.7: the 100 % of the validated values a closed episode leaves; HU-COM-016 decides and executes it. Read from the reservation, never computed.
+    history: historyOf(e),
     refundCents: e.state === 'CANCELLED' ? reservation.validatedCents ?? 0 : null,
   };
 }

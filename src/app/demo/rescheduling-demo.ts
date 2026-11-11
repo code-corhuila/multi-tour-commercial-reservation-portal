@@ -4,9 +4,10 @@ import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import {
-  EpisodeAnswer, EpisodeDeadlines, MyProposalsSource, ProposalAnswerWriter, ProposedDeparture, ReschedulingDeadlines, ReschedulingEpisodeView, ReschedulingOutcome,
+  EXTERNAL_CHANNELS, EpisodeAnswer, EpisodeDeadlines, EpisodeHistoryEntry, ExternalAnswerCommand, ExternalAnswerWriter, MyProposalsSource, ProposalAnswerWriter, ProposedDeparture, ReschedulingDeadlines, ReschedulingEpisodeView, ReschedulingOutcome,
   ReschedulingSource, ReschedulingWriter,
 } from '../rescheduling/data/rescheduling-ports';
+import { CHANNEL_LABEL } from '../rescheduling/rescheduling-copy';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
 import type { Departure, Reservation } from '../reservations/model/reservation';
@@ -49,14 +50,23 @@ export class DemoReschedulingSource extends ReschedulingSource {
       deadlines: this.deadlines.resolve(e.originAt, e.proposal && proposed ? { sentAt: e.proposal.sentAt, startsAt: proposed.date } : null),
       options: this.departures.items.filter((d) => d.state === 'PROGRAMADA' && d.tourName === r.tourName && d.id !== e.originDepartureId).map(as),
       refundCents: r.financialDecision?.origin === 'HU-COM-018' ? r.financialDecision.refundableCents : null,
+      history: this.history(e),
     };
+  }
+  /** AC-RP.13: what the store holds of the episode, oldest first; an outside answer shows its channel and never its evidence (AC-18.19). */
+  private history(e: NonNullable<Reservation['reschedulingEpisode']>): readonly EpisodeHistoryEntry[] {
+    const a = e.answer, verb = a?.decision === 'ACCEPTED' ? 'acepta' : 'rechaza';
+    return [{ at: e.originAt, actor: 'Sistema', action: 'Episodio abierto', detail: '' },
+      ...(e.proposal ? [{ at: e.proposal.sentAt, actor: 'Operador', action: 'Propuesta enviada', detail: '' }] : []),
+      ...(a ? [a.decision === 'NO_ALTERNATIVE' ? { at: a.at, actor: a.by, action: 'Cancelada sin alternativa', detail: '' }
+        : { at: a.at, actor: a.by, action: `${a.channel ? 'Respuesta registrada' : 'Respuesta del cliente'}: ${verb}`, detail: a.channel ? `Canal: ${a.channel}` : '' }] : [])];
   }
   save(next: Reservation): ReschedulingOutcome { this.store.items = this.store.items.map((r) => (r.id === next.id ? next : r)); return { kind: 'done', episode: this.view(next) }; }
   /** RN-RP6: Cancelada, the hold released and 100 % of the validated values determined with origin HU-COM-018 (AC-RP.7). */
-  close(r: Reservation, decision: EpisodeAnswer, by: string, at: string, cause: string): ReschedulingOutcome {
+  close(r: Reservation, decision: EpisodeAnswer, by: string, at: string, cause: string, channel?: string): ReschedulingOutcome {
     const validated = r.validatedCents ?? 0;
     return this.save({ ...r, status: 'CANCELADA', seatHeld: false, reschedulingPending: false, cancellation: { cause, by, at },
-      reschedulingEpisode: { ...r.reschedulingEpisode!, answer: { decision, at, by } },
+      reschedulingEpisode: { ...r.reschedulingEpisode!, answer: { decision, at, by, ...(channel && { channel }) } },
       financialDecision: { kind: 'RESCHEDULING_NOT_ACCEPTED', origin: 'HU-COM-018', baseAmountCents: validated, penaltyAmountCents: 0, refundableCents: validated,
         recognizedAt: at, outcome: null } });
   }
@@ -111,22 +121,43 @@ export class DemoProposalAnswerWriter extends ProposalAnswerWriter {
     private readonly byKey = new Map<string, ReschedulingOutcome>()) { super(); }
 
   override answer({ code, decision, idempotencyKey }: { code: string; decision: 'ACCEPTED' | 'REJECTED'; idempotencyKey: string }): Observable<ReschedulingOutcome> {
-    return once(this.byKey, idempotencyKey, () => {
-      const r = this.source.find(code), e = r?.reschedulingEpisode, d = e?.proposal && this.source.departure(e.proposal.departureId);
-      if (!r || !e?.proposal || !d) return refused('closed');
-      if (proofInValidation(r)) return refused('proof-in-validation');
-      if (e.answer) return refused('already-answered');
-      const at = this.clock.now();
-      if (decision === 'REJECTED') return this.source.close(r, 'REJECTED', this.by, at, 'Cancelada por rechazo o vencimiento de reprogramación');
-      return this.source.save({ ...r, departureId: d.id, departureDate: d.date, seatHeld: true, reschedulingPending: false,
-        reschedulingEpisode: { ...e, answer: { decision, at, by: this.by } } });
+    return once(this.byKey, idempotencyKey, () => applyAnswer(this.source, this.clock, code, decision, this.by));
+  }
+}
+
+/** The answer takes effect at once: the checks of plan D-05 in order, then accept moves the departure or reject cancels (RN-RP1, RN-RP6). */
+function applyAnswer(source: DemoReschedulingSource, clock: Clock, code: string, decision: 'ACCEPTED' | 'REJECTED', by: string, channel?: string): ReschedulingOutcome {
+  const r = source.find(code), e = r?.reschedulingEpisode, d = e?.proposal && source.departure(e.proposal.departureId);
+  if (!r || !e?.proposal || !d) return refused('closed');
+  if (proofInValidation(r)) return refused('proof-in-validation');
+  if (e.answer) return refused('already-answered');
+  const at = clock.now();
+  if (decision === 'REJECTED') return source.close(r, 'REJECTED', by, at, 'Cancelada por rechazo o vencimiento de reprogramación', channel);
+  return source.save({ ...r, departureId: d.id, departureDate: d.date, seatHeld: true, reschedulingPending: false,
+    reschedulingEpisode: { ...e, answer: { decision, at, by, ...(channel && { channel }) } } });
+}
+
+/** AC-RP.6, DD-3: an outside answer needs a channel, an evidence of 1 to 500 characters, a time that is not in the future nor before the proposal, and not after the response deadline. */
+export class DemoExternalAnswerWriter extends ExternalAnswerWriter {
+  constructor(private readonly source: DemoReschedulingSource, private readonly clock: Clock, private readonly by: string,
+    private readonly byKey = new Map<string, ReschedulingOutcome>()) { super(); }
+
+  override record(c: ExternalAnswerCommand): Observable<ReschedulingOutcome> {
+    return once(this.byKey, c.idempotencyKey, () => {
+      const reservation = this.source.find(c.code), proposal = reservation?.reschedulingEpisode?.proposal, evidence = c.evidence.trim(), at = Date.parse(c.answeredAt);
+      if (!(EXTERNAL_CHANNELS as readonly string[]).includes(c.channel)) return refused('no-channel');
+      if (!evidence || evidence.length > 500) return refused('no-evidence');
+      if (Number.isNaN(at) || at > Date.parse(this.clock.now()) || (proposal && at < Date.parse(proposal.sentAt))) return refused('bad-time');
+      const respondBy = reservation && proposal ? this.source.view(reservation).deadlines.respondBy : null;
+      if (respondBy && at > Date.parse(respondBy)) return refused('after-deadline');
+      return applyAnswer(this.source, this.clock, c.code, c.decision, this.by, CHANNEL_LABEL[c.channel]);
     });
   }
 }
 
 /** After reservationDemoProviders(), selfServiceDemoProviders() and reservationChangesDemoProviders() (its Clock); key maps per page. */
 export function reschedulingDemoProviders(): Provider[] {
-  const byKey = new Map<string, ReschedulingOutcome>(), answers = new Map<string, ReschedulingOutcome>();
+  const byKey = new Map<string, ReschedulingOutcome>(), answers = new Map<string, ReschedulingOutcome>(), external = new Map<string, ReschedulingOutcome>();
   return [
     { provide: ReschedulingDeadlines, useFactory: (c: Clock) => new DemoReschedulingDeadlines(c), deps: [Clock] },
     { provide: ReschedulingSource, deps: [ReservationsSource, DeparturesSource, ReschedulingDeadlines],
@@ -136,6 +167,8 @@ export function reschedulingDemoProviders(): Provider[] {
     { provide: MyProposalsSource, deps: [ReschedulingSource, MyReservationsSource],
       useFactory: (s: DemoReschedulingSource, m: MyReservationsSource) => new DemoMyProposals(s, m) },
     // G-USR: the session carries no user, so the customer's answer is recorded as "Cliente".
+    { provide: ExternalAnswerWriter, deps: [ReschedulingSource, Clock, PortalCapabilities],
+      useFactory: (s: DemoReschedulingSource, c: Clock, p: PortalCapabilities) => new DemoExternalAnswerWriter(s, c, p.roleLabel(), external) },
     { provide: ProposalAnswerWriter, deps: [ReschedulingSource, Clock], useFactory: (s: DemoReschedulingSource, c: Clock) => new DemoProposalAnswerWriter(s, c, 'Cliente', answers) },
   ];
 }

@@ -17,8 +17,11 @@ export interface ReschedulingEpisodeView {
   readonly options: readonly ProposedDeparture[];
   /** AC-RP.7: 100 % of the validated values, determined on cancelling; HU-COM-016 executes it. */
   readonly refundCents: number | null;
+  readonly history?: readonly EpisodeHistoryEntry[];
 }
-export type ReschedulingRefusal = 'proof-in-validation' | 'no-seats' | 'already-answered' | 'closed';
+export type ReschedulingRefusal = 'proof-in-validation' | 'no-seats' | 'already-answered' | 'closed' | 'no-channel' | 'no-evidence' | 'bad-time' | 'after-deadline';
+/** One row of the history of an episode (AC-RP.13): who, what and the channel when it came from outside; the evidence is never part of it (AC-18.19). */
+export interface EpisodeHistoryEntry { readonly at: string; readonly actor: string; readonly action: string; readonly detail: string }
 export type ReschedulingOutcome = { readonly kind: 'done'; readonly episode: ReschedulingEpisodeView }
   | { readonly kind: 'refused'; readonly reason: ReschedulingRefusal };
 /** Plan D-03: the episode of a reservation, null when it has none. */
@@ -49,3 +52,13 @@ export abstract class ProposalAnswerWriter {
 
 /** 24A (propuesta-reprogramacion.html), opened with PortalNavigation.open(PROPOSAL_AREA, { reservation }). */
 export const PROPOSAL_AREA = 'rescheduling-proposal';
+
+/** The four channels of an answer received outside the portal (the contract's codes). */
+export const EXTERNAL_CHANNELS = ['EMAIL', 'PHONE', 'WHATSAPP', 'IN_PERSON'] as const;
+export interface ExternalAnswerCommand {
+  readonly code: string; readonly decision: 'ACCEPTED' | 'REJECTED'; readonly channel: string; readonly evidence: string; readonly answeredAt: string; readonly idempotencyKey: string;
+}
+/** AC-RP.6: staff records the answer a customer gave by an outside channel; the service checks channel, evidence (1 to 500), time and deadline, and stamps the person. */
+export abstract class ExternalAnswerWriter {
+  abstract record(command: ExternalAnswerCommand): Observable<ReschedulingOutcome>;
+}

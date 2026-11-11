@@ -38,10 +38,10 @@ export type Reservation = {
   readonly people: number; readonly quote: Quote; readonly balanceCents: number; readonly status: ReservationStatus; readonly financialStatus: 'SIN_PAGO' | 'PARCIAL' | 'ABONO_RECIBIDO' | 'PAGO_COMPLETO';
   /** HU-COM-009 RN-PY5: held with the first payment. */
   readonly seatHeld: boolean; readonly departureId?: string;
-  /** "Registrar seguimiento" (spec 011- amendment, G-B PROPUESTO): the phone typed for the lead customer, so the Colaborador can call; absent when none was typed. */
-  readonly leadPhone?: string;
-  /** 10A (spec 007-, G-B PROPUESTO): the e-mail of the lead customer and the code of the departure, when the service returns them. */
-  readonly leadEmail?: string; readonly departureCode?: string;
+  /** "Registrar seguimiento" (spec 011- amendment, G-B PROPUESTO): the phone typed for the lead customer, so the Colaborador can call; absent when none was typed. */
+  readonly leadPhone?: string;
+  /** 10A (spec 007-, G-B PROPUESTO): the e-mail of the lead customer and the code of the departure, when the service returns them. */
+  readonly leadEmail?: string; readonly departureCode?: string;
   /** HU-COM-009 DP-PY3: type and method codes of PaymentMethodsSource; absent while none was set. */
   readonly paymentType?: string; readonly paymentMethod?: string;
   /** HU-COM-009: resolved by the service; registering moves neither (RN-PY1). */
@@ -71,7 +71,9 @@ export type Reservation = {
 export type ReschedulingEpisode = {
   readonly originDepartureId: string; readonly originAt: string;
   readonly proposal?: { readonly departureId: string; readonly sentAt: string; readonly heldSeats: number };
-  readonly answer?: { readonly decision: 'ACCEPTED' | 'REJECTED' | 'NO_ALTERNATIVE'; readonly at: string; readonly by: string };
+  readonly answer?: { readonly decision: 'ACCEPTED' | 'REJECTED' | 'NO_ALTERNATIVE'; readonly at: string; readonly by: string;
+    /** The label of the outside channel of an answer recorded by staff (AC-RP.6); the evidence is never stored (AC-18.19). */
+    readonly channel?: string };
 };
 /** HU-COM-016: who acted and when (G-USR: a label until the session carries the user). */
 export type RefundAct = { readonly by: string; readonly at: string };
