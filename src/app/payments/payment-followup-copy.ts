@@ -37,6 +37,8 @@ export const PAYMENT_FOLLOWUP_TEXT = {
       'the extension would pass the departure start': 'La ampliación no puede superar la hora programada de inicio de la salida.',
     } as Readonly<Record<string, string>>,
   },
+  /** app.js describeOperatorPaymentDeadline: the deadline the service froze is not shown as a date. */
+  frozenDeadline: 'Plazo congelado: la salida fue cancelada o interrumpida por una causa no atribuible al cliente (la reserva se gestiona con la reprogramación).',
   departureLimit: (start: string) => `Ningún plazo de pago supera el inicio de la salida, ${start}.`,
 };
 
