@@ -7,6 +7,7 @@ import {
   EXTERNAL_CHANNELS, EpisodeAnswer, EpisodeDeadlines, EpisodeFilter, EpisodeHistoryEntry, ExternalAnswerCommand, ExternalAnswerWriter, MyProposalsSource, ProposalAnswerWriter, ProposedDeparture, ReschedulingDeadlines, ReschedulingEpisodeView, ReschedulingOutcome,
   ReschedulingSource, ReschedulingWriter,
 } from '../rescheduling/data/rescheduling-ports';
+import { tenantInstant } from '../shared/format';
 import { CHANNEL_LABEL } from '../rescheduling/rescheduling-copy';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
@@ -56,6 +57,8 @@ export class DemoReschedulingSource extends ReschedulingSource {
       options: this.departures.items.filter((d) => d.state === 'PROGRAMADA' && d.tourName === r.tourName && d.id !== e.originDepartureId).map(as),
       refundCents: r.financialDecision?.origin === 'HU-COM-018' ? r.financialDecision.refundableCents : null,
       history: this.history(e),
+      ...(e.proposal && proposed && deadlines.respondBy ? { notice: { notifiedAt: tenantInstant(e.proposal.sentAt), windowEndsAt: tenantInstant(Date.parse(e.proposal.sentAt) + 72 * HOUR),
+        episodeEndsAt: tenantInstant(deadlines.episodeEndsAt), startsAt: tenantInstant(proposed.date), dueAt: tenantInstant(deadlines.respondBy) } } : {}),
     };
   }
   /** AC-RP.13: what the store holds of the episode, oldest first; an outside answer shows its channel and never its evidence (AC-18.19). */
