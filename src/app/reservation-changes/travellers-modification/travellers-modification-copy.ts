@@ -17,5 +17,6 @@ export const TRAVELLERS_MODIFICATION_COPY = {
   registered: (excessCents: number) => (excessCents > 0
     ? `Modificación registrada y valores recalculados. Excedente determinado: ${formatCop(excessCents)} (devolución del 100 % o saldo a favor, decisión del Administrador del tenant en 24 horas).`
     : 'Modificación registrada y valores recalculados.'),
+  history: { eyebrow: 'Historial', title: 'Modificaciones registradas', columns: ['Fecha', 'Valor original', 'Valor recalculado', 'Saldo resultante', 'Causal', 'Registrado por'] },
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar', notFound: 'No se encontró la reserva seleccionada.',
 } as const;
