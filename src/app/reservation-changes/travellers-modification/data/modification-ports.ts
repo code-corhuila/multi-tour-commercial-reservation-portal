@@ -1,9 +1,10 @@
-import { Provider } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Provider, inject } from '@angular/core';
+import { Observable, map, throwError } from 'rxjs';
 import { Reservation } from '../../../reservations/data/reservations-source';
-import { RESERVATION_CHANGE_TYPES, ReservationChangeType } from '../../data/reservation-change-types';
+import { RESERVATION_CHANGE_TYPES, ReservationChangeOutcome, ReservationChangeType } from '../../data/reservation-change-types';
 import { TravellersModificationFormComponent } from '../components/travellers-modification-form.component';
 import { TRAVELLERS_MODIFICATION_COPY } from '../travellers-modification-copy';
+import { ModificationDraft } from './modification-draft';
 
 export const TRAVELLERS_MODIFICATION_KEY = 'travellers-modification';
 
@@ -52,15 +53,28 @@ export abstract class ReservationModificationWriter {
   abstract modify(command: ModifyCommand): Observable<ModificationOutcome>;
 }
 
-/** Plan D-01, D-06: the "Modificación de viajeros" entry of Tipo. Not submittable until DP-MD5 gives it fields, so the page never sends it. */
-export function travellersModificationType(): ReservationChangeType {
+/**
+ * Plan D-01, D-09: the "Modificación de servicio, salida o viajeros" entry of Tipo. It can be sent once the panel holds a valid count that differs from the
+ * reservation; the cause and the key come from the page, the travellers from the draft. The key is joined to the count: another count is another request.
+ */
+export function travellersModificationType(writer: ReservationModificationWriter | null, draft: ModificationDraft): ReservationChangeType {
+  const t = TRAVELLERS_MODIFICATION_COPY;
   return {
-    key: TRAVELLERS_MODIFICATION_KEY, label: TRAVELLERS_MODIFICATION_COPY.label, form: TravellersModificationFormComponent, submittable: false, showsRefundable: false,
-    submit: () => throwError(() => new Error('DP-MD5: the travellers modification has no fields to send yet')),
+    key: TRAVELLERS_MODIFICATION_KEY, label: t.label, form: TravellersModificationFormComponent, showsRefundable: false,
+    get submittable() { return draft.change() !== null; },
+    submit: (input) => {
+      const change = draft.change();
+      if (!writer || !change) return throwError(() => new Error('No modification to register'));
+      return writer.modify({ code: input.reservationCode, change, cause: input.cause, idempotencyKey: `${input.idempotencyKey}:${draft.people()}` }).pipe(
+        map((outcome): ReservationChangeOutcome => (outcome.kind === 'modified'
+          ? { kind: 'registered', message: t.registered(outcome.trace.decision?.excessCents ?? 0) }
+          : { kind: 'refused', reason: outcome.reason === 'no-capacity' ? t.noSeats : t.refused[outcome.reason] })));
+    },
   };
 }
 
 /** Registered once in mount-entry, next to the "Cancelación" entry of HU-COM-013. */
 export function provideTravellersModification(): Provider {
-  return { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: travellersModificationType };
+  return { provide: RESERVATION_CHANGE_TYPES, multi: true,
+    useFactory: () => travellersModificationType(inject(ReservationModificationWriter, { optional: true }), inject(ModificationDraft)) };
 }
