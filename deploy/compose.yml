@@ -1,0 +1,16 @@
+name: multi-tour-commercial-reservation-portal
+
+# Only this portal. The composition of the whole application lives in the
+# infrastructure repository (norm 5.9), not here.
+services:
+  commercial-reservation-portal:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    expose: ["80"]
+    networks: [platform]
+
+networks:
+  platform:
+    name: platform
+    external: true
