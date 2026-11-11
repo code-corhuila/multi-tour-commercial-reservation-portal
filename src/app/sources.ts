@@ -41,6 +41,8 @@ import { ReservationRequester, SelectionQuoteSource } from './self-service-reser
 import { PaymentDeadlineReader } from './payments/data/payment-followup-ports';
 import { CancellationApiQuote, CancellationApiWriter } from './http/cancellation-api-sources';
 import { RefundsApiSource, RefundsApiWriter } from './http/refunds-api-sources';
+import { CreditBalanceApiSource, CreditBalanceApiWriter } from './http/credit-balance-api-sources';
+import { CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
 import { RefundsSource, RefundsWriter } from './refunds/data/refunds-ports';
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
 import { PortalCapabilities } from './shared/portal-capabilities';
@@ -101,5 +103,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-016: the refunds over the decisions and the refunds of the service (PROPOSED routes); the credit balance and the execution (saga) are not routes of this service.
     { provide: RefundsSource, useFactory: () => new RefundsApiSource(client, inject(ReservationsSource)) },
     { provide: RefundsWriter, useFactory: () => new RefundsApiWriter(client, inject(RefundsSource)) },
+    // HU-COM-017: the credit book and its writes over the routes of the service (PROPOSED); the excess of a proof is recorded by the service, not by the portal.
+    { provide: CreditBalanceSource, useFactory: () => new CreditBalanceApiSource(client, inject(ReservationsSource)) },
+    { provide: CreditBalanceWriter, useFactory: () => new CreditBalanceApiWriter(client, inject(ReservationsSource)) },
   ];
 }
