@@ -373,8 +373,8 @@ describe('readOnlyRolesGetNoCancelActionNorRefundLink', () => {
   });
 
   it('draws no "Gestionar devolución", refund or credit balance action in this feature', () => {
-    // The copy file holds the mockup's registered messages, which only mention those words; no template or code draws an action.
-    const code = listSourceFiles().filter((f) => f.startsWith('src/app/reservation-changes/') && !f.endsWith('reservation-changes-copy.ts')).map((f) => readFileSync(f, 'utf8')).join('\n');
+    // The copy files hold the mockup's registered messages (the modification note names the credit balance as the mockup does), which only mention those words; no template or code draws an action.
+    const code = listSourceFiles().filter((f) => f.startsWith('src/app/reservation-changes/') && !f.endsWith('reservation-changes-copy.ts') && !f.endsWith('travellers-modification-copy.ts')).map((f) => readFileSync(f, 'utf8')).join('\n');
     expect(code).not.toMatch(/Gestionar devolución|Autorizar|saldo a favor/i);
   });
 });

@@ -5,9 +5,10 @@ import { ReservationsSource } from '../reservations/data/reservations-source';
 import { Departure, Reservation } from '../reservations/model/reservation';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import {
-  Admission, ModificationLines, ModificationOutcome, ModificationQuote, ModificationTrace, ModifyCommand, Recalculation, ReservationModificationWriter,
+  Admission, ModificationHistorySource, ModificationLines, ModificationOutcome, ModificationQuote, ModificationTrace, ModifyCommand, Recalculation, ReservationModificationWriter,
   TransportFareSource, TravellersChange,
 } from '../reservation-changes/travellers-modification/data/modification-ports';
+import { demoDate } from './demo-fixtures';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import type { DemoReservationsStore } from './reservations-demo';
 
@@ -105,6 +106,26 @@ export class DemoReservationModificationWriter extends ReservationModificationWr
   }
 }
 
+/**
+ * AC-MD.6 (DEMO): the traces of the one store, newest first. RES-1842 already carries a registered modification (one traveller added: 425.000 to
+ * 850.000, the discounts of the reservation unchanged), so 10A draws the history with data before anyone modifies anything.
+ */
+export class DemoModificationHistory extends ModificationHistorySource {
+  constructor(private readonly store: DemoReservationsStore) { super(); }
+  override list(code: string): Observable<readonly ModificationTrace[]> {
+    return of(this.store.modifications.filter((trace) => trace.reservationCode === code).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)));
+  }
+}
+
+/** The seeded history of the demo: pushed once into the store, so the writer's traces join it. */
+function seedHistory(store: DemoReservationsStore): DemoReservationsStore {
+  if (!store.modifications.some((trace) => trace.reservationCode === 'RES-1842')) {
+    store.modifications.push({ reservationCode: 'RES-1842', originalCents: 42_500_000, recalculatedCents: 85_000_000, balanceCents: 85_000_000, differenceCents: 42_500_000,
+      cause: 'Se suma un viajero a la reserva', by: 'Colaborador operativo (demo)', at: demoDate('2026-10-12T15:30:00-05:00'), decision: null });
+  }
+  return store;
+}
+
 /** Registered in sources.demo.ts after reservationChangesDemoProviders(), over its store, departures and clock. */
 export function reservationModificationDemoProviders(): Provider[] {
   const byKey = new Map<string, ModificationOutcome>();
@@ -112,6 +133,7 @@ export function reservationModificationDemoProviders(): Provider[] {
     { provide: TransportFareSource, useFactory: (d: DeparturesSource) => new DemoTransportFare(d as unknown as Departures), deps: [DeparturesSource] },
     { provide: ModificationQuote, useFactory: (s: ReservationsSource, f: TransportFareSource) => new DemoModificationQuote(s as DemoReservationsStore, f),
       deps: [ReservationsSource, TransportFareSource] },
+    { provide: ModificationHistorySource, useFactory: (s: ReservationsSource) => new DemoModificationHistory(seedHistory(s as DemoReservationsStore)), deps: [ReservationsSource] },
     { provide: ReservationModificationWriter, deps: [ReservationsSource, DeparturesSource, ModificationQuote, Clock, PortalCapabilities],
       useFactory: (s: DemoReservationsStore, d: Departures, q: DemoModificationQuote, c: Clock, p: PortalCapabilities) =>
         new DemoReservationModificationWriter(s, d, q, () => c.now(), p.roleLabel(), byKey) },
