@@ -18,8 +18,8 @@ const item = (n: number, serviceType: CatalogItem['serviceType'], commercialName
 });
 const place = (n: number, establishmentType: AssociatedEstablishment['establishmentType'], commercialName: string, associationStatus: AssociatedEstablishment['associationStatus'], commercialInformation: string): AssociatedEstablishment =>
   ({ associationId: `demo-est-${n}`, establishmentType, commercialName, commercialInformation, imageReference: `demo://image-${n}.jpg`, associationStatus,
-    changes: [{ kind: 'REGISTERED', at: demoDate('2026-09-01T08:00:00'), by: 'Fernanda Robayo (Administrador del tenant)' },
-      ...(associationStatus === 'INACTIVE' ? [{ kind: 'INACTIVATED' as const, at: demoDate('2026-09-20T10:30:00'), by: 'Fernanda Robayo (Administrador del tenant)' }] : [])] });
+    changes: [{ kind: 'REGISTERED', at: demoDate('2026-09-01T08:00:00'), by: 'Administrador Demo (Administrador del tenant)' },
+      ...(associationStatus === 'INACTIVE' ? [{ kind: 'INACTIVATED' as const, at: demoDate('2026-09-20T10:30:00'), by: 'Administrador Demo (Administrador del tenant)' }] : [])] });
 
 export class DemoCatalogStore extends CatalogItemsSource {
   private items: CatalogItem[] = [
