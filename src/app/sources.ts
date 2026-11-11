@@ -38,13 +38,16 @@ import { MyReservationsSource } from './self-service-reservation/data/my-reserva
 import { MyPaymentsSource } from './my-payments/data/my-payments-source';
 import { ReservationsMyPayments } from './my-payments/data/reservations-my-payments';
 import { ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
-import { PaymentDeadlineReader } from './payments/data/payment-followup-ports';
 import { CancellationApiQuote, CancellationApiWriter } from './http/cancellation-api-sources';
 import { RefundsApiSource, RefundsApiWriter } from './http/refunds-api-sources';
+import { CreditBalanceApiSource, CreditBalanceApiWriter } from './http/credit-balance-api-sources';
+import { CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
 import { RefundsSource, RefundsWriter } from './refunds/data/refunds-ports';
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
 import { ModificationApiQuote, ModificationApiWriter } from './http/modification-api-sources';
 import { ModificationQuote, ReservationModificationWriter } from './reservation-changes/travellers-modification/data/modification-ports';
+import { PaymentDeadlineApiExtender, PaymentFollowupsApiHistory, PaymentFollowupsApiWriter, PendingPaymentsApiSource } from './http/payment-followup-api-sources';
+import { PaymentDeadlineExtender, PaymentDeadlineReader, PaymentFollowupsHistory, PaymentFollowupsWriter, PendingPaymentsSource } from './payments/data/payment-followup-ports';
 import { PortalCapabilities } from './shared/portal-capabilities';
 import { PortalApiClient, TENANT_IDENTIFIER } from './shell-contract';
 
@@ -79,6 +82,11 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     { provide: PaymentQuoteReader, useValue: new PaymentQuoteApiReader(client) },
     // HU-COM-008 (screens 21 and 24): the deadline the service resolved for the reservation; the demo build keeps its own reader.
     { provide: PaymentDeadlineReader, useValue: new PaymentDeadlineApiReader(client) },
+    // HU-COM-011: the pending rows, the follow-up history and its register, and the single extension of the deadline, over the routes of the service.
+    { provide: PendingPaymentsSource, useFactory: () => new PendingPaymentsApiSource(client, inject(ReservationsSource)) },
+    { provide: PaymentFollowupsHistory, useValue: new PaymentFollowupsApiHistory(client) },
+    { provide: PaymentFollowupsWriter, useFactory: () => new PaymentFollowupsApiWriter(client, inject(ReservationsSource), inject(PaymentFollowupsHistory)) },
+    { provide: PaymentDeadlineExtender, useFactory: () => new PaymentDeadlineApiExtender(client, inject(ReservationsSource)) },
     // HU-COM-010: the panel of proofs and the decision (approve or reject) over the proof routes.
     { provide: PendingProofsSource, useValue: new PendingProofsApiSource(client) },
     { provide: ProofReviewWriter, useValue: new ProofReviewApiWriter(client) },
@@ -106,5 +114,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-016: the refunds over the decisions and the refunds of the service (PROPOSED routes); the credit balance and the execution (saga) are not routes of this service.
     { provide: RefundsSource, useFactory: () => new RefundsApiSource(client, inject(ReservationsSource)) },
     { provide: RefundsWriter, useFactory: () => new RefundsApiWriter(client, inject(RefundsSource)) },
+    // HU-COM-017: the credit book and its writes over the routes of the service (PROPOSED); the excess of a proof is recorded by the service, not by the portal.
+    { provide: CreditBalanceSource, useFactory: () => new CreditBalanceApiSource(client, inject(ReservationsSource)) },
+    { provide: CreditBalanceWriter, useFactory: () => new CreditBalanceApiWriter(client, inject(ReservationsSource)) },
   ];
 }
