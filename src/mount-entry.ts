@@ -1,7 +1,7 @@
 import { ApplicationRef, Injector, Provider, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
-import { COMMERCIAL_NAME, CONTAINER_AREA_REPORTER, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, MountProps, PortalApiClient, TENANT_IDENTIFIER } from './app/shell-contract';
+import { COMMERCIAL_NAME, CONTAINER_AREA_REPORTER, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, MountProps, PortalApiClient, RESTRICTED_ACCESS, TENANT_IDENTIFIER } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
 import { SensitiveDataAccess, sensitiveDataAccessFor } from './app/customers/data/customers-source';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
@@ -77,6 +77,7 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: COMMERCIAL_NAME, useValue: props.commercialName?.trim() || null },
       { provide: CONTAINER_CHROME, useValue: props.chrome === 'container' },
       { provide: TENANT_IDENTIFIER, useValue: props.identifier?.trim() || null },
+      { provide: RESTRICTED_ACCESS, useValue: props.session.access === 'restricted' },
       { provide: INITIAL_AREA, useValue: props.initialParams?.['area']?.trim() || null },
       ...(props.navigate ? [{ provide: CONTAINER_NAVIGATION, useValue: props.navigate }] : []),
       ...(props.chrome === 'container' && props.onAreaChange ? [{ provide: CONTAINER_AREA_REPORTER, useValue: props.onAreaChange }] : []),
