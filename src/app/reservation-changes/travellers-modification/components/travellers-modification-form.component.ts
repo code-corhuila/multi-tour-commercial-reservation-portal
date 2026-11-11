@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
 import { ReadErrorComponent } from '../../../shared/read-error.component';
-import { readFailure } from '../../../shared/read-failure';
+import { errorState } from '../../../shared/read-failure';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, combineLatest, map, merge, of, startWith, switchMap } from 'rxjs';
 import { Reservation } from '../../../reservations/data/reservations-source';
@@ -71,13 +71,13 @@ export class TravellersModificationFormComponent {
   protected readonly state = toSignal(merge(toObservable(this.reservation), this.retries.pipe(map(() => this.reservation()))).pipe(
     switchMap((r) => this.quotes.admits(r.id).pipe(
       map((a): State => (a ? { kind: 'data', items: [a] } : { kind: 'empty' })),
-      catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.retries.next() })), startWith<State>({ kind: 'loading' })))),
+      catchError((error) => of<State>(errorState(error, () => this.retries.next()))), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
   /** The lines follow the count typed; the newest answer wins, and a count that is not a traveller count asks nothing. */
   protected readonly linesState = toSignal(combineLatest([toObservable(this.reservation), toObservable(this.draft.delta), merge(of(undefined), this.lineRetries)]).pipe(
     switchMap(([r, delta]) => (delta ? this.quotes.lines(r.id, delta).pipe(
       map((l): LinesState => (l ? { kind: 'data', items: [l] } : { kind: 'empty' })),
-      catchError((error) => of<LinesState>({ kind: 'error', ...readFailure(error), retry: () => this.lineRetries.next() })), startWith<LinesState>({ kind: 'loading' })) : of<LinesState>({ kind: 'empty' })))),
+      catchError((error) => of<LinesState>(errorState(error, () => this.lineRetries.next()))), startWith<LinesState>({ kind: 'loading' })) : of<LinesState>({ kind: 'empty' })))),
   { initialValue: { kind: 'loading' } as LinesState });
 
   constructor() { effect(() => { const people = this.reservation().people; untracked(() => this.draft.open(people)); }); }
