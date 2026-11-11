@@ -4,7 +4,7 @@ import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import {
-  EpisodeAnswer, EpisodeDeadlines, MyProposalsSource, ProposalAnswerWriter, ProposedDeparture, ReschedulingDeadlines, ReschedulingEpisodeView, ReschedulingOutcome,
+  EpisodeAnswer, EpisodeDeadlines, EpisodeFilter, MyProposalsSource, ProposalAnswerWriter, ProposedDeparture, ReschedulingDeadlines, ReschedulingEpisodeView, ReschedulingOutcome,
   ReschedulingSource, ReschedulingWriter,
 } from '../rescheduling/data/rescheduling-ports';
 import { PortalCapabilities } from '../shared/portal-capabilities';
@@ -18,6 +18,7 @@ const iso = (ms: number) => new Date(ms).toISOString();
 /** FINAL-011: L1 = origin + 24 h; response = lowest of sent + 72 h, origin + 96 h and the proposed start; episode = origin + 96 h. */
 export class DemoReschedulingDeadlines extends ReschedulingDeadlines {
   constructor(private readonly clock: Clock) { super(); }
+  override hoursUntil(at: string): number { return Math.max(0, Math.floor((Date.parse(at) - Date.parse(this.clock.now())) / HOUR)); }
   override resolve(originAt: string, proposal: { readonly sentAt: string; readonly startsAt: string } | null): EpisodeDeadlines {
     const origin = Date.parse(originAt), end = origin + 96 * HOUR;
     const respondBy = proposal ? Math.min(Date.parse(proposal.sentAt) + 72 * HOUR, end, Date.parse(proposal.startsAt)) : null;
@@ -29,6 +30,9 @@ export class DemoReschedulingDeadlines extends ReschedulingDeadlines {
 export class DemoReschedulingSource extends ReschedulingSource {
   constructor(readonly store: DemoReservationsStore, readonly departures: DemoDeparturesStore, private readonly deadlines: ReschedulingDeadlines) { super(); }
   override episode(code: string): Observable<ReschedulingEpisodeView | null> { const r = this.find(code); return of(r?.reschedulingEpisode ? this.view(r) : null); }
+  override list({ reservation, departure }: EpisodeFilter): Observable<readonly ReschedulingEpisodeView[]> {
+    return of(this.store.items.filter((r) => r.reschedulingEpisode && (!reservation || r.id === reservation) && (!departure || r.reschedulingEpisode.originDepartureId === departure)).map((r) => this.view(r)));
+  }
   find(code: string): Reservation | undefined { return this.store.items.find((r) => r.id === code); }
   departure(id: string): Departure | undefined { return this.departures.items.find((d) => d.id === id); }
   /** RN-RP2: capacity minus the seats of the reservations on the departure and the seats held by open proposals to it. */
@@ -42,11 +46,12 @@ export class DemoReschedulingSource extends ReschedulingSource {
   view(r: Reservation): ReschedulingEpisodeView {
     const e = r.reschedulingEpisode!, origin = this.departure(e.originDepartureId), proposed = e.proposal && this.departure(e.proposal.departureId);
     const as = (d: Departure): ProposedDeparture => ({ id: d.id, tourName: d.tourName, startsAt: d.date, freeSeats: this.freeSeats(d) });
+    const deadlines = this.deadlines.resolve(e.originAt, e.proposal && proposed ? { sentAt: e.proposal.sentAt, startsAt: proposed.date } : null), answer = e.answer?.decision ?? null;
     return {
-      reservationId: r.id, tourName: r.tourName, people: r.people, status: r.status,
+      reservationId: r.id, tourName: r.tourName, people: r.people, status: r.status, customer: r.leadCustomerName, originalDepartureId: e.originDepartureId,
+      dueIn: answer ? null : deadlines.respondBy ? { kind: 'respond', hours: this.deadlines.hoursUntil(deadlines.respondBy) } : { kind: 'propose', hours: this.deadlines.hoursUntil(deadlines.proposeBy) },
       original: { tourName: origin?.tourName ?? r.tourName, startsAt: origin?.date ?? r.departureDate },
-      proposal: proposed ? as(proposed) : null, answer: e.answer?.decision ?? null,
-      deadlines: this.deadlines.resolve(e.originAt, e.proposal && proposed ? { sentAt: e.proposal.sentAt, startsAt: proposed.date } : null),
+      proposal: proposed ? as(proposed) : null, answer, deadlines,
       options: this.departures.items.filter((d) => d.state === 'PROGRAMADA' && d.tourName === r.tourName && d.id !== e.originDepartureId).map(as),
       refundCents: r.financialDecision?.origin === 'HU-COM-018' ? r.financialDecision.refundableCents : null,
     };

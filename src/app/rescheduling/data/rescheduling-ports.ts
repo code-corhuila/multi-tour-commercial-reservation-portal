@@ -17,13 +17,19 @@ export interface ReschedulingEpisodeView {
   readonly options: readonly ProposedDeparture[];
   /** AC-RP.7: 100 % of the validated values, determined on cancelling; HU-COM-016 executes it. */
   readonly refundCents: number | null;
+  /** The list of episodes (AC-RP.12): the customer, the origin departure and the next clock the port resolved, in hours (never computed by the view). */
+  readonly customer?: string; readonly originalDepartureId?: string;
+  readonly dueIn?: { readonly kind: 'propose' | 'respond'; readonly hours: number } | null;
 }
+/** The narrowing of the list: one reservation or one departure (the entry of Salidas, domain 03). */
+export interface EpisodeFilter { readonly reservation?: string; readonly departure?: string }
 export type ReschedulingRefusal = 'proof-in-validation' | 'no-seats' | 'already-answered' | 'closed';
 export type ReschedulingOutcome = { readonly kind: 'done'; readonly episode: ReschedulingEpisodeView }
   | { readonly kind: 'refused'; readonly reason: ReschedulingRefusal };
 /** Plan D-03: the episode of a reservation, null when it has none. */
 export abstract class ReschedulingSource {
   abstract episode(code: string): Observable<ReschedulingEpisodeView | null>;
+  abstract list(filter: EpisodeFilter): Observable<readonly ReschedulingEpisodeView[]>;
 }
 /** Plan D-03, D-05: one proposal or one cancellation per Idempotency-Key; the service re-checks and is the authority (G-B: no path yet). */
 export abstract class ReschedulingWriter {
@@ -33,6 +39,8 @@ export abstract class ReschedulingWriter {
 /** Plan D-03: the deadlines of FINAL-011 from the origin, the proposal and the clock; never Date.now() in a view. */
 export abstract class ReschedulingDeadlines {
   abstract resolve(originAt: string, proposal: { readonly sentAt: string; readonly startsAt: string } | null): EpisodeDeadlines;
+  /** Whole hours from the port's clock to an instant, never below zero. */
+  abstract hoursUntil(at: string): number;
 }
 /** admin-reprogramar-reserva.html: entered from the 10A header (DP-RP4, owner decision); opened with PortalNavigation.open(RESCHEDULING_AREA, { reservation }). */
 export const RESCHEDULING_AREA = 'rescheduling';
