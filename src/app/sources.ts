@@ -40,6 +40,9 @@ import { ReservationsMyPayments } from './my-payments/data/reservations-my-payme
 import { ReservationRequester, SelectionQuoteSource } from './self-service-reservation/data/reservation-confirmation-ports';
 import { CancellationApiQuote, CancellationApiWriter } from './http/cancellation-api-sources';
 import { RefundsApiSource, RefundsApiWriter } from './http/refunds-api-sources';
+import { MyProposalsApiSource, ReschedulingApiSource } from './http/rescheduling-api-sources';
+import { ProposalAnswerApiWriter, ReschedulingApiWriter } from './http/rescheduling-api-writers';
+import { MyProposalsSource, ProposalAnswerWriter, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
 import { CreditBalanceApiSource, CreditBalanceApiWriter } from './http/credit-balance-api-sources';
 import { CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
 import { RefundsSource, RefundsWriter } from './refunds/data/refunds-ports';
@@ -116,6 +119,12 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-016: the refunds over the decisions and the refunds of the service (PROPOSED routes); the credit balance and the execution (saga) are not routes of this service.
     { provide: RefundsSource, useFactory: () => new RefundsApiSource(client, inject(ReservationsSource)) },
     { provide: RefundsWriter, useFactory: () => new RefundsApiWriter(client, inject(RefundsSource)) },
+    // HU-COM-018: the rescheduling episodes and the customer's proposals over GET /reschedulings; the deadlines, the seats and the owner are the service's.
+    { provide: ReschedulingSource, useFactory: () => new ReschedulingApiSource(client, inject(ReservationsSource), inject(DeparturesSource)) },
+    { provide: MyProposalsSource, useFactory: () => new MyProposalsApiSource(client, inject(ReservationsSource), inject(DeparturesSource)) },
+    // HU-COM-018: the proposal, the declaration of no alternative and the customer's answer over the writes of the service; it checks the proof, the seats and the deadlines.
+    { provide: ReschedulingWriter, useFactory: () => new ReschedulingApiWriter(client, inject(ReschedulingSource)) },
+    { provide: ProposalAnswerWriter, useFactory: () => new ProposalAnswerApiWriter(client, inject(ReschedulingSource)) },
     // HU-COM-017: the credit book and its writes over the routes of the service (PROPOSED); the excess of a proof is recorded by the service, not by the portal.
     { provide: CreditBalanceSource, useFactory: () => new CreditBalanceApiSource(client, inject(ReservationsSource)) },
     { provide: CreditBalanceWriter, useFactory: () => new CreditBalanceApiWriter(client, inject(ReservationsSource)) },
