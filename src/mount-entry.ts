@@ -28,7 +28,7 @@ import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-revi
 import { PAYMENT_FOLLOWUP_CONTRIBUTIONS } from './app/payments/components/pending-payment-rows.component';
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
-import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
+import { RESCHEDULING_ENTRIES } from './app/rescheduling/components/rescheduling-entry.component';
 import { RESCHEDULING_CONTRIBUTIONS } from './app/rescheduling/components/rescheduling-contributions.component';
 import { RESERVATION_FORM_CONTRIBUTIONS } from './app/customers/components/reservation-form-sections';
 
@@ -109,8 +109,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
       // HU-COM-016: "Gestionar devolución" of 10A after the HU-COM-013 blocks, and the alert of admin-notificaciones.html.
       contribute(RESERVATION_DETAIL_BLOCKS, REFUND_DETAIL_LINK), contribute(OPERATOR_NOTIFICATIONS, REFUND_ALERTS),
-      // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
-      RESCHEDULING_ENTRY,
+      // HU-COM-018 DP-RP4 (mockup PDR v1.9): the box of 10A and the row action of 10, instead of the header button.
+      ...RESCHEDULING_ENTRIES,
       // HU-COM-018: Salida propuesta, the mark and Responder propuesta of Mis reservas, and the notice of 17; only with the proposals port.
       ...RESCHEDULING_CONTRIBUTIONS,
       // HU-COM-017 amendment: the link to admin-saldo-favor.html from 13 (the one from 10A is pending, second branch).

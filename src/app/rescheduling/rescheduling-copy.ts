@@ -24,6 +24,7 @@ export const RESCHEDULING_COPY = {
   historyTitle: 'Historial del episodio', historyColumns: ['Fecha y hora', 'Responsable', 'Acción', 'Detalle'],
   listEyebrow: 'Episodios', listTitle: 'Reservas con salida cancelada o interrumpida', listColumns: ['Reserva', 'Cliente', 'Salida original', 'Estado', 'Plazo', 'Acción'], view: 'Ver',
   listEmpty: 'No hay episodios de reprogramación. Se abren cuando una salida con reservas se cancela o se interrumpe por una causa no atribuible al cliente.',
+  manage: 'Gestionar la reprogramación', rowAction: 'Reprogramar',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   /** PROPUESTO: the reservation has no rescheduling episode. */
   none: 'Esta reserva no tiene un episodio de reprogramación.',
