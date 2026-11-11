@@ -80,7 +80,7 @@ describe('operatorListShowsReservationCustomerOriginalDepartureStateAndDeadline'
   it('draws the table of the mockup with one row per episode of the departure', async () => {
     const s = await screen({ departure: 'demo-dep-5' });
     expect(s.host.textContent).toContain('Reservas con salida cancelada o interrumpida');
-    expect(Array.from(s.host.querySelectorAll('th')).map((h) => h.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Salida original', 'Estado', 'Plazo', 'Acción']);
+    expect(Array.from(s.host.querySelectorAll('[data-episodes] th')).map((h) => h.textContent?.trim())).toEqual(['Reserva', 'Cliente', 'Salida original', 'Estado', 'Plazo', 'Acción']);
     const rows = s.rows();
     expect(rows).toHaveLength(3);
     const r1828 = rows.find((r) => r.includes('RES-1828')), r1829 = rows.find((r) => r.includes('RES-1829'));
