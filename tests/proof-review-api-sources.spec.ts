@@ -16,7 +16,7 @@ const detail = {
 };
 const summary = { reservationId: 'r-1', customerName: 'Laura Gómez (demo)', tourName: 'Desierto de la Tatacoa', departureStartsAt: '2026-11-07T06:30:00Z',
   reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'NO_PAYMENT', pendingBalanceCents: 10000 };
-const row = (extra: object = {}) => ({ paymentId: 'p-1', reservationId: 'r-1', customerName: 'Laura Gómez (demo)', paymentType: 'DEPOSIT', declaredAmountCents: 4000,
+const row = (extra: object = {}) => ({ paymentId: 'p-1', reservationId: 'r-1', customerName: 'Laura Gómez (demo)', paymentType: 'DEPOSIT', paymentMethod: 'TRANSFER', declaredAmountCents: 4000,
   validationStatus: 'IN_VALIDATION', presentedAt: '2026-11-01T10:00:00Z', reviewDueAt: '2026-11-02T10:00:00Z', reviewOverdue: false, pendingBalanceCents: 10000, ...extra });
 const attempt = (extra: object = {}) => ({ paymentId: 'p-1', reservationId: 'r-1', paymentMethod: 'TRANSFER', amountCents: 4000, validationStatus: 'IN_VALIDATION', registeredBy: 'u-1',
   registeredAt: '2026-11-01T10:00:00Z', reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'NO_PAYMENT', pendingBalanceCents: 10000, seatHeld: true, ...extra });
@@ -25,20 +25,29 @@ const decision = (extra: object = {}) => ({ ...row({ validationStatus: 'APPROVED
 const STATUSES = ['IN_VALIDATION', 'APPROVED', 'REJECTED'];
 
 describe('pendingProofsOverTheApiClient', () => {
-  it('lists the proofs of every status (the mockup lists the decided ones too), counts the overdue marks of the service and resolves each reservation once', async () => {
-    const { client, calls } = fakeClient({ ok: { ...page([row({ reviewOverdue: true })]), overdueCount: 1 } }, { ok: page([]) }, { ok: page([]) }, { ok: page([summary]) }, { ok: detail }, { ok: page([attempt()]) });
+  it('lists the proofs of every status (the mockup lists the decided ones too) from the rows alone: no reservation, summary or payment is read per row', async () => {
+    const { client, calls } = fakeClient({ ok: { ...page([row({ reviewOverdue: true })]), overdueCount: 1 } }, { ok: page([row({ paymentId: 'p-2', validationStatus: 'APPROVED', verifiedAmountCents: 4000 })]) }, { ok: page([row({ paymentId: 'p-3', reservationId: 'r-2', customerName: 'Mario Ruiz (demo)', paymentType: 'FULL_PAYMENT', paymentMethod: 'CASH', validationStatus: 'REJECTED' })]) });
     const proofs = await firstValueFrom(new PendingProofsApiSource(client).list());
-    expect(calls.slice(0, 3).map((c) => c.path)).toEqual(STATUSES.map((s) => `${API_BASE}/payment-proofs?page=1&limit=100&status=${s}`));
+    expect(calls.map((c) => c.path)).toEqual(STATUSES.map((s) => `${API_BASE}/payment-proofs?page=1&limit=100&status=${s}`));
     expect(proofs.overdueCount).toBe(1);
-    expect(proofs.rows).toHaveLength(1);
-    expect(proofs.rows[0]).toMatchObject({ overdue: true, reservation: { id: 'r-1', leadCustomerName: 'Laura Gómez (demo)' }, payment: { id: 'p-1', proofStatus: 'EN_VALIDACION', amountCents: 4000 } });
+    expect(proofs.rows).toHaveLength(3);
+    expect(proofs.rows[0]).toMatchObject({ overdue: true, reservation: { id: 'r-1', leadCustomerName: 'Laura Gómez (demo)', paymentType: 'PARTIAL', paymentMethod: 'BANK_TRANSFER' }, payment: { id: 'p-1', proofStatus: 'EN_VALIDACION', amountCents: 4000 } });
+    expect(proofs.rows[1].payment).toMatchObject({ id: 'p-2', proofStatus: 'APROBADO' });
+    expect(proofs.rows[2]).toMatchObject({ overdue: false, reservation: { id: 'r-2', leadCustomerName: 'Mario Ruiz (demo)', paymentType: 'TOTAL', paymentMethod: 'CASH_AT_OFFICE' }, payment: { id: 'p-3', proofStatus: 'RECHAZADO' } });
   });
 
   it('shows the overdue count the service answers for the whole list, not the marks of the rows it happened to read', async () => {
-    const { client } = fakeClient({ ok: { ...page([row({ reviewOverdue: true })]), overdueCount: 3 } }, { ok: { ...page([]), overdueCount: 9 } }, { ok: page([]) }, { ok: page([summary]) }, { ok: detail }, { ok: page([attempt()]) });
+    const { client } = fakeClient({ ok: { ...page([row({ reviewOverdue: true })]), overdueCount: 3 } }, { ok: { ...page([]), overdueCount: 9 } }, { ok: page([]) });
     const proofs = await firstValueFrom(new PendingProofsApiSource(client).list());
     expect(proofs.overdueCount).toBe(3);
     expect(proofs.rows).toHaveLength(1);
+  });
+
+  it('keeps a row of an older service that sends no method: the panel then shows no modality for it', async () => {
+    const { paymentMethod, ...legacy } = row();
+    const { client } = fakeClient({ ok: page([legacy]) }, { ok: page([]) }, { ok: page([]) });
+    const proofs = await firstValueFrom(new PendingProofsApiSource(client).list());
+    expect(proofs.rows[0].reservation.paymentMethod).toBeUndefined();
   });
 
   it('answers an empty panel without reading any reservation, and shows a refusal as the page error', async () => {

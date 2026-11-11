@@ -39,8 +39,6 @@ export class DemoPendingProofs extends PendingProofsSource {
 
 /** D-04, D-05: permission first; an approval applies up to the balance and confirms at the threshold; a rejection changes only its line. */
 export class DemoProofReviewWriter extends ProofReviewWriter {
-  /** RN-PV7: the excess handed to the store; the credit balance it becomes is HU-COM-017's (DP-CB5, nothing drawn). */
-  readonly handedExcess: { reservationId: string; amountCents: number }[] = [];
   constructor(private readonly store: DemoReservationsStore, private readonly capabilities: PortalCapabilities, private readonly user: RegisteringUser,
     private readonly clock: Clock, private readonly answered: Map<string, Reservation>, private readonly credit?: CreditBalanceWriter,
     private readonly parameters: ReservationParametersLookup = SEED_LOOKUP) { super(); }
@@ -62,7 +60,8 @@ export class DemoProofReviewWriter extends ProofReviewWriter {
     let next: Reservation = { ...r, payments: r.payments!.map((x) => (x.id === p.id ? { ...x, proofStatus: c.decision, review } : x)) };
     if (approved && !cancelled) {
       const validatedCents = (r.validatedCents ?? 0) + applied, balanceCents = r.balanceCents - applied;
-      if (surplus > 0) { this.handedExcess.push({ reservationId: r.id, amountCents: surplus }); this.credit?.recordExcess(r, c.verifiedAmountCents, `excess-${key}`).subscribe(); }
+      if (surplus > 0) { // RN-PV7: the excess is a line of the credit balance store (HU-COM-017), nothing is kept here.
+        this.credit?.recordExcess(r, c.verifiedAmountCents, `excess-${key}`).subscribe(); }
       const reached = r.paymentType === 'PARTIAL' ? validatedCents >= minimumPartial(r, this.parameters) : balanceCents === 0;
       const status = r.status === 'PENDIENTE_DE_PAGO' && reached ? 'CONFIRMADA' : r.status;
       next = { ...next, status, validatedCents, balanceCents, financialStatus: situation({ ...r, status }, validatedCents, balanceCents) };

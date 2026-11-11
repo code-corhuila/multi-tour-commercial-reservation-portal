@@ -20,7 +20,7 @@ export function paymentLabels(source: PaymentMethodsSource): Observable<PaymentL
 }
 
 /** "Tipo · Medio" of the reservation (Modalidad of 13), or Sin modalidad definida. */
-export function modalityOf(r: Reservation, labels: PaymentLabels): string {
+export function modalityOf(r: Pick<Reservation, 'paymentType' | 'paymentMethod'>, labels: PaymentLabels): string {
   const parts = [r.paymentType, r.paymentMethod].map((code) => labels[code ?? '']).filter(Boolean);
   return r.paymentMethod && parts.length ? parts.join(' · ') : PAYMENTS_TEXT.noModality;
 }
