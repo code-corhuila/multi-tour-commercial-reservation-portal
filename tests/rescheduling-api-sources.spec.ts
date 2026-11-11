@@ -38,6 +38,7 @@ describe('reschedulingApiSource', () => {
     const view = await firstValueFrom(new ReschedulingApiSource(client, reservations, departures, () => NOW).episode('r-1'));
     expect(view?.proposal).toEqual({ id: 'd-1', tourName: 'Desierto de la Tatacoa', startsAt: '2026-11-25T06:30:00Z', freeSeats: 5 });
     expect(view?.deadlines.respondBy).toBe('2026-11-13T09:00:00Z');
+    expect(view?.notice).toEqual({ notifiedAt: '2026-11-11T04:00:00-05:00', windowEndsAt: '2026-11-14T04:00:00-05:00', episodeEndsAt: '2026-11-15T03:00:00-05:00', startsAt: '2026-11-25T01:30:00-05:00', dueAt: '2026-11-13T04:00:00-05:00' });
   });
 
   it('reads the answer: accepted, rejected and no alternative; a voided proposal is not shown', async () => {
