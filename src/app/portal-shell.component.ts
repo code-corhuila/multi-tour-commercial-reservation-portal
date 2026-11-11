@@ -1,12 +1,12 @@
 import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core';
-import { CLIENT_AREA, CLIENT_LINKS, ClientLink, PORTAL_AREA_LIST } from './portal-areas';
+import { CLIENT_AREA, CLIENT_LINKS, ClientLink, PORTAL_AREA_LIST, allowedInRestrictedAccess } from './portal-areas';
 import { PortalAudience } from './portal-audience';
 import { PortalNavigation } from './portal-navigation';
 import { focusHeading } from './shared/focus';
 import { CLIENT_NOTICES, PortalSlotOutlet, slotEntries } from './shared/portal-slots';
 import { PortalCapabilities } from './shared/portal-capabilities';
-import { CONTAINER_AREA_REPORTER, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, PROFILE_TARGET } from './shell-contract';
+import { CONTAINER_AREA_REPORTER, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, PROFILE_TARGET, RESTRICTED_ACCESS } from './shell-contract';
 import { SESSION_TEXT } from './shared/session-copy';
 import { SHELL_TEXT } from './shell-copy';
 import { SESSION_IDENTITY } from './shared/session-identity';
@@ -107,8 +107,10 @@ export class PortalShellComponent {
   private readonly injector = inject(Injector);
   protected readonly navigation = inject(PortalNavigation);
   protected readonly audience = inject(PortalAudience).audience;
+  private readonly restricted = inject(RESTRICTED_ACCESS);
   protected readonly areas = inject(PORTAL_AREA_LIST)
-    .filter((area) => (area.audience ?? 'operator') === this.audience && (area.isAvailable?.(this.injector) ?? true));
+    .filter((area) => (area.audience ?? 'operator') === this.audience && (area.isAvailable?.(this.injector) ?? true)
+      && (!this.restricted || this.audience !== 'operator' || allowedInRestrictedAccess(area)));
   /** The sidebar items: every area but the sub-screens (menu: false), which open from another area. */
   protected readonly menu = this.areas.filter((area) => area.menu !== false);
   /** The operator lands on the first sidebar item; the customer on the panel cliente when the build has it. */
