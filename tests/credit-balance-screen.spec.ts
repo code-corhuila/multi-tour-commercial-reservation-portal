@@ -257,6 +257,8 @@ describe('theCreditScreenIsReachedOnlyThroughTheNavigationLinks', () => {
     const payments = TestBed.createComponent(CreditBalancePaymentsLinkComponent); payments.detectChanges();
     const button = payments.nativeElement.querySelector('button') as HTMLButtonElement;
     expect(button.textContent?.trim()).toBe('Saldo a favor');
+    expect(button.classList.contains('crp-page-header-action')).toBe(true);
+    expect(button.closest('p')).toBeNull();
     button.click();
     expect(navigation.selected()).toBe(CREDIT_BALANCE_AREA);
   });

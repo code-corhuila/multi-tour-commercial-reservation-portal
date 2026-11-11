@@ -29,4 +29,9 @@ describe('portalCssIsScopedAndPrefixed', () => {
       .flatMap(([, names]) => names.replace(/\{\{[^}]*\}\}/g, ' ').split(/\s+/).filter((name) => name && !name.startsWith('crp-')).map((name) => `${file}: ${name}`)));
     expect(loose).toEqual([]);
   });
+
+  it('keeps the host of the credit balance link of Pagos out of the layout from the stylesheet, not from the component', () => {
+    const rule = rules.find((candidate) => candidate.selector === '.crp-root app-credit-balance-payments-link');
+    expect(rule?.body).toMatch(/display:\s*contents;/);
+  });
 });
