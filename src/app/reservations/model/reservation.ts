@@ -71,7 +71,9 @@ export type Reservation = {
 export type ReschedulingEpisode = {
   readonly originDepartureId: string; readonly originAt: string;
   readonly proposal?: { readonly departureId: string; readonly sentAt: string; readonly heldSeats: number };
-  readonly answer?: { readonly decision: 'ACCEPTED' | 'REJECTED' | 'NO_ALTERNATIVE'; readonly at: string; readonly by: string };
+  readonly answer?: { readonly decision: 'ACCEPTED' | 'REJECTED' | 'NO_ALTERNATIVE'; readonly at: string; readonly by: string;
+    /** The label of the outside channel of an answer recorded by staff (AC-RP.6); the evidence is never stored (AC-18.19). */
+    readonly channel?: string };
 };
 /** HU-COM-016: who acted and when (G-USR: a label until the session carries the user). */
 export type RefundAct = { readonly by: string; readonly at: string };

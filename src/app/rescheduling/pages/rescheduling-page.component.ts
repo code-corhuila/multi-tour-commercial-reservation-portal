@@ -10,8 +10,8 @@ import { formatCop } from '../../shared/format';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { PageState } from '../../shared/page-state';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { ReschedulingEpisodeView, ReschedulingOutcome, ReschedulingSource, ReschedulingWriter } from '../data/rescheduling-ports';
-import { REFUSAL_TEXT, RESCHEDULING_COPY, dueText, episodeStateText, startLine } from '../rescheduling-copy';
+import { EXTERNAL_CHANNELS, ExternalAnswerWriter, ReschedulingEpisodeView, ReschedulingOutcome, ReschedulingSource, ReschedulingWriter } from '../data/rescheduling-ports';
+import { CHANNEL_LABEL, REFUSAL_TEXT, RESCHEDULING_COPY, dueText, episodeStateText, startLine } from '../rescheduling-copy';
 
 type State = PageState<ReschedulingEpisodeView>;
 type Status = keyof typeof STATUS_LABEL;
@@ -64,6 +64,22 @@ type Status = keyof typeof STATUS_LABEL;
             <div class="crp-form-actions"><button type="button" class="crp-operator-outline" [disabled]="pending()" (click)="cancel(e)">{{ t.cancel }}</button>
               <button type="button" class="crp-operator-primary" [disabled]="pending() || !e.options.length" (click)="propose(e)">{{ t.send }}</button></div>
           }
+        @if (e.proposal && open && canRecord && external) {
+            <h3>{{ t.responseTitle }}</h3><p class="crp-operator-copy">{{ t.responseCopy }}</p>
+            <div class="crp-form-grid">
+              <div><label for="crp-rp-decision">{{ t.decisionLabel }}</label>
+                <select id="crp-rp-decision" (change)="decision.set($any($event.target).value)">@for (d of t.decisions; track d[0]) { <option [value]="d[0]">{{ d[1] }}</option> }</select></div>
+              <div><label for="crp-rp-channel">{{ t.channelLabel }}</label>
+                <select id="crp-rp-channel" (change)="channel.set($any($event.target).value)"><option value="">{{ t.channelPlaceholder }}</option>@for (c of channels; track c) { <option [value]="c">{{ label(c) }}</option> }</select></div>
+              <div><label for="crp-rp-responded-at">{{ t.respondedAt }}</label><input id="crp-rp-responded-at" type="datetime-local" (input)="respondedAt.set($any($event.target).value)" /></div>
+              <div><label for="crp-rp-evidence">{{ t.evidenceLabel }}</label><textarea id="crp-rp-evidence" [placeholder]="t.evidencePlaceholder" (input)="evidence.set($any($event.target).value)"></textarea></div>
+            </div>
+            <div class="crp-form-actions"><button type="button" class="crp-operator-primary" [disabled]="pending()" (click)="record(e)">{{ t.register }}</button></div>
+          }
+          <h3>{{ t.historyTitle }}</h3>
+          <div class="crp-operator-table-wrap"><table class="crp-operator-table" data-history>
+            <thead><tr>@for (h of t.historyColumns; track h) { <th>{{ h }}</th> }</tr></thead>
+            <tbody>@for (h of history(e); track $index) { <tr><td>{{ line(h.at) }}</td><td>{{ h.actor }}</td><td>{{ h.action }}</td><td>{{ h.detail }}</td></tr> }</tbody></table></div>
         </section>
       }
     }
@@ -75,6 +91,14 @@ export class ReschedulingPageComponent {
   protected readonly stateText = episodeStateText;
   protected readonly dueText = dueText;
   protected readonly canAct = inject(PortalCapabilities).canProposeRescheduling();
+  protected readonly external = inject(ExternalAnswerWriter, { optional: true });
+  protected readonly canRecord = inject(PortalCapabilities).canRecordReschedulingAnswer();
+  protected readonly channels = EXTERNAL_CHANNELS;
+  protected readonly label = (c: string): string => CHANNEL_LABEL[c];
+  protected readonly decision = signal<'ACCEPTED' | 'REJECTED'>('ACCEPTED');
+  protected readonly channel = signal('');
+  protected readonly respondedAt = signal('');
+  protected readonly evidence = signal('');
   protected readonly pending = signal(false);
   protected readonly message = signal('');
   protected readonly refused = signal(false);
@@ -107,6 +131,14 @@ export class ReschedulingPageComponent {
   /** DP-RP4: back to 10A of the same reservation, as HU-COM-013 does. */
   protected back(): void { this.navigation?.open('reservations', { reservation: this.code() }); }
   protected pick(code: string): void { this.opened.set(code); this.picked.set(null); this.message.set(''); }
+  /** The history, newest first as the mockup lists it. */
+  protected history(e: ReschedulingEpisodeView): NonNullable<ReschedulingEpisodeView['history']> { return [...(e.history ?? [])].reverse(); }
+  /** AC-RP.6: the answer arrives by an outside channel; the port checks everything and refuses with the words of the mockup. */
+  protected record(e: ReschedulingEpisodeView): void {
+    const decision = this.decision();
+    this.run(`external:${decision}`, (idempotencyKey) => this.external!.record({ code: e.reservationId, decision, channel: this.channel(), evidence: this.evidence(), answeredAt: this.respondedAt(), idempotencyKey }),
+      () => (decision === 'ACCEPTED' ? this.t.recordedAccepted : this.t.recordedRejected));
+  }
   protected propose(e: ReschedulingEpisodeView): void {
     const departureId = this.chosen(e);
     this.run(`propose:${departureId}`, (idempotencyKey) => this.writer.propose({ code: e.reservationId, departureId, idempotencyKey }), () => this.t.sent);

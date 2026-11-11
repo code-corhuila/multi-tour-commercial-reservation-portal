@@ -16,6 +16,14 @@ export const RESCHEDULING_COPY = {
   cancelled: (amount: string) => `La reserva queda Cancelada y se devuelve el 100 % de los valores pagados y validados: ${amount}.`,
   listEyebrow: 'Episodios', listTitle: 'Reservas con salida cancelada o interrumpida', listColumns: ['Reserva', 'Cliente', 'Salida original', 'Estado', 'Plazo', 'Acción'], view: 'Ver',
   listEmpty: 'No hay episodios de reprogramación. Se abren cuando una salida con reservas se cancela o se interrumpe por una causa no atribuible al cliente.',
+  responseTitle: 'Registrar la respuesta del cliente',
+  responseCopy: 'El cliente responde desde su panel. Si la respuesta llegó por un canal externo, regístrala aquí con su evidencia; el sistema conserva el actor y la fecha y hora. Una respuesta válida produce efecto inmediato.',
+  decisionLabel: 'Respuesta del cliente', decisions: [['ACCEPTED', 'Acepta la nueva salida'], ['REJECTED', 'Rechaza la nueva salida']] as const,
+  channelLabel: 'Canal', channelPlaceholder: 'Selecciona el canal', respondedAt: 'Fecha y hora de la respuesta', evidenceLabel: 'Evidencia de la respuesta',
+  evidencePlaceholder: 'Referencia del mensaje, nombre del archivo adjunto o descripción de la llamada', register: 'Registrar respuesta',
+  recordedAccepted: 'Respuesta registrada: el cliente acepta. La misma reserva conserva sus pagos e historial y queda asignada a la nueva salida.',
+  recordedRejected: 'Respuesta registrada: el cliente rechaza. La reserva se canceló y se determinó la devolución del 100 % de los valores validados.',
+  historyTitle: 'Historial del episodio', historyColumns: ['Fecha y hora', 'Responsable', 'Acción', 'Detalle'],
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   /** PROPUESTO: the reservation has no rescheduling episode. */
   none: 'Esta reserva no tiene un episodio de reprogramación.',
@@ -27,6 +35,10 @@ export const REFUSAL_TEXT: Readonly<Record<ReschedulingRefusal, string>> = {
   'no-seats': 'La salida propuesta no tiene cupos para todos los viajeros de la reserva. La reserva conserva su salida y su cupo.',
   'already-answered': 'La propuesta ya tiene una respuesta registrada.',
   closed: 'El episodio de reprogramación ya está cerrado.',
+  'no-channel': 'Indica el canal por el que llegó la respuesta.',
+  'no-evidence': 'Registra la evidencia de la respuesta del cliente (referencia, nombre del archivo o descripción).',
+  'bad-time': 'La fecha y hora de la respuesta no es válida.',
+  'after-deadline': 'La respuesta llegó después del plazo de respuesta: aplica el vencimiento.',
 };
 
 /** `2026-10-18T06:30:00-05:00` to `18 oct 2026 · 06:30`, as the mockup writes a departure. */
@@ -65,3 +77,5 @@ export function episodeStateText(e: Pick<ReschedulingEpisodeView, 'answer' | 'pr
 export function dueText(e: Pick<ReschedulingEpisodeView, 'dueIn'>): string {
   return e.dueIn ? `${e.dueIn.kind === 'propose' ? 'Proponer' : 'Respuesta'} en ${e.dueIn.hours} h` : '—';
 }
+/** The channels in the words of the mockup, by contract code. */
+export const CHANNEL_LABEL: Readonly<Record<string, string>> = { EMAIL: 'Correo electrónico', PHONE: 'Teléfono', WHATSAPP: 'WhatsApp', IN_PERSON: 'Presencial' };

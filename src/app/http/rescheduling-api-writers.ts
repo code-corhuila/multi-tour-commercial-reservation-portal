@@ -1,5 +1,5 @@
 import { Observable, catchError, map, of, switchMap, throwError } from 'rxjs';
-import { ProposalAnswerWriter, ReschedulingOutcome, ReschedulingRefusal, ReschedulingSource, ReschedulingWriter } from '../rescheduling/data/rescheduling-ports';
+import { ExternalAnswerCommand, ExternalAnswerWriter, ProposalAnswerWriter, ReschedulingOutcome, ReschedulingRefusal, ReschedulingSource, ReschedulingWriter } from '../rescheduling/data/rescheduling-ports';
 import { ApiError, PortalApiClient } from '../shell-contract';
 import { API_BASE, call, listAll } from './api-paths';
 
@@ -59,6 +59,25 @@ export class ProposalAnswerApiWriter extends ProposalAnswerWriter {
       if (!e || !proposal) return of(refused('closed'));
       return write(this.source, code, call(this.client, `${base}/${e.reschedulingId}/proposals/${proposal.proposalId}/answer`,
         { method: 'POST', body: { decision: decision === 'ACCEPTED' ? 'ACCEPT' : 'REJECT' }, headers: { 'Idempotency-Key': idempotencyKey } }));
+    }));
+  }
+}
+
+/**
+ * The answer a customer gave by an outside channel over POST .../proposals/{proposalId}/external-answer: decision, channel (one of four codes), evidence (1 to 500) and the instant,
+ * with the Idempotency-Key. The person and the recording time are the service's; the evidence is never read back (AC-18.19).
+ */
+export class ExternalAnswerApiWriter extends ExternalAnswerWriter {
+  constructor(private readonly client: PortalApiClient, private readonly source: ReschedulingSource) { super(); }
+
+  override record(c: ExternalAnswerCommand): Observable<ReschedulingOutcome> {
+    return episodesOf(this.client, c.code).pipe(switchMap((e) => {
+      const proposal = e?.proposals.find((p) => p.state === 'PENDING');
+      if (!e || !proposal) return of(refused('closed'));
+      const at = Date.parse(c.answeredAt);
+      if (Number.isNaN(at)) return of(refused('bad-time'));
+      return write(this.source, c.code, call(this.client, `${base}/${e.reschedulingId}/proposals/${proposal.proposalId}/external-answer`, { method: 'POST', headers: { 'Idempotency-Key': c.idempotencyKey },
+        body: { decision: c.decision === 'ACCEPTED' ? 'ACCEPT' : 'REJECT', channel: c.channel, evidence: c.evidence, answeredAt: new Date(at).toISOString() } }));
     }));
   }
 }
