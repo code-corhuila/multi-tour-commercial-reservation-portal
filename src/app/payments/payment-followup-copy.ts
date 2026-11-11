@@ -23,6 +23,20 @@ export const PAYMENT_FOLLOWUP_TEXT = {
   historyEyebrow: 'Trazabilidad', historyTitle: 'Historial de seguimientos', historyColumns: ['Fecha', 'Hora', 'Actor', 'Nota'],
   noHistory: 'Aún no se han registrado seguimientos para esta reserva.',
   /** 24 (and 21, PROPUESTO): the mockup's sentence names the departure start (spec 011- section 5). */
+  /** The refusals of the service in the words of the mockup (app.js grantOperatorPaymentExtension); the wire speaks English. */
+  refusals: {
+    followupForbidden: 'Tu rol no puede registrar seguimientos de pago.', extensionForbidden: 'Tu rol no puede conceder ampliaciones del plazo.',
+    hoursRequired: 'Indica la duración de la ampliación en horas (mínimo 1).',
+    byMessage: {
+      'the deadline was already extended once': 'El plazo ya tuvo su única ampliación.',
+      'the deadline has already expired': 'El plazo ya venció: la ampliación debe concederse antes del vencimiento.',
+      'only a reservation pending payment can have its deadline extended': 'Solo una reserva Pendiente de pago admite ampliación del plazo.',
+      'only the initial payment deadline can be extended': 'Solo una reserva Pendiente de pago admite ampliación del plazo.',
+      'a frozen deadline cannot be extended': 'El plazo está congelado por la cancelación o interrupción de la salida.',
+      'the extension is above the maximum of the payment condition': 'La ampliación supera el máximo del parámetro de pago del tenant.',
+      'the extension would pass the departure start': 'La ampliación no puede superar la hora programada de inicio de la salida.',
+    } as Readonly<Record<string, string>>,
+  },
   departureLimit: (start: string) => `Ningún plazo de pago supera el inicio de la salida, ${start}.`,
 };
 
