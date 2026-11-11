@@ -189,6 +189,7 @@ const SPECIFIED_TREE = [
   'src/app/demo/reservation-modification-demo.ts',
   'src/app/reservation-changes/travellers-modification/travellers-modification-copy.ts',
   'src/app/reservation-changes/travellers-modification/data/modification-ports.ts',
+  'src/app/reservation-changes/travellers-modification/data/modification-draft.ts',
   'src/app/reservation-changes/travellers-modification/components/travellers-modification-form.component.ts',
   'src/app/demo/my-payments-demo.ts',
   'src/app/my-payments/my-payments-copy.ts',
