@@ -44,8 +44,8 @@ import { CreditBalanceApiSource, CreditBalanceApiWriter } from './http/credit-ba
 import { CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
 import { RefundsSource, RefundsWriter } from './refunds/data/refunds-ports';
 import { CancellationQuote, CancellationWriter } from './reservation-changes/data/cancellation-ports';
-import { ModificationApiQuote, ModificationApiWriter } from './http/modification-api-sources';
-import { ModificationQuote, ReservationModificationWriter } from './reservation-changes/travellers-modification/data/modification-ports';
+import { ModificationApiHistory, ModificationApiQuote, ModificationApiWriter } from './http/modification-api-sources';
+import { ModificationHistorySource, ModificationQuote, ReservationModificationWriter } from './reservation-changes/travellers-modification/data/modification-ports';
 import { PaymentDeadlineApiExtender, PaymentFollowupsApiHistory, PaymentFollowupsApiWriter, PendingPaymentsApiSource } from './http/payment-followup-api-sources';
 import { PaymentDeadlineExtender, PaymentDeadlineReader, PaymentFollowupsHistory, PaymentFollowupsWriter, PendingPaymentsSource } from './payments/data/payment-followup-ports';
 import { PortalCapabilities } from './shared/portal-capabilities';
@@ -111,6 +111,8 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-012: the quote and the modification over the routes of the service (PROPOSED); the terms, the recalculation, the seats and the excess decision are the service's.
     { provide: ModificationQuote, useFactory: () => new ModificationApiQuote(client, inject(ReservationsSource)) },
     { provide: ReservationModificationWriter, useFactory: () => new ModificationApiWriter(client, inject(ReservationsSource)) },
+    // HU-COM-012 AC-MD.6: the history of 10A, read from the service.
+    { provide: ModificationHistorySource, useValue: new ModificationApiHistory(client) },
     // HU-COM-016: the refunds over the decisions and the refunds of the service (PROPOSED routes); the credit balance and the execution (saga) are not routes of this service.
     { provide: RefundsSource, useFactory: () => new RefundsApiSource(client, inject(ReservationsSource)) },
     { provide: RefundsWriter, useFactory: () => new RefundsApiWriter(client, inject(RefundsSource)) },

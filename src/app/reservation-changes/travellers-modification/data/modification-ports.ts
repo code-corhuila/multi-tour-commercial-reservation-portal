@@ -44,6 +44,11 @@ export abstract class TransportFareSource {
   abstract perPerson(reservation: Reservation): number;
 }
 
+/** RN-MD8 (AC-MD.6): the modifications registered on one reservation, newest first, for 10A; empty when there is none. The service holds them. */
+export abstract class ModificationHistorySource {
+  abstract list(code: string): Observable<readonly ModificationTrace[]>;
+}
+
 export interface ModifyCommand { readonly code: string; readonly change: TravellersChange; readonly cause: string; readonly idempotencyKey: string }
 export type ModificationOutcome = { readonly kind: 'modified'; readonly reservation: Reservation; readonly trace: ModificationTrace }
   | { readonly kind: 'refused'; readonly reason: 'not-allowed' | 'not-before-execution' | 'no-capacity' };
