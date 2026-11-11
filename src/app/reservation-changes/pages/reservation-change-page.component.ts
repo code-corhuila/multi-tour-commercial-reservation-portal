@@ -123,7 +123,7 @@ export class ReservationChangePageComponent {
     const body = { reservationCode: q.reservation.id, cause, origin: this.origin() };
     type.submit({ ...body, idempotencyKey: this.intention.keyFor(body) }).subscribe({
       next: (outcome) => {
-        if (outcome.kind === 'registered') { this.showRegistered(q); return; }
+        if (outcome.kind === 'registered') { this.showRegistered(q, outcome.message); return; }
         this.failure.set(outcome.reason); this.pending.set(false);
       },
       error: () => { this.failure.set(this.t.failed); this.pending.set(false); },
@@ -131,8 +131,8 @@ export class ReservationChangePageComponent {
   }
 
   /** app.js: the registered text stays in the feedback line, the form stays disabled, then 10A opens. */
-  private showRegistered(q: CancellationQuoteResult): void {
-    this.registered.set(registeredMessage(this.origin(), q.reservation.validatedCents ?? 0, q.refundable));
+  private showRegistered(q: CancellationQuoteResult, message?: string): void {
+    this.registered.set(message ?? registeredMessage(this.origin(), q.reservation.validatedCents ?? 0, q.refundable));
     this.delay().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.back());
   }
 }
