@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { Injector, Provider, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Observable, Subject, firstValueFrom, of } from 'rxjs';
+import { NEVER, Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
@@ -18,9 +18,10 @@ import { CancellationQuote, CancellationWriter, cancellationChangeType } from '.
 import { RESERVATION_CHANGE_SCREEN, RESERVATION_CHANGE_TYPES, ReservationChangeType } from '../src/app/reservation-changes/data/reservation-change-types';
 import { ReservationChangePageComponent } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import {
-  Admission, ModificationQuote, ModifyCommand, TRAVELLERS_MODIFICATION_KEY, TransportFareSource, provideTravellersModification,
+  Admission, ModificationLines, ModificationQuote, ModifyCommand, ReservationModificationWriter, TRAVELLERS_MODIFICATION_KEY, TransportFareSource, provideTravellersModification,
 } from '../src/app/reservation-changes/travellers-modification/data/modification-ports';
 import { TravellersModificationFormComponent } from '../src/app/reservation-changes/travellers-modification/components/travellers-modification-form.component';
+import { RESERVATION_CHANGE_RETURN_DELAY } from '../src/app/reservation-changes/pages/reservation-change-page.component';
 import { ActorContext } from '../src/app/shared/actor-context';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
@@ -49,7 +50,7 @@ const fixtures = () => new DemoReservationsStore([
 ]);
 const departures = (capacity = 10) => ({ items: [departureOf(1, { effectiveCapacity: capacity })] });
 const demo = (store = fixtures(), d = departures(), fare: TransportFareSource = new DemoTransportFare(d)) => {
-  const quotes = new DemoModificationQuote(store, fare, [CLOSED_TOUR]);
+  const quotes = new DemoModificationQuote(store, fare, [CLOSED_TOUR], d);
   return { store, quotes, writer: new DemoReservationModificationWriter(store, d, quotes, () => NOW, BY) };
 };
 const find = (store: DemoReservationsStore, id: string) => store.items.find((r) => r.id === id)!;
@@ -60,10 +61,11 @@ class ControllableModificationQuote extends ModificationQuote {
   readonly requests: Subject<Admission | null>[] = [];
   override admits(): Observable<Admission | null> { const s = new Subject<Admission | null>(); this.requests.push(s); return s; }
   override preview() { return of(null); }
-  override lines() { return of(null); }
+  readonly lineRequests: Subject<ModificationLines | null>[] = [];
+  override lines() { const s = new Subject<ModificationLines | null>(); this.lineRequests.push(s); return s; }
 }
 
-function pageProviders(o: { code?: string; role?: string; quotes?: ModificationQuote } = {}) {
+function pageProviders(o: { code?: string; role?: string; quotes?: ModificationQuote; writer?: ReservationModificationWriter } = {}) {
   const navigation = new PortalNavigation();
   navigation.register(['reservations', RESERVATION_CHANGE_SCREEN]);
   navigation.params.set({ reservation: o.code ?? 'RES-A' });
@@ -74,6 +76,8 @@ function pageProviders(o: { code?: string; role?: string; quotes?: ModificationQ
     { provide: CancellationQuote, useValue: cancel },
     { provide: CancellationWriter, useValue: new DemoCancellationWriter(store, cancel, new FixedClock(NOW), BY) },
     { provide: ModificationQuote, useValue: o.quotes ?? m.quotes },
+    { provide: ReservationModificationWriter, useValue: o.writer ?? m.writer },
+    { provide: RESERVATION_CHANGE_RETURN_DELAY, useValue: () => NEVER },
     { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() },
     { provide: PortalNavigation, useValue: navigation },
     { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
@@ -103,7 +107,7 @@ const NOT_ALLOWED = 'La política del tour no admite la modificación de viajero
 describe('portalDeclaresNoHttpClientOfItsOwn', () => {
   it('covers travellers-modification/ and its demo with no HTTP client, request or storage of its own', () => {
     const files = listSourceFiles().filter((f) => f.startsWith('src/app/reservation-changes/travellers-modification/') || f === 'src/app/demo/reservation-modification-demo.ts');
-    expect(files).toHaveLength(4);
+    expect(files).toHaveLength(5);
     const offenders = files.filter((f) => /\bHttpClient\b|\bfetch\s*\(|XMLHttpRequest|localStorage|sessionStorage/.test(withoutComments(readFileSync(f, 'utf8'))));
     expect(offenders).toEqual([]);
   });
@@ -316,11 +320,12 @@ describe('readOnlyRolesAndCustomersGetNoModificationAction', () => {
 });
 
 describe('travellersOptionDrawsNoFieldAndSpanishCopy', () => {
-  it('draws only the answer: no traveller, service, date, lodging or recalculation field', async () => {
+  it('draws the answer and the fields of the mockup, and no date or lodging field', async () => {
     const s = await pageWithTravellers();
     const form = s.host.querySelector('app-travellers-modification-form')!;
-    expect(form.querySelectorAll('input, select, textarea, button, dl, table')).toHaveLength(0);
-    expect(form.textContent?.trim()).toBe(ALLOWED);
+    expect(form.querySelector('[data-state="data"]')?.textContent?.trim()).toBe(ALLOWED);
+    expect(Array.from(form.querySelectorAll('label'), (l) => l.textContent?.trim())).toEqual(['Servicio (tour)', 'Salida', 'Cantidad de viajeros']);
+    expect(form.querySelectorAll('input[type="date"], [name*="lodging"], [name*="alojamiento"]')).toHaveLength(0);
     expect(s.button('Registrar novedad')!.disabled).toBe(true);
   });
 
@@ -342,5 +347,113 @@ describe('travellersOptionDrawsNoFieldAndSpanishCopy', () => {
     const copy = readFileSync('src/app/reservation-changes/travellers-modification/travellers-modification-copy.ts', 'utf8');
     expect(copy).toContain('Modificación de servicio, salida o viajeros');
     expect(copy).toMatch(/política|modificación/);
+  });
+});
+
+// HU-COM-012 amendment 2026-10-14 (T-10, T-11): the panel of the mockup v1.9 over the ports; the service decides, the screen formats.
+type Screen = Awaited<ReturnType<typeof pageWithTravellers>>;
+const typeTravellers = async (s: Screen, value: string) => {
+  const input = s.host.querySelector<HTMLInputElement>('#crp-travellers-modification-people')!;
+  input.value = value; input.dispatchEvent(new Event('input')); await s.settle();
+};
+const cause = async (s: Screen, text = 'El cliente suma un acompañante') => {
+  const area = s.host.querySelector<HTMLTextAreaElement>('#crp-rc-cause')!;
+  area.value = text; area.dispatchEvent(new Event('input')); await s.settle();
+};
+const lines = (host: HTMLElement) => Array.from(host.querySelectorAll('dl > div'), (d) => d.textContent!.replace(/\s+/g, ' ').trim());
+const feedback = (s: Screen) => s.host.querySelector('.crp-reservation-changes-feedback')?.textContent?.trim();
+
+describe('theScreenShowsTheFieldsAndTheRecalculationLinesFromThePort', () => {
+  it('draws Servicio (tour), Salida and Cantidad de viajeros with what the reservation has, the tour and the departure closed because the service keeps them', async () => {
+    const s = await pageWithTravellers();
+    const field = (id: string) => s.host.querySelector<HTMLInputElement | HTMLSelectElement>('#crp-travellers-modification-' + id)!;
+    expect(field('service').textContent).toContain('Tour 1');
+    expect(field('departure').textContent).toContain('07 nov 2026');
+    expect([field('service').disabled, field('departure').disabled]).toEqual([true, true]);
+    expect(field('people').value).toBe('2');
+    expect(s.host.querySelector('app-travellers-modification-form')!.textContent).toContain('Al reducir viajeros los cupos se liberan de inmediato.');
+  });
+
+  it('shows the four lines of the port with formatted money, and the lines follow the travellers typed', async () => {
+    const s = await pageWithTravellers();
+    await typeTravellers(s, '3');
+    expect(lines(s.host)).toEqual(['Valor proyectado $75', 'Descuentos $8', 'Valor final $68', 'Saldo pendiente $68']);
+    await typeTravellers(s, '1');
+    expect(lines(s.host)[2]).toBe('Valor final $23');
+  });
+
+  it('shows a dash where the service answers the totals only, and never fills the line in', async () => {
+    const quotes = new ControllableModificationQuote();
+    const s = await render(TravellersModificationFormComponent, [{ provide: ModificationQuote, useValue: quotes }], { reservation: fixed('RES-A') });
+    quotes.lineRequests.at(-1)!.next({ allowed: true, projectedCents: null, discountCents: null, finalCents: 6000, balanceCents: 6000, differenceCents: 1500, excessCents: 0, seatsAvailable: true });
+    await s.settle();
+    expect(lines(s.host)).toEqual(['Valor proyectado —', 'Descuentos —', 'Valor final $60', 'Saldo pendiente $60']);
+  });
+
+  it('says the departure has no seats, and asks nothing for a number that is not a whole traveller count', async () => {
+    const s = await pageWithTravellers();
+    await typeTravellers(s, '30');
+    expect(s.host.querySelector('app-travellers-modification-form')!.textContent).toContain('La salida no tiene cupos para este cambio.');
+    for (const bad of ['0', '', '-1', '2.5', 'abc']) {
+      await typeTravellers(s, bad);
+      expect(s.host.querySelector('app-travellers-modification-form')!.textContent).toContain('Indica la cantidad de viajeros (mínimo 1).');
+      expect(s.button('Registrar novedad')!.disabled).toBe(true);
+    }
+  });
+});
+
+describe('registrarNovedadIsEnabledAndADoubleClickRecordsOneModification', () => {
+  const choose = async (providers: Provider[]) => {
+    const s = await render(ReservationChangePageComponent, providers) as Screen;
+    const select = s.host.querySelector<HTMLSelectElement>('#crp-rc-type')!;
+    select.value = TRAVELLERS_MODIFICATION_KEY; select.dispatchEvent(new Event('change')); await s.settle();
+    return s;
+  };
+
+  it('stays disabled until the travellers changed and the cause is typed, then records one modification however many times it is clicked', async () => {
+    const m = demo(), s = await choose(pageProviders({ writer: m.writer, quotes: m.quotes }));
+    expect(s.button('Registrar novedad')!.disabled).toBe(true);
+    await typeTravellers(s, '3');
+    expect(s.button('Registrar novedad')!.disabled).toBe(false);
+    await cause(s);
+    const submit = s.button('Registrar novedad')!;
+    submit.click(); submit.click(); await s.settle();
+    expect(m.store.modifications).toHaveLength(1);
+    expect(find(m.store, 'RES-A').people).toBe(3);
+    expect(feedback(s)).toBe('Modificación registrada y valores recalculados.');
+  });
+
+  it('keeps the excess in the message of the screen when the new value falls under the validated payments', async () => {
+    const m = demo(new DemoReservationsStore([fixed('RES-A', { validatedCents: 4500, balanceCents: 0, financialStatus: 'PAGO_COMPLETO' })]));
+    const s = await choose(pageProviders({ writer: m.writer, quotes: m.quotes }));
+    await typeTravellers(s, '1'); await cause(s);
+    s.button('Registrar novedad')!.click(); await s.settle();
+    expect(feedback(s)).toBe('Modificación registrada y valores recalculados. Excedente determinado: $23 (devolución del 100 % o saldo a favor, decisión del Administrador del tenant en 24 horas).');
+  });
+
+  it('sends the key of the intention joined to the travellers, so another count is another request and a retry of the same count reuses it', async () => {
+    const sent: ModifyCommand[] = [];
+    const writer = new (class extends ReservationModificationWriter {
+      override modify(c: ModifyCommand) { sent.push(c); return of({ kind: 'refused', reason: 'no-capacity' } as const); }
+    })();
+    const s = await choose(pageProviders({ writer }));
+    await typeTravellers(s, '3'); await cause(s);
+    s.button('Registrar novedad')!.click(); await s.settle();
+    s.button('Registrar novedad')!.click(); await s.settle();
+    await typeTravellers(s, '4');
+    s.button('Registrar novedad')!.click(); await s.settle();
+    expect(sent.map((c) => c.change)).toEqual([{ added: 1, removed: 0 }, { added: 1, removed: 0 }, { added: 2, removed: 0 }]);
+    expect(sent[0]!.idempotencyKey).toBe(sent[1]!.idempotencyKey);
+    expect(sent[2]!.idempotencyKey).not.toBe(sent[0]!.idempotencyKey);
+  });
+
+  it('shows the refusal of the service in the failure line, in Spanish, and leaves the form open', async () => {
+    const m = demo(fixtures(), departures(2));
+    const s = await choose(pageProviders({ writer: m.writer, quotes: m.quotes }));
+    await typeTravellers(s, '3'); await cause(s);
+    s.button('Registrar novedad')!.click(); await s.settle();
+    expect(s.host.querySelector('[role="alert"]')?.textContent?.trim()).toBe('La salida no tiene cupos para este cambio.');
+    expect(s.host.querySelector<HTMLInputElement>('#crp-travellers-modification-people')!.disabled).toBe(false);
+    expect(m.store.modifications).toHaveLength(0);
   });
 });
