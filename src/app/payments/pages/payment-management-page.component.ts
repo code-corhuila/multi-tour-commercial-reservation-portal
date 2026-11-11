@@ -62,7 +62,7 @@ type State = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; reservati
                   [placeholder]="placeholderOf(r, s.minimumCents)" (input)="edit({ amount: $any($event.target).value })"
                   [attr.aria-invalid]="errors().amount ? 'true' : null" aria-describedby="crp-payments-amount-error" />
                 <p id="crp-payments-amount-error" class="crp-payments-error">{{ errors().amount }}</p>
-                @if (r.paymentType === 'PARTIAL' && s.minimumCents !== null) { <p class="crp-payments-feedback" data-payment-minimum>{{ text.minimumHint(money(s.minimumCents)) }}</p> }
+                @if (r.paymentType === 'PARTIAL' && s.minimumCents !== null) { <p class="crp-payments-feedback" data-payment-minimum>{{ text.minimumHint(money(s.minimumCents), staysPending(r, s.minimumCents)) }}</p> }
                 @if (kind === 'transfer') {
                   <label for="crp-payments-proof">{{ text.proof }}</label>
                   <input id="crp-payments-proof" name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" [disabled]="locked" (change)="edit({ proof: $any($event.target).files?.[0] ?? null })"
@@ -125,6 +125,11 @@ export class PaymentManagementPageComponent {
     if (this.kindOf(r) !== 'partial') return this.text.amount;
     return minimumCents === null ? this.text.partialAmount : this.text.partialAmountMinimum(formatCop(minimumCents));
   }
+  /** The typed amount is above zero and under the minimum of a reservation still Pendiente de pago: an informative line; the payment is registered all the same. */
+  protected staysPending(r: Reservation, minimumCents: number): boolean {
+    const parsed = parseMoney(this.amount());
+    return r.status === 'PENDIENTE_DE_PAGO' && parsed.kind === 'valid' && parsed.minorUnits > 0 && depositBelowMinimum(r, parsed.minorUnits, minimumCents);
+  }
   protected reload(): void { this.saved.set(null); this.requests.next(); }
 
   /** The form of 13 follows the reservation's modality (DP-PY3); none means nothing can be registered. */
@@ -140,11 +145,11 @@ export class PaymentManagementPageComponent {
   }
 
   protected send(r: Reservation): void {
-    const kind = this.kindOf(r), minimum = (this.state() as { minimumCents?: number | null }).minimumCents ?? null;
+    const kind = this.kindOf(r);
     if (this.pending() || !kind || this.entryOf(r) !== 'open') return;
     const parsed = parseMoney(this.amount()), amountCents = parsed.kind === 'valid' ? parsed.minorUnits : 0;
     const errors = {
-      amount: amountCents <= 0 ? this.text.amountRequired : depositBelowMinimum(r, amountCents, minimum) ? this.text.belowMinimum(formatCop(minimum!)) : undefined,
+      amount: amountCents <= 0 ? this.text.amountRequired : undefined,
       proof: kind !== 'transfer' ? undefined : this.proof ? proofProblem(this.proof) ?? undefined : this.text.proofRequired,
     };
     this.errors.set(errors);

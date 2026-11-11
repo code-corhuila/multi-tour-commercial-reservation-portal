@@ -10,7 +10,7 @@ export function proofProblem(file: File): string | null {
   return PROOF_TYPES.test(file.name) && file.size <= PROOF_MAX_BYTES ? null : PROOF_RULE;
 }
 
-/** AC-PY.12 (DP-PY5, PROPUESTO): the first deposit of an Abono must reach the minimum the parameters give; a later one is bounded by the balance. */
+/** AC-PY.12 (PDR v1.9 GAP-03): the minimum deposit conditions the confirmation, not the registration: true for a first deposit under the minimum, so the reservation stays Pendiente de pago (informative only, it never blocks). */
 export const depositBelowMinimum = (r: Reservation, amountCents: number, minimumCents: number | null): boolean =>
   r.paymentType === 'PARTIAL' && (r.validatedCents ?? 0) === 0 && minimumCents !== null && amountCents < minimumCents;
 
