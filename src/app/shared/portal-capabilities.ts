@@ -138,6 +138,8 @@ export class PortalCapabilities {
   canDecideProof(): boolean { return this.row.decideProof === 'always' || (this.row.decideProof === 'if-granted' && this.collaboratorMayValidateProofs); }
   canFollowUp(): boolean { return this.row.followUp; }
   canProposeRescheduling(): boolean { return this.row.proposeRescheduling; }
+  /** DP-RP1 (decided 2026-11-11): the story's reading, the Administrator and the Collaborator record an answer received by an outside channel (the mockup says any role that is not read only). */
+  canRecordReschedulingAnswer(): boolean { return this.row.proposeRescheduling; }
   canRegisterCreditBalance(): boolean { return this.row.registerCreditBalance; }
   canApplyCreditBalance(): boolean { return this.row.actOnCreditBalance; }
   canManagePaymentParameters(): boolean { return this.row.managePaymentParameters; }
