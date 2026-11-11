@@ -12,7 +12,7 @@ import { formatCop, formatDate } from '../../shared/format';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { PageState } from '../../shared/page-state';
 import { PaymentLabels, modalityOf, paymentLabels } from '../components/reservation-payments-block.component';
-import { PaymentDeadline, PaymentDeadlineExtender, PaymentDeadlineReader, PaymentFollowupsWriter } from '../data/payment-followup-ports';
+import { PaymentDeadline, PaymentDeadlineExtender, PaymentDeadlineReader, PaymentFollowupsHistory, PaymentFollowupsWriter } from '../data/payment-followup-ports';
 import { PAYMENT_FOLLOWUP_TEXT, deadlineText, tenantDateTime } from '../payment-followup-copy';
 import { PAYMENTS_TEXT, departureText } from '../payments-copy';
 
@@ -75,7 +75,7 @@ export class PaymentFollowupPageComponent {
   private readonly navigation = inject(PortalNavigation, { optional: true }); private readonly params = this.navigation?.params() ?? {};
   private readonly source = inject(ReservationsSource); private readonly methods = inject(PaymentMethodsSource); private readonly reader = inject(PaymentDeadlineReader);
   private readonly departures = inject(DeparturesSource, { optional: true }); protected readonly extender = inject(PaymentDeadlineExtender, { optional: true });
-  private readonly writer = inject(PaymentFollowupsWriter); private readonly keys = inject(IdempotencyKeys);
+  private readonly history = inject(PaymentFollowupsHistory, { optional: true }); private readonly writer = inject(PaymentFollowupsWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
   protected readonly t = PAYMENT_FOLLOWUP_TEXT; protected readonly common = PAYMENTS_TEXT; protected readonly when = tenantDateTime; protected readonly deadlineLine = deadlineText; protected readonly date = formatDate;
   protected readonly blank = PAYMENT_FOLLOWUP_TEXT.fields.map(() => '');
@@ -85,16 +85,22 @@ export class PaymentFollowupPageComponent {
   private key = ''; private keyFor: string | null = null; private readonly requests = new Subject<void>();
   private extendKey = ''; private extendKeyFor: string | null = null;
   private readonly loaded = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => this.reader.deadlineOf(this.params['reservation'] ?? '').pipe(switchMap((deadline) => forkJoin({ all: this.source.list(), labels: paymentLabels(this.methods),
-      departures: this.departures?.list().pipe(catchError(() => of([]))) ?? of([]) }).pipe(
-    map(({ all, labels, departures }): State => { const reservation = all.find((r) => r.id === this.params['reservation']);
+      departures: this.departures?.list().pipe(catchError(() => of([]))) ?? of([]), followups: this.history?.of(this.params['reservation'] ?? '') ?? of(null) }).pipe(
+    map(({ all, labels, departures, followups }): State => { const found = all.find((r) => r.id === this.params['reservation']);
+      const reservation = found && this.withServiceRecords(found, deadline, followups);
       const departure = departures.find((d) => d.id === reservation?.departureId)?.state;
       return reservation ? { kind: 'data', items: [{ reservation, labels, deadline, departure }] } : { kind: 'empty' }; }))))).pipe(
     catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+  /** A service that keeps the history and the extension apart (payment_followups, payment_deadline) hands them over its ports; the list holds neither. */
+  private withServiceRecords(r: Reservation, deadline: PaymentDeadline | null, followups: Reservation['followups'] | null): Reservation {
+    const extension = deadline?.extension;
+    return { ...r, ...(followups ? { followups } : {}), ...(deadline && extension ? { deadline: { dueAt: r.deadline?.dueAt ?? deadline.dueAt, extendedUntil: deadline.dueAt, extension } } : {}) };
+  }
   /** The reservation as the writer answered it; the newest answer wins over the list. */
   private readonly saved = signal<Reservation | null>(null);
   protected readonly state = computed((): State => {
     const s = this.loaded(), saved = this.saved();
-    return s.kind === 'data' && saved ? { kind: 'data', items: [{ ...s.items[0], reservation: saved }] } : s;
+    return s.kind === 'data' && saved ? { kind: 'data', items: [{ ...s.items[0], reservation: { ...saved, deadline: saved.deadline ?? s.items[0].reservation.deadline } }] } : s;
   });
 
   /** Reserva, Cliente, Modalidad de pago, Valor recibido, Saldo pendiente, Estado actual: the values come resolved. */
