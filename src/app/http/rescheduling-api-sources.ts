@@ -3,6 +3,7 @@ import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import type { Departure, Reservation } from '../reservations/model/reservation';
 import { EpisodeAnswer, EpisodeFilter, MyProposalsSource, ProposedDeparture, ReschedulingEpisodeView, ReschedulingSource } from '../rescheduling/data/rescheduling-ports';
+import { tenantInstant } from '../shared/format';
 import { CHANNEL_LABEL } from '../rescheduling/rescheduling-copy';
 import { PortalApiClient } from '../shell-contract';
 import { API_BASE, listAll } from './api-paths';
@@ -54,6 +55,8 @@ export function viewOf(e: ReschedulingDto, reservation: Reservation, departures:
     options: departures.filter((d) => d.tourName === reservation.tourName && d.id !== e.originalDepartureId).map(as),
     // AC-RP.7: the 100 % of the validated values a closed episode leaves; HU-COM-016 decides and executes it. Read from the reservation, never computed.
     history: historyOf(e),
+    ...(proposal && proposed ? { notice: { notifiedAt: tenantInstant(proposal.notifiedAt), windowEndsAt: tenantInstant(Date.parse(proposal.notifiedAt) + 72 * HOUR),
+      episodeEndsAt: tenantInstant(e.episodeLimitAt), startsAt: tenantInstant(proposed.date), dueAt: tenantInstant(proposal.responseDeadlineAt) } } : {}),
     refundCents: e.state === 'CANCELLED' ? reservation.validatedCents ?? 0 : null,
   };
 }

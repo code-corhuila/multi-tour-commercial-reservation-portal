@@ -18,6 +18,8 @@ export interface ReschedulingEpisodeView {
   /** AC-RP.7: 100 % of the validated values, determined on cancelling; HU-COM-016 executes it. */
   readonly refundCents: number | null;
   readonly history?: readonly EpisodeHistoryEntry[];
+  /** 24A: when the proposal was notified and the three instants the response deadline is the lowest of (FINAL-011), resolved by the port and written as the tenant does. */
+  readonly notice?: { readonly notifiedAt: string; readonly windowEndsAt: string; readonly episodeEndsAt: string; readonly startsAt: string; readonly dueAt: string };
   /** The list of episodes (AC-RP.12): the customer, the origin departure and the next clock the port resolved, in hours (never computed by the view). */
   readonly customer?: string; readonly originalDepartureId?: string;
   readonly dueIn?: { readonly kind: 'propose' | 'respond'; readonly hours: number } | null;

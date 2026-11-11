@@ -32,3 +32,8 @@ export function formatDateRange(startIsoDate: string, endIsoDate: string): strin
   return `${formatDate(startIsoDate)} - ${formatDate(endIsoDate)}`;
 }
 
+
+/** An instant as the tenant writes it (Colombia, UTC-05:00 all year), so the screens read it as written: `2026-11-11T09:00:00Z` to `2026-11-11T04:00:00-05:00`. */
+export function tenantInstant(instant: string | number): string {
+  return `${new Date(new Date(instant).getTime() - 5 * 3_600_000).toISOString().slice(0, 19)}-05:00`;
+}
