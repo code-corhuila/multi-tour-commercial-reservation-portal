@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Injector, Provider, inject, input } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -48,7 +48,7 @@ export class PendingPaymentRowsComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => forkJoin({ rows: this.source.list(), labels: paymentLabels(this.methods) })).pipe(
     map(({ rows, labels }): State => (rows.length ? { kind: 'data', items: [{ rows, labels }] } : { kind: 'empty' })),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
   protected open(r: Reservation): void { this.navigation?.open('payments-followup', { reservation: r.id }); }
 }
 
