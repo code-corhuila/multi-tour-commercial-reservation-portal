@@ -22,7 +22,7 @@ class Stored extends ReservationsSource {
   override list(): Observable<readonly Reservation[]> { return of(this.items); }
 }
 const quoteDto = { reservationId: 'r-1', changeType: 'MODIFICATION', allowed: true, originalFinalValueCents: 300000, newFinalValueCents: 200000, differenceCents: -100000,
-  validatedValueCents: 250000, newPendingBalanceCents: 0, excessCents: 50000, seatDelta: -1, seatsAvailable: true };
+  validatedValueCents: 250000, newPendingBalanceCents: 0, excessCents: 50000, seatDelta: -1, seatsAvailable: true, projectedValueCents: 250000, discountCents: 50000 };
 const recordDto = { modificationId: 'm-1', reservationId: 'r-1', changeType: 'MODIFICATION', people: 2, originalFinalValueCents: 300000, newFinalValueCents: 200000,
   resultingPendingBalanceCents: 0, excessCents: 50000, seatDelta: -1, excessDecisionOpened: true, reservationStatus: 'PENDING_PAYMENT', paymentStatus: 'PARTIAL',
   reason: 'Un viajero menos', modifiedBy: 'u-1', modifiedAt: '2026-11-04T10:00:00Z' };
@@ -59,12 +59,20 @@ describe('modificationQuoteOverTheApiClient', () => {
     await expect(firstValueFrom(new ModificationApiQuote(client, new Stored([base])).admits('r-1'))).rejects.toMatchObject({ status: 403 });
   });
 
-  it('sends the travellers after the change and gives the lines as the service computed them, adding nothing up', async () => {
+  it('sends the travellers after the change and gives the lines, projected value and discounts included, as the service computed them', async () => {
     const { client, calls } = fakeClient({ ok: quoteDto });
     const lines = await firstValueFrom(new ModificationApiQuote(client, new Stored([base])).lines('r-1', { added: 0, removed: 1 }));
     expect(calls).toEqual([{ path: quotePath, method: 'POST', body: { changeType: 'MODIFICATION', people: 2 } }]);
-    expect(lines).toEqual({ allowed: true, projectedCents: null, discountCents: null, finalCents: 200000, balanceCents: 0, differenceCents: -100000, excessCents: 50000,
+    expect(lines).toEqual({ allowed: true, projectedCents: 250000, discountCents: 50000, finalCents: 200000, balanceCents: 0, differenceCents: -100000, excessCents: 50000,
       seatsAvailable: true });
+  });
+
+  it('leaves projected value and discounts empty when the service does not answer them, and never fills them in', async () => {
+    const { projectedValueCents, discountCents, ...older } = quoteDto;
+    const { client } = fakeClient({ ok: older });
+    expect(await firstValueFrom(new ModificationApiQuote(client, new Stored([base])).lines('r-1', { added: 0, removed: 1 })))
+      .toMatchObject({ projectedCents: null, discountCents: null, finalCents: 200000 });
+    expect([projectedValueCents, discountCents]).toEqual([250000, 50000]);
   });
 
   it('keeps a refused quote as it is and flags the departure without seats', async () => {
