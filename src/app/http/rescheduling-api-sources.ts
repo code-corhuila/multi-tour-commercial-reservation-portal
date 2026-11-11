@@ -2,7 +2,7 @@ import { Observable, forkJoin, map } from 'rxjs';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import type { Departure, Reservation } from '../reservations/model/reservation';
-import { EpisodeAnswer, MyProposalsSource, ProposedDeparture, ReschedulingEpisodeView, ReschedulingSource } from '../rescheduling/data/rescheduling-ports';
+import { EpisodeAnswer, EpisodeFilter, MyProposalsSource, ProposedDeparture, ReschedulingEpisodeView, ReschedulingSource } from '../rescheduling/data/rescheduling-ports';
 import { CHANNEL_LABEL } from '../rescheduling/rescheduling-copy';
 import { PortalApiClient } from '../shell-contract';
 import { API_BASE, listAll } from './api-paths';
@@ -20,6 +20,7 @@ export interface ReschedulingDto {
 }
 export const reschedulingsPath = `${API_BASE}/reschedulings`;
 const HOUR = 3_600_000;
+const hoursUntil = (at: string, now: number): number => Math.max(0, Math.floor((Date.parse(at) - now) / HOUR));
 
 /** The proposal the screens show: the pending one, else the last one answered (a voided or expired proposal is history). */
 export const shownProposal = (e: ReschedulingDto): ProposalDto | undefined =>
@@ -43,12 +44,13 @@ export function viewOf(e: ReschedulingDto, reservation: Reservation, departures:
   const original = departures.find((d) => d.id === e.originalDepartureId);
   const answer = answerOf(e, proposal);
   return {
-    reservationId: reservation.id, tourName: reservation.tourName, people: reservation.people, status: reservation.status,
+    reservationId: reservation.id, tourName: reservation.tourName, people: reservation.people, status: reservation.status, customer: reservation.leadCustomerName, originalDepartureId: e.originalDepartureId,
+    dueIn: answer ? null : proposal ? { kind: 'respond', hours: hoursUntil(proposal.responseDeadlineAt, now) } : { kind: 'propose', hours: hoursUntil(e.proposalDeadlineAt, now) },
     original: { tourName: original?.tourName ?? reservation.tourName, startsAt: original?.date ?? reservation.departureDate },
     proposal: proposal ? { id: proposal.proposedDepartureId, tourName: proposed?.tourName ?? reservation.tourName, startsAt: proposed?.date ?? '', freeSeats: proposed?.effectiveCapacity ?? 0 } : null,
     answer,
     deadlines: { proposeBy: e.proposalDeadlineAt, respondBy: proposal?.responseDeadlineAt ?? null, episodeEndsAt: e.episodeLimitAt,
-      remainingHours: Math.max(0, Math.floor((Date.parse(e.episodeLimitAt) - now) / HOUR)) },
+      remainingHours: hoursUntil(e.episodeLimitAt, now) },
     options: departures.filter((d) => d.tourName === reservation.tourName && d.id !== e.originalDepartureId).map(as),
     // AC-RP.7: the 100 % of the validated values a closed episode leaves; HU-COM-016 decides and executes it. Read from the reservation, never computed.
     history: historyOf(e),
@@ -66,6 +68,12 @@ export class ReschedulingApiSource extends ReschedulingSource {
       const reservation = all.find((r) => r.id === code), latest = found.at(-1);
       return latest && reservation ? viewOf(latest, reservation, open, this.now()) : null;
     }));
+  }
+
+  /** The list of the operator over GET /reschedulings narrowed by the service (reservationId, departureId); the customer name comes from the reservation. */
+  override list({ reservation, departure }: EpisodeFilter): Observable<readonly ReschedulingEpisodeView[]> {
+    return forkJoin([listAll<ReschedulingDto>(this.client, reschedulingsPath, { reservationId: reservation, departureId: departure }), this.reservations.list(), this.departures.list()]).pipe(map(([found, all, open]) =>
+      found.flatMap((e) => { const r = all.find((x) => x.id === e.reservationId); return r ? [viewOf(e, r, open, this.now())] : []; })));
   }
 }
 
