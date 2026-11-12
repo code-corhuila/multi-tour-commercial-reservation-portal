@@ -42,3 +42,10 @@ export abstract class CreditBalanceWriter {
   /** AC-CB.4: the customer's credit paid as a validated payment without proof; the first payment holds the seat in the same operation, or nothing is applied. */
   abstract apply(targetReservationId: string, amountCents: number, idempotencyKey: string): Observable<CreditApplyOutcome>;
 }
+
+/** AC-CB.10: a refusal is data with the mockup's text; a missing capability is an error 403. */
+export type CreditRequestOutcome = { readonly ok: true; readonly amountCents: number } | { readonly ok: false; readonly reason: string };
+/** AC-CB.10 (PROPUESTO actor "on the customer's behalf"): the operator opens the 24-hour refund request of a credit origin, with the customer's motive; the amount is set aside. */
+export abstract class CreditRefundRequester {
+  abstract request(sourceReservationId: string, amountCents: number, reason: string, idempotencyKey: string): Observable<CreditRequestOutcome>;
+}
