@@ -79,20 +79,20 @@ describe('establishmentsSourcesOverTheApiClient', () => {
     ]);
   });
 
-  it('posts the status transitions without a key', async () => {
+  it('posts the status transitions with their reason and without a key', async () => {
     const { client, calls } = fakeClient();
     const writer = new EstablishmentsApiWriter(client);
-    await firstValueFrom(writer.inactivate('e1'));
-    await firstValueFrom(writer.reactivate('e1'));
+    await firstValueFrom(writer.inactivate('e1', 'Cerrado por obras'));
+    await firstValueFrom(writer.reactivate('e1', 'Obras terminadas'));
     expect(calls).toEqual([
-      { path: `${API_BASE}/associated-establishments/e1/inactivate`, method: 'POST' },
-      { path: `${API_BASE}/associated-establishments/e1/reactivate`, method: 'POST' },
+      { path: `${API_BASE}/associated-establishments/e1/inactivate`, method: 'POST', body: { reason: 'Cerrado por obras' } },
+      { path: `${API_BASE}/associated-establishments/e1/reactivate`, method: 'POST', body: { reason: 'Obras terminadas' } },
     ]);
   });
 
   it('hands a refusal of a transition to the page with its message', async () => {
     const { client } = fakeClient({ fail: { status: 403, code: 'FORBIDDEN', message: 'not allowed', traceId: 't' } });
-    const error = await firstValueFrom(new EstablishmentsApiWriter(client).inactivate('e1')).catch((e) => e);
+    const error = await firstValueFrom(new EstablishmentsApiWriter(client).inactivate('e1', 'Cerrado por obras')).catch((e) => e);
     expect(error).toMatchObject({ status: 403, userMessage: 'not allowed' });
   });
 
