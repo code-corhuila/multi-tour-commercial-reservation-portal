@@ -20,6 +20,7 @@ import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.c
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CREDIT_BALANCE_PAYMENTS_LINK } from './app/credit-balance/components/credit-balance-links.component';
 import { CUSTOMER_CREDIT_CONTRIBUTIONS } from './app/credit-balance/components/customer-credit-panel.component';
+import { CUSTOMER_CREDIT_CHECKOUT } from './app/credit-balance/components/customer-credit-checkout.component';
 import { CUSTOMER_CREDIT_NOTICE } from './app/credit-balance/components/customer-credit-notice.component';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
@@ -120,6 +121,8 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(PAYMENTS_HEADER_ACTIONS, CREDIT_BALANCE_PAYMENTS_LINK),
       // HU-COM-017 AC-CB.13 (DP-CB6): the credit panel of Mis pagos and the credit notice of 17, only with the customer credit ports.
       ...CUSTOMER_CREDIT_CONTRIBUTIONS, CUSTOMER_CREDIT_NOTICE,
+      // HU-COM-017 AC-CB.12 (DP-CB6): the box "Aplicar mi saldo a favor" of 21, new and existing reservation.
+      ...CUSTOMER_CREDIT_CHECKOUT,
       // HU-COM-004 amendment: "Buscar una reserva" of Descuentos and "Aplicar descuento" of Reservas in mode; Administrator only, and only with the eligibility port.
       ...ADDITIONAL_DISCOUNT_CONTRIBUTIONS,
       // HU-COM-004 amendment: the panel "Motivos autorizables" of Descuentos, after the search panel; the Administrator only, and only with the reasons port.

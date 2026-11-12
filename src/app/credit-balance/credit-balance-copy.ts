@@ -14,6 +14,9 @@ export const CREDIT_BALANCE_COPY = {
   customer: 'Cliente', unknownCustomer: 'Cliente sin identificar', available: (money: string) => `Disponible ${money}`,
   sourceColumns: ['Reserva de origen', 'Saldo neto', 'En devolución', 'Disponible', ''], applyTo: 'Aplicar a la reserva', target: (id: string, balance: string) => `#${id} · saldo ${balance}`,
   apply: 'Aplicar como pago validado', noTargets: 'El cliente no tiene reservas con saldo pendiente donde aplicar.',
+  requestRefund: 'Solicitar devolución', refundAmount: 'Monto a devolver', refundMotive: 'Motivo o referencia del cliente', refundPlaceholder: 'Ej.: solicitud del cliente por correo', refundSend: 'Registrar solicitud',
+  /** The mockup own line (app.js, setupOperatorCreditScreen), with the due instant when the port gives it. */
+  refundRegistered: (money: string, due?: string) => `Solicitud registrada por ${money}. El Administrador del tenant decide${due ? ` hasta el ${due}` : ""}; sin decisión se autoriza automáticamente el monto y se notifica a todos los Administradores. Ejecución en máximo 5 días hábiles.`,
   history: (n: number) => `Historial de aplicaciones y devoluciones (${n})`, historyColumns: ['Fecha', 'Movimiento', 'Detalle', 'Reserva', 'Valor', 'Responsable'],
   movement: { ORIGEN: 'Origen', APLICACION: 'Aplicación', DEVOLUCION: 'Devolución' }, state: { PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', RECHAZADA: 'Rechazada' },
   origin: { TRATAMIENTO: 'Tratamiento pendiente registrado como saldo a favor del 100 %', EXCEDENTE: 'Excedente de comprobante aprobado' }, appliedTo: (id: string) => `Aplicado a la reserva ${id}`,
@@ -22,6 +25,7 @@ export const CREDIT_BALANCE_COPY = {
   applied: (money: string, id: string, first: boolean) => `Saldo a favor aplicado: ${money} como pago validado de ${id}${first ? '; el cupo quedó apartado en la misma operación' : ''}. Queda en auditoría.`,
   refusal: { notFound: 'No se encontró la reserva.', state: (label: string) => `La reserva está ${label}: no admite pagos nuevos.`, started: 'Desde la hora programada de inicio de la salida no se admiten pagos.',
     noPending: 'La reserva no tiene saldo pendiente.', zero: 'Indica un monto mayor a cero.', aboveAvailable: (money: string) => `El monto supera el saldo a favor disponible (${money}).`,
-    abovePending: (money: string) => `El monto supera el saldo pendiente de la reserva (${money}).`, noSeats: (n: number) => `No hay cupo suficiente en esta salida: ${n === 1 ? 'queda 1 cupo' : `quedan ${n} cupos`}. No se aplicó el saldo a favor.`,
+    abovePending: (money: string) => `El monto supera el saldo pendiente de la reserva (${money}).`, motiveRequired: 'Registra el motivo o la referencia de la solicitud del cliente.', aboveSource: (money: string) => `El monto supera el saldo disponible de la reserva de origen (${money}).`, noSource: 'No se encontró la reserva de origen del saldo.',
+    noSeats: (n: number) => `No hay cupo suficiente en esta salida: ${n === 1 ? 'queda 1 cupo' : `quedan ${n} cupos`}. No se aplicó el saldo a favor.`,
   },
 } as const;

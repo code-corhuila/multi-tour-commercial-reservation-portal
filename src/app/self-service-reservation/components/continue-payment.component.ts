@@ -5,6 +5,7 @@ import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { focusFirstError } from '../../shared/focus';
+import { CONTINUE_PAYMENT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
 import { departureLine, formatCop } from '../../shared/format';
 import { amountWithinBalance, minorUnitsToField } from '../../shared/money';
 import { CustomerPaymentSummary, MyPaymentsSource, TRANSFER_PAYMENT_AREA } from '../../my-payments/data/my-payments-source';
@@ -26,7 +27,7 @@ function stateOf(r: CustomerPaymentSummary | undefined): State {
  * Continuar opens screen 24 with the amount typed, in cents.
  */
 @Component({
-  selector: 'crp-continue-payment', imports: [ReadErrorComponent], changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: 'crp-continue-payment', imports: [ReadErrorComponent, PortalSlotOutlet], changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = state();
     <form class="crp-self-service-confirm" aria-labelledby="crp-continue-title" (submit)="$event.preventDefault(); next()" novalidate>
@@ -52,6 +53,7 @@ function stateOf(r: CustomerPaymentSummary | undefined): State {
                   <p class="crp-self-service-note">{{ t.hint(cop(r.balanceCents)) }}</p>
                   <p id="crp-continue-feedback" class="crp-self-service-field-error" aria-live="polite">{{ problem() ? t.invalidAmount(cop(r.balanceCents)) : '' }}</p>
                 </article>
+                <ng-container *crpSlot="blocks; inputs: { existing: true, reservation: { reservationId: r.reservationId } }" />
               </div>
               <aside class="crp-finish-aside">
                 <article class="crp-booking-card crp-self-service-summary"><h2>{{ t.summary }}</h2>
@@ -83,7 +85,7 @@ export class ContinuePaymentComponent {
   readonly reservationId = input.required<string>();
   private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
   private focusFirstErrorOnRender(): void { afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); }
-  protected readonly t = T; protected readonly common = MY_PAYMENTS_TEXT; protected readonly label = labelOf;
+  protected readonly blocks = CONTINUE_PAYMENT_BLOCKS; protected readonly t = T; protected readonly common = MY_PAYMENTS_TEXT; protected readonly label = labelOf;
   protected readonly cop = formatCop; protected readonly departure = departureLine; protected readonly travelers = travelers;
   protected readonly field = minorUnitsToField;
   protected readonly area = CLIENT_AREA;

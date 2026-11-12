@@ -1,12 +1,17 @@
-import { Provider } from '@angular/core';
+import { Optional, Provider } from '@angular/core';
+import { PaymentParametersSource } from '../payment-parameters/data/payment-parameters-ports';
+import { lookupOf } from './payment-parameters-demo';
 import { Observable, forkJoin, map, of, throwError } from 'rxjs';
 import { CustomerCredit, CustomerCreditRequest, CustomerCreditSource, CustomerCreditWriter } from '../credit-balance/data/customer-credit-ports';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import { ReservationsSource } from '../reservations/data/reservations-source';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
 import { seeded } from './credit-balance-demo';
-import { overviewOf } from './credit-overview-demo';
-import type { DemoReservationsStore } from './reservations-demo';
+import { DEMO_TENANT, applyCredit, overviewOf } from './credit-overview-demo';
+import { CreditApplyOutcome } from '../credit-balance/data/credit-balance-ports';
+import { DeparturesSource } from '../reservations/data/departures-source';
+import { ReservationParametersLookup, SEED_LOOKUP } from '../payment-parameters/model/payment-parameters';
+import type { DemoDeparturesStore, DemoReservationsStore } from './reservations-demo';
 
 // DEMO (spec 017- DD-1, DP-CB6): the customer sees the credit book of the one reservations store, restricted to the origins of their own reservations.
 const HOUR = 3_600_000;
@@ -30,10 +35,11 @@ export class DemoCustomerCreditSource extends CustomerCreditSource {
 /** The request is a line of the store the operator screen and HU-COM-016 read; it sets the amount aside and the decision waits 24 running hours. */
 export class DemoCustomerCreditWriter extends CustomerCreditWriter {
   constructor(private readonly store: DemoReservationsStore, private readonly mineOf: MyReservationsSource, private readonly clock: Clock,
-    private readonly answered = new Map<string, CustomerCreditRequest>()) { super(); }
+    private readonly answered = new Map<string, CustomerCreditRequest | CreditApplyOutcome>(), private readonly departures?: DemoDeparturesStore,
+    private readonly parameters: ReservationParametersLookup = SEED_LOOKUP) { super(); }
 
   override requestRefund(sourceReservationId: string, amountCents: number, key: string): Observable<CustomerCreditRequest> {
-    const known = this.answered.get(key);
+    const known = this.answered.get(key) as CustomerCreditRequest | undefined;
     if (known) return of(known);
     const now = this.clock.now();
     return creditOf(this.store, this.mineOf, Date.parse(now)).pipe(map((credit) => {
@@ -48,13 +54,28 @@ export class DemoCustomerCreditWriter extends CustomerCreditWriter {
       return stored;
     }));
   }
+  /** AC-CB.12: the least of the own credit and the pending balance; the refusals are those of the operator's apply (D-5). */
+  override apply(targetId: string, key: string): Observable<CreditApplyOutcome> {
+    const known = this.answered.get(key) as CreditApplyOutcome | undefined;
+    if (known) return of(known);
+    const now = this.clock.now();
+    return forkJoin([this.mineOf.listMine(), creditOf(this.store, this.mineOf, Date.parse(now))]).pipe(map(([own, credit]) => {
+      const target = this.store.items.find((r) => r.id === targetId);
+      if (!target || !own.some((r) => r.reservationId === targetId)) throw { status: 404 };
+      const outcome = applyCredit(this.store, this.departures!, now, DEMO_TENANT, 'Cliente', targetId, Math.min(credit.totalCents, target.balanceCents), this.parameters);
+      this.answered.set(key, outcome);
+      return outcome;
+    }));
+  }
 }
 
 /** After creditBalanceDemoProviders() (it seeds the store) and selfServiceDemoProviders(); the answered keys belong to the page. */
 export function customerCreditDemoProviders(): Provider[] {
-  const answered = new Map<string, CustomerCreditRequest>();
+  const answered = new Map<string, CustomerCreditRequest | CreditApplyOutcome>();
   return [
     { provide: CustomerCreditSource, useFactory: (s: ReservationsSource, m: MyReservationsSource, c: Clock) => new DemoCustomerCreditSource(seeded(s as DemoReservationsStore), m, c), deps: [ReservationsSource, MyReservationsSource, Clock] },
-    { provide: CustomerCreditWriter, useFactory: (s: ReservationsSource, m: MyReservationsSource, c: Clock) => new DemoCustomerCreditWriter(seeded(s as DemoReservationsStore), m, c, answered), deps: [ReservationsSource, MyReservationsSource, Clock] },
+    { provide: CustomerCreditWriter, deps: [ReservationsSource, MyReservationsSource, Clock, DeparturesSource, [new Optional(), PaymentParametersSource]],
+      useFactory: (s: ReservationsSource, m: MyReservationsSource, c: Clock, d: DeparturesSource, p: PaymentParametersSource | null) =>
+        new DemoCustomerCreditWriter(seeded(s as DemoReservationsStore), m, c, answered, d as DemoDeparturesStore, lookupOf(p)) },
   ];
 }

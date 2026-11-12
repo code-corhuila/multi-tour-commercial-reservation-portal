@@ -43,8 +43,8 @@ import { RefundsApiSource, RefundsApiWriter } from './http/refunds-api-sources';
 import { MyProposalsApiSource, ReschedulingApiSource } from './http/rescheduling-api-sources';
 import { ExternalAnswerApiWriter, ProposalAnswerApiWriter, ReschedulingApiWriter } from './http/rescheduling-api-writers';
 import { ExternalAnswerWriter, MyProposalsSource, ProposalAnswerWriter, ReschedulingSource, ReschedulingWriter } from './rescheduling/data/rescheduling-ports';
-import { CreditBalanceApiSource, CreditBalanceApiWriter } from './http/credit-balance-api-sources';
-import { CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
+import { CreditBalanceApiSource, CreditBalanceApiWriter, CreditRefundApiRequester } from './http/credit-balance-api-sources';
+import { CreditBalanceSource, CreditBalanceWriter, CreditRefundRequester } from './credit-balance/data/credit-balance-ports';
 import { CustomerCreditSource, CustomerCreditWriter } from './credit-balance/data/customer-credit-ports';
 import { CustomerCreditApiSource, CustomerCreditApiWriter } from './http/customer-credit-api-sources';
 import { RefundsSource, RefundsWriter } from './refunds/data/refunds-ports';
@@ -131,8 +131,9 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     // HU-COM-017: the credit book and its writes over the routes of the service (PROPOSED); the excess of a proof is recorded by the service, not by the portal.
     { provide: CreditBalanceSource, useFactory: () => new CreditBalanceApiSource(client, inject(ReservationsSource)) },
     { provide: CreditBalanceWriter, useFactory: () => new CreditBalanceApiWriter(client, inject(ReservationsSource)) },
+    { provide: CreditRefundRequester, useFactory: () => new CreditRefundApiRequester(client) },
     // HU-COM-017 AC-CB.13: the own credit and its refund request over the same routes; the service decides whose the credit is.
     { provide: CustomerCreditSource, useFactory: () => new CustomerCreditApiSource(client) },
-    { provide: CustomerCreditWriter, useFactory: () => new CustomerCreditApiWriter(client) },
+    { provide: CustomerCreditWriter, useFactory: () => new CustomerCreditApiWriter(client, inject(MyPaymentsSource)) },
   ];
 }
