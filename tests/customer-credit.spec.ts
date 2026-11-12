@@ -14,6 +14,10 @@ import { FixedClock } from '../src/app/demo/reservation-changes-demo';
 import { CreditBalance } from '../src/app/credit-balance/data/credit-balance-ports';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
+import { CUSTOMER_CREDIT_CONTRIBUTIONS } from '../src/app/credit-balance/components/customer-credit-panel.component';
+import { MyPaymentsPageComponent } from '../src/app/my-payments/pages/my-payments-page.component';
+import { MyPaymentsSource } from '../src/app/my-payments/data/my-payments-source';
+import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import { fakeClient, page } from './api-client.double';
@@ -127,6 +131,31 @@ describe('theCustomerCreditPanelOfMyPayments', () => {
     s.button('Solicitar devolución')!.click();
     await s.settle();
     expect(s.host.querySelector('[role="alert"]')?.textContent?.trim()).toBe(CUSTOMER_CREDIT_COPY.failed);
+  });
+});
+
+describe('thePanelIsDrawnInMyPaymentsByItsSlot', () => {
+  const summary = { reservationId: 'RES-O1', tourName: 'Tour', departureAt: '2026-11-07', reservationStatus: 'CANCELLED', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER', proofStatus: 'SIN_COMPROBANTE',
+    financialStatus: null, validatedCents: 0, balanceCents: 0, creditBalanceCents: 0 };
+  const page = async (withSlot: boolean) => {
+    const d = demo();
+    TestBed.configureTestingModule({ providers: [{ provide: MyPaymentsSource, useValue: { listMine: () => of([summary]) } }, { provide: CustomerContext, useValue: customerContextFor(['FINAL_CUSTOMER'], () => undefined) },
+      { provide: CustomerCreditSource, useValue: d.source }, { provide: CustomerCreditWriter, useValue: d.writer }, { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() },
+      ...(withSlot ? CUSTOMER_CREDIT_CONTRIBUTIONS : [])] as Provider[] });
+    const fixture = TestBed.createComponent(MyPaymentsPageComponent);
+    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    return (fixture.nativeElement as HTMLElement).textContent!.replace(/\s+/g, ' ');
+  };
+
+  it('draws the own credit and the request button instead of the read-only line', async () => {
+    const text = await page(true);
+    expect(text).toContain('Saldo a favor disponible: $300.000 (origen: reserva RES-O1).');
+    expect(text).toContain('Solicitar devolución');
+    expect(text).not.toContain('No tienes saldo a favor');
+  });
+
+  it('keeps the read-only line of the page when the build supplies no panel', async () => {
+    expect(await page(false)).toContain('No tienes saldo a favor');
   });
 });
 
