@@ -80,7 +80,7 @@ const SEEDS: readonly CreditBalance[] = [
   { id: 'SAF-1', reservationId: 'RES-1836', tenant: DEMO_TENANT, amountCents: 30_000_000, origin: 'TRATAMIENTO', status: 'PENDIENTE', recordedBy: 'Administrador del tenant (demo)', recordedAt: demoDate('2026-10-12T09:00:00-05:00'), appliedTo: null },
   { id: 'SAF-2', reservationId: 'RES-1831', tenant: DEMO_TENANT, amountCents: 15_000_000, origin: 'EXCEDENTE', status: 'PENDIENTE', recordedBy: 'Administrador del tenant (demo)', recordedAt: demoDate('2026-10-13T16:30:00-05:00'), appliedTo: null },
 ];
-const seeded = (s: DemoReservationsStore) => { if (!s.creditBalances.length) s.creditBalances = [...SEEDS]; return s; };
+export const seeded = (s: DemoReservationsStore) => { if (!s.creditBalances.length) s.creditBalances = [...SEEDS]; return s; };
 
 export function creditBalanceDemoProviders(): Provider[] {
   const answered = new Map<string, Answer>();
