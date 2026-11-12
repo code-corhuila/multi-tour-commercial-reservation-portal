@@ -1,4 +1,6 @@
-import { Observable, concat, defer, forkJoin, last, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, concat, defer, forkJoin, last, map, of, switchMap, throwError } from 'rxjs';
+import { CreditApplyOutcome } from '../credit-balance/data/credit-balance-ports';
+import { MyPaymentsSource } from '../my-payments/data/my-payments-source';
 import { CustomerCredit, CustomerCreditRequest, CustomerCreditSource, CustomerCreditWriter } from '../credit-balance/data/customer-credit-ports';
 import { ApiError, PortalApiClient } from '../shell-contract';
 import { API_BASE, call, listAll } from './api-paths';
@@ -36,7 +38,27 @@ export class CustomerCreditApiSource extends CustomerCreditSource {
  * credit with a key per credit (DP: not one atomic operation); the service refuses (422, 404) and the portal never judges.
  */
 export class CustomerCreditApiWriter extends CustomerCreditWriter {
-  constructor(private readonly client: PortalApiClient) { super(); }
+  constructor(private readonly client: PortalApiClient, private readonly payments?: MyPaymentsSource) { super(); }
+
+  /**
+   * POST /credit-balances/{id}/applications credit by credit for the least of the own credit and the pending balance (the first payment is the one with nothing validated yet);
+   * a refusal of the service (422, 409) is data with its message, the portal never judges. One key per credit (DP: not one atomic operation).
+   */
+  override apply(targetReservationId: string, idempotencyKey: string): Observable<CreditApplyOutcome> {
+    return forkJoin([listAll<CreditDto>(this.client, creditsPath), this.payments!.listMine()]).pipe(switchMap(([credits, mine]) => {
+      const target = mine.find((r) => r.reservationId === targetReservationId);
+      if (!target) return throwError((): Partial<ApiError> => ({ status: 404, code: 'NOT_FOUND' }));
+      let remaining = Math.min(credits.reduce((total, c) => total + c.availableCents, 0), target.balanceCents);
+      const wanted = remaining;
+      const steps = credits.filter((c) => c.availableCents > 0).flatMap((c, index) => {
+        const used = Math.min(c.availableCents, remaining);
+        remaining -= used;
+        return used > 0 ? [defer(() => call<unknown>(this.client, `${creditsPath}/${c.creditBalanceId}/applications`, { method: 'POST', body: { targetReservationId, amountCents: used },
+          headers: { 'Idempotency-Key': `${idempotencyKey}-${index + 1}` } }))] : [];
+      });
+      return concat(...steps, of(null)).pipe(last(), map((): CreditApplyOutcome => ({ ok: true, appliedCents: wanted, firstPayment: !target.validatedCents })));
+    }), catchError((error: ApiError) => (error.status === 422 || error.status === 409 ? of<CreditApplyOutcome>({ ok: false, reason: error.message }) : throwError(() => error))));
+  }
 
   override requestRefund(sourceReservationId: string, amountCents: number, idempotencyKey: string): Observable<CustomerCreditRequest> {
     return listAll<CreditDto>(this.client, creditsPath).pipe(switchMap((credits) => {
