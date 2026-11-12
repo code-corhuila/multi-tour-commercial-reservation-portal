@@ -14,8 +14,6 @@ export const RESCHEDULING_COPY = {
   /** PROPUESTO: the mockup draws no feedback for these two buttons. */
   sent: 'Propuesta enviada al cliente.',
   cancelled: (amount: string) => `La reserva queda Cancelada y se devuelve el 100 % de los valores pagados y validados: ${amount}.`,
-  listEyebrow: 'Episodios', listTitle: 'Reservas con salida cancelada o interrumpida', listColumns: ['Reserva', 'Cliente', 'Salida original', 'Estado', 'Plazo', 'Acción'], view: 'Ver',
-  listEmpty: 'No hay episodios de reprogramación. Se abren cuando una salida con reservas se cancela o se interrumpe por una causa no atribuible al cliente.',
   responseTitle: 'Registrar la respuesta del cliente',
   responseCopy: 'El cliente responde desde su panel. Si la respuesta llegó por un canal externo, regístrala aquí con su evidencia; el sistema conserva el actor y la fecha y hora. Una respuesta válida produce efecto inmediato.',
   decisionLabel: 'Respuesta del cliente', decisions: [['ACCEPTED', 'Acepta la nueva salida'], ['REJECTED', 'Rechaza la nueva salida']] as const,
@@ -24,6 +22,8 @@ export const RESCHEDULING_COPY = {
   recordedAccepted: 'Respuesta registrada: el cliente acepta. La misma reserva conserva sus pagos e historial y queda asignada a la nueva salida.',
   recordedRejected: 'Respuesta registrada: el cliente rechaza. La reserva se canceló y se determinó la devolución del 100 % de los valores validados.',
   historyTitle: 'Historial del episodio', historyColumns: ['Fecha y hora', 'Responsable', 'Acción', 'Detalle'],
+  listEyebrow: 'Episodios', listTitle: 'Reservas con salida cancelada o interrumpida', listColumns: ['Reserva', 'Cliente', 'Salida original', 'Estado', 'Plazo', 'Acción'], view: 'Ver',
+  listEmpty: 'No hay episodios de reprogramación. Se abren cuando una salida con reservas se cancela o se interrumpe por una causa no atribuible al cliente.',
   manage: 'Gestionar la reprogramación', rowAction: 'Reprogramar',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   /** PROPUESTO: the reservation has no rescheduling episode. */
@@ -68,6 +68,8 @@ export const PROPOSAL_COPY = {
   noticeLink: 'Responder propuesta de reprogramación',
 } as const;
 
+/** The channels in the words of the mockup, by contract code. */
+export const CHANNEL_LABEL: Readonly<Record<string, string>> = { EMAIL: 'Correo electrónico', PHONE: 'Teléfono', WHATSAPP: 'WhatsApp', IN_PERSON: 'Presencial' };
 /** The state of one episode in the list, as the mockup words it (app.js 11727). */
 export function episodeStateText(e: Pick<ReschedulingEpisodeView, 'answer' | 'proposal'>): string {
   if (e.answer) return { ACCEPTED: 'Aceptada', REJECTED: 'Rechazada', NO_ALTERNATIVE: 'Sin alternativa' }[e.answer];
@@ -78,5 +80,3 @@ export function episodeStateText(e: Pick<ReschedulingEpisodeView, 'answer' | 'pr
 export function dueText(e: Pick<ReschedulingEpisodeView, 'dueIn'>): string {
   return e.dueIn ? `${e.dueIn.kind === 'propose' ? 'Proponer' : 'Respuesta'} en ${e.dueIn.hours} h` : '—';
 }
-/** The channels in the words of the mockup, by contract code. */
-export const CHANNEL_LABEL: Readonly<Record<string, string>> = { EMAIL: 'Correo electrónico', PHONE: 'Teléfono', WHATSAPP: 'WhatsApp', IN_PERSON: 'Presencial' };
