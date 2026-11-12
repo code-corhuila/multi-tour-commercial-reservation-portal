@@ -26,6 +26,7 @@ import { reservationModificationDemoProviders } from './demo/reservation-modific
 import { myPaymentsDemoProviders } from './demo/my-payments-demo';
 import { reschedulingDemoProviders } from './demo/rescheduling-demo';
 import { creditBalanceDemoProviders } from './demo/credit-balance-demo';
+import { customerCreditDemoProviders } from './demo/customer-credit-demo';
 import { paymentParametersDemoProviders } from './demo/payment-parameters-demo';
 import { demoSessionProviders } from './demo/demo-fixtures';
 
@@ -72,6 +73,7 @@ function demoStores(): Provider[] {
     ...refundsDemoProviders(),
     ...reschedulingDemoProviders(),
     ...creditBalanceDemoProviders(),
+    ...customerCreditDemoProviders(),
     ...paymentParametersDemoProviders(),
   ];
 }

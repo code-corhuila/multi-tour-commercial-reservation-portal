@@ -47,6 +47,8 @@ export const OPERATOR_NOTIFICATIONS: PortalSlotToken = new InjectionToken('OPERA
 export const CLIENT_QUICK_ACTIONS: PortalSlotToken = new InjectionToken('CLIENT_QUICK_ACTIONS');
 /** 17 (panel-cliente): the "Notificaciones" section, drawn only when a notice is available. */
 export const CLIENT_NOTICES: PortalSlotToken = new InjectionToken('CLIENT_NOTICES');
+/** Mis pagos (mis-pagos.html): the credit panel of the customer, which replaces the read-only credit line of the page when a story contributes it. */
+export const MY_PAYMENTS_CREDIT: PortalSlotToken = new InjectionToken('MY_PAYMENTS_CREDIT');
 /** Mis reservas: lines of each reservation card under the departure line. Input: reservationId. */
 export const RESERVATION_CARD_EXTRAS: PortalSlotToken = new InjectionToken('RESERVATION_CARD_EXTRAS');
 /** 10A: header actions before "Volver a reservas", such as "Cancelar o modificar reserva". Input: reservation. */
