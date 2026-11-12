@@ -64,14 +64,14 @@ describe('everyScreenShowsOneOfTheFourStates', () => {
       ...establishmentNamed('Restaurant Beta', 'RESTAURANT'), associationStatus: 'INACTIVE',
     }]); await settle();
     expect(regions()).toEqual(['data']);
-    expect(element.querySelectorAll('table').length).toBe(1);
-    expect(element.querySelectorAll('tbody tr').length).toBe(2);
+    expect(element.querySelectorAll('table').length).toBe(2);
+    expect(element.querySelectorAll('table[data-state="data"] tbody tr').length).toBe(2);
     for (const text of ['Hotel Alpha', 'Restaurant Beta', ESTABLISHMENTS_COPY.types.HOTEL, ESTABLISHMENTS_COPY.types.RESTAURANT, 'Activo', 'Inactivo', 'Contact the establishment directly.']) {
       expect(element.querySelector('table')!.textContent).toContain(text);
     }
     expect(element.querySelector('table')!.textContent).not.toMatch(/ACTIVE|HOTEL|RESTAURANT/);
     // Read only (no writer): the Acción column is not drawn.
-    expect(Array.from(element.querySelectorAll('th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Información comercial', 'Estado y último cambio']);
+    expect(Array.from(element.querySelectorAll('table[data-state="data"] th'), (th) => th.textContent)).toEqual(['Establecimiento', 'Contacto', 'Estado y último cambio']);
     expect(element.querySelector('img, form, button')).toBeNull();
   });
   });
