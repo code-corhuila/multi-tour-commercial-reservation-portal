@@ -8,5 +8,7 @@ export const CUSTOMER_CREDIT_COPY = {
   requestsTitle: 'Solicitudes de devolución de saldo a favor', requestedOn: (date: string) => `(solicitada el ${date})`,
   state: { PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', AUTORIZADA: 'Autorizada', RECHAZADA: 'Rechazada' },
   requestsNote: 'El Administrador del tenant tiene 24 horas corridas para autorizar o rechazar de forma justificada; sin decisión, Multitour autoriza la devolución por el monto solicitado.',
+  checkoutNew: (money: string) => `Aplicar mi saldo a favor disponible (${money}) como pago de esta reserva. El valor aplicado cuenta como pago validado.`,
+  checkoutExisting: (money: string) => `Aplicar mi saldo a favor disponible (${money}) al saldo pendiente de esta reserva. El valor aplicado cuenta como pago validado, sin comprobante.`,
   noticeLead: 'Saldo a favor', notice: (money: string) => `tienes un saldo a favor de ${money}.`, see: 'Consultar saldo a favor',
 } as const;
