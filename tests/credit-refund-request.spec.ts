@@ -41,7 +41,7 @@ describe('refundRequestSetsTheAmountAsideAndStartsTheTwentyFourHours', () => {
     expect(overview.pendingDecisions).toBe(1);
     expect(overview.customers[0].sources[0]).toMatchObject({ requestedCents: 10_000_000, availableCents: 20_000_000 });
     expect(overview.requests).toEqual([expect.objectContaining({ reservationId: 'RES-O1', amountCents: 10_000_000, state: 'PENDIENTE_DE_AUTORIZACION', reason: 'Solicitud del cliente por correo',
-      requestedBy: 'Administrador del tenant (demo)', decisionDueAt: '2026-10-15T10:00:00-05:00' })]);
+      requestedBy: 'Administrador del tenant', decisionDueAt: '2026-10-15T10:00:00-05:00' })]);
   });
 
   it('answers a repeated key once', async () => {
