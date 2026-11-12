@@ -1,7 +1,7 @@
 import { Observable, catchError, concat, defer, forkJoin, last, map, of, switchMap, throwError } from 'rxjs';
 import { CREDIT_BALANCE_COPY as T } from '../credit-balance/credit-balance-copy';
 import {
-  CreditApplyOutcome, CreditBalance, CreditBalanceSource, CreditBalanceTreatment, CreditBalanceWriter, CreditCustomer, CreditMovement, CreditOverview, CreditRequest, ExcessSplit,
+  CreditApplyOutcome, CreditRefundRequester, CreditRequestOutcome, CreditBalance, CreditBalanceSource, CreditBalanceTreatment, CreditBalanceWriter, CreditCustomer, CreditMovement, CreditOverview, CreditRequest, ExcessSplit,
 } from '../credit-balance/data/credit-balance-ports';
 import { formatCop as money } from '../shared/format';
 import { Reservation, ReservationsSource } from '../reservations/data/reservations-source';
@@ -118,5 +118,22 @@ export class CreditBalanceApiWriter extends CreditBalanceWriter {
       if (remaining > 0) return of<CreditApplyOutcome>({ ok: false, reason: T.refusal.aboveAvailable(money(amountCents - remaining)) });
       return concat(...steps, of(null)).pipe(last(), map((): CreditApplyOutcome => ({ ok: true, appliedCents: amountCents, firstPayment: !target?.seatHeld })));
     }), catchError((error: ApiError) => (error.status === 422 || error.status === 409 ? of<CreditApplyOutcome>({ ok: false, reason: error.message }) : throwError(() => error))));
+  }
+}
+
+/**
+ * POST /credit-balances/{id}/refund-requests with the amount and the motive of the staff (the reason is required when staff asks, and the service never logs it). The credit is the
+ * one of the origin reservation; the service refuses an amount of zero or above the available (422) or a missing motive (400) and the portal shows its message.
+ */
+export class CreditRefundApiRequester extends CreditRefundRequester {
+  constructor(private readonly client: PortalApiClient) { super(); }
+
+  override request(sourceReservationId: string, amountCents: number, reason: string, idempotencyKey: string): Observable<CreditRequestOutcome> {
+    return listAll<CreditDto>(this.client, creditsPath).pipe(
+      map((credits) => credits.find((c) => c.sourceReservationId === sourceReservationId)),
+      switchMap((credit) => (credit ? call<unknown>(this.client, `${creditsPath}/${credit.creditBalanceId}/refund-requests`, { method: 'POST', body: { amountCents, reason }, headers: { 'Idempotency-Key': idempotencyKey } })
+        : throwError((): Partial<ApiError> => ({ status: 422, message: T.refusal.noSource })))),
+      map((): CreditRequestOutcome => ({ ok: true, amountCents })),
+      catchError((error: ApiError) => (error.status === 422 || error.status === 400 ? of<CreditRequestOutcome>({ ok: false, reason: error.message }) : throwError(() => error))));
   }
 }
