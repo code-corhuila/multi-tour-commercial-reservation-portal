@@ -107,7 +107,7 @@ export class CreditCustomerPanelComponent {
       next: (r) => {
         this.keys.delete(intention); this.busy.set(false);
         if (!r.ok) { this.refundError.set(r.reason); afterNextRender(() => focusFirstError(this.host), { injector: this.injector }); return; }
-        this.refundSource.set(null); this.settled.emit({ text: this.t.refundRegistered(formatCop(r.amountCents), source), ok: true });
+        this.refundSource.set(null); this.settled.emit({ text: this.t.refundRegistered(formatCop(r.amountCents), r.decisionDueAt && formatDateTime(r.decisionDueAt)), ok: true });
       },
       error: () => { this.busy.set(false); this.settled.emit({ text: this.t.failed, ok: false }); },
     });

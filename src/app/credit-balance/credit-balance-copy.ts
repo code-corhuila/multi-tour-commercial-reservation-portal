@@ -15,7 +15,8 @@ export const CREDIT_BALANCE_COPY = {
   sourceColumns: ['Reserva de origen', 'Saldo neto', 'En devolución', 'Disponible', ''], applyTo: 'Aplicar a la reserva', target: (id: string, balance: string) => `#${id} · saldo ${balance}`,
   apply: 'Aplicar como pago validado', noTargets: 'El cliente no tiene reservas con saldo pendiente donde aplicar.',
   requestRefund: 'Solicitar devolución', refundAmount: 'Monto a devolver', refundMotive: 'Motivo o referencia del cliente', refundPlaceholder: 'Ej.: solicitud del cliente por correo', refundSend: 'Registrar solicitud',
-  refundRegistered: (money: string, id: string) => `Solicitud de devolución registrada: ${money} del saldo de ${id}. El Administrador del tenant tiene 24 horas corridas para decidir.`,
+  /** The mockup own line (app.js, setupOperatorCreditScreen), with the due instant when the port gives it. */
+  refundRegistered: (money: string, due?: string) => `Solicitud registrada por ${money}. El Administrador del tenant decide${due ? ` hasta el ${due}` : ""}; sin decisión se autoriza automáticamente el monto y se notifica a todos los Administradores. Ejecución en máximo 5 días hábiles.`,
   history: (n: number) => `Historial de aplicaciones y devoluciones (${n})`, historyColumns: ['Fecha', 'Movimiento', 'Detalle', 'Reserva', 'Valor', 'Responsable'],
   movement: { ORIGEN: 'Origen', APLICACION: 'Aplicación', DEVOLUCION: 'Devolución' }, state: { PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', RECHAZADA: 'Rechazada' },
   origin: { TRATAMIENTO: 'Tratamiento pendiente registrado como saldo a favor del 100 %', EXCEDENTE: 'Excedente de comprobante aprobado' }, appliedTo: (id: string) => `Aplicado a la reserva ${id}`,

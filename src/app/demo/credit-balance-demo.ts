@@ -95,7 +95,7 @@ export class DemoCreditRefundRequester extends CreditRefundRequester {
     const request: CreditRequest = { id: `SAR-${this.store.creditRequests.length + 1}`, reservationId: sourceId, customer: origin.leadCustomerName, amountCents: cents, state: 'PENDIENTE_DE_AUTORIZACION',
       reason: reason.trim(), requestedBy: this.capabilities.roleLabel(), requestedAt: now, decisionDueAt: dueOf(now), tenant: this.tenant };
     this.store.creditRequests = [...this.store.creditRequests, request];
-    const done: CreditRequestOutcome = { ok: true, amountCents: cents };
+    const done: CreditRequestOutcome = { ok: true, amountCents: cents, decisionDueAt: request.decisionDueAt };
     this.answered.set(key, done);
     return of(done);
   }
