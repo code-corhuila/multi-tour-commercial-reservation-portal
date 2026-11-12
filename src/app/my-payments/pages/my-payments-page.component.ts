@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -8,6 +8,7 @@ import { PortalNavigation } from '../../portal-navigation';
 import { CustomerContext } from '../../self-service-reservation/data/customer-context';
 import { departureLine, formatCop } from '../../shared/format';
 import { PageState } from '../../shared/page-state';
+import { MY_PAYMENTS_CREDIT, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
 import { CustomerPaymentSummary, MyPaymentsSource } from '../data/my-payments-source';
 import { gridRows } from '../economic-rows';
 import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
@@ -15,7 +16,7 @@ import { MY_PAYMENTS_TEXT, labelOf } from '../my-payments-copy';
 const EXTENSION: Record<string, string> = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' };
 
 /** mis-pagos.html, opened from 17: one card per own reservation, read only (RN-MP4). With { reservation }, only that own one (AC-MP.5). */
-@Component({ imports: [ReadErrorComponent],
+@Component({ imports: [ReadErrorComponent, PortalSlotOutlet],
   selector: 'app-my-payments-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -33,8 +34,10 @@ const EXTENSION: Record<string, string> = { 'application/pdf': 'pdf', 'image/jpe
         @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @case ('empty') { <p role="status" data-state="empty">{{ t.empty }}</p> }
         @case ('data') {
+          @if (hasCreditPanel) { <ng-container *crpSlot="creditPanel" /> } @else {
           @let credit = creditNote(s.items);
           @if (credit.length) { <div class="crp-my-payments-credit">@for (line of credit; track line) { <p>{{ line }}</p> }</div> }
+          }
           <ul data-state="data" class="crp-my-payments-list">
             @for (r of s.items; track r.reservationId) {
               <li class="crp-my-payments-card"><p>{{ r.reservationId }}</p>&ngsp;<h3>{{ r.tourName }}</h3>&ngsp;<p>{{ departure(r.departureAt) }}</p>&ngsp;
@@ -61,6 +64,9 @@ export class MyPaymentsPageComponent {
   protected readonly cop = formatCop;
   protected readonly rows = gridRows;
   protected readonly departure = departureLine;
+  /** HU-COM-017 AC-CB.13: when a story contributes the credit panel it replaces the read-only line below. */
+  protected readonly creditPanel = MY_PAYMENTS_CREDIT;
+  protected readonly hasCreditPanel = slotEntries(MY_PAYMENTS_CREDIT, inject(Injector)).length > 0;
   /** Owner decision of 2026-10-13 (option A): a visitor reads the notice of Mis reservas, not the empty state. */
   protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly only = inject(PortalNavigation, { optional: true })?.params()['reservation'];
