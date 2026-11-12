@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { AssociatedEstablishmentsSource } from '../../establishments/data/associated-establishments-source';
@@ -97,7 +97,7 @@ export class CatalogHubPageComponent {
           const shown = cards.filter((each) => (!each.admin || this.canSeeEstablishments) && (this.navigation?.has(each.area) ?? false));
           return shown.length === 0 ? { kind: 'empty' } : { kind: 'data', items: shown };
         }),
-        catchError((error) => of<PageState<HubCard>>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })),
+        catchError((error) => of<PageState<HubCard>>(errorState(error, () => this.requests.next()))),
         startWith<PageState<HubCard>>({ kind: 'loading' }),
       )),
       takeUntilDestroyed(),

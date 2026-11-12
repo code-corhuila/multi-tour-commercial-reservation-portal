@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { ApiError } from '../../shell-contract';
@@ -153,7 +153,7 @@ export class CatalogPageComponent {
               const items = all.filter((each) => each.serviceType === 'TOUR');
               return items.length === 0 ? { kind: 'empty' } : { kind: 'data', items };
             }),
-            catchError((error) => of<PageState<CatalogItem>>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
+            catchError((error) => of<PageState<CatalogItem>>(errorState(error, () => this.reload()))),
             startWith<PageState<CatalogItem>>({ kind: 'loading' }),
           ),
         ),

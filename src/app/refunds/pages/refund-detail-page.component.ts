@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -89,7 +89,7 @@ export class RefundDetailPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.list().pipe(
     map((all): State => { const found = all.find((r) => r.id === this.id); return found ? { kind: 'data', items: [found] } : { kind: 'empty' }; }),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   protected value(event: Event): string { return (event.target as HTMLInputElement).value; }
   private key(intent: string): string { return (this.keys[intent] ??= this.ids.generate()); }

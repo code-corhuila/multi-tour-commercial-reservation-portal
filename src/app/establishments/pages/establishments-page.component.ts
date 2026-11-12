@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
@@ -144,7 +144,7 @@ export class EstablishmentsPageComponent {
     // RN-PE3: only the most recent request may supply the screen's next state.
     switchMap((filters) => this.source.list(filters).pipe(
       map((items): EstablishmentsPageState => items.length ? { kind: 'data', items } : { kind: 'empty' }),
-      catchError((error) => of<EstablishmentsPageState>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
+      catchError((error) => of<EstablishmentsPageState>(errorState(error, () => this.reload()))),
       startWith<EstablishmentsPageState>({ kind: 'loading' }),
     )),
   ), { initialValue: { kind: 'loading' } as EstablishmentsPageState });

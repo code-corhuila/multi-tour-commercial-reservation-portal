@@ -1,7 +1,7 @@
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { DeparturesSource, Departure, openDepartures } from '../../reservations/data/departures-source';
@@ -26,7 +26,7 @@ interface PricedTour { readonly tour: PublicTour; readonly value: TourValue; rea
 export function partOf<A, T>(requests: Subject<A>, read: (arg: A) => Observable<readonly T[]>, retry: () => void) {
   return toSignal(requests.pipe(switchMap((arg) => read(arg).pipe(
     map((items): PartState<T> => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError((error) => of<PartState<T>>({ kind: 'error', ...readFailure(error), retry })),
+    catchError((error) => of<PartState<T>>(errorState(error, retry))),
     startWith<PartState<T>>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PartState<T> });
 }

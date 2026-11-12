@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
@@ -71,7 +71,7 @@ export class ReschedulingProposalPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.mine().pipe(
     map((all): State => { const e = all.find((x) => x.reservationId === this.code); return e ? { kind: 'data', items: [e] } : { kind: 'empty' }; }),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
 
   /** The mockup's message, with the reservation's real state (spec section 5). */

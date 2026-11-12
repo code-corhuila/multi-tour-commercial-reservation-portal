@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { CustomerPaymentSummary, MyPaymentsSource, TRANSFER_PAYMENT_AREA } from '../../my-payments/data/my-payments-source';
@@ -26,7 +26,7 @@ abstract class PaymentResultPage {
   protected abstract pick(all: readonly CustomerPaymentSummary[]): CustomerPaymentSummary | undefined;
   protected readonly state = toSignal(this.requests.pipe(switchMap(() => this.source.listMine().pipe(
     map((all): PageState<CustomerPaymentSummary> => { const found = this.pick(all); return found ? { kind: 'data', items: [found] } : { kind: 'empty' }; }),
-    catchError((error) => of<PageState<CustomerPaymentSummary>>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
+    catchError((error) => of<PageState<CustomerPaymentSummary>>(errorState(error, () => this.reload()))),
     startWith<PageState<CustomerPaymentSummary>>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PageState<CustomerPaymentSummary> });
 
