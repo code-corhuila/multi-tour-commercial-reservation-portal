@@ -36,7 +36,7 @@ const demo = (role = 'TENANT_ADMINISTRATOR') => {
 describe('refundRequestSetsTheAmountAsideAndStartsTheTwentyFourHours', () => {
   it('creates the request pending, sets the amount aside and lists it with its motive and who registered it', async () => {
     const d = demo();
-    expect(await firstValueFrom(d.requester.request('RES-O1', 10_000_000, 'Solicitud del cliente por correo', 'k-1'))).toEqual({ ok: true, amountCents: 10_000_000 });
+    expect(await firstValueFrom(d.requester.request('RES-O1', 10_000_000, 'Solicitud del cliente por correo', 'k-1'))).toEqual({ ok: true, amountCents: 10_000_000, decisionDueAt: '2026-10-15T10:00:00-05:00' });
     const overview = await firstValueFrom(d.source.list());
     expect(overview.pendingDecisions).toBe(1);
     expect(overview.customers[0].sources[0]).toMatchObject({ requestedCents: 10_000_000, availableCents: 20_000_000 });
@@ -114,7 +114,7 @@ describe('theRefundRequestFormOfTheCreditScreen', () => {
     expect(s.host.querySelector('[data-credit-refund-form]')).toBeNull();
   });
 });
-const CREDIT_REFUND_OK = 'Solicitud de devolución registrada';
+const CREDIT_REFUND_OK = 'Solicitud registrada por $100.000. El Administrador del tenant decide hasta el 15 oct 2026 · 10:00; sin decisión se autoriza automáticamente el monto y se notifica a todos los Administradores. Ejecución en máximo 5 días hábiles.';
 
 describe('creditRefundRequestOverTheApiClient', () => {
   const credit = (id: string, source: string, available: number) => ({ creditBalanceId: id, sourceReservationId: source, customerId: 'cu-1', origin: 'CUSTOMER_CANCELLATION',
