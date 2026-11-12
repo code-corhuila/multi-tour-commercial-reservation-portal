@@ -229,6 +229,7 @@ const SPECIFIED_TREE = [
   'src/app/credit-balance/data/customer-credit-ports.ts',
   'src/app/credit-balance/components/customer-credit-panel.component.ts',
   'src/app/credit-balance/components/customer-credit-notice.component.ts',
+  'src/app/credit-balance/components/customer-credit-checkout.component.ts',
   'src/app/demo/customer-credit-demo.ts',
   'src/app/credit-balance/data/credit-balance-ports.ts',
   'src/app/credit-balance/components/credit-balance-action.component.ts',
