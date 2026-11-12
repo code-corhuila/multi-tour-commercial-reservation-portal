@@ -133,6 +133,6 @@ export function sourceProviders(client: PortalApiClient): Provider[] {
     { provide: CreditBalanceWriter, useFactory: () => new CreditBalanceApiWriter(client, inject(ReservationsSource)) },
     // HU-COM-017 AC-CB.13: the own credit and its refund request over the same routes; the service decides whose the credit is.
     { provide: CustomerCreditSource, useFactory: () => new CustomerCreditApiSource(client) },
-    { provide: CustomerCreditWriter, useFactory: () => new CustomerCreditApiWriter(client) },
+    { provide: CustomerCreditWriter, useFactory: () => new CustomerCreditApiWriter(client, inject(MyPaymentsSource)) },
   ];
 }
