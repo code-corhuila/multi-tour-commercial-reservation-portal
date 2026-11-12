@@ -1,6 +1,7 @@
 import { Optional, Provider } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { CreditApplyOutcome, CreditBalance, CreditBalanceSource, CreditBalanceTreatment, CreditBalanceWriter, CreditOverview, ExcessSplit } from '../credit-balance/data/credit-balance-ports';
+import { CREDIT_BALANCE_COPY as T } from '../credit-balance/credit-balance-copy';
+import { CreditRefundRequester, CreditRequestOutcome, CreditRequest, CreditApplyOutcome, CreditBalance, CreditBalanceSource, CreditBalanceTreatment, CreditBalanceWriter, CreditOverview, ExcessSplit } from '../credit-balance/data/credit-balance-ports';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { Reservation, ReservationsSource } from '../reservations/data/reservations-source';
@@ -11,6 +12,7 @@ import { lookupOf } from './payment-parameters-demo';
 import { DEMO_TENANT, applyCredit, overviewOf } from './credit-overview-demo';
 import type { DemoDeparturesStore, DemoReservationsStore } from './reservations-demo';
 import { refundFactsOf, resolveRefund } from './refunds-demo';
+import { formatCop } from '../shared/format';
 import { demoDate } from './demo-fixtures';
 
 // DEMO (spec 017- DD-1, G-B): credit balances are lines of the one reservations store of HU-COM-007 (plan D-02).
@@ -72,7 +74,35 @@ export class DemoCreditBalanceWriter extends CreditBalanceWriter {
   }
 }
 
-type Answer = CreditBalance | ExcessSplit | CreditApplyOutcome;
+type Answer = CreditBalance | ExcessSplit | CreditApplyOutcome | CreditRequestOutcome;
+
+/** AC-CB.10, AC-CB.14: the capability first (403); the refusals are the mockup's (zero, above the origin's available, no motive), kept per key like a success; the request sets the amount aside for 24 running hours. */
+export class DemoCreditRefundRequester extends CreditRefundRequester {
+  constructor(private readonly store: DemoReservationsStore, private readonly clock: Clock, private readonly capabilities: PortalCapabilities, private readonly tenant = DEMO_TENANT,
+    private readonly answered = new Map<string, Answer>()) { super(); }
+
+  override request(sourceId: string, cents: number, reason: string, key: string): Observable<CreditRequestOutcome> {
+    const known = this.answered.get(key) as CreditRequestOutcome | undefined;
+    if (known) return of(known);
+    if (!this.capabilities.canRequestCreditRefund()) return throwError(() => ({ status: 403 }));
+    const now = this.clock.now(), refuse = (text: string): Observable<CreditRequestOutcome> => { const r = { ok: false as const, reason: text }; this.answered.set(key, r); return of(r); };
+    const origin = this.store.items.find((r) => r.id === sourceId);
+    const available = overviewOf(this.store, Date.parse(now)).customers.flatMap((c) => c.sources).find((s) => s.reservationId === sourceId)?.availableCents ?? 0;
+    if (!origin) return refuse(T.refusal.noSource);
+    if (!(cents > 0)) return refuse(T.refusal.zero);
+    if (cents > available) return refuse(T.refusal.aboveSource(formatCop(available)));
+    if (!reason.trim()) return refuse(T.refusal.motiveRequired);
+    const request: CreditRequest = { id: `SAR-${this.store.creditRequests.length + 1}`, reservationId: sourceId, customer: origin.leadCustomerName, amountCents: cents, state: 'PENDIENTE_DE_AUTORIZACION',
+      reason: reason.trim(), requestedBy: this.capabilities.roleLabel(), requestedAt: now, decisionDueAt: dueOf(now), tenant: this.tenant };
+    this.store.creditRequests = [...this.store.creditRequests, request];
+    const done: CreditRequestOutcome = { ok: true, amountCents: cents, decisionDueAt: request.decisionDueAt };
+    this.answered.set(key, done);
+    return of(done);
+  }
+}
+/** 24 running hours later, as the wall clock of Colombia (UTC-5) the demo writes its instants in. */
+const dueOf = (now: string) => `${new Date(Date.parse(now) + 19 * 3_600_000).toISOString().slice(0, 19)}-05:00`;
+
 
 /** Registered in sources.demo.ts after reservationChangesDemoProviders(), over the same store and clock; the answered keys belong to the page. */
 /** DP-CB9 (PROPUESTO): the delivered demo shows data; the mockup book starts empty. Each seed once per page, on a cancelled reservation of a customer who has another one to pay. */
@@ -86,6 +116,7 @@ export function creditBalanceDemoProviders(): Provider[] {
   const answered = new Map<string, Answer>();
   return [
     { provide: CreditBalanceSource, useFactory: (s: ReservationsSource, c: Clock) => new DemoCreditBalanceSource(seeded(s as DemoReservationsStore), c), deps: [ReservationsSource, Clock] },
+    { provide: CreditRefundRequester, useFactory: (s: ReservationsSource, c: Clock, k: PortalCapabilities) => new DemoCreditRefundRequester(seeded(s as DemoReservationsStore), c, k, DEMO_TENANT, answered), deps: [ReservationsSource, Clock, PortalCapabilities] },
     { provide: CreditBalanceWriter, deps: [ReservationsSource, Clock, PortalCapabilities, DeparturesSource, [new Optional(), PaymentParametersSource]],
       useFactory: (s: ReservationsSource, c: Clock, k: PortalCapabilities, d: DeparturesSource, p: PaymentParametersSource | null) =>
         new DemoCreditBalanceWriter(seeded(s as DemoReservationsStore), c, k, DEMO_TENANT, answered, d as DemoDeparturesStore, lookupOf(p)) },
