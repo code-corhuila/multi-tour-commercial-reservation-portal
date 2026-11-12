@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -121,7 +121,7 @@ export class ReschedulingPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(combineLatest([toObservable(this.code), this.requests.pipe(startWith(undefined))]).pipe(switchMap(([code]) => this.source.episode(code).pipe(
     map((e): State => (e ? { kind: 'data', items: [e] } : { kind: 'empty' })),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
   protected statusLabel(code: string): string { return STATUS_LABEL[code as Status] ?? ''; }
   protected statusClass(code: string): string { return STATUS_CLASS[code as Status] ?? ''; }
