@@ -131,9 +131,9 @@ export class CreditRefundApiRequester extends CreditRefundRequester {
   override request(sourceReservationId: string, amountCents: number, reason: string, idempotencyKey: string): Observable<CreditRequestOutcome> {
     return listAll<CreditDto>(this.client, creditsPath).pipe(
       map((credits) => credits.find((c) => c.sourceReservationId === sourceReservationId)),
-      switchMap((credit) => (credit ? call<unknown>(this.client, `${creditsPath}/${credit.creditBalanceId}/refund-requests`, { method: 'POST', body: { amountCents, reason }, headers: { 'Idempotency-Key': idempotencyKey } })
+      switchMap((credit) => (credit ? call<{ decisionDueAt?: string }>(this.client, `${creditsPath}/${credit.creditBalanceId}/refund-requests`, { method: 'POST', body: { amountCents, reason }, headers: { 'Idempotency-Key': idempotencyKey } })
         : throwError((): Partial<ApiError> => ({ status: 422, message: T.refusal.noSource })))),
-      map((): CreditRequestOutcome => ({ ok: true, amountCents })),
+      map((d): CreditRequestOutcome => ({ ok: true, amountCents, ...(d?.decisionDueAt && { decisionDueAt: d.decisionDueAt }) })),
       catchError((error: ApiError) => (error.status === 422 || error.status === 400 ? of<CreditRequestOutcome>({ ok: false, reason: error.message }) : throwError(() => error))));
   }
 }
