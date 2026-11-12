@@ -142,6 +142,8 @@ export class PortalCapabilities {
   canRecordReschedulingAnswer(): boolean { return this.row.proposeRescheduling; }
   canRegisterCreditBalance(): boolean { return this.row.registerCreditBalance; }
   canApplyCreditBalance(): boolean { return this.row.actOnCreditBalance; }
+  /** AC-CB.10, DP-CB7: the same roles as applying; the other roles read. */
+  canRequestCreditRefund(): boolean { return this.row.actOnCreditBalance; }
   canManagePaymentParameters(): boolean { return this.row.managePaymentParameters; }
   canReadEstablishments(): boolean { return this.row.readEstablishments && this.catalog().canRead; }
   canRegisterEstablishments(): boolean { return this.catalog().canRegister; }
