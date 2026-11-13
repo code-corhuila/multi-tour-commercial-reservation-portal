@@ -10,7 +10,7 @@ import { actorAs } from './actor-context.double';
 import { ControllableEstablishmentsSource, establishmentNamed } from './associated-establishments-source.double';
 import { ControllableEstablishmentsWriter } from './associated-establishments-writer.double';
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
-import { formControls } from './establishment-form.helpers';
+import { confirmChange, formControls } from './establishment-form.helpers';
 
 // HU-COM-002 against the real API: the container builds an ApiError with a generic English message and keeps status, code and details;
 // the portal speaks Spanish from its own copy and never prints that English text.
@@ -95,14 +95,14 @@ describe('statusChangeRefusalsSpeakSpanish', () => {
   for (const [status, text] of [[403, 'No tienes permiso para esta acción.'], [404, R.notFound], [500, 'No se pudo completar la solicitud. Intenta de nuevo.']] as const) {
     it(`${status} on inactivate shows the Spanish text in the row`, async () => {
       const { source, writer, settle, element, click } = await openPage();
-      source.requests[0].reply([establishmentNamed('Alpha')]); await settle(); await click(ESTABLISHMENTS_COPY.inactivate);
+      source.requests[0].reply([establishmentNamed('Alpha')]); await settle(); await click(ESTABLISHMENTS_COPY.inactivate); await confirmChange(element, settle);
       writer.transitions[0].fail(refusal(status)); await settle();
       expect(rowAlert(element)).toBe(text);
     });
   }
   it('422 on reactivate says it cannot be reactivated in its current state', async () => {
     const { source, writer, settle, element, click } = await openPage();
-    source.requests[0].reply([{ ...establishmentNamed('Alpha'), associationStatus: 'INACTIVE' as const }]); await settle(); await click(ESTABLISHMENTS_COPY.reactivate);
+    source.requests[0].reply([{ ...establishmentNamed('Alpha'), associationStatus: 'INACTIVE' as const }]); await settle(); await click(ESTABLISHMENTS_COPY.reactivate); await confirmChange(element, settle);
     writer.transitions[0].fail(refusal(422)); await settle();
     expect(rowAlert(element)).toBe('No se puede reactivar este establecimiento en su estado actual.');
   });

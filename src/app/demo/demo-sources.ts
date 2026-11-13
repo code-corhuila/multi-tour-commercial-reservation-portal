@@ -18,8 +18,9 @@ const item = (n: number, serviceType: CatalogItem['serviceType'], commercialName
 });
 const place = (n: number, establishmentType: AssociatedEstablishment['establishmentType'], commercialName: string, associationStatus: AssociatedEstablishment['associationStatus'], commercialInformation: string): AssociatedEstablishment =>
   ({ associationId: `demo-est-${n}`, establishmentType, commercialName, commercialInformation, imageReference: `demo://image-${n}.jpg`, associationStatus,
+    contactEmail: `contacto${n}@demo.multitour.co`, contactPhone: `+57 8 87000${n}0`, ...(n % 2 ? { contactAddress: `Calle ${n} No. 5-${n}0, Neiva` } : {}),
     changes: [{ kind: 'REGISTERED', at: demoDate('2026-09-01T08:00:00'), by: 'Administrador Demo (Administrador del tenant)' },
-      ...(associationStatus === 'INACTIVE' ? [{ kind: 'INACTIVATED' as const, at: demoDate('2026-09-20T10:30:00'), by: 'Administrador Demo (Administrador del tenant)' }] : [])] });
+      ...(associationStatus === 'INACTIVE' ? [{ kind: 'INACTIVATED' as const, at: demoDate('2026-09-20T10:30:00'), by: 'Administrador Demo (Administrador del tenant)', reason: 'Cerrado por remodelación.' }] : [])] });
 
 export class DemoCatalogStore extends CatalogItemsSource {
   private items: CatalogItem[] = [
@@ -73,20 +74,20 @@ export class DemoEstablishmentsWriter extends AssociatedEstablishmentsWriter imp
   private sequence = 100;
   constructor(private readonly store: DemoEstablishmentsStore, private readonly env: DemoEstablishmentsEnvironment = { now: () => Date.now(), actor: () => 'Administrador del tenant (demo)' }) { super(); }
   /** One line of the bitácora; the instant is the tenant's wall clock (America/Bogota). */
-  private change(kind: EstablishmentChangeKind): EstablishmentChange { return { kind, at: tenantWallTime(new Date(this.env.now()).toISOString()).slice(0, 19), by: this.env.actor() }; }
+  private change(kind: EstablishmentChangeKind, reason?: string): EstablishmentChange { return { kind, at: tenantWallTime(new Date(this.env.now()).toISOString()).slice(0, 19), by: this.env.actor(), ...(reason ? { reason } : {}) }; }
   override register(c: RegisterEstablishmentCommand): Observable<AssociatedEstablishment> {
-    const created = { ...place(++this.sequence, c.establishmentType, c.commercialName, 'ACTIVE', c.commercialInformation), imageReference: `demo://${c.image.name}`, changes: [this.change('REGISTERED')] };
+    const created = { ...place(++this.sequence, c.establishmentType, c.commercialName, 'ACTIVE', c.commercialInformation), contactEmail: c.contactEmail, contactPhone: c.contactPhone, contactAddress: c.contactAddress, imageReference: `demo://${c.image.name}`, changes: [this.change('REGISTERED')] };
     this.store.items = [...this.store.items, created];
     return of(created);
   }
-  private set(id: string, changes: Partial<AssociatedEstablishment>, kind: EstablishmentChangeKind): Observable<AssociatedEstablishment> {
+  private set(id: string, changes: Partial<AssociatedEstablishment>, kind: EstablishmentChangeKind, reason?: string): Observable<AssociatedEstablishment> {
     const current = this.store.items.find((e) => e.associationId === id)!;
-    const next = { ...current, ...changes, changes: [...(current.changes ?? []), this.change(kind)] };
+    const next = { ...current, ...changes, changes: [...(current.changes ?? []), this.change(kind, reason)] };
     this.store.items = this.store.items.map((e) => (e.associationId === id ? next : e));
     return of(next);
   }
-  override inactivate(id: string): Observable<AssociatedEstablishment> { return this.set(id, { associationStatus: 'INACTIVE' }, 'INACTIVATED'); }
-  override reactivate(id: string): Observable<AssociatedEstablishment> { return this.set(id, { associationStatus: 'ACTIVE' }, 'REACTIVATED'); }
+  override inactivate(id: string, reason: string): Observable<AssociatedEstablishment> { return this.set(id, { associationStatus: 'INACTIVE' }, 'INACTIVATED', reason); }
+  override reactivate(id: string, reason: string): Observable<AssociatedEstablishment> { return this.set(id, { associationStatus: 'ACTIVE' }, 'REACTIVATED', reason); }
   update(id: string, command: UpdateEstablishmentCommand): Observable<AssociatedEstablishment> { return this.set(id, { commercialName: command.commercialName, commercialInformation: command.commercialInformation }, 'UPDATED'); }
 }
 

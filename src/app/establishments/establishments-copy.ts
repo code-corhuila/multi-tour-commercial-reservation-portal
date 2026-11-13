@@ -25,8 +25,17 @@ export const ESTABLISHMENTS_COPY = {
   panelEyebrow: 'Directorio asociado',
   panelTitle: 'Activar, inactivar o reactivar',
   denied: 'No tienes acceso a los establecimientos asociados.',
-  // The record has no contact field: the screen's "Contacto" is the commercial information, named as on the restaurants screen.
-  columns: { name: 'Establecimiento', info: 'Información comercial', status: 'Estado y último cambio', actions: 'Acción' },
+  columns: { name: 'Establecimiento', info: 'Contacto', status: 'Estado y último cambio', actions: 'Acción' },
+  noContact: 'Sin datos de contacto',
+  // admin-configurar-hospedaje.html "Datos de contacto" and its feedback line; numbered like the other sections of the form.
+  contactForm: { eyebrow: '03. Datos de contacto', email: 'Correo de contacto', phone: 'Teléfono', address: 'Dirección', emailPlaceholder: 'contacto@establecimiento.co',
+    required: 'Registra al menos un dato de contacto (correo o teléfono).', invalidEmail: 'Ingresa un correo de contacto válido.' },
+  // admin-gestionar-hospedaje.html dialog "Cambiar estado", drawn as an inline panel (spec 002, DP-002-V19-2: no floating layer).
+  stateChange: { eyebrow: 'Confirmación', title: (verb: string, name: string) => `${verb} ${name}`, reason: 'Motivo (obligatorio)', placeholder: 'Motivo para la bitácora', cancel: 'Cancelar',
+    copyInactivate: 'Dejará de mostrarse a los clientes del tenant en nuevas consultas. La información y el histórico se conservan.', copyReactivate: 'Restaura su visibilidad promocional para los clientes del tenant.',
+    confirmInactivate: 'Confirmar inactivación', confirmReactivate: 'Confirmar reactivación', required: 'El motivo es obligatorio para la trazabilidad.' },
+  // admin-gestionar-hospedaje.html panel "Trazabilidad / Bitácora de cambios".
+  log: { eyebrow: 'Trazabilidad', title: 'Bitácora de cambios', columns: ['Fecha y hora', 'Establecimiento', 'Evento', 'Responsable', 'Motivo'], empty: 'Sin movimientos registrados.', noReason: '—' },
   newEstablishment: 'Agregar establecimiento',
   inactivate: 'Inactivar',
   reactivate: 'Reactivar',
@@ -36,7 +45,7 @@ export const ESTABLISHMENTS_COPY = {
   managePanel: { title: (name: string) => `Gestionar establecimiento · ${name}`, close: 'Cerrar', name: 'Nombre del establecimiento', info: 'Información comercial', save: 'Guardar cambios',
     nameInvalid: 'Obligatorio: de 1 a 255 caracteres.', saved: 'Información actualizada correctamente.', logTitle: 'Bitácora de cambios', logColumns: ['Fecha', 'Responsable', 'Cambio'], noChanges: 'Sin cambios registrados.', noChangeInfo: 'Sin información de cambios todavía.' },
   noChange: 'Sin cambios registrados',
-  lastChange: (kind: EstablishmentChangeKind, by: string, at: string) => `Último cambio: ${CHANGE_LABEL[kind]} por ${by} · ${changeWhen(at)}`,
+  lastChange: (kind: EstablishmentChangeKind, by: string, at: string, reason?: string) => `Último cambio: ${CHANGE_LABEL[kind]} por ${by} · ${changeWhen(at)}${reason ? `. Motivo: ${reason}` : ''}`,
   changeLabel: CHANGE_LABEL,
   loading: 'Cargando',
   empty: 'Sin resultados',
@@ -44,7 +53,7 @@ export const ESTABLISHMENTS_COPY = {
   // HU-COM-002 against the real API: the container's message is generic English, so every refusal is mapped here by status, code and field.
   refusals: {
     imageSize: 'La imagen no puede superar 800 KB.', imageType: 'La imagen debe ser PNG, JPEG o WebP.', imageInvalid: 'La imagen no es válida.',
-    fields: { establishmentType: 'El tipo de establecimiento no es válido.', commercialName: 'Obligatorio: de 1 a 255 caracteres.', commercialInformation: 'La información comercial no es válida.' },
+    fields: { establishmentType: 'El tipo de establecimiento no es válido.', commercialName: 'Obligatorio: de 1 a 255 caracteres.', commercialInformation: 'La información comercial no es válida.', contactEmail: 'Ingresa un correo de contacto válido.' },
     forbidden: 'No tienes permiso para esta acción.', notFound: 'El establecimiento ya no existe.', cannotReactivate: 'No se puede reactivar este establecimiento en su estado actual.',
     requestFailed: 'No se pudo completar la solicitud. Intenta de nuevo.',
   },
@@ -56,8 +65,8 @@ export const ESTABLISHMENTS_COPY = {
 
 
 type Refusal = Partial<ApiError> | null | undefined;
-export type RegistrationField = 'establishmentType' | 'commercialName' | 'commercialInformation' | 'image';
-const TEXT_FIELDS: readonly string[] = ['establishmentType', 'commercialName', 'commercialInformation'];
+export type RegistrationField = 'establishmentType' | 'commercialName' | 'commercialInformation' | 'contactEmail' | 'image';
+const TEXT_FIELDS: readonly string[] = ['establishmentType', 'commercialName', 'commercialInformation', 'contactEmail'];
 
 /** Image detail of the API: by its words a size refusal, a type refusal or, otherwise, a generic one. */
 const imageText = (message: string): string => /size|large|big|800|kb|byte/i.test(message) ? ESTABLISHMENTS_COPY.refusals.imageSize : /type|format|content|png|jpe?g|webp/i.test(message) ? ESTABLISHMENTS_COPY.refusals.imageType : ESTABLISHMENTS_COPY.refusals.imageInvalid;
