@@ -348,9 +348,9 @@ describe('rejectionIsOfferedOnlyWhilePendingAuthorizationAndToTheAdministrator',
     return s.button('Rechazar devolución') !== undefined;
   };
   it('draws "Rechazar devolución" for a refund pending its authorization, with the Administrator only', async () => {
-    expect(await rejectOffered('RES-N')).toBe(true);
+    expect(await rejectOffered('SAR-N')).toBe(true);
     TestBed.resetTestingModule();
-    expect(await rejectOffered('RES-N', 'OPERATIONAL_COLLABORATOR')).toBe(false);
+    expect(await rejectOffered('SAR-N', 'OPERATIONAL_COLLABORATOR')).toBe(false);
   });
 
   it('does not draw it while the 24 hours run (the treatment buttons instead), nor once authorized', async () => {
@@ -367,7 +367,7 @@ describe('rejectionIsOfferedOnlyWhilePendingAuthorizationAndToTheAdministrator',
     const { writer } = demo();
     await expect(firstValueFrom(writer.reject('RES-B', 'No procede (demo)', 'k1'))).rejects.toMatchObject({ status: 409 });
     await expect(firstValueFrom(writer.reject('RES-N', '', 'k2'))).rejects.toMatchObject({ status: 409 });
-    expect(await firstValueFrom(writer.reject('RES-N', 'No procede (demo)', 'k3'))).toMatchObject({ state: 'RECHAZADA' });
+    expect(await firstValueFrom(writer.reject('SAR-N', 'No procede (demo)', 'k3'))).toMatchObject({ state: 'RECHAZADA' });
   });
 });
 
@@ -388,7 +388,7 @@ describe('refundTextsMatchTheMockupV19', () => {
   });
 
   it('the detail draws the frame, the notices, the rows and the decision panel of admin-detalle-devolucion.html', async () => {
-    const s = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'RES-N');
+    const s = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'SAR-N');
     expect(header(s)).toEqual(['Control de cobro', 'Detalle de devolución', 'Volver a solicitudes']);
     expect(s.texts('.crp-access-note')[0]).toBe('Solo el Administrador del tenant puede autorizar o rechazar una devolución o decidir el tratamiento de valores abonados. El Colaborador operativo solo puede registrar la ejecución cuando exista autorización previa y trazable (o una determinación automática, que cuenta como autorización).');
     expect(s.texts('dl dt')).toEqual(['Reserva relacionada', 'Cliente', 'Motivo / causal', 'Observación administrativa', 'Monto', 'Motivo de la decisión', 'Responsable', 'Fecha',
