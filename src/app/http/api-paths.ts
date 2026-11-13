@@ -13,6 +13,7 @@ export const establishmentsPath = (associationId?: string, action?: 'inactivate'
   [`${API_BASE}/associated-establishments`, associationId, action].filter(Boolean).join('/');
 /** HU-COM-007 (PROPOSED routes): the departures of one tour, the quote of a selection and the reservations. */
 export const departuresPath = (serviceId: string): string => `${catalogPath(serviceId)}/departures`;
+export const cancellationPoliciesPath = (): string => `${API_BASE}/cancellation-policies`;
 export const reservationQuotesPath = (): string => `${API_BASE}/reservation-quotes`;
 /** The Final Customer's own door to the same quote (PROPOSED, HU-COM-008 DP-12): the tenant comes from the token. */
 export const ownReservationQuotesPath = (): string => `${API_BASE}/own/reservation-quotes`;
