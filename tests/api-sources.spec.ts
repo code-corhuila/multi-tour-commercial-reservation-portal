@@ -75,6 +75,7 @@ describe('establishmentsSourcesOverTheApiClient', () => {
     await firstValueFrom(source.get('e1'));
     expect(calls.map((c) => c.path)).toEqual([
       `${API_BASE}/associated-establishments?page=1&limit=100&establishmentType=HOTEL&associationStatus=INACTIVE`,
+      `${API_BASE}/associated-establishments/changes?page=1&limit=100&establishmentType=HOTEL`,
       `${API_BASE}/associated-establishments/e1`,
     ]);
   });
