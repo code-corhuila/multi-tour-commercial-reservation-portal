@@ -70,6 +70,7 @@ const SPECIFIED_TREE = [
   'src/app/establishments/data/associated-establishments-writer.ts',
   'src/app/establishments/components/establishment-form.component.ts',
   'src/app/establishments/components/establishment-manage.component.ts',
+  'src/app/establishments/components/establishment-state-change.component.ts',
   'src/app/establishments/establishments-copy.ts',
   'src/app/establishments/establishments.routes.ts',
   'src/app/establishments/model/associated-establishment.ts',
