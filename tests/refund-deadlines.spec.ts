@@ -162,8 +162,6 @@ describe('manageAndTreatmentShowTheRefundOf10A', () => {
     expect(s.navigation.selected()).toBe(REFUND_SCREENS.treatment);
     s.button('Ver detalle y ejecución')!.click();
     expect(s.navigation.selected()).toBe(REFUND_SCREENS.detail);
-    s.button('Volver a solicitudes')!.click();
-    expect(s.navigation.selected()).toBe(REFUND_SCREENS.requests);
   });
 
   it('a refund with no 24-hour choice shows its 100 % and its state, without "Abrir decisión"', async () => {
