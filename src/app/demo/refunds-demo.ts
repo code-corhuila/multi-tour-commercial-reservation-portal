@@ -59,7 +59,8 @@ export function resolveRequest(q: CreditRequest, now: number): Refund {
   const d = q.decision, e = q.execution, state = e ? 'EJECUTADA' : q.state, due = state === 'AUTORIZADA' ? businessDaysAfter(Date.parse(d!.at), 5) : null;
   return { id: q.id, origin: 'CREDIT_BALANCE_REQUEST', reservation: q.reservationId, customer: q.customer, reason: REQUEST_REASON, amountCents: q.amountCents, state,
     decisionReason: d?.reason || null, owner: e?.by ?? d?.by ?? null, date: e?.at ?? d?.at ?? q.requestedAt, method: (e?.method as RefundMethod) ?? null, cashMovement: e?.cashMovement ?? null,
-    remainingMinutes: null, defaulted: d?.by === AUTOMATIC, overdue: due !== null && now >= due, note: null, decisionDueAt: null, executionDueAt: due === null ? null : colombian(due) };
+    remainingMinutes: null, defaulted: d?.by === AUTOMATIC, overdue: due !== null && now >= due, note: null, decisionDueAt: null, executionDueAt: due === null ? null : colombian(due),
+    reservationStatus: null, originType: 'CANCELLATION', paidCents: q.amountCents, registeredAt: q.requestedAt };
 }
 
 /** Lists the refunds over the clock; a default that applies is recorded once in the store (plan D-06). */
