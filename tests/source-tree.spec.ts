@@ -50,6 +50,7 @@ const SPECIFIED_TREE = [
   'src/app/http/proof-file-api-source.ts',
   'src/app/http/modification-api-sources.ts',
   'src/app/http/proof-review-api-sources.ts',
+  'src/app/http/register-payment-saga.ts',
   'src/app/http/payment-parameters-api-sources.ts',
   'src/app/http/reservations-api-sources.ts',
   'src/app/http/self-service-api-sources.ts',
