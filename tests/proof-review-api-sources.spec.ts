@@ -72,7 +72,7 @@ describe('proofReviewWriterOverTheApiClient', () => {
     const saved = await firstValueFrom(new ProofReviewApiWriter(client, 0).decide(approve, 'key-12345678'));
     expect(calls[0]).toMatchObject({ path: SAGA, method: 'POST', headers: { 'Idempotency-Key': 'key-12345678' },
       body: { reservationId: 'r-1', paymentId: 'p-1', paymentMedium: 'TRANSFER', amountCents: 4500, concept: 'Comprobante de transferencia aprobado', reason: 'Diferencia' } });
-    expect((calls[0].body as { businessDate: string }).businessDate).toMatch(/^d{4}-d{2}-d{2}$/);
+    expect((calls[0].body as { businessDate: string }).businessDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(calls.some((c) => c.path.endsWith('/approve'))).toBe(false);
     expect(calls[1].path).toBe(`${API_BASE}/payment-proofs/p-1`);
     expect(saved.status).toBe('CONFIRMADA');
