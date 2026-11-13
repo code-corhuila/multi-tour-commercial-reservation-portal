@@ -2,6 +2,7 @@ import { Provider } from '@angular/core';
 import { Observable, map, of, throwError } from 'rxjs';
 import { RegisteringUser } from '../payments/data/payments-writer';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
+import type { CreditRequest } from '../credit-balance/data/credit-balance-ports';
 import { Reservation, ReservationsSource } from '../reservations/data/reservations-source';
 import type { RefundAct } from '../reservations/model/reservation';
 import { ExecuteOutcome, Refund, RefundMethod, RefundsSource, RefundsWriter } from '../refunds/data/refunds-ports';
@@ -41,7 +42,7 @@ export function refundFactsOf(r: Reservation, now: number): Facts | null {
 export function resolveRefund(r: Reservation, f: Facts, now: number): Refund {
   const { authorization: a, execution: e, rejection: j, creditBalance: c } = f;
   const state = e ? 'EJECUTADA' : j ? 'RECHAZADA' : c ? 'SALDO_A_FAVOR' : a ? 'AUTORIZADA' : f.decision || FULL.has(f.origin) ? 'PENDIENTE_DE_AUTORIZACION' : 'PENDIENTE_DE_DECISION';
-  return { id: r.id, customer: r.leadCustomerName, reason: f.reason, amountCents: FULL.has(f.origin) ? r.validatedCents ?? f.amountCents : f.amountCents, state,
+  return { id: r.id, origin: 'OTHER', customer: r.leadCustomerName, reason: f.reason, amountCents: FULL.has(f.origin) ? r.validatedCents ?? f.amountCents : f.amountCents, state,
     decisionReason: j?.reason ?? c?.reason ?? a?.reason ?? null, owner: e?.by ?? j?.by ?? c?.by ?? a?.by ?? null, date: e?.at ?? c?.at ?? f.recognizedAt, method: (e?.method as RefundMethod) ?? null, cashMovement: e?.cashMovement ?? null,
     remainingMinutes: state === 'PENDIENTE_DE_DECISION' ? Math.floor((deadlineOf(f) - now) / 60_000) : null, defaulted: a?.by === AUTOMATIC,
     overdue: state === 'AUTORIZADA' && now >= businessDaysAfter(Date.parse(a!.at), 5), note: f.note ?? null,
@@ -49,16 +50,32 @@ export function resolveRefund(r: Reservation, f: Facts, now: number): Refund {
     reservationStatus: r.status, originType: f.origin === 'LOWER_VALUE' ? 'MODIFICATION' : 'CANCELLATION', paidCents: r.validatedCents ?? f.amountCents, registeredAt: f.recognizedAt };
 }
 
+const REQUEST_REASON = 'Solicitud de devolución de saldo a favor';
+/** AC-RF.12, RN-RES-009: with no decision in the 24 hours the requested amount is authorized by Multitour (an empty reason), recorded once in the store. */
+const withDefault = (q: CreditRequest, now: number): CreditRequest => q.state === 'PENDIENTE_DE_AUTORIZACION' && now >= Date.parse(q.decisionDueAt)
+  ? { ...q, state: 'AUTORIZADA', decision: { by: AUTOMATIC, at: colombian(Date.parse(q.decisionDueAt)), reason: '' } } : q;
+/** A request to refund a credit balance as a refund of the list (its own id; the reservation code beside it). */
+export function resolveRequest(q: CreditRequest, now: number): Refund {
+  const d = q.decision, e = q.execution, state = e ? 'EJECUTADA' : q.state, due = state === 'AUTORIZADA' ? businessDaysAfter(Date.parse(d!.at), 5) : null;
+  return { id: q.id, origin: 'CREDIT_BALANCE_REQUEST', reservation: q.reservationId, customer: q.customer, reason: REQUEST_REASON, amountCents: q.amountCents, state,
+    decisionReason: d?.reason || null, owner: e?.by ?? d?.by ?? null, date: e?.at ?? d?.at ?? q.requestedAt, method: (e?.method as RefundMethod) ?? null, cashMovement: e?.cashMovement ?? null,
+    remainingMinutes: null, defaulted: d?.by === AUTOMATIC, overdue: due !== null && now >= due, note: null, decisionDueAt: null, executionDueAt: due === null ? null : colombian(due) };
+}
+
 /** Lists the refunds over the clock; a default that applies is recorded once in the store (plan D-06). */
 export class DemoRefundsSource extends RefundsSource {
   constructor(private readonly store: DemoReservationsStore, private readonly clock: Clock) { super(); }
   override list(): Observable<readonly Refund[]> {
     const now = Date.parse(this.clock.now());
-    return this.store.list().pipe(map((all) => all.flatMap((r) => {
-      const f = keptAsCreditBalance(this.store, r.id) ? null : refundFactsOf(r, now);
-      if (f?.authorization && !r.refund?.authorization) this.store.items = this.store.items.map((x) => (x.id === r.id ? { ...x, refund: f } : x));
-      return f ? [resolveRefund(r, f, now)] : [];
-    })));
+    return this.store.list().pipe(map((all) => {
+      const requests = this.store.creditRequests.map((q) => withDefault(q, now));
+      if (requests.some((q, i) => q !== this.store.creditRequests[i])) this.store.creditRequests = requests;
+      return [...all.flatMap((r) => {
+        const f = keptAsCreditBalance(this.store, r.id) ? null : refundFactsOf(r, now);
+        if (f?.authorization && !r.refund?.authorization) this.store.items = this.store.items.map((x) => (x.id === r.id ? { ...x, refund: f } : x));
+        return f ? [resolveRefund(r, f, now)] : [];
+      }), ...requests.map((q) => resolveRequest(q, now))];
+    }));
   }
 }
 
@@ -72,11 +89,14 @@ export class DemoRefundsWriter extends RefundsWriter {
   }
 
   override authorize(id: string, reason: string, key: string): Observable<Refund> {
+    if (this.requestOf(id)) return this.decideRequest(id, key, 'authorization', reason);
     return this.move(id, key, 'PENDIENTE_DE_AUTORIZACION', 'authorization', !!reason.trim(), (f) => ({ ...f, authorization: { ...this.act(), reason: reason.trim() } }));
   }
 
+  /** D-3, RN-RES-009: only a request to refund a credit balance is rejected; any other refund is refused (409) after the capability check. */
   override reject(id: string, reason: string, key: string): Observable<Refund> {
-    return this.move(id, key, 'PENDIENTE_DE_AUTORIZACION', 'rejection', !!reason.trim(), (f) => ({ ...f, rejection: { ...this.act(), reason: reason.trim() } }));
+    if (this.requestOf(id)) return this.decideRequest(id, key, 'rejection', reason);
+    return this.can.canAuthorizeRefund() ? refuse(409, 'refund-rejection-refused') : refuse(403, 'refund-rejection-forbidden');
   }
 
   override keepAsCreditBalance(id: string, reason: string, key: string): Observable<Refund> {
@@ -87,6 +107,7 @@ export class DemoRefundsWriter extends RefundsWriter {
     const known = this.answered.get(key) as ExecuteOutcome | undefined, c = this.current(id);
     if (known) return of(known);
     if (!this.can.canExecuteRefund()) return refuse(403, 'refund-execution-forbidden');
+    if (this.requestOf(id)) return this.executeRequest(id, method, key);
     if (c?.refund.state !== 'AUTORIZADA') return refuse(409, 'refund-not-authorized');
     if (!method) return of(this.keep(key, { kind: 'credit-balance', refund: this.save(c.r, { ...c.f, creditBalance: this.act() }) }));
     if (this.cashFails.has(id)) return of({ kind: 'cash-failed', refund: c.refund });
@@ -94,6 +115,25 @@ export class DemoRefundsWriter extends RefundsWriter {
     return of(this.keep(key, { kind: 'executed', refund: this.save(c.r, { ...c.f, execution }) }));
   }
 
+  private requestOf(id: string): CreditRequest | undefined { return this.store.creditRequests.find((q) => q.id === id); }
+  private saveRequest(q: CreditRequest): Refund {
+    this.store.creditRequests = this.store.creditRequests.map((x) => (x.id === q.id ? q : x));
+    return resolveRequest(q, Date.parse(this.clock.now()));
+  }
+  /** AC-RF.12: the Administrator authorizes or rejects an open request with a reason; the 24-hour default is applied first, so a lapsed request is already authorized (409). */
+  private decideRequest(id: string, key: string, act: 'authorization' | 'rejection', reason: string): Observable<Refund> {
+    const known = this.answered.get(key) as Refund | undefined;
+    if (known) return of(known);
+    if (!this.can.canAuthorizeRefund()) return refuse(403, `refund-${act}-forbidden`);
+    const q = withDefault(this.requestOf(id)!, Date.parse(this.clock.now()));
+    if (!reason.trim() || q.state !== 'PENDIENTE_DE_AUTORIZACION') { this.saveRequest(q); return refuse(409, `refund-${act}-refused`); }
+    return of(this.keep(key, this.saveRequest({ ...q, state: act === 'authorization' ? 'AUTORIZADA' : 'RECHAZADA', decision: { ...this.act(), reason: reason.trim() } })));
+  }
+  private executeRequest(id: string, method: RefundMethod | null, key: string): Observable<ExecuteOutcome> {
+    const q = this.requestOf(id)!;
+    if (q.state !== 'AUTORIZADA' || q.execution || !method) return refuse(409, 'refund-not-authorized');
+    return of(this.keep(key, { kind: 'executed' as const, refund: this.saveRequest({ ...q, execution: { ...this.act(), method, cashMovement: `MC-${id}` } }) }));
+  }
   private act(): RefundAct { return { by: this.user.label(), at: this.clock.now() }; }
   /** One transition: the same answer for the same key, 403 for a role without the capability, 409 for a refund in another state or a blank reason. */
   private move(id: string, key: string, from: Refund['state'], act: string, valid: boolean, change: (f: Facts) => Facts): Observable<Refund> {
