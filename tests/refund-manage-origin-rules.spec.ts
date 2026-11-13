@@ -46,7 +46,7 @@ async function screen<T>(component: Type<T>, id = 'RES-P') {
   return { host, button, navigation, source };
 }
 const panelOf = (host: HTMLElement, eyebrow: string) => Array.from(host.querySelectorAll('section')).find((p) => p.querySelector('.crp-operator-eyebrow')?.textContent?.trim() === eyebrow)!;
-const rows = (host: Element) => Array.from(host.querySelectorAll('.crp-operator-detail-list > div'), (d) => [d.querySelector('span')?.textContent?.trim(), d.querySelector('strong')?.textContent?.trim()]);
+const rows = (host: Element) => Array.from(host.querySelectorAll('dl.crp-refunds-list > div'), (d) => [d.querySelector('dt')?.textContent?.trim(), d.querySelector('dd')?.textContent?.trim()]);
 
 describe('manageDrawsTheOriginAndRulesPanelsOfTheMockup', () => {
   it('draws "Origen" with the seven rows of the mockup, every value from the port', async () => {
