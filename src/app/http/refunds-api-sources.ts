@@ -1,7 +1,7 @@
 import { Observable, concatMap, defaultIfEmpty, expand, filter, forkJoin, map, of, switchMap, take, throwError, timer } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ExecuteOutcome, Refund, RefundMethod, RefundState, RefundsSource, RefundsWriter } from '../refunds/data/refunds-ports';
-import { ReservationsSource } from '../reservations/data/reservations-source';
+import { Reservation, ReservationsSource } from '../reservations/data/reservations-source';
 import { ApiError, PortalApiClient } from '../shell-contract';
 import { API_BASE, call, executeRefundSagaPath, listAll, notInContract } from './api-paths';
 
@@ -57,7 +57,7 @@ export class RefundsApiSource extends RefundsSource {
 
   override list(): Observable<readonly Refund[]> {
     return forkJoin([listAll<DecisionDto>(this.client, decisionsPath()), listAll<RefundDto>(this.client, refundsPath), this.reservations.list()]).pipe(map(([decisions, refunds, reservations]) => {
-      const names = new Map(reservations.map((r) => [r.id, r.leadCustomerName]));
+      const names = new Map(reservations.map((r) => [r.id, r]));
       const byReservation = new Map<string, DecisionDto>();
       for (const d of [...decisions].sort((a, b) => a.recognizedAt.localeCompare(b.recognizedAt))) byReservation.set(d.reservationId, d);
       const own = new Map<string, RefundDto>(refunds.filter((r) => r.financialDecisionId).map((r) => [r.financialDecisionId!, r]));
@@ -67,15 +67,17 @@ export class RefundsApiSource extends RefundsSource {
     }));
   }
 
-  private row(decision: DecisionDto | undefined, refund: RefundDto | undefined, names: Map<string, string>): Refund {
+  private row(decision: DecisionDto | undefined, refund: RefundDto | undefined, names: Map<string, Reservation>): Refund {
     const reservationId = (decision ?? refund)!.reservationId, open = !!decision && !decision.outcome && !decision.frozen;
     return {
-      id: reservationId, customer: names.get(reservationId) ?? '', reason: REASON[decision?.kind ?? refund!.origin] ?? '', amountCents: refund?.authorizedAmountCents ?? decision!.baseAmountCents,
+      id: reservationId, customer: names.get(reservationId)?.leadCustomerName ?? '', reason: REASON[decision?.kind ?? refund!.origin] ?? '', amountCents: refund?.authorizedAmountCents ?? decision!.baseAmountCents,
       state: stateOf(decision, refund), decisionReason: refund?.reason ?? decision?.justification ?? null, owner: null, date: refund?.executedAt ?? refund?.executionStartedAt ?? refund?.authorizedAt ?? decision!.decidedAt ?? decision!.recognizedAt,
       method: refund?.outflowMethod ? METHOD[refund.outflowMethod] ?? null : null, cashMovement: refund?.cashMovementId ?? null,
       remainingMinutes: open ? Math.max(0, Math.floor((Date.parse(decision!.decisionDueAt) - this.now()) / MINUTE)) : null, defaulted: decision?.decidedBySystem === true,
       overdue: refund?.overdue === true, note: null, decisionDueAt: decision && !decision.outcome ? decision.decisionDueAt : null,
       executionDueAt: refund && refund.executionState !== 'EXECUTED' ? refund.executionDueAt : null,
+      reservationStatus: names.get(reservationId)?.status ?? null, originType: (decision?.kind ?? refund!.origin) === 'MODIFICATION_EXCESS' ? 'MODIFICATION' : 'CANCELLATION',
+      paidCents: names.get(reservationId)?.validatedCents ?? refund?.authorizedAmountCents ?? decision!.baseAmountCents, registeredAt: decision?.recognizedAt ?? refund!.authorizedAt,
     };
   }
 }

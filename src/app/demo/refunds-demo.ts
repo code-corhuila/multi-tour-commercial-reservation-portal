@@ -45,7 +45,8 @@ export function resolveRefund(r: Reservation, f: Facts, now: number): Refund {
     decisionReason: j?.reason ?? c?.reason ?? a?.reason ?? null, owner: e?.by ?? j?.by ?? c?.by ?? a?.by ?? null, date: e?.at ?? c?.at ?? f.recognizedAt, method: (e?.method as RefundMethod) ?? null, cashMovement: e?.cashMovement ?? null,
     remainingMinutes: state === 'PENDIENTE_DE_DECISION' ? Math.floor((deadlineOf(f) - now) / 60_000) : null, defaulted: a?.by === AUTOMATIC,
     overdue: state === 'AUTORIZADA' && now >= businessDaysAfter(Date.parse(a!.at), 5), note: f.note ?? null,
-    decisionDueAt: state === 'PENDIENTE_DE_DECISION' ? colombian(deadlineOf(f)) : null, executionDueAt: state === 'AUTORIZADA' ? colombian(businessDaysAfter(Date.parse(a!.at), 5)) : null };
+    decisionDueAt: state === 'PENDIENTE_DE_DECISION' ? colombian(deadlineOf(f)) : null, executionDueAt: state === 'AUTORIZADA' ? colombian(businessDaysAfter(Date.parse(a!.at), 5)) : null,
+    reservationStatus: r.status, originType: f.origin === 'LOWER_VALUE' ? 'MODIFICATION' : 'CANCELLATION', paidCents: r.validatedCents ?? f.amountCents, registeredAt: f.recognizedAt };
 }
 
 /** Lists the refunds over the clock; a default that applies is recorded once in the store (plan D-06). */
