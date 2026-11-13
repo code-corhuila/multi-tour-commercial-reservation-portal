@@ -30,10 +30,10 @@ async function openForm() {
 }
 
 describe('registersAnEstablishmentAndItAppearsAsPublished', () => {
-  it('sends exactly the four required fields with the chosen file and emits what the service stored', async () => {
+  it('sends exactly the four required fields and the typed contact with the chosen file and emits what the service stored', async () => {
     const { fill, submit, writer, saved, settle } = await openForm();
     await fill(); await submit();
-    expect(Object.keys(writer.registrations[0].command).sort()).toEqual(['commercialInformation', 'commercialName', 'establishmentType', 'image']);
+    expect(Object.keys(writer.registrations[0].command).sort()).toEqual(['commercialInformation', 'commercialName', 'contactEmail', 'establishmentType', 'image']);
     expect(writer.registrations[0].command.establishmentType).toBe('HOTEL');
     expect(writer.registrations[0].command.image).toBeInstanceOf(File);
     const stored = establishmentNamed('Stored'); writer.registrations[0].reply(stored); await settle();
@@ -59,7 +59,7 @@ describe('eachFieldHasItsLabelAndItsErrorBesideItThroughAriaDescribedby', () => 
       expect(control.parentElement!.querySelector('[role="alert"]')).not.toBeNull();
     }
     expect(writer.registrations).toEqual([]);
-    expect(element.querySelectorAll('[role="alert"]').length).toBe(4);
+    expect(element.querySelectorAll('[role="alert"]').length).toBe(5);
   });
   it('enforces commercial name length at 255 and preserves the typed text on rejection', async () => {
     const { fill, text, submit, writer, errorFor, field } = await openForm();
@@ -144,14 +144,14 @@ describe('aCorrectedImageResubmitsWithTheSameKey', () => {
 describe('theEstablishmentFormFollowsTheAuthorizedScreenInSpanish', () => {
   it('numbers its sections and writes labels, options, guidance, buttons and messages in Spanish', async () => {
     const { element, submit } = await openForm();
-    expect(Array.from(element.querySelectorAll('.crp-operator-eyebrow'), (node) => node.textContent?.trim())).toEqual(['01. Datos del establecimiento', '02. Imagen']);
-    expect(Array.from(element.querySelectorAll('label'), (label) => label.textContent?.trim())).toEqual(['Tipo de establecimiento', 'Nombre del establecimiento', 'Información comercial', 'Imagen']);
+    expect(Array.from(element.querySelectorAll('.crp-operator-eyebrow'), (node) => node.textContent?.trim())).toEqual(['01. Datos del establecimiento', '02. Imagen', '03. Datos de contacto']);
+    expect(Array.from(element.querySelectorAll('label'), (label) => label.textContent?.trim())).toEqual(['Tipo de establecimiento', 'Nombre del establecimiento', 'Información comercial', 'Imagen', 'Correo de contacto', 'Teléfono', 'Dirección']);
     expect(Array.from(element.querySelectorAll('option'), (option) => option.textContent?.trim())).toEqual(['Alojamiento', 'Restaurante']);
     expect(element.textContent).toContain('Máximo 800 KB (819200 bytes). Tipos aceptados: PNG, JPEG, WebP.');
     expect(Array.from(element.querySelectorAll('.crp-form-actions button'), (button) => button.textContent?.trim())).toEqual(['Cancelar', 'Guardar establecimiento']);
     await submit();
     const alerts = Array.from(element.querySelectorAll('[role="alert"]'), (alert) => alert.textContent?.trim());
-    expect(alerts).toEqual(['Obligatorio: de 1 a 255 caracteres.', 'La información comercial es obligatoria.', 'La imagen es obligatoria.']);
+    expect(alerts).toEqual(['Obligatorio: de 1 a 255 caracteres.', 'La información comercial es obligatoria.', 'La imagen es obligatoria.', 'Registra al menos un dato de contacto (correo o teléfono).']);
     expect(element.textContent).not.toMatch(/HOTEL|RESTAURANT|Required|Save|Cancel\b|At most/);
   });
 });

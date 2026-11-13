@@ -11,7 +11,7 @@ import { actorAs } from './actor-context.double';
 import { ControllableEstablishmentsSource, establishmentNamed } from './associated-establishments-source.double';
 import { ControllableEstablishmentsWriter } from './associated-establishments-writer.double';
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
-import { formControls } from './establishment-form.helpers';
+import { confirmChange, formControls } from './establishment-form.helpers';
 import { ActorRole } from '../src/app/shared/portal-capabilities';
 import { ActorContext } from '../src/app/shared/actor-context';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
@@ -45,7 +45,7 @@ describe('registersAnEstablishmentAndItAppearsAsPublished', () => {
       expect(element.querySelector('[data-state="data"]')).not.toBeNull();
       expect(element.querySelector('tbody tr')!.textContent).toContain('Newest');
       expect(element.querySelector('tbody tr')!.textContent).toContain('Activo');
-      expect(element.querySelectorAll('tbody tr').length).toBe(empty ? 1 : 2);
+      expect(element.querySelectorAll('table[data-state="data"] tbody tr').length).toBe(empty ? 1 : 2);
       expect(source.requests.length).toBe(1); expect(element.querySelector('form')).toBeNull();
     });
   }
@@ -87,38 +87,38 @@ describe('inactivatedEstablishmentStaysInTheListAsInactive', () => {
   it('keeps the association visible, guards a pending row, and sends only its identifier', async () => {
     const { source, writer, settle, element, click, button } = await openPage();
     const item = establishmentNamed('Alpha'); source.requests[0].reply([item]); await settle();
-    await click(ESTABLISHMENTS_COPY.inactivate); expect(button(ESTABLISHMENTS_COPY.inactivate).disabled).toBe(true); await click(ESTABLISHMENTS_COPY.inactivate);
-    expect(writer.transitions).toHaveLength(1); expect(writer.transitions[0].argumentCount).toBe(1);
+    await click(ESTABLISHMENTS_COPY.inactivate); await confirmChange(element, settle); expect(button(ESTABLISHMENTS_COPY.inactivate).disabled).toBe(true); await click(ESTABLISHMENTS_COPY.inactivate);
+    expect(writer.transitions).toHaveLength(1); expect(writer.transitions[0].argumentCount).toBe(2);
     expect(writer.transitions[0].id).toBe(item.associationId);
     writer.transitions[0].reply({ ...item, associationStatus: 'INACTIVE' }); await settle();
-    expect(element.querySelectorAll('tbody tr').length).toBe(1); expect(element.querySelector('tbody tr')!.textContent).toContain('Inactivo');
+    expect(element.querySelectorAll('table[data-state="data"] tbody tr').length).toBe(1); expect(element.querySelector('tbody tr')!.textContent).toContain('Inactivo');
     expect(button(ESTABLISHMENTS_COPY.reactivate).disabled).toBe(false);
   });
   it('shows a rejection by the row without changing its status and allows retry', async () => {
     const { source, writer, settle, element, click, button } = await openPage();
-    source.requests[0].reply([establishmentNamed('Alpha')]); await settle(); await click(ESTABLISHMENTS_COPY.inactivate);
+    source.requests[0].reply([establishmentNamed('Alpha')]); await settle(); await click(ESTABLISHMENTS_COPY.inactivate); await confirmChange(element, settle);
     writer.transitions[0].fail(apiError({ status: 403, userMessage: 'Status change refused.' })); await settle();
     expect(element.querySelector('tbody tr [role="alert"]')!.textContent).toBe('No tienes permiso para esta acción.');
     expect(element.querySelector('tbody tr')!.textContent).toContain('Activo'); expect(element.querySelector('tbody tr')!.textContent).not.toContain('Inactivo');
-    expect(button(ESTABLISHMENTS_COPY.inactivate).disabled).toBe(false); await click(ESTABLISHMENTS_COPY.inactivate); expect(writer.transitions.length).toBe(2);
+    expect(button(ESTABLISHMENTS_COPY.inactivate).disabled).toBe(false); await click(ESTABLISHMENTS_COPY.inactivate); await confirmChange(element, settle); expect(writer.transitions.length).toBe(2);
   });
   it('allows a different row to act while one is pending', async () => {
     const { source, writer, settle, element } = await openPage();
     source.requests[0].reply([establishmentNamed('Alpha'), establishmentNamed('Beta')]); await settle();
-    const rows = element.querySelectorAll('tbody tr'); rows[0].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.click(); await settle();
-    expect(rows[1].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.disabled).toBe(false); rows[1].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.click(); await settle();
+    const rows = element.querySelectorAll('table[data-state="data"] tbody tr'); rows[0].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.click(); await settle(); await confirmChange(element, settle);
+    expect(rows[1].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.disabled).toBe(false); rows[1].querySelector<HTMLButtonElement>('.crp-row-actions button:last-of-type')!.click(); await settle(); await confirmChange(element, settle);
     expect(writer.transitions.length).toBe(2);
     writer.transitions[1].reply({ ...establishmentNamed('Beta'), associationStatus: 'INACTIVE' }); await settle();
     writer.transitions[0].reply({ ...establishmentNamed('Alpha'), associationStatus: 'INACTIVE' }); await settle();
-    expect(Array.from(element.querySelectorAll('tbody tr')).every((row) => row.textContent?.includes('Inactivo'))).toBe(true);
+    expect(Array.from(element.querySelectorAll('table[data-state="data"] tbody tr')).every((row) => row.textContent?.includes('Inactivo'))).toBe(true);
   });
 });
 describe('reactivatedEstablishmentShowsAsActive', () => {
   it('reactivates the inactive row and sends no key', async () => {
     const { source, writer, settle, element, click } = await openPage();
     const item = { ...establishmentNamed('Alpha'), associationStatus: 'INACTIVE' as const };
-    source.requests[0].reply([item]); await settle(); await click(ESTABLISHMENTS_COPY.reactivate);
-    expect(writer.transitions[0].kind).toBe('reactivate'); expect(writer.transitions[0].argumentCount).toBe(1);
+    source.requests[0].reply([item]); await settle(); await click(ESTABLISHMENTS_COPY.reactivate); await confirmChange(element, settle, 'Obras terminadas');
+    expect(writer.transitions[0].kind).toBe('reactivate'); expect(writer.transitions[0].argumentCount).toBe(2); expect(writer.transitions[0].reason).toBe('Obras terminadas');
     writer.transitions[0].reply({ ...item, associationStatus: 'ACTIVE' }); await settle();
     expect(element.querySelector('tbody tr')!.textContent).not.toContain('Inactivo');
     expect(element.querySelector('tbody tr')!.textContent).toContain('Activo');

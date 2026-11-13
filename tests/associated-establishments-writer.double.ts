@@ -8,7 +8,7 @@ export class ControllableEstablishmentsWriter extends AssociatedEstablishmentsWr
     reply: (item: AssociatedEstablishment) => void; fail: (error: unknown) => void;
   }> = [];
   readonly transitions: Array<{
-    kind: 'inactivate' | 'reactivate'; id: string; argumentCount: number;
+    kind: 'inactivate' | 'reactivate'; id: string; reason?: string; argumentCount: number;
     reply: (item: AssociatedEstablishment) => void; fail: (error: unknown) => void;
   }> = [];
   private request() {
@@ -22,14 +22,14 @@ export class ControllableEstablishmentsWriter extends AssociatedEstablishmentsWr
     return answers;
   }
   override inactivate(id: string, ...args: unknown[]): Observable<AssociatedEstablishment> {
-    return this.transition('inactivate', id, args.length + 1);
+    return this.transition('inactivate', id, args.length + 1, args[0] as string | undefined);
   }
   override reactivate(id: string, ...args: unknown[]): Observable<AssociatedEstablishment> {
-    return this.transition('reactivate', id, args.length + 1);
+    return this.transition('reactivate', id, args.length + 1, args[0] as string | undefined);
   }
-  private transition(kind: 'inactivate' | 'reactivate', id: string, argumentCount: number) {
+  private transition(kind: 'inactivate' | 'reactivate', id: string, argumentCount: number, reason?: string) {
     const { answers, ...callbacks } = this.request();
-    this.transitions.push({ kind, id, argumentCount, ...callbacks });
+    this.transitions.push({ kind, id, reason, argumentCount, ...callbacks });
     return answers;
   }
 }

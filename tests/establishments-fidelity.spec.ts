@@ -29,7 +29,7 @@ async function openPage(role: ActorRole, options: { writer?: boolean; areas?: re
   await settle();
   const element: HTMLElement = fixture.nativeElement;
   const button = (text: string) => Array.from(element.querySelectorAll('button')).find((node) => node.textContent?.trim() === text);
-  const headers = () => Array.from(element.querySelectorAll('th'), (th) => th.textContent?.trim());
+  const headers = () => Array.from(element.querySelectorAll('table[data-state="data"] th'), (th) => th.textContent?.trim());
   return { source, navigation, settle, element, button, headers };
 }
 
@@ -39,7 +39,7 @@ describe('theTypeFilterOffersAllTypes', () => {
     const type = element.querySelector<HTMLSelectElement>('select[aria-label="Tipo de establecimiento"]')!;
     expect(type.options[type.selectedIndex].textContent?.trim()).toBe('Todos los tipos');
     source.requests[0].reply([establishmentNamed('Hotel Alpha'), establishmentNamed('Restaurant Beta', 'RESTAURANT')]); await settle();
-    expect(element.querySelectorAll('tbody tr').length).toBe(2);
+    expect(element.querySelectorAll('table[data-state="data"] tbody tr').length).toBe(2);
   });
   it('goes back to every type after choosing one', async () => {
     const { source, settle, element } = await openPage('TENANT_ADMINISTRATOR');
@@ -55,13 +55,13 @@ describe('theActionColumnIsOnlyForWhoCanAct', () => {
   it('the administrator with the writer sees the Acción column', async () => {
     const { source, settle, headers } = await openPage('TENANT_ADMINISTRATOR', { writer: true });
     source.requests[0].reply([establishmentNamed('Hotel Alpha')]); await settle();
-    expect(headers()).toEqual(['Establecimiento', 'Información comercial', 'Estado y último cambio', 'Acción']);
+    expect(headers()).toEqual(['Establecimiento', 'Contacto', 'Estado y último cambio', 'Acción']);
   });
   for (const role of ['ANALYST', 'MANAGER'] as const) {
     it(`${role} reads the list without the Acción column`, async () => {
       const { source, settle, headers, element } = await openPage(role, { writer: true });
       source.requests[0].reply([establishmentNamed('Hotel Alpha')]); await settle();
-      expect(headers()).toEqual(['Establecimiento', 'Información comercial', 'Estado y último cambio']);
+      expect(headers()).toEqual(['Establecimiento', 'Contacto', 'Estado y último cambio']);
       expect(element.querySelector('tbody tr')!.children.length).toBe(3);
     });
   }

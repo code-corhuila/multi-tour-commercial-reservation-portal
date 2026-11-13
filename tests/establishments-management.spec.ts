@@ -71,7 +71,7 @@ describe('gestionarOpensTheEstablishmentOnTheSameScreen', () => {
   it('offers "Gestionar" on each row to the Administrador and opens one panel at a time, below the list', async () => {
     const { source, element, settle, click, panel } = await openPage();
     source.requests[0].reply([withChanges('Uno'), withChanges('Dos')]); await settle();
-    const rows = Array.from(element.querySelectorAll('tbody tr'));
+    const rows = Array.from(element.querySelectorAll('table[data-state="data"] tbody tr'));
     expect(rows.map((row) => Array.from(row.querySelectorAll('button')).map((b) => flat(b.textContent)))).toEqual([['Gestionar', 'Reactivar'], ['Gestionar', 'Reactivar']]);
     await click('Gestionar', rows[0]);
     expect(element.querySelectorAll('.crp-establishment-manage')).toHaveLength(1);
@@ -203,8 +203,8 @@ describe('theDemoWritersKeepTheBitacora', () => {
     ['reactivates', 'demo-est-3', 'REACTIVATED'],
   ] as const)('records who and when when it %s', (verb, id, kind) => {
     const { store, writer } = demo();
-    (verb === 'inactivates' ? writer.inactivate(id) : writer.reactivate(id)).subscribe();
-    expect(last(store, id)).toEqual({ kind, at: '2026-10-22T09:00:00', by: 'Administrador del tenant (demo)' });
+    (verb === 'inactivates' ? writer.inactivate(id, 'Cerrado por obras') : writer.reactivate(id, 'Cerrado por obras')).subscribe();
+    expect(last(store, id)).toEqual({ kind, at: '2026-10-22T09:00:00', by: 'Administrador del tenant (demo)', reason: 'Cerrado por obras' });
   });
 
   it('records the registration and the update, and changes only the name and the information', () => {

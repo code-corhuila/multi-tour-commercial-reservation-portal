@@ -54,7 +54,7 @@ describe('theDemoEstablishmentsReadTheEstablishmentsStore (plan D-05)', () => {
 
   it('follows the store: an inactivated association disappears from the next consultation', async () => {
     const store = new DemoEstablishmentsStore();
-    await firstValueFrom(new DemoEstablishmentsWriter(store).inactivate('demo-est-1'));
+    await firstValueFrom(new DemoEstablishmentsWriter(store).inactivate('demo-est-1', 'Cerrado por obras'));
     expect((await placesOf(new DemoPublicEstablishmentsSource(store))).map((place) => place.establishmentId)).not.toContain('demo-est-1');
   });
 });
