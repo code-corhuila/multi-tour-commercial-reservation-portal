@@ -64,7 +64,7 @@ export class PaymentParametersApiSource extends PaymentParametersSource {
 
 /**
  * PUT /payment-parameters under the Idempotency-Key, with the whole rows of the types the change touches. Only the types the change touches are sent. A penalty goes to PUT /cancellation-policies
- * under the same key plus ':penalty' (HU-COM-013 DP-02); each write is sent only when the change touches it. A row that does not exist yet starts
+ * under the same key, plus ':penalty' when the same change also writes parameters (HU-COM-013 DP-02); each write is sent only when the change touches it. A row that does not exist yet starts
  * from the tenant row of that type, else from the model's defaults (OPEN: its transfer and cash flags). The contract has no way to clear a value
  * back to the inherited one (null), so that builds no call.
  */
@@ -90,7 +90,7 @@ export class PaymentParametersApiWriter extends PaymentParametersWriter {
         });
         const writes = [
           ...(parameters.length ? [call(this.client, paymentParametersPath(), { method: 'PUT', body: { reason: command.reason, parameters }, headers: { 'Idempotency-Key': idempotencyKey } })] : []),
-          ...(policies.length ? [call(this.client, cancellationPoliciesPath(), { method: 'PUT', body: { reason: command.reason, policies }, headers: { 'Idempotency-Key': `${idempotencyKey}:penalty` } })] : []),
+          ...(policies.length ? [call(this.client, cancellationPoliciesPath(), { method: 'PUT', body: { reason: command.reason, policies }, headers: { 'Idempotency-Key': parameters.length ? `${idempotencyKey}:penalty` : idempotencyKey } })] : []),
         ];
         return concat(...writes).pipe(toArray());
       }),
