@@ -4,6 +4,7 @@ import { Reservation } from '../reservations/model/reservation';
 import { PortalApiClient } from '../shell-contract';
 import { API_BASE, call, listPages } from './api-paths';
 import { PROOF, readReservation } from './payments-api-sources';
+import { RegisterPaymentSaga } from './register-payment-saga';
 import { METHOD_IN, TYPE_IN } from './reservations-api-sources';
 
 export const paymentProofsPath = (paymentId?: string, action?: 'approve' | 'reject' | 'file'): string => [`${API_BASE}/payment-proofs`, paymentId, action].filter(Boolean).join('/');
@@ -36,16 +37,19 @@ export class PendingProofsApiSource extends PendingProofsSource {
 }
 
 /**
- * One POST per decision under the Idempotency-Key: approve with the verified amount (and the reason when there is one), reject with the reason only.
- * The reviewer and the time are the token's and the clock's. The approval is the human decision that comes first; the saga register-payment
- * that records the validated payment is not in this contract (api spec 010, update of 2026-11-01), so it is not called here.
+ * A rejection is one POST under the Idempotency-Key with the reason only. An approval starts the saga register-payment (DP-11): Cash records the income first and
+ * step 2 applies the verified amount, so it is an approval only when the saga completed; the result is then read from the proof and the reservation.
+ * The reviewer and the time are the token's and the clock's.
  */
 export class ProofReviewApiWriter extends ProofReviewWriter {
-  constructor(private readonly client: PortalApiClient) { super(); }
+  private readonly saga: RegisterPaymentSaga;
+  constructor(private readonly client: PortalApiClient, pollMs = 1500) { super(); this.saga = new RegisterPaymentSaga(client, pollMs); }
   override decide(command: DecideProofCommand, idempotencyKey: string): Observable<Reservation> {
     const approving = command.decision === 'APROBADO', reason = command.reason.trim();
-    const body = approving ? { verifiedAmountCents: command.verifiedAmountCents, ...(reason ? { reason } : {}) } : { reason };
-    return call<DecisionDto>(this.client, paymentProofsPath(command.paymentId, approving ? 'approve' : 'reject'), { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } }).pipe(
+    const decision$ = approving
+      ? this.saga.run({ reservationId: command.reservationId, paymentId: command.paymentId, amountCents: command.verifiedAmountCents, reason }, idempotencyKey).pipe(switchMap(() => call<DecisionDto>(this.client, paymentProofsPath(command.paymentId))))
+      : call<DecisionDto>(this.client, paymentProofsPath(command.paymentId, 'reject'), { method: 'POST', body: { reason }, headers: { 'Idempotency-Key': idempotencyKey } });
+    return decision$.pipe(
       switchMap((decided) => readReservation(this.client, command.reservationId).pipe(map((reservation): Reservation => ({
         ...reservation,
         payments: reservation.payments?.map((p) => (p.id === command.paymentId && approving && p.review
