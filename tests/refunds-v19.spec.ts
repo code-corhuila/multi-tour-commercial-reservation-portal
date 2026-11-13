@@ -7,6 +7,7 @@ import { DemoReservationsStore } from '../src/app/demo/reservations-demo';
 import { FixedClock } from '../src/app/demo/reservation-changes-demo';
 import { DemoRefundsSource, DemoRefundsWriter } from '../src/app/demo/refunds-demo';
 import { RegisteringUser } from '../src/app/payments/data/payments-writer';
+import { CreditRequest } from '../src/app/credit-balance/data/credit-balance-ports';
 import { Reservation } from '../src/app/reservations/model/reservation';
 import { PendingProofsSource } from '../src/app/payments/data/proof-review-ports';
 import { REFUND_SCREENS, RefundsSource, RefundsWriter } from '../src/app/refunds/data/refunds-ports';
@@ -35,9 +36,13 @@ const fixtures = () => new DemoReservationsStore([
   cancelled('RES-N', { ...open('2026-10-12T08:00:00-05:00'), origin: 'NOT_ATTRIBUTABLE', reason: 'Cancelación no atribuible al cliente (demo)' }),
   cancelled('RES-B', authorized('2026-10-12T17:00:00-05:00')),
 ]);
+/** D-3: the one refund that can be rejected is a request to refund a credit balance (RN-RES-009). */
+const REQUEST: CreditRequest = { id: 'SAR-N', reservationId: 'RES-S', customer: 'Cliente RES-S', amountCents: 10_000_000, state: 'PENDIENTE_DE_AUTORIZACION', reason: 'Solicitud del cliente (demo)', requestedBy: 'Cliente',
+  requestedAt: '2026-10-13T04:00:00-05:00', decisionDueAt: '2026-10-14T04:00:00-05:00', tenant: 'tenant-demo' };
 const USER = new (class extends RegisteringUser { override label() { return 'Ana Torres (demo)'; } })();
 const demo = (role = 'TENANT_ADMINISTRATOR') => {
   const store = fixtures(), clock = new FixedClock(NOW);
+  store.creditRequests = [REQUEST];
   return { store, source: new DemoRefundsSource(store, clock), writer: new DemoRefundsWriter(store, PortalCapabilities.for(role), clock, USER, new Set<string>()) };
 };
 const byId = async (source: RefundsSource, id: string) => (await firstValueFrom(source.list())).find((r) => r.id === id)!;
@@ -139,7 +144,7 @@ describe('refundDetailFollowsTheCurrentMockup', () => {
   });
 
   it('the Administrator rejects a refund with a justified reason, and the state reads Rechazada', async () => {
-    const s = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'RES-N');
+    const s = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'SAR-N');
     s.button('Rechazar devolución')!.click(); await s.settle();
     expect(s.host.querySelector('[role="alert"]')?.textContent?.trim()).toBe('Registra el motivo del rechazo.');
     await s.type('No corresponde la devolución (demo)');
@@ -170,11 +175,11 @@ describe('refundDetailFollowsTheCurrentMockup', () => {
 describe('writerRecordsRejectionAndCreditBalance', () => {
   it('rejects only a refund pending authorization, with a reason and from the Administrator', async () => {
     const { writer, source } = demo();
-    await expect(firstValueFrom(demo('OPERATIONAL_COLLABORATOR').writer.reject('RES-N', 'No', 'k1'))).rejects.toMatchObject({ status: 403 });
-    await expect(firstValueFrom(writer.reject('RES-N', '  ', 'k2'))).rejects.toMatchObject({ status: 409 });
+    await expect(firstValueFrom(demo('OPERATIONAL_COLLABORATOR').writer.reject('SAR-N', 'No', 'k1'))).rejects.toMatchObject({ status: 403 });
+    await expect(firstValueFrom(writer.reject('SAR-N', '  ', 'k2'))).rejects.toMatchObject({ status: 409 });
     await expect(firstValueFrom(writer.reject('RES-P', 'Antes de decidir', 'k3'))).rejects.toMatchObject({ status: 409 });
-    expect(await firstValueFrom(writer.reject('RES-N', 'No procede (demo)', 'k4'))).toMatchObject({ state: 'RECHAZADA', decisionReason: 'No procede (demo)', owner: 'Ana Torres (demo)' });
-    expect((await byId(source, 'RES-N')).state).toBe('RECHAZADA');
+    expect(await firstValueFrom(writer.reject('SAR-N', 'No procede (demo)', 'k4'))).toMatchObject({ state: 'RECHAZADA', decisionReason: 'No procede (demo)', owner: 'Ana Torres (demo)' });
+    expect((await byId(source, 'SAR-N')).state).toBe('RECHAZADA');
   });
 
   it('keeps the 100 % as a credit balance only while the decision is open, and never lists it as a pending treatment', async () => {

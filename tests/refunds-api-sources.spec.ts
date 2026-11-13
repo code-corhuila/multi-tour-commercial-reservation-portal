@@ -73,15 +73,16 @@ describe('refundsWriterOverTheApiClient', () => {
     const record = fakeClient({ ok: page([open]) }, { ok: { ...open, outcome: 'REFUND_FULL' } }, ...listed([{ ...open, outcome: 'REFUND_FULL' }], []));
     await firstValueFrom(new RefundsApiWriter(record.client, new RefundsApiSource(record.client, reservations, () => NOW)).decideFullRefund('r-1', 'decision-key-0001'));
     expect(record.calls[1]).toEqual({ path: `${API_BASE}/financial-decisions/d-1/refund-decision`, method: 'POST', headers: { 'Idempotency-Key': 'decision-key-0001' } });
-    const reject = fakeClient({ ok: page([open]) }, { ok: { ...open, outcome: 'REJECTED' } }, ...listed([{ ...open, outcome: 'REJECTED', justification: 'No procede' }], []));
-    await firstValueFrom(new RefundsApiWriter(reject.client, new RefundsApiSource(reject.client, reservations, () => NOW)).reject('r-1', 'No procede', 'reject-key-00001'));
+    const asked = { ...open, kind: 'CREDIT_BALANCE_REFUND_REQUEST' };
+    const reject = fakeClient({ ok: page([asked]) }, { ok: { ...asked, outcome: 'REJECTED' } }, ...listed([{ ...asked, outcome: 'REJECTED', justification: 'No procede' }], []));
+    await firstValueFrom(new RefundsApiWriter(reject.client, new RefundsApiSource(reject.client, reservations, () => NOW)).reject('d-1', 'No procede', 'reject-key-00001'));
     expect(reject.calls[1]).toMatchObject({ path: `${API_BASE}/financial-decisions/d-1/rejection`, body: { justification: 'No procede' } });
   });
 
   it('hands a refusal of the service to the page and sends nothing when no decision waits for the act', async () => {
-    const waiting = decision({});
+    const waiting = decision({ kind: 'CREDIT_BALANCE_REFUND_REQUEST' });
     const refused = fakeClient({ ok: page([waiting]) }, { fail: { status: 422, code: 'BUSINESS_RULE_VIOLATION', message: 'no', traceId: 't' } });
-    await expect(firstValueFrom(new RefundsApiWriter(refused.client, new RefundsApiSource(refused.client, reservations, () => NOW)).reject('r-1', 'x', 'reject-key-00002'))).rejects.toMatchObject({ status: 422 });
+    await expect(firstValueFrom(new RefundsApiWriter(refused.client, new RefundsApiSource(refused.client, reservations, () => NOW)).reject('d-1', 'x', 'reject-key-00002'))).rejects.toMatchObject({ status: 422 });
     const none = fakeClient({ ok: page([]) });
     await expect(firstValueFrom(new RefundsApiWriter(none.client, new RefundsApiSource(none.client, reservations, () => NOW)).authorize('r-1', 'x', 'authorize-key-0002'))).rejects.toMatchObject({ status: 404 });
     expect(none.calls).toHaveLength(1);
