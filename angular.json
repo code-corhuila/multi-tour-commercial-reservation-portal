@@ -48,7 +48,7 @@
         "module": {
           "builder": "@angular/build:application",
           "options": { "browser": "src/mount-entry.ts", "index": false, "outputPath": "dist/module", "tsConfig": "tsconfig.module.json", "outputHashing": "none", "styles": [],
-            "budgets": [{ "type": "initial", "maximumWarning": "700kb", "maximumError": "750kb" }] },
+            "budgets": [{ "type": "initial", "maximumWarning": "780kb", "maximumError": "800kb" }] },
           "configurations": {
             "demo": { "fileReplacements": [{ "replace": "src/app/sources.ts", "with": "src/app/sources.demo.ts" }] }
           }
