@@ -151,7 +151,7 @@ describe('manageAndTreatmentShowTheRefundOf10A', () => {
 
   it('the manage screen shows the treatment, the values, the counter and opens the decision and the detail', async () => {
     const s = await screen(RefundManagePageComponent);
-    expect(s.texts('h1, h2, .crp-operator-eyebrow, .crp-page-header-eyebrow')).toEqual(expect.arrayContaining(['RF-015B · D1 · E16', 'Gestionar devolución',
+    expect(s.texts('h1, h2, .crp-operator-eyebrow, .crp-page-header-eyebrow')).toEqual(expect.arrayContaining(['RF-015B · Solicitud de devolución', 'Gestionar devolución',
       'Reserva RES-P cancelada por falta de pago', 'Tratamiento pendiente', 'Solicitud de tratamiento']));
     expect(s.texts('p')).toEqual(expect.arrayContaining([
       'Valores abonados: $1.200.000. El Administrador del tenant decide dentro de 24 horas corridas entre devolver el 100 % o registrar el 100 % como saldo a favor.',

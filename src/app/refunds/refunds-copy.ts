@@ -5,8 +5,8 @@ import type { Refund, RefundMethod, RefundState } from './data/refunds-ports';
 /** "Quedan 18 h 42 min" (the minutes are padded as the mockup does). */
 const left = (minutes: number) => `Quedan ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`;
 export const REFUNDS_COPY = {
-  panelEyebrow: 'Devoluciones monetarias', consult: 'Consultar solicitudes', panelTitle: 'Autorización requerida', panelCopy: 'El Administrador autoriza o registra la devolución, con monto, motivo, reserva y movimiento de caja asociados.',
-  panelTitleExecutor: 'Devoluciones autorizadas', panelCopyExecutor: 'Consulta las devoluciones autorizadas por el Administrador y registra la salida de dinero cuando corresponda.',
+  panelEyebrow: 'Devoluciones monetarias', consult: 'Consultar solicitudes', panelTitle: 'Autorización requerida', panelCopy: 'El Administrador del tenant decide en 24 horas corridas y la devolución se ejecuta en máximo 5 días hábiles, con monto, motivo, reserva y movimiento de caja asociados.',
+  panelTitleExecutor: 'Devoluciones autorizadas', panelCopyExecutor: 'Consulta las devoluciones autorizadas por el Administrador del tenant y registra la salida de dinero cuando corresponda.',
   eyebrow: 'Control de cobro', requestsTitle: 'Solicitudes de devolución', backToPayments: 'Volver a pagos',
   heroEyebrow: 'Devoluciones monetarias', heroTitle: 'Determinación, autorización y ejecución trazables.',
   heroCopy: 'Toda devolución registra causal, monto, responsable, fecha y su relación con la reserva y con el movimiento de caja correspondiente. El Administrador del tenant decide en 24 horas corridas; sin decisión se determina la devolución del 100 %, que debe ejecutarse en máximo 5 días hábiles.',
@@ -39,7 +39,7 @@ export const REFUNDS_COPY = {
   creditExecuted: 'Registrado como saldo a favor del cliente dentro del tenant: no hubo salida efectiva de dinero.',
   /** PROPUESTO (spec section 5): the mockup has no text for the failed cash step (AC-RF.4). */
   cashFailed: 'La salida de dinero no quedó registrada en caja: la devolución sigue autorizada.',
-  trace: 'RF-015B · D1 · E16', manageTitle: 'Gestionar devolución', treatmentTitle: 'Tratamiento pendiente de devolución', backToRefunds: 'Volver a devoluciones',
+  manageTrace: 'RF-015B · Solicitud de devolución', treatmentTrace: 'RN-RES-006C · Solo Administrador del tenant', manageTitle: 'Gestionar devolución', treatmentTitle: 'Tratamiento pendiente de devolución', backToRefunds: 'Volver a devoluciones',
   origin: (r: Refund) => `Reserva ${r.id} ${r.reason.charAt(0).toLowerCase()}${r.reason.slice(1)}`, pendingTitle: 'Tratamiento pendiente', paid: 'Valores abonados:',
   choice: 'El Administrador del tenant decide dentro de 24 horas corridas entre devolver el 100 % o registrar el 100 % como saldo a favor.',
   left,
