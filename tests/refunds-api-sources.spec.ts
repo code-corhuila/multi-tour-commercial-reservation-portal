@@ -50,8 +50,8 @@ describe('refundsSourceOverTheApiClient', () => {
     const { client } = fakeClient(...listed([decision({ outcome: 'REFUND_FULL', decidedBySystem: true }), decision({ financialDecisionId: 'd-2', reservationId: 'r-2', kind: 'CREDIT_BALANCE_REFUND_REQUEST', outcome: 'REJECTED', justification: 'No procede' }),
       decision({ financialDecisionId: 'd-3', reservationId: 'r-3', outcome: 'CREDIT_FULL' })], [refund({ refundAuthorizationId: 'f-4', financialDecisionId: undefined, reservationId: 'r-4', origin: 'NOT_ATTRIBUTABLE_TO_CUSTOMER' })]));
     const rows = await firstValueFrom(new RefundsApiSource(client, reservations, () => NOW).list());
-    expect(rows.map((r) => [r.id, r.state, r.defaulted])).toEqual([['r-1', 'PENDIENTE_DE_AUTORIZACION', true], ['r-2', 'RECHAZADA', false], ['r-3', 'SALDO_A_FAVOR', false], ['r-4', 'AUTORIZADA', false]]);
-    expect(rows[1]).toMatchObject({ decisionReason: 'No procede', reason: 'Solicitud de devolución de saldo a favor' });
+    expect(rows.map((r) => [r.id, r.state, r.defaulted])).toEqual([['r-1', 'PENDIENTE_DE_AUTORIZACION', true], ['r-3', 'SALDO_A_FAVOR', false], ['d-2', 'RECHAZADA', false], ['r-4', 'AUTORIZADA', false]]);
+    expect(rows[2]).toMatchObject({ decisionReason: 'No procede', reason: 'Solicitud de devolución de saldo a favor' });
     expect(rows[3]).toMatchObject({ reason: 'Causa no atribuible al cliente' });
   });
 });
