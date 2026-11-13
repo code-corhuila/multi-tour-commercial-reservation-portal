@@ -1,10 +1,13 @@
 import { Injector } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
+import type { Reservation } from '../../reservations/data/reservations-source';
 
 /** DP-RF7 (PROPUESTO, mockup labels): En ejecución is not stored, only drawn while executeRefund is in flight (plan D-05). */
 export type RefundState = 'PENDIENTE_DE_DECISION' | 'PENDIENTE_DE_AUTORIZACION' | 'AUTORIZADA' | 'EJECUTADA' | 'RECHAZADA' | 'SALDO_A_FAVOR';
 export type RefundMethod = 'BANK_TRANSFER' | 'CASH';
+/** What registered the refund (panel Origen of the manage screen): a cancellation, or a modification that left a surplus. */
+export type RefundOriginType = 'CANCELLATION' | 'MODIFICATION';
 
 /** Plan D-03: one refund per reservation (its code is the id), every business value resolved by the port; the view formats only (RN-RF1). */
 export interface Refund {
@@ -15,6 +18,8 @@ export interface Refund {
   readonly remainingMinutes: number | null; readonly defaulted: boolean; readonly overdue: boolean;
   /** v1.9: the administrative note, the limit of the 24-hour decision (while undecided) and of the 5-business-day execution (while Autorizada), ISO with offset. */
   readonly note: string | null; readonly decisionDueAt: string | null; readonly executionDueAt: string | null;
+  /** Panel Origen (v1.9): the status of the reservation (null when the service does not answer it), the kind of act, the validated value paid and the instant it was registered. */
+  readonly reservationStatus: Reservation['status'] | null; readonly originType: RefundOriginType; readonly paidCents: number; readonly registeredAt: string;
 }
 /** The refunds of the reservations store (plan D-02); gap G-B: no path in the contract yet. */
 export abstract class RefundsSource { abstract list(): Observable<readonly Refund[]>; }
