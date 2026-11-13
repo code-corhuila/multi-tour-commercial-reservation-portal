@@ -11,6 +11,8 @@ export interface EstablishmentChange {
   readonly kind: EstablishmentChangeKind;
   readonly at: string;
   readonly by: string;
+  /** Why the state changed; absent for a registration (AC-PE.13). */
+  readonly reason?: string;
 }
 
 export interface AssociatedEstablishment {
@@ -20,6 +22,10 @@ export interface AssociatedEstablishment {
   readonly commercialInformation: string;
   readonly imageReference: string;
   readonly associationStatus: AssociationStatus;
+  /** How the customer reaches the establishment (AC-PE.15): any of them may be absent on an association registered before the service stored them. */
+  readonly contactEmail?: string;
+  readonly contactPhone?: string;
+  readonly contactAddress?: string;
   /** Oldest first; absent while the service sends none. */
   readonly changes?: readonly EstablishmentChange[];
 }
