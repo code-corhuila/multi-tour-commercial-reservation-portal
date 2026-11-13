@@ -20,8 +20,10 @@ export type CreditMovement = { readonly at: string; readonly kind: 'ORIGEN' | 'A
 export type CreditCustomer = { readonly key: string; readonly name: string; readonly availableCents: number; readonly sources: readonly CreditSourceLine[];
   /** The reservations the credit can pay (not Cancelada, Finalizada or En ejecución, with a pending balance) and the amount the form offers. */
   readonly targets: readonly CreditTarget[]; readonly suggestedCents: number; readonly history: readonly CreditMovement[] };
-export type CreditRequest = { readonly id: string; readonly reservationId: string; readonly customer: string; readonly amountCents: number; readonly state: 'PENDIENTE_DE_AUTORIZACION' | 'RECHAZADA';
-  readonly reason: string; readonly requestedBy: string; readonly requestedAt: string; readonly decisionDueAt: string; readonly tenant: string };
+export type CreditRequest = { readonly id: string; readonly reservationId: string; readonly customer: string; readonly amountCents: number; readonly state: 'PENDIENTE_DE_AUTORIZACION' | 'AUTORIZADA' | 'RECHAZADA';
+  readonly reason: string; readonly requestedBy: string; readonly requestedAt: string; readonly decisionDueAt: string; readonly tenant: string;
+  /** The decision of the Administrator or of the 24-hour default, and the execution of the authorized refund (HU-COM-016, AC-RF.12); an empty reason is the default's. */
+  readonly decision?: { readonly by: string; readonly at: string; readonly reason: string }; readonly execution?: { readonly by: string; readonly at: string; readonly method: string; readonly cashMovement: string } };
 export type CreditOverview = { readonly availableCents: number; readonly customersWithBalance: number; readonly pendingDecisions: number; readonly customers: readonly CreditCustomer[]; readonly requests: readonly CreditRequest[] };
 /** A business refusal is data with the mockup's text (D-5); a missing capability is an error 403. */
 export type CreditApplyOutcome = { readonly ok: true; readonly appliedCents: number; readonly firstPayment: boolean } | { readonly ok: false; readonly reason: string };

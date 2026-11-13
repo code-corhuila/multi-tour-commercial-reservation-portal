@@ -8,10 +8,12 @@ export type RefundState = 'PENDIENTE_DE_DECISION' | 'PENDIENTE_DE_AUTORIZACION' 
 export type RefundMethod = 'BANK_TRANSFER' | 'CASH';
 /** What registered the refund (panel Origen of the manage screen): a cancellation, or a modification that left a surplus. */
 export type RefundOriginType = 'CANCELLATION' | 'MODIFICATION';
+/** AC-RF.12, D-3 (RN-RES-009): where the refund comes from; only a request to refund a credit balance can be rejected. */
+export type RefundOrigin = 'CREDIT_BALANCE_REQUEST' | 'OTHER';
 
 /** Plan D-03: one refund per reservation (its code is the id), every business value resolved by the port; the view formats only (RN-RF1). */
 export interface Refund {
-  readonly id: string; readonly customer: string; readonly reason: string; readonly amountCents: number; readonly state: RefundState;
+  readonly id: string; readonly origin: RefundOrigin; /** The reservation code when the id is not it (a credit-balance request has its own id). */ readonly reservation?: string; readonly customer: string; readonly reason: string; readonly amountCents: number; readonly state: RefundState;
   /** The authorization reason; the person and date of the last act (execution, else authorization); null while there is none. */
   readonly decisionReason: string | null; readonly owner: string | null; readonly date: string; readonly method: RefundMethod | null; readonly cashMovement: string | null;
   /** AC-RF.6, AC-RF.7 (resolved as job 2 applies them): minutes left of the 24 hours while undecided, the default applied, the Vencida mark. */
