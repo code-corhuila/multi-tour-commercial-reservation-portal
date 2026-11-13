@@ -1,13 +1,16 @@
 import { Provider, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom, of } from 'rxjs';
+import { Observable, firstValueFrom, of } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { DemoReservationsStore } from '../src/app/demo/reservations-demo';
-import { FixedClock } from '../src/app/demo/reservation-changes-demo';
+import { DemoCancellationQuote, DemoCancellationWriter, FixedClock } from '../src/app/demo/reservation-changes-demo';
+import { DemoAdditionalDiscountWriter } from '../src/app/demo/current-discounts-demo';
+import { RefundsApiSource } from '../src/app/http/refunds-api-sources';
+import { fakeClient, page } from './api-client.double';
 import { DemoRefundsSource, DemoRefundsWriter } from '../src/app/demo/refunds-demo';
 import { RegisteringUser } from '../src/app/payments/data/payments-writer';
-import { Reservation } from '../src/app/reservations/model/reservation';
+import { Reservation, ReservationsSource } from '../src/app/reservations/data/reservations-source';
 import { PendingProofsSource } from '../src/app/payments/data/proof-review-ports';
 import { REFUND_SCREENS, RefundsSource, RefundsWriter } from '../src/app/refunds/data/refunds-ports';
 import { REFUND_ALERTS, RefundAlertsComponent } from '../src/app/refunds/components/refund-alerts.component';
@@ -250,5 +253,115 @@ describe('notificationsShowTheRefundAlertsOfTheCurrentMockup', () => {
     expect(first.textContent).toContain('Reservas RES-Z: llevan más de 24 horas corridas En validación. Siguen pendientes: no cancelan la reserva ni liberan cupos.');
     first.querySelector('button')!.click();
     expect(p.navigation.selected()).toBe('payments');
+  });
+});
+
+// HU-COM-016 AC-RF.11: the portal has no RefundRecognizer; the money is recognized by the cancellation, the discount or the service, and the portal draws the 24 hours
+// from the decision it is handed (demo adapter or service decision), with nobody opening a refund screen. Invented data only.
+const RECOGNIZED = '2026-10-13T09:30:00-05:00';
+const over = (store: DemoReservationsStore, now = RECOGNIZED) => {
+  const clock = new FixedClock(now);
+  return { store, clock, source: new DemoRefundsSource(store, clock) };
+};
+class StoredReservations extends ReservationsSource {
+  constructor(public items: Reservation[]) { super(); }
+  override list(): Observable<readonly Reservation[]> { return of(this.items); }
+}
+const SERVICE_NOW = Date.parse('2026-11-10T12:00:00Z');
+const names = new StoredReservations([reservationOf('r-1', { leadCustomerName: 'Laura Gómez (demo)' }), reservationOf('r-2', { leadCustomerName: 'Carlos Ruiz (demo)' })]);
+const decisionOf = (changes: object) => ({ financialDecisionId: 'd-1', reservationId: 'r-1', kind: 'CUSTOMER_CANCELLATION', baseAmountCents: 5_000_000, recognizedAt: '2026-11-10T10:00:00Z',
+  decisionDueAt: '2026-11-11T10:00:00Z', frozen: false, ...changes });
+/** The refunds as the container answers them: the decisions of the service, joined by reservation, at a fixed clock. */
+const fromService = (decisions: object[], refunds: object[] = []) => {
+  const { client } = fakeClient({ ok: page(decisions) }, { ok: page(refunds) });
+  return new RefundsApiSource(client, names, () => SERVICE_NOW);
+};
+async function mount<T>(component: Type<T>, source: RefundsSource, role = 'TENANT_ADMINISTRATOR') {
+  const navigation = new PortalNavigation();
+  navigation.register([...Object.values(REFUND_SCREENS), 'payments']);
+  TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs(role as never) }, { provide: RefundsSource, useValue: source },
+    { provide: RefundsWriter, useValue: demo(role).writer }, { provide: IdempotencyKeys, useValue: new ControllableIdempotencyKeys() }, { provide: PortalNavigation, useValue: navigation }] });
+  const fixture = TestBed.createComponent(component);
+  fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+  const host: HTMLElement = fixture.nativeElement;
+  return { host, texts: (selector: string) => Array.from(host.querySelectorAll(selector), (e) => e.textContent?.replace(/\s+/g, ' ').trim()) };
+}
+
+describe('theTwentyFourHoursStartAtTheRecognitionOfTheMoney', () => {
+  it('customerCancellationWithTheDemoPenaltyStartsTheTwentyFourHours', async () => {
+    const { store, clock, source } = over(new DemoReservationsStore([reservationOf('RES-C', { status: 'CONFIRMADA', validatedCents: 10_000_000, balanceCents: 0, leadCustomerName: 'Cliente RES-C' })]));
+    const cancellation = new DemoCancellationWriter(store, new DemoCancellationQuote(store, 20), clock, 'Cliente (demo)');
+    await firstValueFrom(cancellation.cancel({ code: 'RES-C', cause: 'El cliente desiste del viaje (demo)', origin: 'customer', idempotencyKey: 'cancel-1' }));
+    const refund = (await firstValueFrom(source.list())).find((r) => r.id === 'RES-C')!;
+    expect(refund).toMatchObject({ state: 'PENDIENTE_DE_DECISION', amountCents: 8_000_000, reason: 'El cliente desiste del viaje (demo)', remainingMinutes: 24 * 60,
+      decisionDueAt: '2026-10-14T09:30:00-05:00', defaulted: false });
+    const s = await mount(RefundTreatmentPageComponent, source);
+    expect(s.texts('article .crp-operator-eyebrow')).toEqual(['Reserva #RES-C · Cliente RES-C']);
+    expect(s.texts('article h2')).toEqual(['Valores abonados: $80.000']);
+    expect(s.texts('article .crp-operator-status')).toEqual(['Quedan 24 h 00 min']);
+  });
+
+  it('proofApprovedAfterTheCancellationStartsTheTwentyFourHours', async () => {
+    const late = () => fromService([decisionOf({ kind: 'PENDING_TREATMENT', reservationId: 'r-2', financialDecisionId: 'd-late' })]);
+    const refund = (await firstValueFrom(late().list())).find((r) => r.id === 'r-2')!;
+    expect(refund).toMatchObject({ state: 'PENDIENTE_DE_DECISION', reason: 'Tratamiento pendiente de valores abonados', amountCents: 5_000_000, remainingMinutes: 22 * 60,
+      decisionDueAt: '2026-11-11T10:00:00Z', defaulted: false });
+    const s = await mount(RefundTreatmentPageComponent, late());
+    expect(s.texts('article .crp-operator-eyebrow')).toEqual(['Reserva #r-2 · Carlos Ruiz (demo)']);
+    expect(s.texts('article h2')).toEqual(['Valores abonados: $50.000']);
+    expect(s.texts('article .crp-operator-status')).toEqual(['Quedan 22 h 00 min']);
+  });
+
+  it('excessOfALowerValueStartsTheTwentyFourHours', async () => {
+    const { store, clock, source } = over(new DemoReservationsStore([reservationOf('RES-L', { status: 'CONFIRMADA', validatedCents: 10_000_000, balanceCents: 0, leadCustomerName: 'Cliente RES-L',
+      quote: { services: [{ name: 'Guianza', cents: 10_000_000 }], transportCents: 0, projectedCents: 10_000_000, discounts: [], discountCents: 0, finalCents: 10_000_000 } })]));
+    const discount = new DemoAdditionalDiscountWriter(store, clock, new (class extends RegisteringUser { override label() { return 'Ana Torres (demo)'; } })());
+    await firstValueFrom(discount.register({ reservationId: 'RES-L', percentageBasisPoints: 2000, reason: 'Fidelización (demo)' }, 'discount-1'));
+    const refund = (await firstValueFrom(source.list())).find((r) => r.id === 'RES-L')!;
+    expect(refund).toMatchObject({ state: 'PENDIENTE_DE_DECISION', amountCents: 2_000_000, remainingMinutes: 24 * 60, decisionDueAt: '2026-10-14T09:30:00-05:00', defaulted: false });
+    expect(refund.reason).toContain('Fidelización (demo)');
+    const s = await mount(RefundTreatmentPageComponent, source);
+    expect(s.texts('article h2')).toEqual(['Valores abonados: $20.000']);
+    expect(s.texts('article .crp-operator-status')).toEqual(['Quedan 24 h 00 min']);
+    const service = await firstValueFrom(fromService([decisionOf({ kind: 'MODIFICATION_EXCESS', baseAmountCents: 2_000_000 })]).list());
+    expect(service[0]).toMatchObject({ state: 'PENDIENTE_DE_DECISION', reason: 'Excedente por modificación', amountCents: 2_000_000, remainingMinutes: 22 * 60 });
+  });
+});
+
+describe('theRefundListShowsTheCreditBalanceRequestOfTheService', () => {
+  it('creditBalanceRequestIsListedWithItsOrigin', async () => {
+    const source = fromService([decisionOf({ kind: 'CREDIT_BALANCE_REFUND_REQUEST', reservationId: 'r-2', financialDecisionId: 'd-credit', baseAmountCents: 3_000_000 })]);
+    const s = await mount(RefundRequestsPageComponent, source);
+    expect(s.texts('.crp-operator-status')[0]).toBe('1 solicitud');
+    expect(s.texts('tbody tr:first-child td').slice(0, 4)).toEqual(['#r-2', 'Carlos Ruiz (demo)', 'Solicitud de devolución de saldo a favor', '$30.000']);
+  });
+});
+
+describe('rejectionIsOfferedOnlyWhilePendingAuthorizationAndToTheAdministrator', () => {
+  const rejectOffered = async (id: string, role = 'TENANT_ADMINISTRATOR') => {
+    const s = await screen(RefundDetailPageComponent, role, id);
+    return s.button('Rechazar devolución') !== undefined;
+  };
+  it('draws "Rechazar devolución" for a refund pending its authorization, with the Administrator only', async () => {
+    expect(await rejectOffered('RES-N')).toBe(true);
+    TestBed.resetTestingModule();
+    expect(await rejectOffered('RES-N', 'OPERATIONAL_COLLABORATOR')).toBe(false);
+  });
+
+  it('does not draw it while the 24 hours run (the treatment buttons instead), nor once authorized', async () => {
+    const treatment = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'RES-P');
+    expect([treatment.button('Rechazar devolución'), treatment.button('Autorizar devolución')]).toEqual([undefined, undefined]);
+    expect(treatment.texts('.crp-form-actions button')).toEqual(['Registrar saldo a favor del 100 %', 'Devolver el 100 %']);
+    TestBed.resetTestingModule();
+    expect(await rejectOffered('RES-B')).toBe(false);
+    TestBed.resetTestingModule();
+    expect(await rejectOffered('RES-V')).toBe(false);
+  });
+
+  it('refuses the rejection of a refund that is not pending its authorization and asks for the reason', async () => {
+    const { writer } = demo();
+    await expect(firstValueFrom(writer.reject('RES-B', 'No procede (demo)', 'k1'))).rejects.toMatchObject({ status: 409 });
+    await expect(firstValueFrom(writer.reject('RES-N', '', 'k2'))).rejects.toMatchObject({ status: 409 });
+    expect(await firstValueFrom(writer.reject('RES-N', 'No procede (demo)', 'k3'))).toMatchObject({ state: 'RECHAZADA' });
   });
 });
