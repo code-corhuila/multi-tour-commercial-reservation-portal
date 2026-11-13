@@ -365,3 +365,61 @@ describe('rejectionIsOfferedOnlyWhilePendingAuthorizationAndToTheAdministrator',
     expect(await firstValueFrom(writer.reject('RES-N', 'No procede (demo)', 'k3'))).toMatchObject({ state: 'RECHAZADA' });
   });
 });
+
+// HU-COM-016 AC-RF.13: the literals of mockup-pdr-1 v1.9 (admin-solicitudes-devolucion.html, admin-detalle-devolucion.html, admin-tratamiento-pendiente-devolucion.html and app.js), typed here
+// as the mockup writes them. Differences declared in the spec (A.2) are not repeated: the reservation-level texts that the screens draw from data are covered above.
+describe('refundTextsMatchTheMockupV19', () => {
+  const header = (s: { texts: (selector: string) => (string | undefined)[] }) => s.texts('.crp-page-header-eyebrow, h1, .crp-page-header-action');
+
+  it('the list draws the frame, the hero, the columns, the count and the empty text of admin-solicitudes-devolucion.html', async () => {
+    const s = await mount(RefundRequestsPageComponent, over(new DemoReservationsStore([])).source);
+    expect(header(s)).toEqual(['Control de cobro', 'Solicitudes de devolución', 'Volver a pagos']);
+    expect(s.texts('.crp-refunds-hero .crp-operator-eyebrow, .crp-refunds-hero h2')).toEqual(['Devoluciones monetarias', 'Determinación, autorización y ejecución trazables.']);
+    expect(s.texts('.crp-operator-panel .crp-operator-eyebrow, .crp-operator-panel h2')).toEqual(['Solicitudes', 'Solicitudes registradas']);
+    expect(s.texts('.crp-operator-status')).toEqual(['0 solicitudes']);
+    expect(s.texts('thead th')).toEqual(['Reserva', 'Cliente', 'Motivo', 'Monto', 'Estado', 'Fecha', 'Acción']);
+    expect(s.texts('[data-state="empty"]')).toEqual(['No hay solicitudes de devolución registradas.']);
+    expect(s.host.querySelector('[data-refund-alerts]')).toBeNull();
+  });
+
+  it('the detail draws the frame, the notices, the rows and the decision panel of admin-detalle-devolucion.html', async () => {
+    const s = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'RES-N');
+    expect(header(s)).toEqual(['Control de cobro', 'Detalle de devolución', 'Volver a solicitudes']);
+    expect(s.texts('.crp-access-note')[0]).toBe('Solo el Administrador del tenant puede autorizar o rechazar una devolución o decidir el tratamiento de valores abonados. El Colaborador operativo solo puede registrar la ejecución cuando exista autorización previa y trazable (o una determinación automática, que cuenta como autorización).');
+    expect(s.texts('dl dt')).toEqual(['Reserva relacionada', 'Cliente', 'Motivo / causal', 'Observación administrativa', 'Monto', 'Motivo de la decisión', 'Responsable', 'Fecha',
+      'Método de devolución', 'Movimiento de caja asociado', 'Estado actual']);
+    expect(s.texts('.crp-operator-panel > .crp-operator-eyebrow, .crp-operator-panel > h2')).toEqual(['Solicitud', 'Información de la devolución', 'Decisión', 'Decisión del Administrador del tenant']);
+    expect(s.texts('label')).toEqual(['Motivo (obligatorio)']);
+    expect(s.texts('.crp-refunds-feedback')).toEqual(['Registra el motivo y toma la decisión.']);
+    expect(s.texts('.crp-form-actions button')).toEqual(['Rechazar devolución', 'Autorizar devolución']);
+  });
+
+  it('the detail of a refund in treatment offers the two treatment buttons, and the overdue one its notice', async () => {
+    const treatment = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'RES-P');
+    expect(treatment.texts('.crp-form-actions button')).toEqual(['Registrar saldo a favor del 100 %', 'Devolver el 100 %']);
+    TestBed.resetTestingModule();
+    const overdue = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'RES-V');
+    expect(overdue.texts('.crp-access-note')[1]).toBe('La ejecución superó el plazo máximo de 5 días hábiles: la devolución está vencida y sigue siendo una obligación pendiente hasta que se ejecute.');
+  });
+
+  it('the execution panel draws its question, its options, the methods and its note as the mockup does', async () => {
+    const s = await screen(RefundDetailPageComponent, 'TENANT_ADMINISTRATOR', 'RES-B');
+    expect(s.texts('.crp-operator-panel > .crp-operator-eyebrow, .crp-operator-panel > h2').slice(-2)).toEqual(['Ejecución', 'Registrar ejecución']);
+    expect(s.texts('label')).toEqual(['¿Hubo salida efectiva de dinero?']);
+    expect(s.texts('#crp-refunds-outflow option')).toEqual(['Selecciona una opción', 'Sí, se realizó la salida de dinero', 'No, se registra como saldo a favor']);
+    await s.choose('crp-refunds-outflow', 'yes');
+    expect(s.texts('label')).toEqual(['¿Hubo salida efectiva de dinero?', 'Método de devolución']);
+    expect(s.texts('#crp-refunds-method option')).toEqual(['Transferencia', 'Efectivo']);
+    expect(s.texts('.crp-refunds-feedback')).toEqual(['Registra la ejecución de la devolución autorizada. Una devolución en efectivo exige la caja abierta; por transferencia después del cierre se registra sin reabrir la caja.']);
+    expect(s.texts('.crp-form-actions button')).toEqual(['Registrar ejecución de devolución']);
+  });
+
+  it('the treatment list draws its empty text and each card its rule, its motive and its counter as app.js does', async () => {
+    const empty = await mount(RefundTreatmentPageComponent, over(new DemoReservationsStore([])).source);
+    expect(empty.texts('[data-state="empty"]')).toEqual(['No hay valores abonados pendientes de tratamiento.']);
+    TestBed.resetTestingModule();
+    const s = await screen(RefundTreatmentPageComponent);
+    expect(s.texts('article .crp-operator-copy')[1]).toBe('Tratamiento pendiente. Dentro de 24 horas corridas desde el reconocimiento del dinero, decide entre devolver el 100 % o registrar el 100 % como saldo a favor. Sin decisión se aplica la devolución del 100 % (pendiente de ejecución en máximo 5 días hábiles).');
+    expect(s.host.querySelector('article textarea')?.getAttribute('placeholder')).toBe('Registra el motivo de la decisión');
+  });
+});
