@@ -258,11 +258,11 @@ describe('collaboratorSeesNoDecisionPanel', () => {
     expect(s.host.textContent).not.toContain('Decisión');
   });
 
-  it('the Administrator sees the decision panel, with "Rechazar devolución"', async () => {
+  it('the Administrator sees the decision panel, with "Autorizar devolución" and no "Rechazar devolución" (D-3: only a credit-balance request is rejected)', async () => {
     const s = await detail({ id: 'RES-A' });
     expect(Array.from(s.host.querySelectorAll('.crp-operator-panel .crp-operator-eyebrow'), (e) => e.textContent?.trim())).toEqual(['Solicitud', 'Decisión']);
     expect(s.button('Autorizar devolución')).toBeTruthy();
-    expect(s.button('Rechazar devolución')).toBeTruthy();
+    expect(s.button('Rechazar devolución')).toBeUndefined();
   });
 });
 

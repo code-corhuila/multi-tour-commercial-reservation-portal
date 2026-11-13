@@ -18,7 +18,7 @@ export const CREDIT_BALANCE_COPY = {
   /** The mockup own line (app.js, setupOperatorCreditScreen), with the due instant when the port gives it. */
   refundRegistered: (money: string, due?: string) => `Solicitud registrada por ${money}. El Administrador del tenant decide${due ? ` hasta el ${due}` : ""}; sin decisión se autoriza automáticamente el monto y se notifica a todos los Administradores. Ejecución en máximo 5 días hábiles.`,
   history: (n: number) => `Historial de aplicaciones y devoluciones (${n})`, historyColumns: ['Fecha', 'Movimiento', 'Detalle', 'Reserva', 'Valor', 'Responsable'],
-  movement: { ORIGEN: 'Origen', APLICACION: 'Aplicación', DEVOLUCION: 'Devolución' }, state: { PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', RECHAZADA: 'Rechazada' },
+  movement: { ORIGEN: 'Origen', APLICACION: 'Aplicación', DEVOLUCION: 'Devolución' }, state: { PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', AUTORIZADA: 'Autorizada', RECHAZADA: 'Rechazada' },
   origin: { TRATAMIENTO: 'Tratamiento pendiente registrado como saldo a favor del 100 %', EXCEDENTE: 'Excedente de comprobante aprobado' }, appliedTo: (id: string) => `Aplicado a la reserva ${id}`,
   requestsEyebrow: 'Devoluciones', requestsTitle: 'Solicitudes de devolución de saldo a favor', requestsColumns: ['Origen', 'Cliente', 'Monto', 'Estado', 'Decisión hasta'],
   noRequests: 'Sin solicitudes de devolución de saldo a favor.',
