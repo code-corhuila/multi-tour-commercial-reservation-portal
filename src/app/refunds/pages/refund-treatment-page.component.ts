@@ -22,7 +22,7 @@ type Note = { readonly text: string; readonly done: boolean } | null;
 @Component({
   selector: 'app-refund-treatment-page', changeDetection: ChangeDetectionStrategy.OnPush, imports: [ReadErrorComponent, PortalSlotOutlet],
   template: `
-    <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.trace }}</p><h1 class="crp-page-header-title crp-h1">{{ t.treatmentTitle }}</h1></div>
+    <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.treatmentTrace }}</p><h1 class="crp-page-header-title crp-h1">{{ t.treatmentTitle }}</h1></div>
       <button type="button" class="crp-operator-outline crp-page-header-action" (click)="navigation?.open(screens.requests)">{{ t.backToRefunds }}</button></header>
     @if (feedback(); as n) { <p class="crp-refunds-feedback" [class.crp-is-valid]="n.done" [attr.role]="n.done ? 'status' : 'alert'">{{ n.text }}</p> }
     @let s = state();

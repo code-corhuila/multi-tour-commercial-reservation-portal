@@ -16,7 +16,7 @@ type State = PageState<Refund>;
 @Component({ imports: [ReadErrorComponent],
   selector: 'app-refund-manage-page', changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.trace }}</p><h1 class="crp-page-header-title crp-h1">{{ t.manageTitle }}</h1></div>
+    <header class="crp-page-header"><div class="crp-page-header-main"><p class="crp-page-header-eyebrow crp-operator-eyebrow">{{ t.manageTrace }}</p><h1 class="crp-page-header-title crp-h1">{{ t.manageTitle }}</h1></div>
       <button type="button" class="crp-operator-outline crp-page-header-action" (click)="go(screens.requests)">{{ t.backToRequests }}</button></header>
     @let s = state();
     @switch (s.kind) {
