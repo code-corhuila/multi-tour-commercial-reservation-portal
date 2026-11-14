@@ -160,7 +160,7 @@ export class PublicOfferPageComponent {
   private readonly offer = inject(PublicOfferSource, { optional: true });
   private readonly capacity = inject(DepartureCapacity, { optional: true });
   private readonly images = inject(TourImages);
-  // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
+  // provided by PublicTourValueSource or the demo source; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });
   protected readonly date = signal(tenantDay(inject(Clock).now()));
   protected readonly search = signal('');
