@@ -13,8 +13,8 @@ export abstract class PublicEstablishmentsSource {
 }
 
 /**
- * The current value of a tour on a date (plan D-06). TODO(HU-COM-004): implemented by the pure function
- * of `current-discounts` once it is in develop; until then no provider exists and the base value is shown.
+ * The current value of a tour on a date (plan D-06). The provider is PublicTourValueSource (API)
+ * or the demo source; without a provider the base value is shown.
  */
 export abstract class TourValueSource {
   abstract valueOf(tour: PublicTour, date: string): TourValue;
