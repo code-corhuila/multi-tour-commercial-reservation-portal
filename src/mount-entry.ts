@@ -1,7 +1,7 @@
 import { ApplicationRef, Injector, Provider, provideZonelessChangeDetection } from '@angular/core';
 import { createApplication } from '@angular/platform-browser';
 import { PortalShellComponent } from './app/portal-shell.component';
-import { CONTAINER_NAVIGATION, MountProps, PortalApiClient } from './app/shell-contract';
+import { COMMERCIAL_NAME, CONTAINER_AREA_REPORTER, CONTAINER_CHROME, CONTAINER_NAVIGATION, INITIAL_AREA, MountProps, PortalApiClient, RESTRICTED_ACCESS, TENANT_IDENTIFIER } from './app/shell-contract';
 import { sourceProviders } from './app/sources';
 import { SensitiveDataAccess, sensitiveDataAccessFor } from './app/customers/data/customers-source';
 import { CustomerContext, customerContextFor, SIGN_IN_REQUESTED_EVENT } from './app/self-service-reservation/data/customer-context';
@@ -11,22 +11,29 @@ import { ActorContext } from './app/shared/actor-context';
 import { SESSION_IDENTITY, sessionIdentityOf } from './app/shared/session-identity';
 import { PAYMENTS_DETAIL_BLOCK } from './app/payments/components/reservation-payments-block.component';
 import { PAYMENTS_CHECKOUT_BLOCK } from './app/payments/components/checkout-payment-block.component';
-import { CHECKOUT_BLOCKS, OPERATOR_NOTIFICATIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
+import { CHECKOUT_BLOCKS, DISCOUNTS_PAGE_PANELS, OPERATOR_NOTIFICATIONS, PAYMENTS_HEADER_ACTIONS, PAYMENTS_PAGE_PANELS, RESERVATION_DETAIL_BLOCKS, contribute } from './app/shared/portal-slots';
 import { REFUND_DETAIL_LINK } from './app/refunds/components/refund-link.component';
 import { REFUND_ALERTS } from './app/refunds/components/refund-alerts.component';
+import { AUTHORIZABLE_REASONS_PANEL } from './app/current-discounts/components/authorizable-reasons-panel.component';
+import { ADDITIONAL_DISCOUNT_CONTRIBUTIONS, ADDITIONAL_DISCOUNT_DETAIL_BLOCK } from './app/current-discounts/components/additional-discount-entries.component';
 import { REFUNDS_PAYMENTS_PANEL } from './app/refunds/components/refunds-panel.component';
 import { RESERVATION_DETAIL_ACTIONS } from './app/shared/portal-slots';
 import { CREDIT_BALANCE_PAYMENTS_LINK } from './app/credit-balance/components/credit-balance-links.component';
+import { CUSTOMER_CREDIT_CONTRIBUTIONS } from './app/credit-balance/components/customer-credit-panel.component';
+import { CUSTOMER_CREDIT_CHECKOUT } from './app/credit-balance/components/customer-credit-checkout.component';
+import { CUSTOMER_CREDIT_NOTICE } from './app/credit-balance/components/customer-credit-notice.component';
 import { CancellationQuote, cancellationChangeType } from './app/reservation-changes/data/cancellation-ports';
 import { RESERVATION_CHANGE_TYPES } from './app/reservation-changes/data/reservation-change-types';
 import { ReservationChangeActionComponent } from './app/reservation-changes/components/reservation-change-action.component';
+import { MODIFICATION_HISTORY_BLOCK } from './app/reservation-changes/travellers-modification/components/modification-history.component';
 import { ReservationChangeBlocksComponent } from './app/reservation-changes/components/reservation-change-blocks.component';
 import { PROOF_REVIEW_CONTRIBUTIONS } from './app/payments/components/proof-review-actions.component';
 import { PAYMENT_FOLLOWUP_CONTRIBUTIONS } from './app/payments/components/pending-payment-rows.component';
 import { provideTravellersModification } from './app/reservation-changes/travellers-modification/data/modification-ports';
 import { MY_PAYMENTS_CONTRIBUTIONS } from './app/my-payments/components/my-payments-panel.component';
-import { RESCHEDULING_ENTRY } from './app/rescheduling/components/rescheduling-entry.component';
+import { RESCHEDULING_ENTRIES } from './app/rescheduling/components/rescheduling-entry.component';
 import { RESCHEDULING_CONTRIBUTIONS } from './app/rescheduling/components/rescheduling-contributions.component';
+import { RESERVATION_FORM_CONTRIBUTIONS } from './app/customers/components/reservation-form-sections';
 
 const withCancellation = (injector: Injector) => injector.get(CancellationQuote, null) !== null;
 
@@ -70,7 +77,13 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       // Adapters over the container client; the demo build swaps in every in-memory store (001- HC-1).
       // HU-FRT-001 amendment 003: the name and the initials of the session, before the sources so a demo fixture may stand in.
       { provide: SESSION_IDENTITY, useValue: sessionIdentityOf(props.session) },
+      { provide: COMMERCIAL_NAME, useValue: props.commercialName?.trim() || null },
+      { provide: CONTAINER_CHROME, useValue: props.chrome === 'container' },
+      { provide: TENANT_IDENTIFIER, useValue: props.identifier?.trim() || null },
+      { provide: RESTRICTED_ACCESS, useValue: props.session.access === 'restricted' },
+      { provide: INITIAL_AREA, useValue: props.initialParams?.['area']?.trim() || null },
       ...(props.navigate ? [{ provide: CONTAINER_NAVIGATION, useValue: props.navigate }] : []),
+      ...(props.chrome === 'container' && props.onAreaChange ? [{ provide: CONTAINER_AREA_REPORTER, useValue: props.onAreaChange }] : []),
       ...sources(props.apiClient),
       { provide: SensitiveDataAccess, useValue: sensitiveDataAccessFor(props.session.roles) },
       // HU-COM-008 (DP-RS1, DP-RS2): customer standing from the session roles; sign-in is asked of the container.
@@ -78,10 +91,14 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       { provide: ReservationSelectionSource, useValue: selectionSourceFor(props.initialParams) },
       // HU-COM-009: Pagos y comprobantes of 10A and Gestionar pago of 10C, drawn only with the payment ports.
       contribute(RESERVATION_DETAIL_BLOCKS, PAYMENTS_DETAIL_BLOCK),
+      // HU-COM-004 amendment: "Descuento adicional aplicado" of 10A, read only for every role, between the payments and the cancellation blocks.
+      contribute(RESERVATION_DETAIL_BLOCKS, ADDITIONAL_DISCOUNT_DETAIL_BLOCK),
       // HU-COM-013: the 10A action and blocks, and the Cancelación type; each only with the cancellation ports of the build.
       contribute(RESERVATION_DETAIL_ACTIONS, { component: ReservationChangeActionComponent, order: 0, isAvailable: withCancellation }),
       contribute(RESERVATION_DETAIL_BLOCKS, { component: ReservationChangeBlocksComponent, order: 10, isAvailable: withCancellation }),
       { provide: RESERVATION_CHANGE_TYPES, multi: true, useFactory: cancellationChangeType },
+      // HU-COM-012 AC-MD.6: "Modificaciones registradas" of 10A after the HU-COM-013 blocks; only with the history source of the build.
+      contribute(RESERVATION_DETAIL_BLOCKS, MODIFICATION_HISTORY_BLOCK),
       // HU-COM-009: Método y plazo de pago of 21.
       contribute(CHECKOUT_BLOCKS, PAYMENTS_CHECKOUT_BLOCK),
       // HU-COM-010: Validar comprobante of 10, 10A and 13, the review history of 13 and the review limit of 24; only with the review port.
@@ -96,12 +113,22 @@ export function mountWith(element: HTMLElement, props: MountProps, sources: (cli
       contribute(PAYMENTS_PAGE_PANELS, REFUNDS_PAYMENTS_PANEL),
       // HU-COM-016: "Gestionar devolución" of 10A after the HU-COM-013 blocks, and the alert of admin-notificaciones.html.
       contribute(RESERVATION_DETAIL_BLOCKS, REFUND_DETAIL_LINK), contribute(OPERATOR_NOTIFICATIONS, REFUND_ALERTS),
-      // HU-COM-018 DP-RP4 (owner decision): Propuesta de reprogramación in the 10A header, after the HU-COM-013 action.
-      RESCHEDULING_ENTRY,
+      // HU-COM-018 DP-RP4 (mockup PDR v1.9): the box of 10A and the row action of 10, instead of the header button.
+      ...RESCHEDULING_ENTRIES,
       // HU-COM-018: Salida propuesta, the mark and Responder propuesta of Mis reservas, and the notice of 17; only with the proposals port.
       ...RESCHEDULING_CONTRIBUTIONS,
       // HU-COM-017 amendment: the link to admin-saldo-favor.html from 13 (the one from 10A is pending, second branch).
-      contribute(PAYMENTS_PAGE_PANELS, CREDIT_BALANCE_PAYMENTS_LINK),
+      contribute(PAYMENTS_HEADER_ACTIONS, CREDIT_BALANCE_PAYMENTS_LINK),
+      // HU-COM-017 AC-CB.13 (DP-CB6): the credit panel of Mis pagos and the credit notice of 17, only with the customer credit ports.
+      ...CUSTOMER_CREDIT_CONTRIBUTIONS, CUSTOMER_CREDIT_NOTICE,
+      // HU-COM-017 AC-CB.12 (DP-CB6): the box "Aplicar mi saldo a favor" of 21, new and existing reservation.
+      ...CUSTOMER_CREDIT_CHECKOUT,
+      // HU-COM-004 amendment: "Buscar una reserva" of Descuentos and "Aplicar descuento" of Reservas in mode; Administrator only, and only with the eligibility port.
+      ...ADDITIONAL_DISCOUNT_CONTRIBUTIONS,
+      // HU-COM-004 amendment: the panel "Motivos autorizables" of Descuentos, after the search panel; the Administrator only, and only with the reasons port.
+      contribute(DISCOUNTS_PAGE_PANELS, AUTHORIZABLE_REASONS_PANEL),
+      // HU-COM-005 amendment: sections 01 (Cliente titular) and 03 (Acompañantes) of 10B, drawn only with the customers directory.
+      ...RESERVATION_FORM_CONTRIBUTIONS,
     ],
   }).then((created) => {
     app = created;

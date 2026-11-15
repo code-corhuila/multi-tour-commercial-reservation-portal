@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, defer, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -12,7 +12,7 @@ import { formatCop, formatDate } from '../../shared/format';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { PageState } from '../../shared/page-state';
 import { PaymentLabels, modalityOf, paymentLabels } from '../components/reservation-payments-block.component';
-import { PaymentDeadline, PaymentDeadlineExtender, PaymentDeadlineReader, PaymentFollowupsWriter } from '../data/payment-followup-ports';
+import { PaymentDeadline, PaymentDeadlineExtender, PaymentDeadlineReader, PaymentFollowupsHistory, PaymentFollowupsWriter } from '../data/payment-followup-ports';
 import { PAYMENT_FOLLOWUP_TEXT, deadlineText, tenantDateTime } from '../payment-followup-copy';
 import { PAYMENTS_TEXT, departureText } from '../payments-copy';
 
@@ -34,10 +34,12 @@ type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadli
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.contextEyebrow }}</p><h2>{{ t.contextTitle }}</h2>
             <div class="crp-form-grid">
               @for (value of d ? context(d) : blank; track $index) { <div><label [for]="'crp-payment-followup-' + $index">{{ t.fields[$index] }}</label><input [id]="'crp-payment-followup-' + $index" readonly [disabled]="missing" [value]="value"></div> }
+              @if (!settled && r?.leadPhone; as phone) { <div class="crp-payment-followup-wide crp-payment-followup-phone-row"><span class="crp-payment-followup-phone-label">{{ t.phone }}</span>
+                <a class="crp-payment-followup-phone" [href]="'tel:' + callable(phone)">{{ phone }}</a></div> }
               <div class="crp-payment-followup-wide"><label for="crp-payment-followup-departure">{{ t.departure }}</label>
                 <input id="crp-payment-followup-departure" readonly [disabled]="missing" [value]="d ? departure(d) : ''"></div>
               @if (!settled) { <div class="crp-payment-followup-wide"><label for="crp-payment-followup-deadline">{{ t.deadline }}</label>
-                <input id="crp-payment-followup-deadline" readonly [disabled]="missing" [value]="d?.deadline ? deadlineLine(d!.deadline!) : ''"></div> }
+                <input id="crp-payment-followup-deadline" readonly [disabled]="missing" [value]="d?.deadline ? (d!.deadline!.frozen ? t.frozenDeadline : deadlineLine(d!.deadline!)) : ''"></div> }
             </div>
           </section>
           @if (!settled) {
@@ -52,7 +54,7 @@ type State = PageState<{ reservation: Reservation; labels: PaymentLabels; deadli
           <div class="crp-form-actions"><button type="button" class="crp-operator-outline" (click)="back()">{{ t.back }}</button>
             @if (!settled) { <button type="submit" class="crp-operator-primary" [disabled]="pending() || missing">{{ t.title }}</button> }</div>
         </form>
-        @if (r && !settled && extender && r.status === 'PENDIENTE_DE_PAGO' && d?.deadline) { @let ext = r.deadline?.extension; @let used = !!ext || !!r.deadline?.extendedUntil;
+        @if (r && !settled && extender && r.status === 'PENDIENTE_DE_PAGO' && d?.deadline && !d!.deadline!.frozen) { @let ext = r.deadline?.extension; @let used = !!ext || !!r.deadline?.extendedUntil;
           <section class="crp-operator-panel"><p class="crp-operator-eyebrow">{{ t.extension.eyebrow }}</p><h2>{{ t.extension.title }}</h2>
             <p class="crp-operator-copy">{{ ext ? t.extension.granted(ext.hours, ext.actorLabel, when(ext.grantedAt)) : r.deadline?.extendedUntil ? t.extension.grantedUntil(when(r.deadline!.extendedUntil!)) : t.extension.offer(t.extension.suggested) }}</p>
             <form novalidate (submit)="$event.preventDefault(); extend(r)"><label for="crp-payment-followup-hours">{{ t.extension.hours }}</label>
@@ -73,7 +75,7 @@ export class PaymentFollowupPageComponent {
   private readonly navigation = inject(PortalNavigation, { optional: true }); private readonly params = this.navigation?.params() ?? {};
   private readonly source = inject(ReservationsSource); private readonly methods = inject(PaymentMethodsSource); private readonly reader = inject(PaymentDeadlineReader);
   private readonly departures = inject(DeparturesSource, { optional: true }); protected readonly extender = inject(PaymentDeadlineExtender, { optional: true });
-  private readonly writer = inject(PaymentFollowupsWriter); private readonly keys = inject(IdempotencyKeys);
+  private readonly history = inject(PaymentFollowupsHistory, { optional: true }); private readonly writer = inject(PaymentFollowupsWriter); private readonly keys = inject(IdempotencyKeys);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement; private readonly injector = inject(Injector);
   protected readonly t = PAYMENT_FOLLOWUP_TEXT; protected readonly common = PAYMENTS_TEXT; protected readonly when = tenantDateTime; protected readonly deadlineLine = deadlineText; protected readonly date = formatDate;
   protected readonly blank = PAYMENT_FOLLOWUP_TEXT.fields.map(() => '');
@@ -83,23 +85,31 @@ export class PaymentFollowupPageComponent {
   private key = ''; private keyFor: string | null = null; private readonly requests = new Subject<void>();
   private extendKey = ''; private extendKeyFor: string | null = null;
   private readonly loaded = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => defer(() => this.reader.deadlineOf(this.params['reservation'] ?? '').pipe(switchMap((deadline) => forkJoin({ all: this.source.list(), labels: paymentLabels(this.methods),
-      departures: this.departures?.list().pipe(catchError(() => of([]))) ?? of([]) }).pipe(
-    map(({ all, labels, departures }): State => { const reservation = all.find((r) => r.id === this.params['reservation']);
+      departures: this.departures?.list().pipe(catchError(() => of([]))) ?? of([]), followups: this.history?.of(this.params['reservation'] ?? '') ?? of(null) }).pipe(
+    map(({ all, labels, departures, followups }): State => { const found = all.find((r) => r.id === this.params['reservation']);
+      const reservation = found && this.withServiceRecords(found, deadline, followups);
       const departure = departures.find((d) => d.id === reservation?.departureId)?.state;
       return reservation ? { kind: 'data', items: [{ reservation, labels, deadline, departure }] } : { kind: 'empty' }; }))))).pipe(
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+  /** A service that keeps the history and the extension apart (payment_followups, payment_deadline) hands them over its ports; the list holds neither. */
+  private withServiceRecords(r: Reservation, deadline: PaymentDeadline | null, followups: Reservation['followups'] | null): Reservation {
+    const extension = deadline?.extension;
+    return { ...r, ...(followups ? { followups } : {}), ...(deadline && extension ? { deadline: { dueAt: r.deadline?.dueAt ?? deadline.dueAt, extendedUntil: deadline.dueAt, extension } } : {}) };
+  }
   /** The reservation as the writer answered it; the newest answer wins over the list. */
   private readonly saved = signal<Reservation | null>(null);
   protected readonly state = computed((): State => {
     const s = this.loaded(), saved = this.saved();
-    return s.kind === 'data' && saved ? { kind: 'data', items: [{ ...s.items[0], reservation: saved }] } : s;
+    return s.kind === 'data' && saved ? { kind: 'data', items: [{ ...s.items[0], reservation: { ...saved, deadline: saved.deadline ?? s.items[0].reservation.deadline } }] } : s;
   });
 
   /** Reserva, Cliente, Modalidad de pago, Valor recibido, Saldo pendiente, Estado actual: the values come resolved. */
   protected context(d: { reservation: Reservation; labels: PaymentLabels }): string[] {
     const r = d.reservation;
-    return [`#${r.id}`, r.leadCustomerName, modalityOf(r, d.labels), formatCop(r.validatedCents ?? 0), formatCop(r.balanceCents), r.status === 'CANCELADA' && !r.validatedCents ? 'No aplica por reserva cancelada' : FINANCIAL_LABEL[r.financialStatus]];
+    return [`#${r.id}`, r.leadCustomerName, modalityOf(r, d.labels), formatCop(r.validatedCents ?? 0), formatCop(r.balanceCents), r.status === 'CANCELADA' && !r.validatedCents ? PAYMENT_FOLLOWUP_TEXT.notApplicableCancelled : FINANCIAL_LABEL[r.financialStatus]];
   }
+  /** The number as a `tel:` target: digits and the leading plus only, so the spaces typed by hand never break the call. */
+  protected callable(phone: string): string { return phone.replace(/(?!^\+)[^\d]/g, ''); }
   protected departure(d: { reservation: Reservation; departure?: string }): string { return departureText(d.reservation, d.departure); }
   protected value(event: Event): string { return (event.target as HTMLTextAreaElement).value; }
 

@@ -75,29 +75,39 @@ describe('establishmentsSourcesOverTheApiClient', () => {
     await firstValueFrom(source.get('e1'));
     expect(calls.map((c) => c.path)).toEqual([
       `${API_BASE}/associated-establishments?page=1&limit=100&establishmentType=HOTEL&associationStatus=INACTIVE`,
+      `${API_BASE}/associated-establishments/changes?page=1&limit=100&establishmentType=HOTEL`,
       `${API_BASE}/associated-establishments/e1`,
     ]);
   });
 
-  it('posts the status transitions without a key', async () => {
+  it('posts the status transitions with their reason and without a key', async () => {
     const { client, calls } = fakeClient();
     const writer = new EstablishmentsApiWriter(client);
-    await firstValueFrom(writer.inactivate('e1'));
-    await firstValueFrom(writer.reactivate('e1'));
+    await firstValueFrom(writer.inactivate('e1', 'Cerrado por obras'));
+    await firstValueFrom(writer.reactivate('e1', 'Obras terminadas'));
     expect(calls).toEqual([
-      { path: `${API_BASE}/associated-establishments/e1/inactivate`, method: 'POST' },
-      { path: `${API_BASE}/associated-establishments/e1/reactivate`, method: 'POST' },
+      { path: `${API_BASE}/associated-establishments/e1/inactivate`, method: 'POST', body: { reason: 'Cerrado por obras' } },
+      { path: `${API_BASE}/associated-establishments/e1/reactivate`, method: 'POST', body: { reason: 'Obras terminadas' } },
     ]);
   });
 
   it('hands a refusal of a transition to the page with its message', async () => {
     const { client } = fakeClient({ fail: { status: 403, code: 'FORBIDDEN', message: 'not allowed', traceId: 't' } });
-    const error = await firstValueFrom(new EstablishmentsApiWriter(client).inactivate('e1')).catch((e) => e);
+    const error = await firstValueFrom(new EstablishmentsApiWriter(client).inactivate('e1', 'Cerrado por obras')).catch((e) => e);
     expect(error).toMatchObject({ status: 403, userMessage: 'not allowed' });
   });
 
-  // Debt: needs FormData support in the container client (api-client.ts JSON.stringify-s every body).
-  it.todo('registers with a multipart FormData body once the container client supports it');
+  it('registers with a multipart FormData body (never a JSON-serialized one) and only the Idempotency-Key header', async () => {
+    const { client, calls } = fakeClient();
+    const image = new File(['x'], 'a.png', { type: 'image/png' });
+    await firstValueFrom(new EstablishmentsApiWriter(client).register({ establishmentType: 'RESTAURANT', commercialName: 'R', commercialInformation: 'Info', image }, 'k-987654321'));
+    const body = calls[0].body;
+    expect(body).toBeInstanceOf(FormData); expect(typeof body).not.toBe('string');
+    const form = body as FormData;
+    expect(['commercialInformation', 'commercialName', 'establishmentType', 'image'].every((name) => form.has(name))).toBe(true);
+    expect(form.get('establishmentType')).toBe('RESTAURANT'); expect(form.get('image')).toBeInstanceOf(File);
+    expect(calls[0].headers).toEqual({ 'Idempotency-Key': 'k-987654321' });
+  });
 
   it('builds the registration as FormData with the Idempotency-Key header (container support pending)', async () => {
     const { client, calls } = fakeClient();
@@ -108,5 +118,40 @@ describe('establishmentsSourcesOverTheApiClient', () => {
     const form = call.body as FormData;
     expect([form.get('establishmentType'), form.get('commercialName'), form.get('commercialInformation')]).toEqual(['HOTEL', 'H', 'I']);
     expect((form.get('image') as File).name).toBe('a.png');
+  });
+});
+
+
+describe('catalogWriterBodyMatchesTheApiContract', () => {
+  const absent = ['validFrom', 'validTo', 'operationalRestrictions', 'route'];
+  const noNulls = (body: unknown) => Object.values(body as Record<string, unknown>).every((value) => value !== null && value !== undefined);
+
+  it('creates without null keys and without the fields the API does not know', async () => {
+    const { client, calls } = fakeClient();
+    const withExtras = { ...command, configuredCapacity: null, validFrom: '2026-09-01', validTo: '2026-09-30', operationalRestrictions: 'x', route: 'A-B' };
+    await firstValueFrom(new CatalogApiWriter(client).create(withExtras as never, 'key-12345678'));
+    const body = calls[0].body as Record<string, unknown>;
+    expect(noNulls(body)).toBe(true);
+    expect(Object.keys(body)).not.toContain('configuredCapacity');
+    for (const key of absent) { expect(Object.keys(body)).not.toContain(key); }
+  });
+
+  it('does not send configuredCapacity for a transport created without capacity', async () => {
+    const { client, calls } = fakeClient();
+    const { configuredCapacity: _capacity, ...transport } = { ...command, serviceType: 'TRANSPORTATION' as const };
+    await firstValueFrom(new CatalogApiWriter(client).create(transport, 'key-12345678'));
+    expect(calls[0].body).toEqual(transport);
+    expect(Object.keys(calls[0].body as object)).not.toContain('configuredCapacity');
+  });
+
+  it('updates without null keys and without the validity', async () => {
+    const { client, calls } = fakeClient();
+    const { serviceType: _type, ...update } = command;
+    await firstValueFrom(new CatalogApiWriter(client).update('s1', { ...update, configuredCapacity: null, validFrom: '2026-09-01', validTo: '2026-09-30' } as never));
+    const body = calls[0].body as Record<string, unknown>;
+    expect(noNulls(body)).toBe(true);
+    expect(Object.keys(body)).not.toContain('configuredCapacity');
+    expect(Object.keys(body)).not.toContain('validFrom');
+    expect(Object.keys(body)).not.toContain('validTo');
   });
 });

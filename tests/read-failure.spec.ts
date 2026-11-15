@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { readFailure } from '../src/app/shared/read-failure';
+import { errorState, readFailure } from '../src/app/shared/read-failure';
 import { apiError } from './catalog-items-writer.double';
 import { TestBed } from '@angular/core/testing';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
@@ -54,5 +54,13 @@ describe('everyReadThatFailsHandsTheFailureToItsErrorState', () => {
       withoutComments(readFileSync(file, 'utf8')).split('\n')
         .filter((line) => /catchError\(\(.*\) => of</.test(line) && /kind: 'error'/.test(line) && !/readFailure\(/.test(line)).map(() => file));
     expect(breaches).toEqual([]);
+  });
+});
+
+describe('errorStateBuildsTheErrorStateOfAFailedRead', () => {
+  it('hands the user message and the trace of an API error and the retry to the error state', () => {
+    const retry = () => undefined;
+    expect(errorState({ userMessage: 'No se pudo.', traceId: 'abc' }, retry)).toEqual({ kind: 'error', retry, userMessage: 'No se pudo.', traceId: 'abc' });
+    expect(errorState(new Error('down'), retry)).toEqual({ kind: 'error', retry });
   });
 });

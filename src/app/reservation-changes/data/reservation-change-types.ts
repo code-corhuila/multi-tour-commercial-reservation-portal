@@ -7,8 +7,8 @@ export const RESERVATION_CHANGE_SCREEN = 'reservation-change';
 
 /** What "Registrar novedad" sends for the selected type; the key is created when the screen opens and reused on retry. */
 export interface ReservationChangeInput { readonly reservationCode: string; readonly cause: string; readonly origin: CancellationOrigin; readonly idempotencyKey: string }
-/** Registered, or refused with the Spanish reason the screen shows. */
-export type ReservationChangeOutcome = { readonly kind: 'registered' } | { readonly kind: 'refused'; readonly reason: string };
+/** Registered (with the text the screen keeps under the actions, when the type has its own), or refused with the Spanish reason the screen shows. */
+export type ReservationChangeOutcome = { readonly kind: 'registered'; readonly message?: string } | { readonly kind: 'refused'; readonly reason: string };
 
 /** One option of Tipo. `form` draws the extra fields of the type (input: reservation). */
 export interface ReservationChangeType {

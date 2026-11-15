@@ -47,9 +47,9 @@ describe('projectedValueAddsServicesAndPerPersonTransportInCents', () => {
 });
 
 describe('missing mandatory data and capacity, as rules', () => {
-  const blank = { leadCustomerId: '', departureId: '', serviceId: '', people: '', paymentType: '', paymentMethod: '', accepted: false };
+  const blank = { departureId: '', serviceId: '', people: '', paymentType: '', paymentMethod: '', accepted: false };
   it('names each missing datum', () => {
-    expect(Object.keys(validateReservation(blank, undefined, capacity)).sort()).toEqual(['accepted', 'departureId', 'leadCustomerId', 'paymentMethod', 'paymentType', 'people', 'serviceId']);
+    expect(Object.keys(validateReservation(blank, undefined, capacity)).sort()).toEqual(['accepted', 'departureId', 'paymentMethod', 'paymentType', 'people', 'serviceId']);
   });
   it('refuses zero, decimals and words as a number of people', () => {
     for (const people of ['0', '2.5', 'two', '-1']) {
@@ -57,7 +57,7 @@ describe('missing mandatory data and capacity, as rules', () => {
     }
   });
   it('refuses more people than the effective capacity, and accepts exactly the capacity', () => {
-    const full = { leadCustomerId: 'c', departureId: 'dep-1', serviceId: 's', people: '3', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER', accepted: true };
+    const full = { departureId: 'dep-1', serviceId: 's', people: '3', paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER', accepted: true };
     expect(validateReservation(full, departureOf(1, { effectiveCapacity: 2 }), capacity).people).toContain('No hay cupo suficiente');
     expect(validateReservation(full, departureOf(1, { effectiveCapacity: 3 }), capacity)).toEqual({});
   });

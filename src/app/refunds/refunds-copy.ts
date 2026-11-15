@@ -1,12 +1,12 @@
 import { formatDate } from '../shared/format';
-import type { Refund, RefundMethod, RefundState } from './data/refunds-ports';
+import type { Refund, RefundMethod, RefundOriginType, RefundState } from './data/refunds-ports';
 
 /** Spanish copy of admin-pagos.html (panel), admin-solicitudes-devolucion.html and admin-detalle-devolucion.html (mockup and app.js), HU-COM-016. */
 /** "Quedan 18 h 42 min" (the minutes are padded as the mockup does). */
 const left = (minutes: number) => `Quedan ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`;
 export const REFUNDS_COPY = {
-  panelEyebrow: 'Devoluciones monetarias', consult: 'Consultar solicitudes', panelTitle: 'Autorización requerida', panelCopy: 'El Administrador autoriza o registra la devolución, con monto, motivo, reserva y movimiento de caja asociados.',
-  panelTitleExecutor: 'Devoluciones autorizadas', panelCopyExecutor: 'Consulta las devoluciones autorizadas por el Administrador y registra la salida de dinero cuando corresponda.',
+  panelEyebrow: 'Devoluciones monetarias', consult: 'Consultar solicitudes', panelTitle: 'Autorización requerida', panelCopy: 'El Administrador del tenant decide en 24 horas corridas y la devolución se ejecuta en máximo 5 días hábiles, con monto, motivo, reserva y movimiento de caja asociados.',
+  panelTitleExecutor: 'Devoluciones autorizadas', panelCopyExecutor: 'Consulta las devoluciones autorizadas por el Administrador del tenant y registra la salida de dinero cuando corresponda.',
   eyebrow: 'Control de cobro', requestsTitle: 'Solicitudes de devolución', backToPayments: 'Volver a pagos',
   heroEyebrow: 'Devoluciones monetarias', heroTitle: 'Determinación, autorización y ejecución trazables.',
   heroCopy: 'Toda devolución registra causal, monto, responsable, fecha y su relación con la reserva y con el movimiento de caja correspondiente. El Administrador del tenant decide en 24 horas corridas; sin decisión se determina la devolución del 100 %, que debe ejecutarse en máximo 5 días hábiles.',
@@ -39,7 +39,7 @@ export const REFUNDS_COPY = {
   creditExecuted: 'Registrado como saldo a favor del cliente dentro del tenant: no hubo salida efectiva de dinero.',
   /** PROPUESTO (spec section 5): the mockup has no text for the failed cash step (AC-RF.4). */
   cashFailed: 'La salida de dinero no quedó registrada en caja: la devolución sigue autorizada.',
-  trace: 'RF-015B · D1 · E16', manageTitle: 'Gestionar devolución', treatmentTitle: 'Tratamiento pendiente de devolución', backToRefunds: 'Volver a devoluciones',
+  manageTrace: 'RF-015B · Solicitud de devolución', treatmentTrace: 'RN-RES-006C · Solo Administrador del tenant', manageTitle: 'Gestionar devolución', treatmentTitle: 'Tratamiento pendiente de devolución', backToRefunds: 'Volver a devoluciones',
   origin: (r: Refund) => `Reserva ${r.id} ${r.reason.charAt(0).toLowerCase()}${r.reason.slice(1)}`, pendingTitle: 'Tratamiento pendiente', paid: 'Valores abonados:',
   choice: 'El Administrador del tenant decide dentro de 24 horas corridas entre devolver el 100 % o registrar el 100 % como saldo a favor.',
   left,
@@ -56,6 +56,14 @@ export const REFUNDS_COPY = {
   cardOwner: (r: Refund) => `Reserva #${r.id} · ${r.customer}`, viewDetailShort: 'Ver detalle',
   /** PROPUESTO (spec section 5): the mockup draws no empty state for the alerts. */
   noAlerts: 'No hay alertas pendientes.',
+  /** admin-gestionar-devolucion.html: panels "Origen" and "Reglas de la devolución", and its two links. */
+  originEyebrow: 'Origen', originTitle: 'Cancelación o modificación registrada', backToReservation: 'Volver a la reserva', viewRequests: 'Ver solicitudes',
+  originFields: { reservation: 'Reserva', customer: 'Cliente', status: 'Estado de la reserva', type: 'Tipo', reason: 'Causal', paid: 'Valores pagados y validados', date: 'Fecha del registro' },
+  rulesEyebrow: 'Reglas de la devolución', rulesTitle: 'Determinación, decisión y ejecución',
+  rulesCopy: 'La devolución es del 100 % por defecto y por causa no atribuible al cliente; en una cancelación solicitada por el cliente se aplica la penalidad vigente y la decisión recae sobre el monto reembolsable. Las causas no atribuibles se determinan y autorizan automáticamente; en los demás casos el Administrador del tenant decide en 24 horas corridas entre devolver o registrar saldo a favor, y sin decisión se determina la devolución del 100 %. Toda devolución se ejecuta en máximo 5 días hábiles y queda asociada a un movimiento de caja.',
+  /** admin-tratamiento-pendiente-devolucion.html: the notice under the header. */
+  treatmentNotice: 'Cuando una reserva se cancela por incumplimiento del pago y existen valores abonados y validados, solo el Administrador del tenant decide, dentro de 24 horas corridas desde el reconocimiento del dinero, entre devolver el 100 % o registrarlo como saldo a favor. Sin decisión, Multitour determina la devolución del 100 % (pendiente de ejecución en máximo 5 días hábiles) y notifica a todos los Administradores del tenant activos. No existen retenciones ni penalidades.',
+  noValue: '—',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar', notFound: 'No se encontró la solicitud seleccionada.',
 } as const;
 
@@ -63,6 +71,8 @@ export const REFUND_STATE_LABEL: Readonly<Record<RefundState, string>> = { PENDI
   RECHAZADA: 'Rechazada', SALDO_A_FAVOR: 'Saldo a favor' };
 /** AC-RF.7: the overdue execution is a mark beside the state, not a state. */
 export const refundStateText = (r: Refund) => `${REFUND_STATE_LABEL[r.state]}${r.overdue ? ' · Ejecución vencida' : ''}`;
+/** The values of the "Tipo" row, as the mockup writes them. */
+export const REFUND_ORIGIN_TYPE_LABEL: Readonly<Record<RefundOriginType, string>> = { CANCELLATION: 'Cancelación', MODIFICATION: 'Modificación' };
 export const REFUND_METHOD_LABEL: Readonly<Record<RefundMethod, string>> = { BANK_TRANSFER: 'Transferencia', CASH: 'Efectivo' };
 
 /** `2026-10-13T09:30:00-05:00` to `13 oct 2026 · 09:30`, the hour as written. */

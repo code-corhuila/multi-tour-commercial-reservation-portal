@@ -3,13 +3,15 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { CatalogItemsSource, CatalogItemsWriter } from '../src/app/catalog/data/catalog-api.service';
 import { CatalogHubPageComponent } from '../src/app/catalog/pages/catalog-hub-page.component';
+import { CatalogNewServicePageComponent } from '../src/app/catalog/pages/catalog-new-service-page.component';
+import { PaymentParametersPageComponent } from '../src/app/payment-parameters/pages/payment-parameters-page.component';
 import { CatalogPageComponent } from '../src/app/catalog/pages/catalog-page.component';
 import { DemoCatalogStore, DemoCatalogWriter, DemoEstablishmentsStore, DemoEstablishmentsWriter } from '../src/app/demo/demo-sources';
 import { DemoDiscountRulesStore } from '../src/app/demo/discounts-demo';
 import { DemoPublicEstablishmentsSource, DemoPublicOfferSource } from '../src/app/demo/public-offer-demo';
 import { PublicEstablishmentsSource, PublicOfferSource } from '../src/app/public-offer/data/public-offer-sources';
 import { DiscountRulesSource } from '../src/app/discounts/data/discount-rules-source';
-import { CurrentDiscountsPageComponent } from '../src/app/current-discounts/pages/current-discounts-page.component';
+import { AdditionalDiscountPageComponent } from '../src/app/current-discounts/pages/additional-discount-page.component';
 import { CustomersPageComponent } from '../src/app/customers/pages/customers-page.component';
 import { DiscountsPageComponent } from '../src/app/discounts/pages/discounts-page.component';
 import { AssociatedEstablishmentsSource } from '../src/app/establishments/data/associated-establishments-source';
@@ -99,9 +101,11 @@ describe('portalAreasRegistry', () => {
       { key: 'reservations', label: 'Reservas', component: ReservationsPageComponent },
       { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent },
       { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent },
+      { key: 'catalog-new-service', label: 'Nuevo servicio', component: CatalogNewServicePageComponent },
+      { key: 'payment-parameters', label: 'Parámetros de pago', component: PaymentParametersPageComponent },
       { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent },
       { key: 'discounts', label: 'Descuentos', component: DiscountsPageComponent },
-      { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent },
+      { key: 'additional-discount', label: 'Aplicar descuento', component: AdditionalDiscountPageComponent },
       { key: 'tours', label: 'Explorar', component: PublicOfferPageComponent },
       { key: 'lodging', label: 'Alojamiento', component: LodgingOfferPageComponent },
       { key: 'gastronomy', label: 'Gastronomía', component: GastronomyOfferPageComponent },

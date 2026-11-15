@@ -47,7 +47,8 @@
         },
         "module": {
           "builder": "@angular/build:application",
-          "options": { "browser": "src/mount-entry.ts", "index": false, "outputPath": "dist/module", "tsConfig": "tsconfig.module.json", "outputHashing": "none", "styles": [] },
+          "options": { "browser": "src/mount-entry.ts", "index": false, "outputPath": "dist/module", "tsConfig": "tsconfig.module.json", "outputHashing": "none", "styles": [],
+            "budgets": [{ "type": "initial", "maximumWarning": "780kb", "maximumError": "800kb" }] },
           "configurations": {
             "demo": { "fileReplacements": [{ "replace": "src/app/sources.ts", "with": "src/app/sources.demo.ts" }] }
           }
@@ -58,7 +59,8 @@
             "buildTarget": "commercial-reservation-portal:esbuild:development",
             "tsConfig": "tsconfig.spec.json",
             "runner": "vitest",
-            "include": ["../tests/**/*.spec.ts"]
+            "include": ["../tests/**/*.spec.ts"],
+            "setupFiles": ["tests/setup-clock.ts"]
           }
         }
       }

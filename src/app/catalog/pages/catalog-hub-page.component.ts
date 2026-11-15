@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { AssociatedEstablishmentsSource } from '../../establishments/data/associated-establishments-source';
@@ -38,8 +38,11 @@ interface HubCard {
           <p class="crp-page-header-eyebrow">{{ copy.eyebrow }}</p>
           <h1 class="crp-page-header-title crp-h1">{{ copy.title }}</h1>
         </div>
+        @if (canManagePaymentParameters && navigation?.has('payment-parameters')) {
+          <button class="crp-operator-outline crp-page-header-action" type="button" (click)="open('payment-parameters', {})">{{ copy.paymentParameters }}</button>
+        }
         @if (canRegister) {
-          <button class="crp-operator-primary crp-page-header-action" type="button" (click)="open('catalog-tours', { create: '1' })">{{ copy.newService }}</button>
+          <button class="crp-operator-primary crp-page-header-action" type="button" (click)="open('catalog-new-service', {})">{{ copy.newService }}</button>
         }
       </header>
       <p class="crp-access-note">{{ copy.accessNote }}</p>
@@ -65,13 +68,15 @@ interface HubCard {
 })
 export class CatalogHubPageComponent {
   protected readonly copy = CATALOG_HUB_COPY;
-  private readonly navigation = inject(PortalNavigation, { optional: true });
+  protected readonly navigation = inject(PortalNavigation, { optional: true });
   private readonly catalog = inject(CatalogItemsSource);
   private readonly establishments = inject(AssociatedEstablishmentsSource, { optional: true });
   private readonly capabilities = inject(PortalCapabilities);
   private readonly canSeeEstablishments = this.capabilities.canRegisterEstablishments();
   protected readonly denied = this.capabilities.catalog().isDenied;
   protected readonly canRegister = this.capabilities.catalog().canRegister;
+  /** HU-COM-009 P14: the link of the mockup (app.js 12595), the Administrator only; the area registry says whether this build has the screen. */
+  protected readonly canManagePaymentParameters = this.capabilities.canManagePaymentParameters();
   protected readonly state = signal<PageState<HubCard>>({ kind: 'loading' });
   private readonly requests = new Subject<void>();
 
@@ -92,7 +97,7 @@ export class CatalogHubPageComponent {
           const shown = cards.filter((each) => (!each.admin || this.canSeeEstablishments) && (this.navigation?.has(each.area) ?? false));
           return shown.length === 0 ? { kind: 'empty' } : { kind: 'data', items: shown };
         }),
-        catchError((error) => of<PageState<HubCard>>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })),
+        catchError((error) => of<PageState<HubCard>>(errorState(error, () => this.requests.next()))),
         startWith<PageState<HubCard>>({ kind: 'loading' }),
       )),
       takeUntilDestroyed(),

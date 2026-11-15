@@ -3,53 +3,32 @@ import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
-import { CatalogItemsSource } from '../../catalog/data/catalog-api.service';
-import { CatalogItem } from '../../catalog/data/catalog-api.service';
+import { PublicOfferSource } from '../../public-offer/data/public-offer-sources';
 import { DiscountRulesSource } from '../../discounts/data/discount-rules-source';
 import { DiscountRule, discountValueText } from '../../discounts/data/discount-rules-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
+import { Clock, tenantDay } from '../../shared/clock';
 import { formatCop, formatDate } from '../../shared/format';
 import { CustomerContext } from '../data/customer-context';
 import { MyReservationsSource } from '../data/my-reservations-source';
 import { ReservationSelectionSource } from '../data/reservation-confirmation-ports';
 import { CustomerReservation, RESERVATION_FLOW, SELF_SERVICE_TEXT, reservationState } from '../model/self-service-reservation';
+import { PANEL_CHIP_TEXT, PANEL_QUICK_TEXT, PANEL_TEXT, activeReservations } from '../self-service-copy';
 import { SESSION_TEXT } from '../../shared/session-copy';
 import { SESSION_IDENTITY } from '../../shared/session-identity';
 import { TourImages } from '../../shared/tour-photo';
 import { CLIENT_QUICK_ACTIONS, PortalSlotOutlet, slotEntries } from '../../shared/portal-slots';
 
-/** The texts of panel-cliente.html (authorized screen 17), without the parts of other stories (payments, notifications). */
-const PANEL_TEXT = {
-  eyebrow: 'Portal cliente',
-  intro: 'Consulta la oferta disponible, revisa tus reservas y continúa la gestión de tus próximos viajes desde un solo lugar.',
-  searchLabel: 'Buscar tours o establecimientos asociados',
-  searchPlaceholder: 'Buscar tours o experiencias...',
-  search: 'Buscar',
-  reservations: 'Mis reservas',
-  noActive: 'No tienes reservas activas',
-  noActiveCopy: 'Explora el catálogo y selecciona los servicios para comenzar una nueva reserva.',
-  seeReservations: 'Ver mis reservas',
-  consult: 'Consulta en Mis reservas',
-  own: 'Reservas propias',
-  quick: 'Acciones rápidas',
-  discounts: 'Descuentos vigentes',
-  noDiscounts: 'No hay descuentos vigentes en este momento.',
-  validUntil: 'Válido hasta',
-  featured: 'Experiencias destacadas',
-  noFeatured: 'No hay opciones disponibles en este momento.',
-  from: 'Desde',
-  detail: 'Ver detalle',
-} as const;
-
 const CHIPS = [
-  { key: CLIENT_AREA.gastronomy, label: 'Restaurantes asociados' }, { key: CLIENT_AREA.tours, label: 'Tours' }, { key: CLIENT_AREA.lodging, label: 'Alojamiento asociado' },
+  { key: CLIENT_AREA.gastronomy, label: PANEL_CHIP_TEXT.gastronomy }, { key: CLIENT_AREA.tours, label: PANEL_CHIP_TEXT.tours }, { key: CLIENT_AREA.lodging, label: PANEL_CHIP_TEXT.lodging },
 ];
 const QUICK = [
-  { key: CLIENT_AREA.tours, icon: 'NR', title: 'Nueva reserva', copy: 'Inicia una nueva reserva' },
-  { key: CLIENT_AREA.gastronomy, icon: 'GA', title: 'Restaurantes asociados', copy: 'Consulta los datos de contacto de restaurantes asociados.' },
+  { key: CLIENT_AREA.tours, icon: 'NR', ...PANEL_QUICK_TEXT.newReservation },
+  { key: CLIENT_AREA.gastronomy, icon: 'GA', ...PANEL_QUICK_TEXT.gastronomy },
 ];
 const ACTIVE_STATES = ['PENDING_PAYMENT', 'CONFIRMED', 'IN_EXECUTION'];
 
+type OfferedTour = { readonly serviceId: string; readonly commercialName: string; readonly baseRateCents: number; readonly available: boolean };
 type Part<T> = { kind: 'loading' | 'error' | 'empty' } | { kind: 'data'; items: readonly T[] };
 const partOf = <T>(read: Observable<readonly T[]>) => read.pipe(
   map((items): Part<T> => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
@@ -63,7 +42,7 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
   const byState = new Map<string, number>();
   active.forEach((r) => byState.set(reservationState(r.reservationStatus)[0], (byState.get(reservationState(r.reservationStatus)[0]) ?? 0) + 1));
   return {
-    title: active.length ? `${active.length} ${active.length === 1 ? 'reserva activa' : 'reservas activas'}` : PANEL_TEXT.noActive,
+    title: active.length ? activeReservations(active.length) : PANEL_TEXT.noActive,
     detail: active.length ? Array.from(byState, ([label, count]) => `${count} ${label}`).join(' · ') : PANEL_TEXT.noActiveCopy,
     codes: active.map((r) => r.reservationId).join(' · '),
   };
@@ -86,7 +65,7 @@ export function activeSummary(reservations: readonly CustomerReservation[]) {
           <input id="crp-panel-search" type="search" [placeholder]="t.searchPlaceholder" (keydown.enter)="go(area.tours)" />
           @if (has(area.tours)) { <button type="button" class="crp-primary" (click)="go(area.tours)">{{ t.search }}</button> }
         </div>
-        <div class="crp-panel-chips" aria-label="Filtros rápidos">
+        <div class="crp-panel-chips" [attr.aria-label]="t.filters">
           @for (chip of chips; track chip.key) { <button type="button" (click)="go(chip.key)">{{ chip.label }}</button> }
         </div>
       </div>
@@ -171,6 +150,7 @@ export class ClientPanelPageComponent {
   protected readonly quickSlots = slotEntries(CLIENT_QUICK_ACTIONS, this.injector).length;
   protected readonly isCustomer = inject(CustomerContext).isFinalCustomer;
   private readonly source = inject(MyReservationsSource);
+  private readonly clock = inject(Clock);
   private readonly requests = new Subject<void>();
   protected readonly reservations = toSignal(this.requests.pipe(switchMap(() => partOf(this.source.listMine()))), { initialValue: { kind: 'loading' } as Part<CustomerReservation> });
   // Read-only: the rules of HU-COM-003 in force today. Without the port, or if it fails, there is nothing in force to show.
@@ -179,10 +159,10 @@ export class ClientPanelPageComponent {
     catchError(() => of<readonly DiscountRule[]>([])),
   ), { initialValue: [] as readonly DiscountRule[] });
   // The base value of up to four active tours of the catalog of HU-COM-001; never a cost or a capacity.
-  protected readonly featured = toSignal(partOf((inject(CatalogItemsSource, { optional: true })?.list()
+  protected readonly featured = toSignal(partOf((inject(PublicOfferSource, { optional: true })?.listAvailable(tenantDay(this.clock.now()))
     ?? throwError(() => new Error('No catalog port'))).pipe(
-    map((items: readonly CatalogItem[]) => items.filter((item) => item.serviceType === 'TOUR' && item.catalogStatus === 'ACTIVE').slice(0, 4)),
-  )), { initialValue: { kind: 'loading' } as Part<CatalogItem> });
+    map((items: readonly OfferedTour[]) => items.filter((item) => item.available).slice(0, 4)),
+  )), { initialValue: { kind: 'loading' } as Part<OfferedTour> });
 
   constructor() {
     this.reload();

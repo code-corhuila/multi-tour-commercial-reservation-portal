@@ -63,26 +63,29 @@ interface Row {
   readonly registerCreditBalance: boolean;
   /** HU-COM-017 DP-CB3, DP-CB7 (no RBAC row yet): apply a customer's credit as a validated payment; every operator reads. Requesting a refund on their behalf waits for the second branch. */
   readonly actOnCreditBalance: boolean;
+  /** HU-COM-009 amendment v1.9 A.3, AC-PY.17: the payment parameters of the tenant; the Administrator only. */
+  readonly managePaymentParameters: boolean;
   /** RF-018 excludes the Collaborator even when the catalog permits descriptive edits. */
   readonly readEstablishments: boolean;
 }
 
 const NONE = { sensitiveData: false, manageDiscounts: false, authorizeAdditionalDiscount: false, createReservations: false, registerPayment: false, changeReservation: false, decideProof: 'never', followUp: false,
-  refund: 'never', proposeRescheduling: false, registerCreditBalance: false, actOnCreditBalance: false } as const;
+  refund: 'never', proposeRescheduling: false, registerCreditBalance: false, actOnCreditBalance: false, managePaymentParameters: false } as const;
 const READER: Row = { ...NONE, label: 'Solo lectura', operator: true, catalog: 'read', customers: 'read', readEstablishments: true };
 
 /** Today's nine matrices, moved row by row; no decision changed in the move. */
 const TABLE: Readonly<Record<ActorRole, Row>> = Object.freeze({
   TENANT_ADMINISTRATOR: { label: 'Administrador del tenant', operator: true, catalog: 'all', customers: 'register', sensitiveData: true,
     manageDiscounts: true, authorizeAdditionalDiscount: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'always', followUp: true, refund: 'authorize',
-    readEstablishments: true, proposeRescheduling: true, registerCreditBalance: true, actOnCreditBalance: true },
+    readEstablishments: true, proposeRescheduling: true, registerCreditBalance: true, actOnCreditBalance: true, managePaymentParameters: true },
   OPERATIONAL_COLLABORATOR: { ...NONE, label: 'Colaborador operativo', operator: true, catalog: 'description-if-enabled', customers: 'register',
     sensitiveData: true, createReservations: true, registerPayment: true, changeReservation: true, decideProof: 'if-granted', followUp: true, refund: 'execute',
     readEstablishments: false, proposeRescheduling: true, actOnCreditBalance: true },
   MANAGER: { ...READER, label: 'Gerente' },
   ANALYST: { ...READER, label: 'Analista' },
   ACCOUNTANT: { ...NONE, label: 'Contador', operator: true, catalog: 'denied', customers: 'denied', readEstablishments: false },
-  READ_ONLY: { ...READER, operator: false },
+  // The API answers 403 to this fail-closed actor on the establishments, so the screen is not offered.
+  READ_ONLY: { ...READER, operator: false, readEstablishments: false },
 });
 
 const CATALOG_READ: CatalogCapabilities = {
@@ -135,8 +138,13 @@ export class PortalCapabilities {
   canDecideProof(): boolean { return this.row.decideProof === 'always' || (this.row.decideProof === 'if-granted' && this.collaboratorMayValidateProofs); }
   canFollowUp(): boolean { return this.row.followUp; }
   canProposeRescheduling(): boolean { return this.row.proposeRescheduling; }
+  /** DP-RP1 (decided 2026-11-11): the story's reading, the Administrator and the Collaborator record an answer received by an outside channel (the mockup says any role that is not read only). */
+  canRecordReschedulingAnswer(): boolean { return this.row.proposeRescheduling; }
   canRegisterCreditBalance(): boolean { return this.row.registerCreditBalance; }
   canApplyCreditBalance(): boolean { return this.row.actOnCreditBalance; }
+  /** AC-CB.10, DP-CB7: the same roles as applying; the other roles read. */
+  canRequestCreditRefund(): boolean { return this.row.actOnCreditBalance; }
+  canManagePaymentParameters(): boolean { return this.row.managePaymentParameters; }
   canReadEstablishments(): boolean { return this.row.readEstablishments && this.catalog().canRead; }
   canRegisterEstablishments(): boolean { return this.catalog().canRegister; }
   /** The operator layout; otherwise the customer layout (a final customer or a visitor). */

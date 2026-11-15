@@ -66,7 +66,10 @@ describe('discount list states and newest request', () => {
     expect(items[4].querySelector('p')?.textContent).toBe('Vigente hasta el 31 dic 2999. Base de cálculo: subtotal resultante del descuento anterior. Prioridad 5, acumulable. Tope: $80.000.');
     expect(items[0].querySelector('p')?.textContent).not.toContain('Tope');
     expect(Array.from(items[0].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros', 'Inactivar']);
-    expect(Array.from(items[3].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros']);
+    expect(Array.from(items[3].querySelectorAll('button'), b => b.textContent?.trim())).toEqual(['Editar parámetros', 'Reactivar']);
+    // Only Inactivar is drawn as the destructive action; Reactivar is a regular one.
+    expect(items[0].querySelectorAll('button')[1].classList.contains('crp-discount-toggle')).toBe(true);
+    expect(items[3].querySelectorAll('button')[1].classList.contains('crp-discount-toggle')).toBe(false);
     expect(e.textContent).not.toMatch(RAW_CODES); expect(e.textContent).not.toMatch(/Discount|Retry|Loading|No results/);
   });
   it('writes the loading, empty, error and denied states in Spanish', async () => {
@@ -85,6 +88,16 @@ describe('discount list states and newest request', () => {
   });
   it('ends the outstanding request with the component lifetime', async () => {
     const p = await openDiscounts(); TestBed.resetTestingModule(); expect(p.source.requests[0].isOpen()).toBe(false);
+  });
+});
+describe('theListLineShowsPriorityAccumulableAndCap', () => {
+  it('theListLineShowsPriorityAccumulableAndCap', async () => {
+    const p = await openDiscounts();
+    const capped = { ...discountNamed('Con tope', 3), stackable: true, capCents: 5_000_000 };
+    p.source.requests[0].reply([discountNamed('Sin tope', 1), capped]); await p.settle();
+    const lines = Array.from(p.element.querySelectorAll('li.crp-discount-promo p'), l => l.textContent);
+    expect(lines[0]).toContain('Prioridad 1, no acumulable.'); expect(lines[0]).not.toContain('Tope');
+    expect(lines[1]).toContain('Prioridad 3, acumulable.'); expect(lines[1]).toContain('Tope: $50.000.');
   });
 });
 describe('discount route fails closed', () => {

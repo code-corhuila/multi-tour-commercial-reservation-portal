@@ -46,7 +46,7 @@ afterEach(() => TestBed.resetTestingModule());
 
 async function render<T>(component: Type<T>, source: MyPaymentsSource, options: { params?: Record<string, string>; areas?: string[]; roles?: string[] } = {}) {
   const navigation = new PortalNavigation();
-  navigation.register(options.areas ?? [CLIENT_AREA.panel, CLIENT_AREA.payments, 'transfer-payment']);
+  navigation.register(options.areas ?? [CLIENT_AREA.panel, CLIENT_AREA.payments, 'transfer-payment', 'finish']);
   navigation.params.set(options.params ?? {});
   const open = vi.spyOn(navigation, 'open');
   TestBed.configureTestingModule({ providers: [{ provide: MyPaymentsSource, useValue: source }, { provide: PortalNavigation, useValue: navigation },
@@ -246,15 +246,15 @@ describe('aProofInValidationRaisesOneNoticeInNotifications', () => {
 describe('continuePaymentFollowsThePortTargetAndOpensScreen24', () => {
   const TARGET: ContinuePaymentTarget = { reservationId: 'RES-1842', paymentType: 'TOTAL', amountCents: 85_000_000 };
 
-  it('offers Continuar pago for the reservation the port names and opens screen 24 with it', async () => {
+  it('offers Continuar pago for the reservation the port names and opens screen 21 in its second mode with it', async () => {
     const view = await render(ContinuePaymentActionComponent, new SourceDouble(TARGET));
     const button = view.host.querySelector('button')!;
     expect(flat(button.textContent)).toBe('CP Continuar pago Continúa el pago pendiente de una de tus reservas.');
     button.click();
-    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1842', type: 'TOTAL', amount: '85000000' });
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1842' });
   });
 
-  it('is not drawn without a target, nor when the build has no screen 24', async () => {
+  it('is not drawn without a target, nor when the build has no screen 21', async () => {
     expect((await render(ContinuePaymentActionComponent, new SourceDouble(null))).host.querySelector('button')).toBeNull();
     TestBed.resetTestingModule();
     expect((await render(ContinuePaymentActionComponent, new SourceDouble(TARGET), { areas: [CLIENT_AREA.panel] })).host.querySelector('button')).toBeNull();
@@ -267,7 +267,7 @@ describe('continuePaymentClickedTwiceOpensScreen24OnceAndRecordsNothing', () => 
     const button = view.host.querySelector('button')!;
     button.click(); button.click();
     expect(view.open).toHaveBeenCalledTimes(1);
-    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1842', amount: '85000000' });
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1842' });
     const code = withoutComments(readFileSync('src/app/my-payments/components/my-payments-panel.component.ts', 'utf8'));
     expect(code).not.toMatch(/Writer|IdempotencyKeys|register\(/);
   });
@@ -348,10 +348,12 @@ function press(host: HTMLElement, label: string): void {
 }
 
 describe('theProofSentOn24ReachesThePanelAndMisPagos', () => {
-  it('Continuar pago opens 24 of RES-1842; after the proof, Notificaciones and Mis pagos read it En validación with the same balance', async () => {
+  it('Continuar pago opens 21 in its second mode and Continuar opens 24 of RES-1842; after the proof, Notificaciones and Mis pagos read it En validación with the same balance', async () => {
     const { host, cleanup } = mountDemo();
     try {
       await vi.waitFor(() => press(host, 'CP Continuar pago Continúa el pago pendiente de una de tus reservas.'));
+      await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Completar el pago de la reserva'));
+      press(host, 'Continuar');
       await vi.waitFor(() => expect(host.querySelector('h1')?.textContent).toBe('Pago por transferencia'));
       expect(flat(host.textContent)).toContain('Reserva #RES-1842');
       const proof = host.querySelector<HTMLInputElement>('#crp-transfer-proof')!;
@@ -383,10 +385,10 @@ describe('theDemoCustomerSeesEveryPaymentSituationOfTheMockup', () => {
       expect(cards.slice(5).map((card) => card.split(' ')[0])).toEqual(['RES-1829', 'RES-1828']);
       const expected = [
         'RES-1842 Desierto de la Tatacoa al atardecer 07 nov 2026 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: Sin comprobante Situación financiera: Sin pago Valor final: $850.000 Valores validados: $0 Saldo pendiente: $850.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes Sin comprobantes registrados.',
-        'RES-1840 Ruta Andina 18 sep 2026 · 06:30 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: En validación Situación financiera: Sin pago Valor final: $1.299.000 Valores validados: $0 Saldo pendiente: $1.299.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1840.pdf · $1.299.000 · En validación',
-        'RES-1832 Tour de ejemplo 20 sep 2026 · 07:00 Estado de la reserva: Confirmada Tipo de pago: Abono Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: Abono recibido Valor final: $300.000 Valores validados: $100.000 Saldo pendiente: $200.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1832.pdf · $100.000 · Aprobado',
-        'RES-1831 Ruta Andina 22 sep 2026 · 06:30 Estado de la reserva: Cancelada Tipo de pago: Abono Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: No aplica por reserva cancelada Valor final: $1.200.000 Valores validados: $1.200.000 Saldo pendiente: $0 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1831.pdf · $1.200.000 · Aprobado',
-        'RES-1830 Ruta Andina 18 sep 2026 · 06:30 Estado de la reserva: Confirmada Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: Pago completo Valor final: $1.299.000 Valores validados: $1.299.000 Saldo pendiente: $0 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1830.pdf · $1.299.000 · Aprobado',
+        'RES-1840 Ruta Andina 18 sep 2026 · 06:30 Estado de la reserva: Pendiente de pago Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: En validación Situación financiera: Sin pago Valor final: $1.299.000 Valores validados: $0 Saldo pendiente: $1.299.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1840.pdf · $1.299.000 · En validación · Descargar',
+        'RES-1832 Tour de ejemplo 20 sep 2026 · 07:00 Estado de la reserva: Confirmada Tipo de pago: Abono Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: Abono recibido Valor final: $300.000 Valores validados: $100.000 Saldo pendiente: $200.000 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1832.pdf · $100.000 · Aprobado · Descargar',
+        'RES-1831 Ruta Andina 22 sep 2026 · 06:30 Estado de la reserva: Cancelada Tipo de pago: Abono Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: No aplica por reserva cancelada Valor final: $1.200.000 Valores validados: $1.200.000 Saldo pendiente: $0 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1831.pdf · $1.200.000 · Aprobado · Descargar',
+        'RES-1830 Ruta Andina 18 sep 2026 · 06:30 Estado de la reserva: Confirmada Tipo de pago: Pago total Medio de pago: Transferencia Estado del comprobante: Aprobado Situación financiera: Pago completo Valor final: $1.299.000 Valores validados: $1.299.000 Saldo pendiente: $0 Valores devueltos: $0 Saldo a favor: $0 Comprobantes comprobante-transferencia-RES-1830.pdf · $1.299.000 · Aprobado · Descargar',
       ];
       expected.forEach((card, i) => expect(cards[i]).toBe(card));
     } finally { cleanup(); }
@@ -559,11 +561,11 @@ describe('theCardOfMisReservasOffersTheActionsOfTheMockupToTheAreasThatExist', (
   }
   const pay = { ...FULL, paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' };
 
-  it('Continuar pago opens screen 24 with the balance, and Ver pagos y comprobantes opens Mis pagos with the reservation', async () => {
+  it('Continuar pago opens screen 21 in its second mode, and Ver pagos y comprobantes opens Mis pagos with the reservation', async () => {
     const view = await actionsOf(pay);
     expect(view.labels).toEqual(['Continuar pago', 'Ver pagos y comprobantes']);
     view.host.querySelectorAll('button')[0].click();
-    expect(view.open).toHaveBeenCalledWith('transfer-payment', { reservation: 'RES-1842', type: 'TOTAL', amount: '85000000' });
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1842' });
     view.host.querySelectorAll('button')[1].click();
     expect(view.open).toHaveBeenCalledWith(CLIENT_AREA.payments, { reservation: 'RES-1842' });
   });
@@ -612,6 +614,8 @@ describe('thePanelNotificationsCarryTheContentOfTheMockup', () => {
       'Reserva RES-1850: Confirmada con saldo pendiente de $200.000. Plazo para completar el saldo: hasta 20 oct 2026 · 06:00 (antes de la hora de inicio de la salida).',
       'Reserva RES-1851: Pendiente de pago. Plazo de pago: según la configuración del operador, sin superar la hora de inicio de la salida.']);
     expect(Array.from(view.host.querySelectorAll('button'), (b) => flat(b.textContent))).toEqual(['Continuar pago', 'Continuar pago']);
+    view.host.querySelectorAll('button')[0].click();
+    expect(view.open).toHaveBeenCalledWith('finish', { reservation: 'RES-1850' });
   });
 
   it('Cancelada: the cause and the treatment of the paid values; the credit balance with the link to Mis pagos', async () => {

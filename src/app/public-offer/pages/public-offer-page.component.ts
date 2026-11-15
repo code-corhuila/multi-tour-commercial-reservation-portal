@@ -1,13 +1,13 @@
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { Clock, tenantDay } from '../../shared/clock';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 import { DeparturesSource, Departure, openDepartures } from '../../reservations/data/departures-source';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
 import { formatCop, formatDate, formatDateRange } from '../../shared/format';
-import { PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
+import { PublicDeparturesSource, PublicOfferSource, TourValueSource } from '../data/public-offer-sources';
 import { PublicTour, TourValue } from '../model/public-offer';
 import { PUBLIC_OFFER_COPY, matchesSearch, sameName } from '../public-offer-copy';
 import { DepartureCapacity } from '../../reservations/data/departure-capacity';
@@ -26,13 +26,13 @@ interface PricedTour { readonly tour: PublicTour; readonly value: TourValue; rea
 export function partOf<A, T>(requests: Subject<A>, read: (arg: A) => Observable<readonly T[]>, retry: () => void) {
   return toSignal(requests.pipe(switchMap((arg) => read(arg).pipe(
     map((items): PartState<T> => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError((error) => of<PartState<T>>({ kind: 'error', ...readFailure(error), retry })),
+    catchError((error) => of<PartState<T>>(errorState(error, retry))),
     startWith<PartState<T>>({ kind: 'loading' }),
   ))), { initialValue: { kind: 'loading' } as PartState<T> });
 }
 
 /** The open departures a port lists, or null without a port or when it fails: the page then draws no departures. */
-function openDeparturesOf(port: DeparturesSource | null): Observable<readonly Departure[] | null> {
+function openDeparturesOf(port: { list(): Observable<readonly Departure[]> } | null): Observable<readonly Departure[] | null> {
   const read: Observable<readonly Departure[] | null> = port ? port.list() : of(null);
   return read.pipe(map((all) => (all ? openDepartures(all) : null)), catchError(() => of(null)));
 }
@@ -73,6 +73,7 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
             <h2>{{ copy.validityTitle }}</h2>
             <dl class="crp-offer-facts">
               <div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div>
+              @if (priced.tour.maxTravelers; as travelers) { &ngsp;<div><dt>{{ copy.capacity }}</dt>&ngsp;<dd>{{ copy.maxTravelers(travelers) }}</dd></div> }
               @if (priced.tour.transportIncluded) { &ngsp;<div><dt>{{ copy.transport }}</dt>&ngsp;<dd>{{ copy.transportIncluded }}</dd></div> }
             </dl>
             <section class="crp-offer-conditions"><h2>{{ copy.conditionsTitle }}</h2>
@@ -95,7 +96,7 @@ export function backToPanel(): (() => void) | null { return openerOf(CLIENT_AREA
               }
               <p class="crp-offer-from">{{ copy.from }}: <span data-value="current">{{ money(priced.value.currentValueCents) }}</span></p>
             </div>&ngsp;
-            <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div></dl>
+            <dl class="crp-offer-facts"><div><dt>{{ copy.validity }}</dt>&ngsp;<dd>{{ validity(priced) }}</dd></div>@if (priced.tour.maxTravelers; as travelers) { &ngsp;<div><dt>{{ copy.capacity }}</dt>&ngsp;<dd>{{ copy.maxTravelers(travelers) }}</dd></div> }</dl>
             @if (priced.tour.validity; as range) { <p class="crp-offer-validity">{{ copy.validFrom }} {{ day(range.from) }} {{ copy.validTo }} {{ day(range.to) }}.</p> }
             @if (reserve) { <button type="button" class="crp-primary crp-offer-reserve" [disabled]="!hasSeats(priced)" (click)="reserve(priced.tour.serviceId)">{{ copy.reserve }}</button> }
           </aside>
@@ -159,14 +160,14 @@ export class PublicOfferPageComponent {
   private readonly offer = inject(PublicOfferSource, { optional: true });
   private readonly capacity = inject(DepartureCapacity, { optional: true });
   private readonly images = inject(TourImages);
-  // TODO(HU-COM-004): provided by current-discounts; without it the base value is the current value.
+  // provided by PublicTourValueSource or the demo source; without it the base value is the current value.
   private readonly value = inject(TourValueSource, { optional: true });
   protected readonly date = signal(tenantDay(inject(Clock).now()));
   protected readonly search = signal('');
   protected readonly chosen = signal<PricedTour | null>(null);
   private readonly dates = new Subject<string>();
   /** The open departures of HU-COM-007/008, or null where the container has no departures port or it fails (then no section is drawn). */
-  private readonly departures = toSignal(openDeparturesOf(inject(DeparturesSource, { optional: true })), { initialValue: null });
+  private readonly departures = toSignal(openDeparturesOf(inject(PublicDeparturesSource, { optional: true }) ?? inject(DeparturesSource, { optional: true })), { initialValue: null });
 
   protected readonly toursState = partOf(this.dates, (date) => (this.offer?.listAvailable(date) ?? unavailable()).pipe(
     // RN-PO2: whatever the port answers, what is not available for the date is not listed.

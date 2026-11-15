@@ -42,7 +42,11 @@ export function detailRows(r: CustomerPaymentSummary): Row[] {
 }
 
 /** The payment action of a card (app.js 4510): a rejected proof presents a new one; a balance to pay continues the payment. */
-export function paymentAction(r: Pick<CustomerPaymentSummary, 'reservationStatus' | 'proofStatus' | 'balanceCents' | 'paymentMethod' | 'reschedulingPending'>): 'present' | 'pay' | null {
+const SERVICE_ACTION = { CONTINUE_PAYMENT: 'pay', PRESENT_NEW_RECEIPT: 'present', NONE: null } as const;
+
+/** AC-14.8: when the service names the next action the portal follows it; its own rule below only serves the sources that do not answer it (demo). */
+export function paymentAction(r: Pick<CustomerPaymentSummary, 'reservationStatus' | 'proofStatus' | 'balanceCents' | 'paymentMethod' | 'reschedulingPending' | 'continueAction'>): 'present' | 'pay' | null {
+  if (r.continueAction) return SERVICE_ACTION[r.continueAction];
   if (r.paymentMethod !== 'BANK_TRANSFER' || r.reservationStatus === 'CANCELLED') return null;
   if (r.proofStatus === 'RECHAZADO') return 'present';
   const open = r.reservationStatus === 'PENDING_PAYMENT' || r.reservationStatus === 'CONFIRMED';
@@ -53,6 +57,11 @@ export interface NoticeLine { readonly text: string; readonly action?: 'pay' | '
 
 /** What setupDashboardNotifications (app.js 4758) writes of one reservation; nothing for a reservation in rescheduling (HU-COM-018 has its own). */
 export function noticeLines(n: PaymentNotice): NoticeLine[] {
+  const lines = ownNoticeLines(n), named = n.continueAction;
+  return named ? lines.map((l) => (l.action === 'pay' || l.action === 'present' ? { ...l, action: SERVICE_ACTION[named] ?? undefined } : l)) : lines;
+}
+
+function ownNoticeLines(n: PaymentNotice): NoticeLine[] {
   const lines: NoticeLine[] = [];
   const cop = (cents: number | undefined) => formatCop(cents ?? 0);
   const deadline = deadlineText({ reservationStatus: n.reservationStatus ?? '', proofStatus: n.proofStatus, balanceCents: n.balanceCents ?? 0, deadlineAt: n.deadlineAt, reschedulingPending: n.reschedulingPending });

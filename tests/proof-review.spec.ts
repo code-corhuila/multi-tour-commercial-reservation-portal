@@ -6,6 +6,10 @@ import * as entry from '../src/mount-entry';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
 import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
+import { Clock as CancellationClock } from '../src/app/reservation-changes/data/cancellation-ports';
+import { FixedClock as ChangesClock } from '../src/app/demo/reservation-changes-demo';
+import { creditBalanceDemoProviders } from '../src/app/demo/credit-balance-demo';
+import { DemoReservationsStore } from '../src/app/demo/reservations-demo';
 import { DemoProofReviewWriter, proofReviewDemoProviders } from '../src/app/demo/proof-review-demo';
 import { reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { DemoPaymentMethods } from '../src/app/demo/self-service-reservation-demo';
@@ -25,7 +29,7 @@ import { ActorContext } from '../src/app/shared/actor-context';
 import { Clock } from '../src/app/shared/clock';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
 import { PortalCapabilities } from '../src/app/shared/portal-capabilities';
-import { PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENTS_TABLE_BODIES, contribute } from '../src/app/shared/portal-slots';
+import { PAYMENTS_HEADER_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENTS_TABLE_BODIES, contribute } from '../src/app/shared/portal-slots';
 import type { MountProps, PortalApiClient } from '../src/app/shell-contract';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { ControllableIdempotencyKeys } from './catalog-items-writer.double';
@@ -420,10 +424,12 @@ describe('rejection, retry and excess (T-04)', () => {
   });
 
   it('approvalAppliesOnlyThePendingBalanceAndHandsTheExcess (AC-PV.8; the credit balance is HU-COM-017)', async () => {
-    TestBed.configureTestingModule({ providers: providers() });
+    TestBed.configureTestingModule({ providers: providers({ extra: [...creditBalanceDemoProviders(), { provide: CancellationClock, useValue: new ChangesClock('2026-10-13T09:00:00-05:00') }] }) });
     const after = await decide({ verifiedAmountCents: 40_000_000 });
     expect(after).toMatchObject({ status: 'CONFIRMADA', financialStatus: 'PAGO_COMPLETO', validatedCents: 30_000_000, balanceCents: 0 });
-    expect((TestBed.inject(ProofReviewWriter) as DemoProofReviewWriter).handedExcess).toEqual([{ reservationId: EXAMPLE, amountCents: 10_000_000 }]);
+    // The excess is a line of the credit balance store (RN-PV7); the writer keeps no copy of its own.
+    expect((TestBed.inject(ReservationsSource) as DemoReservationsStore).creditBalances.at(-1)).toMatchObject({ reservationId: EXAMPLE, amountCents: 10_000_000, origin: 'EXCEDENTE' });
+    expect('handedExcess' in (TestBed.inject(ProofReviewWriter) as DemoProofReviewWriter)).toBe(false);
   });
 });
 
@@ -532,6 +538,15 @@ describe('the actions of 13 and the text of 24 (T-07); the links of 10 and 10A a
     expect(cells.sort()).toEqual((await waitingIds()).map((id) => `Fila ${id}`).sort());
     expect(cells).toEqual(expect.arrayContaining(['Fila RES-1827', `Fila ${EXAMPLE}`, `Fila ${VALIDATED}`]));
     expect(element.querySelector('section.crp-operator-panel:has(table) + crp-test-panel')).not.toBeNull();
+  });
+
+  it('offers PAYMENTS_HEADER_ACTIONS in the header of Pagos, before "Ver reservas", as the header links of the mockup', async () => {
+    @Component({ selector: 'crp-test-header', template: '<button type="button" class="crp-operator-outline crp-page-header-action">Acción de cabecera</button>' })
+    class HeaderDouble {}
+    const { element } = await screenOf(PaymentsPageComponent, providers({ extra: [contribute(PAYMENTS_HEADER_ACTIONS, { component: HeaderDouble, order: 1 })] }));
+    const labels = Array.from(element.querySelectorAll('header.crp-page-header button')).map((button) => button.textContent?.trim());
+    expect(labels[0]).toBe('Acción de cabecera');
+    expect(labels[labels.length - 1]).toBe('Ver reservas');
   });
 
   it('offers PAYMENTS_TABLE_BODIES after the proofs of Pagos pendientes, and draws the table for them when no proof waits', async () => {

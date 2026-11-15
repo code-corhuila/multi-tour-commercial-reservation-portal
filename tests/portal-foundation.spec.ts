@@ -10,6 +10,7 @@ import { ReservationViewComponent } from '../src/app/reservations/components/res
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { MyPaymentsSource } from '../src/app/my-payments/data/my-payments-source';
 import { MyProposalsSource } from '../src/app/rescheduling/data/rescheduling-ports';
+import { CustomerCreditSource } from '../src/app/credit-balance/data/customer-credit-ports';
 import { ActorContext } from '../src/app/shared/actor-context';
 import {
   CHECKOUT_BLOCKS, CLIENT_NOTICES, CLIENT_QUICK_ACTIONS, PAYMENTS_PAGE_PANELS, PAYMENTS_ROW_ACTIONS, PAYMENT_MANAGEMENT_ACTIONS, PAYMENT_MANAGEMENT_NOTES,
@@ -166,8 +167,8 @@ describe('theOutletsOfTheScreensInDevelop', () => {
   });
 
   it('draws CLIENT_QUICK_ACTIONS in Acciones rápidas and CLIENT_NOTICES in the Notificaciones bell of 17', async () => {
-    // HU-COM-014 and HU-COM-018 register CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with their ports: without those ports 17 is as the base left it.
-    mountAs([{ provide: MyPaymentsSource, useValue: null }, { provide: MyProposalsSource, useValue: null }], ['FINAL_CUSTOMER']);
+    // HU-COM-014, HU-COM-017 and HU-COM-018 register CLIENT_QUICK_ACTIONS and CLIENT_NOTICES with their ports: without those ports 17 is as the base left it.
+    mountAs([{ provide: MyPaymentsSource, useValue: null }, { provide: MyProposalsSource, useValue: null }, { provide: CustomerCreditSource, useValue: null }], ['FINAL_CUSTOMER']);
     await vi.waitFor(() => expect(host.querySelector('app-client-panel-page')).toBeTruthy());
     expect(host.querySelector('.crp-client-bell-panel')?.textContent).toContain('No tienes notificaciones nuevas.');
     expect(host.querySelector('app-client-panel-page .crp-panel-notices')).toBeNull();
@@ -196,7 +197,7 @@ describe('theOutletsOfTheScreensInDevelop', () => {
 
   // 10A header: "Cancelar o modificar reserva" (013) sits before "Volver a reservas" (admin-detalle-reserva.html:34).
   it('draws RESERVATION_DETAIL_ACTIONS in the header of 10A, before Volver a reservas', async () => {
-    mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 1 })], ['TENANT_ADMINISTRATOR']);
+    mountAs([contribute(RESERVATION_DETAIL_ACTIONS, { component: BlockDouble, order: 99 })], ['TENANT_ADMINISTRATOR']);
     await vi.waitFor(() => expect(host.querySelector('nav button')).toBeTruthy());
     await vi.waitFor(() => expect(host.querySelector('app-reservations-page [data-state="data"] tbody tr')).toBeTruthy());
     const id = host.querySelector('.crp-reservations-code')?.textContent?.slice(1);
@@ -205,6 +206,9 @@ describe('theOutletsOfTheScreensInDevelop', () => {
     const block = host.querySelector('app-reservations-page .crp-page-header crp-test-block')!;
     expect(block.textContent?.trim()).toBe(`Bloque ${id}`);
     expect(block.nextElementSibling?.textContent?.trim()).toBe('Volver a reservas');
+    // The actions are one group of the header, so a narrow header moves them together and not one by one.
+    expect(block.closest('.crp-header-actions')).not.toBeNull();
+    expect(block.nextElementSibling?.closest('.crp-header-actions')).toBe(block.closest('.crp-header-actions'));
   });
 
   // Mis reservas: "Responder propuesta" (018) closes the card (app.js:2694).

@@ -1,3 +1,4 @@
+import { PaymentTypeChoice } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { resolvedPortalCss } from './css-tokens';
@@ -23,6 +24,7 @@ import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { TourImages } from '../src/app/shared/tour-photo';
 import { DemoTourImages } from '../src/app/demo/tour-photo-demo';
 import { CLIENT_AREA, PortalNavigation } from '../src/app/portal-navigation';
+import { toPageError } from '../src/app/http/api-paths';
 import { apiError, ControllableIdempotencyKeys } from './catalog-items-writer.double';
 import {
   ControllableMyReservationsSource,
@@ -38,11 +40,34 @@ import {
 } from './self-service-reservation.double';
 import { CustomerStanding, customerStandingOf } from '../src/app/shared/portal-capabilities';
 import { IdempotencyKeys } from '../src/app/shared/idempotency-keys';
+import { RESERVATION_FORM_CONTRIBUTIONS } from '../src/app/customers/components/reservation-form-sections';
 
 const buttonNamed = (root: HTMLElement, name: string) =>
   Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === name);
 
-async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys; areas?: readonly string[] } = {}) {
+/** Screen 21 asks the data of each companion before it confirms (AC-PC.13): the people of the selection minus the titular. */
+async function fillCompanions(root: HTMLElement, settle: () => Promise<void>) {
+  const data: Record<string, string> = { fullName: 'Acompañante Ficticio', document: 'DEMO-5', birthDate: '2001-05-01', emergency: 'Contacto Ficticio 300' };
+  for (let i = 0; root.querySelector(`[name="companion-fullName-${i}"]`); i += 1) {
+    for (const [field, value] of Object.entries(data)) {
+      const input = root.querySelector<HTMLInputElement>(`[name="companion-${field}-${i}"]`)!;
+      input.value = field === 'document' ? `${value}${i}` : value; input.dispatchEvent(new Event('input'));
+    }
+  }
+  await settle();
+}
+
+/** The five fields of "Cliente titular" (AC-08.13, DP-RS5 decided 2026-11-04). */
+const HOLDER = { name: 'Laura Gómez (demo)', document: 'DEMO-1001', phone: '300 000 0000', email: 'laura@example.invalid', birthdate: '1990-04-12' };
+async function fillHolder(root: HTMLElement, settle: () => Promise<void>, values: Partial<typeof HOLDER> = {}) {
+  for (const [field, value] of Object.entries({ ...HOLDER, ...values })) {
+    const input = root.querySelector<HTMLInputElement>(`#crp-holder-${field}`)!;
+    input.value = value; input.dispatchEvent(new Event('input'));
+  }
+  await settle();
+}
+
+async function openConfirm(options: { standing?: CustomerStanding; selection?: ReservationSelection | null; keys?: ControllableIdempotencyKeys; areas?: readonly string[]; withPanel?: boolean } = {}) {
   const customer = new CustomerAs(options.standing ?? 'FINAL_CUSTOMER');
   const methods = new ControllablePaymentMethods();
   const requester = new RecordingRequester();
@@ -54,7 +79,9 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     { provide: SelectionQuoteSource, useValue: quoteOf() },
     { provide: ReservationRequester, useValue: requester },
     { provide: IdempotencyKeys, useValue: keys },
+    ...(options.withPanel ? [{ provide: MyReservationsSource, useValue: new ControllableMyReservationsSource() }] : []),
     { provide: TourImages, useValue: new DemoTourImages() },
+    ...RESERVATION_FORM_CONTRIBUTIONS,
     ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
   ] });
   const fixture = TestBed.createComponent(ConfirmReservationPageComponent);
@@ -71,9 +98,9 @@ async function openConfirm(options: { standing?: CustomerStanding; selection?: R
     for (const box of Array.from(element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))) { box.click(); }
     await settle();
   };
-  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); };
+  const fill = async (code = 'BANK_TRANSFER') => { await choose(code); await accept(); await fillHolder(element, settle); await fillCompanions(element, settle); };
   const confirm = async () => { buttonNamed(element, T.confirm)!.click(); await settle(); };
-  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm };
+  return { fixture, element, customer, methods, requester, keys, settle, state, showMethods, choose, accept, fill, confirm, fillHolder: (values?: Partial<typeof HOLDER>) => fillHolder(element, settle, values) };
 }
 
 async function openPanel(standing: CustomerStanding = 'FINAL_CUSTOMER', areas?: readonly string[]) {
@@ -209,6 +236,82 @@ describe('aMissingFieldShowsItsErrorBesideItAndSubmitWaits', () => {
   });
 });
 
+describe('theHolderFieldsAreRequiredAndTravelAsTheHolderOfTheCreation (DP-RS5, AC-08.13)', () => {
+  it('draws the five fields enabled, with no pending note, and sends nothing while one is missing', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.choose('BANK_TRANSFER'); await p.accept(); await fillCompanions(p.element, p.settle);
+    const inputs = Array.from(p.element.querySelectorAll<HTMLInputElement>('.crp-finish-holder input'));
+    expect(inputs).toHaveLength(5);
+    expect(inputs.every((input) => !input.disabled && input.required)).toBe(true);
+    expect(p.element.textContent).not.toContain('Pendiente de definición');
+    await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.querySelector('.crp-finish-holder [data-holder-feedback]')?.textContent).toContain(T.holderMissing);
+    expect(p.element.querySelector('.crp-finish-holder [aria-invalid="true"]')).not.toBeNull();
+  });
+  it('refuses an e-mail without shape and a future birth date, beside the holder card', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    await p.fillHolder({ email: 'sin-arroba' }); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.querySelector('[data-holder-feedback]')?.textContent).toContain(T.holderEmail);
+    await p.fillHolder({ email: HOLDER.email, birthdate: '2999-01-01' }); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+    expect(p.element.querySelector('[data-holder-feedback]')?.textContent).toContain(T.holderFuture);
+  });
+  it('refuses a companion that repeats the document of the holder', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    await p.fillHolder({ document: 'DEMO-50' }); await p.confirm();
+    expect(p.requester.calls).toHaveLength(0);
+  });
+  it('sends the holder and the terms box with the creation, and a corrected holder gets a new key', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].holder).toEqual({ fullName: HOLDER.name, document: HOLDER.document, phone: HOLDER.phone, email: HOLDER.email, birthDate: HOLDER.birthdate, termsAccepted: true });
+    p.requester.calls[0].fail(apiError({ status: 503 })); await p.settle();
+    await p.fillHolder({ phone: '311 111 1111' }); await p.confirm();
+    expect(p.requester.calls[1].holder?.phone).toBe('311 111 1111');
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+  });
+});
+
+describe('aRefusalNamingRiskDataShowsTheRiskBlockAndKeepsWhatWasTyped (DP-RS5, mockup finalizar-reserva)', () => {
+  const riskRefusal = () => apiError({ status: 400, code: 'VALIDATION_ERROR', message: 'the request has invalid fields', userMessage: '', details: [{ field: 'bloodType', message: 'bloodType is required' }] });
+  const type = (root: HTMLElement, name: string, value: string) => {
+    const input = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`)!; input.value = value; input.dispatchEvent(new Event('input'));
+  };
+
+  it('starts hidden, shows one card per traveler when the service names risk data, and asks again before sending', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill();
+    expect(p.element.querySelector('[data-risk-section]')).toBeNull();
+    await p.confirm(); p.requester.calls[0].fail(riskRefusal()); await p.settle();
+    expect(p.requester.calls[0].risk).toBeUndefined();
+    const block = p.element.querySelector('[data-risk-section]')!;
+    expect(block.querySelector('h2')?.textContent?.trim()).toBe('Requisitos de actividad de riesgo');
+    expect(block.textContent).toContain('Esta actividad requiere consentimiento informado, tipo de sangre, contacto de emergencia y restricciones físicas o movilidad reducida para cada viajero.');
+    expect(Array.from(block.querySelectorAll('article strong'), (s) => s.textContent?.trim())).toEqual(['Titular', 'Acompañante 1']);
+    expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.riskNeeded);
+    // What was typed in the rest of the screen stays.
+    expect((p.element.querySelector('#crp-holder-name') as HTMLInputElement).value).toBe(HOLDER.name);
+    // Missing data: nothing is sent and each field says so.
+    await p.confirm();
+    expect(p.requester.calls).toHaveLength(1);
+    expect(block.querySelector('[aria-invalid="true"]')).not.toBeNull();
+    // Typed, then kept and sent.
+    for (const i of [0, 1]) {
+      type(p.element, `bloodType-${i}`, 'O+'); type(p.element, `emergencyContact-${i}`, 'Contacto Ficticio 300'); type(p.element, `physicalRestrictions-${i}`, 'Ninguna');
+      p.element.querySelector<HTMLInputElement>(`[name="informedConsent-${i}"]`)!.click();
+    }
+    await p.settle(); await p.confirm();
+    expect(p.requester.calls).toHaveLength(2);
+    expect(p.requester.calls[1].risk).toEqual([0, 1].map(() => ({ informedConsent: true, bloodType: 'O+', emergencyContact: 'Contacto Ficticio 300', physicalRestrictions: 'Ninguna' })));
+    expect(p.requester.calls[1].holder?.fullName).toBe(HOLDER.name);
+    expect(p.requester.calls[1].idempotencyKey).not.toBe(p.requester.calls[0].idempotencyKey);
+  });
+  it('does not show the block for any other refusal', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
+    expect(p.element.querySelector('[data-risk-section]')).toBeNull();
+  });
+});
+
 describe('aRetriedConfirmationReusesItsIdempotencyKey', () => {
   it('a double click sends one request', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill();
@@ -253,6 +356,18 @@ describe('aDepartureWithoutCapacityCreatesNothingAndSaysWhy (AC2)', () => {
     expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
     expect(p.element.textContent).not.toContain(T.created);
     expect(buttonNamed(p.element, T.confirm)!.disabled).toBe(false);
+  });
+  it('reads the refusal 422 SEATS_UNAVAILABLE of the service as the same lack of seats', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(noCapacity({ status: 422, code: 'SEATS_UNAVAILABLE' })); await p.settle();
+    expect(p.element.querySelector('[role="alert"]')?.textContent).toContain(T.noCapacity);
+  });
+  it('shows the Spanish text, not the English message of the service, when the refusal went through the real toPageError', async () => {
+    const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].fail(toPageError({ status: 422, code: 'SEATS_UNAVAILABLE', message: 'not enough seats: 1 seats available', details: [], traceId: 'trace-9' })); await p.settle();
+    const alert = p.element.querySelector('[role="alert"]')?.textContent ?? '';
+    expect(alert).toContain(T.noCapacity);
+    expect(alert).not.toContain('not enough seats');
   });
   it('prefers the message the container decided, when there is one', async () => {
     const p = await openConfirm(); await p.showMethods(); await p.fill(); await p.confirm();
@@ -368,8 +483,8 @@ describe('theScreensFollowTheAuthorizedMockups (finalizar-reserva, mis-reservas)
     const css = readFileSync('src/styles/portal.css', 'utf8');
     const rule = (selector: string) => css.split(/\r?\n/).find((line) => line.startsWith(selector + ' {'))?.split('{')[1] ?? '';
     expect(rule('.crp-root .crp-self-service-confirm')).toMatch(/display:\s*block;\s*margin:\s*0;/);
-    // The column and its bar without the 144px/210px room for a fixed bar (001- amendment HC-3): portal-column.spec.ts.
-    expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 1\.6fr\) minmax\(260px, 1fr\)/);
+    // The column and its bar without the 144px/210px room for a fixed bar (001- amendment HC-3): portal-column.spec.ts. The 2.4fr main column is the mockup 720px of 1040px (finish-reservation-layout.spec.ts).
+    expect(rule('.crp-root .crp-finish-layout')).toMatch(/grid-template-columns:\s*minmax\(0, 2\.4fr\) minmax\(260px, 1fr\)/);
   });
   it('Mis reservas uses the client classes in every state, never the operator ones', async () => {
     const p = await openPanel(); p.source.requests[0].fail(); await p.settle();
@@ -438,5 +553,41 @@ describe('aCorrectedConfirmationAfterARefusalTravelsWithANewIdempotencyKey', () 
     p.requester.calls[1].fail(apiError({ status: 503, userMessage: 'Try again later.' })); await p.settle();
     p.element.querySelector('form')!.dispatchEvent(new Event('submit')); await p.settle();
     expect(p.requester.calls[2].idempotencyKey).toBe(p.requester.calls[1].idempotencyKey);
+  });
+});
+
+describe('afterCreatingTheReservationsListShowsTheCashNotice (AC-RS.14, mockup mis-reservas 17A)', () => {
+  const cashNotice = 'creada en estado Pendiente de pago. Tu intención de pagar en efectivo no es un pago: no confirma la reserva ni aparta cupo. La reserva solo se confirma cuando el equipo del operador reciba y registre el dinero dentro del plazo de pago.';
+  it('shows the notice with the code of the new reservation when the medium was cash', async () => {
+    const p = await openConfirm({ withPanel: true }); await p.showMethods(); await p.fill('CASH_AT_OFFICE'); buttonNamed(p.element, T.confirmCash)!.click(); await p.settle();
+    p.requester.calls[0].reply({ ...reservationFor(), paymentMethod: 'CASH_AT_OFFICE' }); await p.settle();
+    const panel = TestBed.createComponent(MyReservationsPageComponent); panel.detectChanges(); await panel.whenStable(); panel.detectChanges();
+    expect(panel.nativeElement.textContent).toContain('Reserva #RES-1843 ' + cashNotice);
+  });
+  it('shows no notice when the medium was a transfer', async () => {
+    const p = await openConfirm({ withPanel: true }); await p.showMethods(); await p.fill(); await p.confirm();
+    p.requester.calls[0].reply({ ...reservationFor(), paymentMethod: 'BANK_TRANSFER' }); await p.settle();
+    const panel = TestBed.createComponent(MyReservationsPageComponent); panel.detectChanges(); await panel.whenStable(); panel.detectChanges();
+    expect(panel.nativeElement.textContent).not.toContain('Tu intención de pagar en efectivo');
+  });
+  it('shows no notice when the panel is opened without a creation before', async () => {
+    const p = await openPanel();
+    expect(p.element.textContent).not.toContain('Tu intención de pagar en efectivo');
+  });
+});
+
+describe('theReservationIsBornWithPaymentTypeAndMethod (HU-COM-008 DP-08, option C)', () => {
+  it('sends the first enabled type when the customer did not touch the card, with the medium chosen', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].paymentType).toBe('TOTAL');
+    expect(p.requester.calls[0].paymentMethod).toBe('BANK_TRANSFER');
+  });
+
+  it('sends the type the card holds when the customer chose another one', async () => {
+    const p = await openConfirm(); await p.showMethods();
+    TestBed.inject(PaymentTypeChoice).type.set('PARTIAL');
+    await p.fill(); await p.confirm();
+    expect(p.requester.calls[0].paymentType).toBe('PARTIAL');
   });
 });

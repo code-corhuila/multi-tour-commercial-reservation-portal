@@ -19,9 +19,10 @@ describe('theDemoOfferReadsTheCatalogStore (plan D-05)', () => {
     expect(names).not.toContain('Traslado aeropuerto Neiva');
   });
 
-  it('projects no cost, capacity or status (RN-PO6)', async () => {
+  it('projects the plain maximum of travellers and no cost, effective capacity or status (AC-PO.6)', async () => {
     const [tour] = await toursOf(new DemoPublicOfferSource(new DemoCatalogStore()));
-    expect(Object.keys(tour).sort()).toEqual(['available', 'baseRateCents', 'commercialName', 'serviceId', 'transportIncluded']);
+    expect(Object.keys(tour).sort()).toEqual(['available', 'baseRateCents', 'commercialName', 'maxTravelers', 'serviceId', 'transportIncluded']);
+    expect(tour.maxTravelers).toBe(12);
   });
 
   it('follows the store: a tour inactivated in the catalog leaves the offer, so no data is duplicated', async () => {
@@ -53,7 +54,7 @@ describe('theDemoEstablishmentsReadTheEstablishmentsStore (plan D-05)', () => {
 
   it('follows the store: an inactivated association disappears from the next consultation', async () => {
     const store = new DemoEstablishmentsStore();
-    await firstValueFrom(new DemoEstablishmentsWriter(store).inactivate('demo-est-1'));
+    await firstValueFrom(new DemoEstablishmentsWriter(store).inactivate('demo-est-1', 'Cerrado por obras'));
     expect((await placesOf(new DemoPublicEstablishmentsSource(store))).map((place) => place.establishmentId)).not.toContain('demo-est-1');
   });
 });

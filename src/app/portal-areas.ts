@@ -1,8 +1,12 @@
 import { AbstractType, InjectionToken, Injector, Type } from '@angular/core';
 import { CatalogHubPageComponent } from './catalog/pages/catalog-hub-page.component';
+import { CatalogNewServicePageComponent } from './catalog/pages/catalog-new-service-page.component';
 import { CatalogPageComponent } from './catalog/pages/catalog-page.component';
-import { CurrentDiscountsSource } from './current-discounts/data/current-discounts-source';
-import { CurrentDiscountsPageComponent } from './current-discounts/pages/current-discounts-page.component';
+import { ADDITIONAL_DISCOUNT_AREA } from './current-discounts/data/additional-discount-eligibility';
+import { AdditionalDiscountContexts } from './current-discounts/data/additional-discount-contexts';
+import { AdditionalDiscountWriter } from './current-discounts/data/additional-discount-writer';
+import { mayAuthorizeAdditionalDiscount } from './current-discounts/components/additional-discount-entries.component';
+import { AdditionalDiscountPageComponent } from './current-discounts/pages/additional-discount-page.component';
 import { CustomersSource } from './customers/data/customers-source';
 import { CustomersPageComponent } from './customers/pages/customers-page.component';
 import { DiscountRulesSource } from './discounts/data/discount-rules-source';
@@ -21,7 +25,7 @@ import { ReserveTourPageComponent } from './self-service-reservation/pages/reser
 import { Audience } from './portal-audience';
 import { CLIENT_AREA } from './portal-navigation';
 import { PortalCapabilities } from './shared/portal-capabilities';
-import { CatalogItemsSource } from './catalog/data/catalog-api.service';
+import { CatalogItemsSource, CatalogItemsWriter } from './catalog/data/catalog-api.service';
 import { AssociatedEstablishmentsSource } from './establishments/data/associated-establishments-source';
 import { PublicEstablishmentsSource, PublicOfferSource } from './public-offer/data/public-offer-sources';
 import { DeparturesSource } from './reservations/data/departures-source';
@@ -52,6 +56,8 @@ import { RefundManagePageComponent } from './refunds/pages/refund-manage-page.co
 import { RefundTreatmentPageComponent } from './refunds/pages/refund-treatment-page.component';
 import { NotificationsPageComponent, hasNotifications } from './refunds/pages/notifications-page.component';
 import { CREDIT_BALANCE_AREA, CreditBalanceSource, CreditBalanceWriter } from './credit-balance/data/credit-balance-ports';
+import { PAYMENT_PARAMETERS_AREA, PaymentParametersSource, PaymentParametersWriter } from './payment-parameters/data/payment-parameters-ports';
+import { PaymentParametersPageComponent } from './payment-parameters/pages/payment-parameters-page.component';
 import { CreditBalancePageComponent } from './credit-balance/pages/credit-balance-page.component';
 import { ReschedulingPageComponent } from './rescheduling/pages/rescheduling-page.component';
 
@@ -81,6 +87,10 @@ export interface PortalArea {
 const has = (injector: Injector, ...ports: readonly AbstractType<unknown>[]) => ports.every((port) => injector.get(port, null) !== null);
 const isCustomerOrVisitor = (injector: Injector) => injector.get(CustomerContext).standing !== 'OTHER';
 
+/** HU-COM-020: what the restricted access of an inactive tenant opens, the two entries the container keeps: Reservas and Pagos (proofs, cancellations, refunds, episodes). */
+const RESTRICTED_ENTRIES: readonly string[] = ['reservations', 'payments'];
+export const allowedInRestrictedAccess = (area: PortalArea) => RESTRICTED_ENTRIES.includes(area.key) || RESTRICTED_ENTRIES.includes(area.parent ?? '');
+
 /** The areas the shell draws; PORTAL_AREAS unless a test provides others. */
 export const PORTAL_AREA_LIST = new InjectionToken<readonly PortalArea[]>('PORTAL_AREA_LIST', { factory: () => PORTAL_AREAS });
 
@@ -93,6 +103,12 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: 'catalog', label: 'Catálogos', component: CatalogHubPageComponent, isAvailable: (injector) => has(injector, CatalogItemsSource) },
   { key: 'catalog-tours', label: 'Gestionar catálogo de tours', component: CatalogPageComponent, menu: false, parent: 'catalog',
     isAvailable: (injector) => has(injector, CatalogItemsSource) },
+  // HU-COM-001 admin-nuevo-servicio.html, opened by "Nuevo servicio" of the hub and "Crear tour" of the list; only who may register is offered it.
+  { key: 'catalog-new-service', label: 'Nuevo servicio', component: CatalogNewServicePageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => injector.get(PortalCapabilities).catalog().canRegister && has(injector, CatalogItemsSource, CatalogItemsWriter) },
+  // HU-COM-009 admin-parametros-pago.html (amendment v1.9, A.3, P14): opened by the link "Parámetros de pago" of the header of Catálogos; the Administrator only.
+  { key: PAYMENT_PARAMETERS_AREA, label: 'Parámetros de pago', component: PaymentParametersPageComponent, menu: false, parent: 'catalog',
+    isAvailable: (injector) => injector.get(PortalCapabilities).canManagePaymentParameters() && has(injector, CatalogItemsSource, PaymentParametersSource, PaymentParametersWriter) },
   // HU-COM-002: no longer a sidebar item (it was visible to the Collaborator); the hub opens it with { type }.
   { key: 'establishments', label: 'Establecimientos', component: EstablishmentsPageComponent, menu: false, parent: 'catalog',
     // 002 plan D-06, AC-PE.7: no route for a role that cannot read establishments (the Colaborador operativo).
@@ -102,9 +118,10 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
     // DP-09 role guard, and only in a build that supplies discount rules (no API contract for them yet).
     isAvailable: (injector) => injector.get(PortalCapabilities).canManageDiscounts() && has(injector, DiscountRulesSource),
   },
-  // HU-COM-004: every role reads the values; drawn only in a build that supplies them.
-  { key: 'current-discounts', label: 'Descuentos vigentes', component: CurrentDiscountsPageComponent,
-    isAvailable: (injector) => has(injector, CurrentDiscountsSource) },
+  // HU-COM-004 amendment 2026-10-14 (A.2 row 1): "Descuentos vigentes" leaves the sidebar; admin-aplicar-descuento.html is a sub-screen of Descuentos opened from
+  // Reservas in mode and from 10A with { reservation }, and only the Administrator is offered it (AC-CD.7).
+  { key: ADDITIONAL_DISCOUNT_AREA, label: 'Aplicar descuento', component: AdditionalDiscountPageComponent, menu: false, parent: 'discounts',
+    isAvailable: (injector) => mayAuthorizeAdditionalDiscount(injector) && has(injector, AdditionalDiscountContexts, AdditionalDiscountWriter) },
   // HU-COM-006: the read-only public offer, the client pages of tours.html, alojamiento.html and gastronomia.html.
   { key: CLIENT_AREA.tours, label: 'Explorar', component: PublicOfferPageComponent, audience: 'customer',
     isAvailable: (injector) => has(injector, PublicOfferSource) },
@@ -113,7 +130,8 @@ export const PORTAL_AREAS: readonly PortalArea[] = Object.freeze([
   { key: CLIENT_AREA.gastronomy, label: 'Gastronomía', component: GastronomyOfferPageComponent, audience: 'customer',
     isAvailable: (injector) => has(injector, PublicEstablishmentsSource) },
   {
-    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent,
+    // Amendment 2026-10-14 (A.1, AC-PC.16): the content lives in sections 01 and 03 of 10B, so the area stays as code with no sidebar item.
+    key: 'customers', label: 'Titular y acompañantes', component: CustomersPageComponent, menu: false,
     // Plan D-07 role guard, and only in a build that supplies the customers sources (no API contract for them yet, spec G-B).
     isAvailable: (injector) => injector.get(PortalCapabilities).customers().canRead && has(injector, CustomersSource),
   },

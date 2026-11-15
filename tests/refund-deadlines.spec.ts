@@ -8,7 +8,8 @@ import { sourceProviders as demoSources } from '../src/app/sources.demo';
 import { PORTAL_AREAS } from '../src/app/portal-areas';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { DemoReservationsStore } from '../src/app/demo/reservations-demo';
-import { FixedClock } from '../src/app/demo/reservation-changes-demo';
+import { DemoCancellationQuote, DemoCancellationWriter, FixedClock } from '../src/app/demo/reservation-changes-demo';
+import { Clock } from '../src/app/reservation-changes/data/cancellation-ports';
 import { DemoRefundsSource, DemoRefundsWriter } from '../src/app/demo/refunds-demo';
 import { RegisteringUser } from '../src/app/payments/data/payments-writer';
 import { Reservation } from '../src/app/reservations/model/reservation';
@@ -151,7 +152,7 @@ describe('manageAndTreatmentShowTheRefundOf10A', () => {
 
   it('the manage screen shows the treatment, the values, the counter and opens the decision and the detail', async () => {
     const s = await screen(RefundManagePageComponent);
-    expect(s.texts('h1, h2, .crp-operator-eyebrow, .crp-page-header-eyebrow')).toEqual(expect.arrayContaining(['RF-015B · D1 · E16', 'Gestionar devolución',
+    expect(s.texts('h1, h2, .crp-operator-eyebrow, .crp-page-header-eyebrow')).toEqual(expect.arrayContaining(['RF-015B · Solicitud de devolución', 'Gestionar devolución',
       'Reserva RES-P cancelada por falta de pago', 'Tratamiento pendiente', 'Solicitud de tratamiento']));
     expect(s.texts('p')).toEqual(expect.arrayContaining([
       'Valores abonados: $1.200.000. El Administrador del tenant decide dentro de 24 horas corridas entre devolver el 100 % o registrar el 100 % como saldo a favor.',
@@ -161,8 +162,6 @@ describe('manageAndTreatmentShowTheRefundOf10A', () => {
     expect(s.navigation.selected()).toBe(REFUND_SCREENS.treatment);
     s.button('Ver detalle y ejecución')!.click();
     expect(s.navigation.selected()).toBe(REFUND_SCREENS.detail);
-    s.button('Volver a solicitudes')!.click();
-    expect(s.navigation.selected()).toBe(REFUND_SCREENS.requests);
   });
 
   it('a refund with no 24-hour choice shows its 100 % and its state, without "Abrir decisión"', async () => {
@@ -176,6 +175,11 @@ describe('manageAndTreatmentShowTheRefundOf10A', () => {
     const s = await screen(RefundManagePageComponent, { role: 'OPERATIONAL_COLLABORATOR' });
     expect(s.button('Abrir decisión')).toBeUndefined();
     expect(s.button('Ver detalle y ejecución')).toBeTruthy();
+  });
+
+  it('the list table can shrink to the width of the content, so no horizontal bar shows on a normal screen', async () => {
+    const s = await screen(RefundRequestsPageComponent);
+    expect(s.host.querySelector('table')?.classList.contains('crp-refunds-table')).toBe(true);
   });
 
   it('the list opens the detail for a refund pending its decision, as the current mockup does', async () => {
@@ -304,5 +308,39 @@ describe('wiresTheDeadlinesInTheDemoBuild', () => {
     click('app-refund-manage-page button', 'Abrir decisión');
     await vi.waitFor(() => expect(host.querySelector('app-refund-treatment-page [data-state="data"]')).toBeTruthy());
     expect(Array.from(host.querySelectorAll('app-refund-treatment-page button'), (b) => b.textContent?.trim())).toContain('Registrar devolución del 100 %');
+  });
+});
+
+// HU-COM-016 AC-RF.11 and AC-RF.6: the counter belongs to the decision, not to a screen. A cancellation registered elsewhere starts it; only the clock moves it.
+class MovableClock extends Clock {
+  constructor(public at: string) { super(); }
+  override now(): string { return this.at; }
+}
+
+describe('theCounterRunsWithoutOpeningAnyRefundScreen', () => {
+  it('counts down on the notification alert and applies the default after the 24 hours, without a refund screen ever drawn', async () => {
+    const store = new DemoReservationsStore([reservationOf('RES-K', { status: 'CONFIRMADA', validatedCents: 10_000_000, balanceCents: 0, leadCustomerName: 'Cliente RES-K' })]);
+    const clock = new MovableClock(NOW);
+    await firstValueFrom(new DemoCancellationWriter(store, new DemoCancellationQuote(store, 20), clock, 'Cliente (demo)')
+      .cancel({ code: 'RES-K', cause: 'El cliente desiste del viaje (demo)', origin: 'customer', idempotencyKey: 'cancel-k' }));
+    expect(store.items.find((r) => r.id === 'RES-K')!.refund).toBeUndefined();
+    const navigation = new PortalNavigation();
+    navigation.register(Object.values(REFUND_SCREENS));
+    TestBed.configureTestingModule({ providers: [{ provide: ActorContext, useValue: actorAs('TENANT_ADMINISTRATOR') }, { provide: RefundsSource, useValue: new DemoRefundsSource(store, clock) },
+      { provide: PortalNavigation, useValue: navigation }] });
+    const alerts = async () => {
+      const fixture = TestBed.createComponent(RefundAlertsComponent);
+      fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+      return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.crp-refunds-alert-copy'), (e) => e.textContent?.replace(/\s+/g, ' ').trim());
+    };
+    const pending = (left: string) => [`Devolución pendiente de decisión · RES-K Decisión del Administrador del tenant: quedan ${left}. Si no decide en 24 horas, Multitour determina la devolución del 100 %. Abrir`];
+    expect(await alerts()).toEqual(pending('24 h 00 min'));
+    clock.at = '2026-10-13T21:30:00-05:00';
+    expect(await alerts()).toEqual(pending('12 h 00 min'));
+    clock.at = '2026-10-14T09:29:00-05:00';
+    expect(await alerts()).toEqual(pending('0 h 01 min'));
+    clock.at = '2026-10-14T09:30:00-05:00';
+    expect(await alerts()).toEqual(['Devolución determinada automáticamente · RES-K Cliente RES-K · $80.000 · pendiente de ejecución; no implica que el dinero haya sido devuelto. Abrir']);
+    expect(store.items.find((r) => r.id === 'RES-K')!.refund).toMatchObject({ authorization: { by: 'Determinación automática', at: '2026-10-14T09:30:00-05:00' } });
   });
 });

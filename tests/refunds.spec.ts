@@ -155,7 +155,7 @@ describe('refundsPanelAndListShowTheRefundsOfTheSharedStore', () => {
     expect(s.host.querySelector('.crp-operator-eyebrow')?.textContent?.trim()).toBe('Devoluciones monetarias');
     expect(s.host.querySelector('h2')?.textContent?.trim()).toBe('Autorización requerida');
     expect(s.host.querySelector('p.crp-operator-copy')?.textContent?.trim())
-      .toBe('El Administrador autoriza o registra la devolución, con monto, motivo, reserva y movimiento de caja asociados.');
+      .toBe('El Administrador del tenant decide en 24 horas corridas y la devolución se ejecuta en máximo 5 días hábiles, con monto, motivo, reserva y movimiento de caja asociados.');
     s.button('Consultar solicitudes')!.click();
     expect(p.navigation.selected()).toBe(REFUND_SCREENS.requests);
   });
@@ -164,7 +164,7 @@ describe('refundsPanelAndListShowTheRefundsOfTheSharedStore', () => {
     const s = await render(RefundsPanelComponent, providers({ role: 'OPERATIONAL_COLLABORATOR' }).list);
     expect(s.host.querySelector('h2')?.textContent?.trim()).toBe('Devoluciones autorizadas');
     expect(s.host.querySelector('p.crp-operator-copy')?.textContent?.trim())
-      .toBe('Consulta las devoluciones autorizadas por el Administrador y registra la salida de dinero cuando corresponda.');
+      .toBe('Consulta las devoluciones autorizadas por el Administrador del tenant y registra la salida de dinero cuando corresponda.');
   });
 
   it('lists every refund of the shared store with its state, the count and the action of the role', async () => {
@@ -258,11 +258,11 @@ describe('collaboratorSeesNoDecisionPanel', () => {
     expect(s.host.textContent).not.toContain('Decisión');
   });
 
-  it('the Administrator sees the decision panel, with "Rechazar devolución"', async () => {
+  it('the Administrator sees the decision panel, with "Autorizar devolución" and no "Rechazar devolución" (D-3: only a credit-balance request is rejected)', async () => {
     const s = await detail({ id: 'RES-A' });
     expect(Array.from(s.host.querySelectorAll('.crp-operator-panel .crp-operator-eyebrow'), (e) => e.textContent?.trim())).toEqual(['Solicitud', 'Decisión']);
     expect(s.button('Autorizar devolución')).toBeTruthy();
-    expect(s.button('Rechazar devolución')).toBeTruthy();
+    expect(s.button('Rechazar devolución')).toBeUndefined();
   });
 });
 

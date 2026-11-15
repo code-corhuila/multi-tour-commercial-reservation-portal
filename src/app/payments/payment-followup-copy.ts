@@ -1,11 +1,14 @@
+import { tenantWallTime } from '../shared/clock';
 import { formatDate } from '../shared/format';
 import type { PaymentDeadline } from './data/payment-followup-ports';
 
 /** Texts of admin-registrar-seguimiento.html, of the "Saldo pendiente" rows of admin-pagos.html (13) and of 24, as the mockup writes them. */
 export const PAYMENT_FOLLOWUP_TEXT = {
-  eyebrow: 'Control de cobro', title: 'Registrar seguimiento', back: 'Volver a pagos', pendingBalance: 'Saldo pendiente',
+  notApplicableCancelled: 'No aplica por reserva cancelada', eyebrow: 'Control de cobro', title: 'Registrar seguimiento', back: 'Volver a pagos', pendingBalance: 'Saldo pendiente',
   contextEyebrow: '01. Contexto del pago', contextTitle: 'Estado actual de la reserva',
   fields: ['Reserva', 'Cliente', 'Tipo y medio de pago', 'Valores validados', 'Saldo pendiente', 'Situación financiera'], departure: 'Salida', deadline: 'Plazo de pago vigente',
+  /** Improvement of the owner (2026-10-21), spec 011- amendment: the phone of the customer as a link that calls, so the Colaborador does not look for it. */
+  phone: 'Teléfono del cliente',
   followupEyebrow: '02. Seguimiento', followupTitle: 'Registrar contacto',
   rule: 'Durante el plazo, el Colaborador operativo puede contactar al cliente. Una respuesta del cliente sin pago no suspende ni cumple el plazo.', note: 'Nota de seguimiento (obligatoria)',
   notePlaceholder: 'Describe el contacto realizado con el cliente y el resultado',
@@ -20,6 +23,22 @@ export const PAYMENT_FOLLOWUP_TEXT = {
   historyEyebrow: 'Trazabilidad', historyTitle: 'Historial de seguimientos', historyColumns: ['Fecha', 'Hora', 'Actor', 'Nota'],
   noHistory: 'Aún no se han registrado seguimientos para esta reserva.',
   /** 24 (and 21, PROPUESTO): the mockup's sentence names the departure start (spec 011- section 5). */
+  /** The refusals of the service in the words of the mockup (app.js grantOperatorPaymentExtension); the wire speaks English. */
+  refusals: {
+    followupForbidden: 'Tu rol no puede registrar seguimientos de pago.', extensionForbidden: 'Tu rol no puede conceder ampliaciones del plazo.',
+    hoursRequired: 'Indica la duración de la ampliación en horas (mínimo 1).',
+    byMessage: {
+      'the deadline was already extended once': 'El plazo ya tuvo su única ampliación.',
+      'the deadline has already expired': 'El plazo ya venció: la ampliación debe concederse antes del vencimiento.',
+      'only a reservation pending payment can have its deadline extended': 'Solo una reserva Pendiente de pago admite ampliación del plazo.',
+      'only the initial payment deadline can be extended': 'Solo una reserva Pendiente de pago admite ampliación del plazo.',
+      'a frozen deadline cannot be extended': 'El plazo está congelado por la cancelación o interrupción de la salida.',
+      'the extension is above the maximum of the payment condition': 'La ampliación supera el máximo del parámetro de pago del tenant.',
+      'the extension would pass the departure start': 'La ampliación no puede superar la hora programada de inicio de la salida.',
+    } as Readonly<Record<string, string>>,
+  },
+  /** app.js describeOperatorPaymentDeadline: the deadline the service froze is not shown as a date. */
+  frozenDeadline: 'Plazo congelado: la salida fue cancelada o interrumpida por una causa no atribuible al cliente (la reserva se gestiona con la reprogramación).',
   departureLimit: (start: string) => `Ningún plazo de pago supera el inicio de la salida, ${start}.`,
 };
 
@@ -27,7 +46,7 @@ export const PAYMENT_FOLLOWUP_TEXT = {
 export const dateTime = (iso: string) => `${formatDate(iso)} · ${iso.slice(11, 16)}`;
 
 /** The same, for an instant with any offset, read in the tenant's time (America/Bogota, no daylight saving): "10 oct 2026 · 10:00". */
-export const tenantDateTime = (iso: string) => dateTime(new Date(Date.parse(iso) - 5 * 60 * 60 * 1000).toISOString());
+export const tenantDateTime = (iso: string) => dateTime(tenantWallTime(iso));
 
 
 /** "Plazo de pago" (app.js 10711): the effective deadline already resolved by the service; it never exceeds the departure start (RN-RES-006). */

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ReservationFormComponent } from '../src/app/reservations/components/reservation-form.component';
 import { Departure } from '../src/app/reservations/model/reservation';
 import { ControllableIdempotencyKeys, apiError } from './catalog-items-writer.double';
-import { ControllableReservationsWriter, StubDepartures, StubDiscounts, departureOf, reservationOf, reservationProviders, screenOf } from './reservations.double';
+import { ControllableReservationsWriter, StubDepartures, StubDiscounts, departureOf, reservationOf, reservationProviders, screenOf, serviceOf } from './reservations.double';
 
 async function openForm(over: Parameters<typeof reservationProviders>[0] = {}) {
   const writer = new ControllableReservationsWriter(), keys = new ControllableIdempotencyKeys(), discounts = new StubDiscounts();
@@ -13,8 +13,8 @@ async function openForm(over: Parameters<typeof reservationProviders>[0] = {}) {
   const created: unknown[] = [];
   view.fixture.componentInstance.created.subscribe((r) => created.push(r));
   const fill = async (people = '3', departure = 'dep-1') => {
-    await view.choose('leadCustomerId', 'cus-1'); await view.choose('departureId', departure);
-    await view.tick('svc-Kayak'); await view.type('people', people); await view.payWith();
+    await view.choose('departureId', departure);
+    await view.tick('svc-Kayak'); await view.type('people', people); await view.party(); await view.payWith();
   };
   return { ...view, writer, keys, discounts, created, fill };
 }
@@ -29,26 +29,45 @@ describe('departureSelectorOffersOnlyProgramadaAndOpenDepartures', () => {
     const select = within(element).getByLabelText('Salida programada') as HTMLSelectElement;
     expect(select.multiple).toBe(false);
     expect(Array.from(select.options).map((o) => o.value).filter(Boolean)).toEqual(['dep-1', 'dep-4']);
-    for (const label of ['Cliente titular', 'Tour', 'Cantidad total de viajeros']) expect(within(element).getByLabelText(label)).toBeTruthy();
+    for (const label of ['Correo electrónico', 'Tour', 'Cantidad total de viajeros']) expect(within(element).getByLabelText(label)).toBeTruthy();
     expect(within(element).queryByLabelText(/Closed/)).toBeNull();
   });
 });
 
+// HU-COM-007 AC-RC.5 (mockup 10B): a full departure is listed as "Salida llena" and cannot be chosen.
+describe('aFullDepartureIsListedAsFullAndDisabled', () => {
+  it('keeps an open departure without seats in the list, reads Salida llena and disables it', async () => {
+    const full = departureOf(5, { effectiveCapacity: 0, totalSeats: 12 });
+    const { element } = await openForm({ departures: new StubDepartures(() => of([departureOf(1), full])) });
+    const option = Array.from((within(element).getByLabelText('Salida programada') as HTMLSelectElement).options).find((o) => o.value === 'dep-5')!;
+    expect(option.textContent).toContain('Salida llena');
+    expect(option.disabled).toBe(true);
+  });
+});
+
+describe('noTransportItemIsOfferedAsAService', () => {
+  it('offers the active tours of the catalog and leaves out an active transportation item', async () => {
+    const { element } = await openForm({ services: [serviceOf('Kayak', 1999), serviceOf('Traslado aeropuerto', 500, { serviceType: 'TRANSPORTATION' })] });
+    const select = within(element).getByLabelText('Tour') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value).filter(Boolean)).toEqual(['svc-Kayak']);
+  });
+});
+
 describe('missingMandatoryDataIsNamedBesideEachFieldAndNothingIsSent', () => {
-  it('names the customer, the departure, the services and the people beside their fields', async () => {
-    const { element, submit, writer } = await openForm();
-    await submit();
-    expect(errorBeside(element, 'leadCustomerId')).toContain('El cliente titular es obligatorio');
+  it('names the titular, the departure, the services and the people beside their fields', async () => {
+    const { element, submit, writer, type } = await openForm();
+    await type('people', ''); await submit();
+    expect(errorBeside(element, 'holderName')).toBe('Obligatorio.');
     expect(errorBeside(element, 'departureId')).toContain('La salida es obligatoria');
     expect(errorBeside(element, 'people')).toContain('La cantidad de viajeros es obligatoria');
     expect(errorBeside(element, 'serviceId')).toContain('El tour es obligatorio');
     expect(writer.calls).toHaveLength(0);
   });
 
-  it('names only the lead customer when it is the one missing', async () => {
+  it('names only the titular when it is the one missing', async () => {
     const { element, choose, tick, type, payWith, submit, writer } = await openForm();
-    await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2'); await payWith(); await submit();
-    expect(errorBeside(element, 'leadCustomerId')).toContain('El cliente titular es obligatorio');
+    await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '1'); await payWith(); await submit();
+    expect(errorBeside(element, 'holderName')).toBe('Obligatorio.');
     expect(errorBeside(element, 'people')).toBe('');
     expect(writer.calls).toHaveLength(0);
   });
@@ -66,6 +85,16 @@ describe('notEnoughCapacityCreatesNothingAndSaysSo', () => {
     const { element, fill, submit, writer, settle, created } = await openForm();
     await fill(); await submit();
     writer.calls[0].fail(apiError({ status: 409, code: 'insufficient-capacity' })); await settle();
+    expect(errorBeside(element, 'people')).toContain('No hay cupo suficiente');
+    expect(created).toHaveLength(0);
+  });
+});
+
+describe('theRealCapacityRefusalOfTheServiceReadsAsLackOfSeats (RN-RES-007)', () => {
+  it('shows the refusal 422 SEATS_UNAVAILABLE of the service beside the people field and creates nothing', async () => {
+    const { element, fill, submit, writer, settle, created } = await openForm();
+    await fill(); await submit();
+    writer.calls[0].fail(apiError({ status: 422, code: 'SEATS_UNAVAILABLE' })); await settle();
     expect(errorBeside(element, 'people')).toContain('No hay cupo suficiente');
     expect(created).toHaveLength(0);
   });
@@ -93,7 +122,7 @@ describe('submitIsDisabledWhileASubmissionIsPending and aRetriedCreationReusesIt
     await fill(); await submit(); await submit();
     expect(writer.calls).toHaveLength(1);
     expect(button('Registrar reserva')!.disabled).toBe(true);
-    expect(writer.calls[0].command).toMatchObject({ leadCustomerId: 'cus-1', departureId: 'dep-1', serviceIds: ['svc-Kayak'], people: 3, paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' });
+    expect(writer.calls[0].command).toMatchObject({ lead: { fullName: 'Titular Ficticio', document: 'DOC 9001', email: 'titular@example.test', phone: '300 000 9001', birthDate: '1990-01-01' }, departureId: 'dep-1', serviceIds: ['svc-Kayak'], people: 3, paymentType: 'TOTAL', paymentMethod: 'BANK_TRANSFER' });
     expect('quote' in writer.calls[0].command).toBe(false);
   });
 

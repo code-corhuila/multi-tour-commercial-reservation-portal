@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
 import { readFailure } from '../../shared/read-failure';
 import { focusFirstError } from '../../shared/focus';
@@ -7,24 +7,33 @@ import { Subject, catchError, defer, finalize, forkJoin, map, of, startWith, swi
 import { formatCop, formatDate } from '../../shared/format';
 import { ApiError } from '../../shell-contract';
 import { CustomerContext } from '../data/customer-context';
-import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
+import { CreationNotice } from '../data/my-reservations-source';
+import { ReservationParty } from '../../customers/data/reservation-party';
+import { CheckoutHolder, PaymentMethodsSource, PaymentTypeChoice, ReservationRequester, SelectionQuoteSource, injectSelection } from '../data/reservation-confirmation-ports';
 import { CLIENT_AREA, PortalNavigation } from '../../portal-navigation';
-import { CustomerReservation, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, reservationState, travelers } from '../model/self-service-reservation';
+import { BLANK_HOLDER, CustomerReservation, HolderKey, HolderValues, PaymentMethod, RESERVATION_FLOW, SELF_SERVICE_TEXT, SelectionQuote, companions, holderIssues, namesRiskData, reservationState, travelers } from '../model/self-service-reservation';
+import { HOLDER_TEXT } from '../self-service-copy';
 import { TourImages } from '../../shared/tour-photo';
 import { IdempotencyKeys, IntentionKey } from '../../shared/idempotency-keys';
-import { CHECKOUT_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
+import { CHECKOUT_BLOCKS, CHECKOUT_TRAVELER_BLOCKS, PortalSlotOutlet } from '../../shared/portal-slots';
+import { ContinuePaymentComponent } from '../components/continue-payment.component';
+import { Clock, tenantDay } from '../../shared/clock';
+import { CustomerCompanionFieldsComponent } from '../../shared/customer-companion-fields.component';
+import { CompanionIssues, CustomerCompanion, companionIssues, companionsFor, paddedCompanions, withCompanionField } from '../../shared/customer-companions';
 
-type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; quote: SelectionQuote };
+type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; methods: readonly PaymentMethod[]; types: readonly PaymentMethod[]; quote: SelectionQuote };
 
 /**
  * HU-COM-008 as finalizar-reserva.html (screen 21), without Método y plazo de pago (payments story): the customer
- * confirms the selection Reservar tour opened it with. The holder fields are drawn but not sent (DP-RS3 open).
+ * confirms the selection Reservar tour opened it with. The five holder fields are required and travel as the holder of the creation (DP-RS5).
  */
 @Component({
   selector: 'app-confirm-reservation-page',
-  imports: [ReadErrorComponent, PortalSlotOutlet],
+  imports: [ReadErrorComponent, PortalSlotOutlet, CustomerCompanionFieldsComponent, ContinuePaymentComponent],
+  providers: [ReservationParty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (continuing; as reservation) { <crp-continue-payment [reservationId]="reservation" /> } @else {
     @let current = state();
     <form class="crp-self-service-confirm" aria-labelledby="self-service-confirm-title" (submit)="$event.preventDefault(); confirm()" novalidate>
       <header class="crp-booking-topbar">
@@ -44,12 +53,19 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
             <div class="crp-finish-main">
               <article class="crp-booking-card crp-finish-holder"><h2>{{ text.holderTitle }}</h2>
                 <div class="crp-finish-grid">@for (field of holder; track field.id) {
-                  <div><label [for]="field.id">{{ field.label }}</label><input [id]="field.id" [name]="field.id" [type]="field.type" [placeholder]="field.placeholder" disabled aria-describedby="crp-holder-pending" /></div>
+                  <div><label [for]="field.id">{{ field.label }}</label><input [id]="field.id" [name]="field.id" [type]="field.type" [placeholder]="field.placeholder" required
+                    [value]="holderValues()[field.key]" [attr.max]="field.key === 'birthdate' ? today() : null" (input)="holderChanged(field.key, $event)"
+                    [attr.aria-invalid]="holderProblem()?.fields?.includes(field.key) ? 'true' : null" aria-describedby="crp-holder-feedback" /></div>
                 }</div>
-                <p id="crp-holder-pending" class="crp-self-service-note">{{ text.holderPending }}</p>
+                <p id="crp-holder-feedback" data-holder-feedback class="crp-self-service-field-error" aria-live="polite">{{ holderProblem()?.message }}</p>
               </article>
               <article class="crp-booking-card crp-finish-travelers"><h2>{{ text.travelersTitle }}</h2>&ngsp;<span>{{ companions(selection!.people) }}</span>
-                <p class="crp-self-service-note">{{ text.travelersCopy }}</p></article>
+                <p class="crp-self-service-note">{{ text.travelersCopy }}</p>
+                @if (needed > 0) {
+                  <app-customer-companion-fields [companions]="companionList()" [today]="today()" [issues]="issues()" (changed)="companionChanged($event)" />
+                  <p data-companions-feedback class="crp-customers-error" aria-live="polite">{{ issues()?.message }}</p>
+                }</article>
+              <ng-container *crpSlot="travelerBlocks; inputs: { customer: true }" />
               <article class="crp-booking-card crp-finish-conditions"><h2>{{ text.conditionsTitle }}</h2>
                 <p class="crp-self-service-note">{{ text.conditionsCopy }}</p>
                 <ul>@for (line of text.conditionLines; track line) { <li>{{ line }}</li> }</ul>
@@ -112,6 +128,7 @@ type ConfirmState = { kind: 'loading' | 'empty' | 'error' } | { kind: 'data'; me
         </aside>
       }
     </form>
+    }
   `,
 })
 export class ConfirmReservationPageComponent {
@@ -128,16 +145,23 @@ export class ConfirmReservationPageComponent {
   protected readonly cash = 'CASH_AT_OFFICE';
   /** HU-COM-001 portal foundation of 2026-10-13: the blocks other stories add to 21 after the payment method card. */
   protected readonly checkout = CHECKOUT_BLOCKS;
+  /** The risk requirements of the customers story, after Viajeros. */
+  protected readonly travelerBlocks = CHECKOUT_TRAVELER_BLOCKS;
   protected readonly holder = [
-    { id: 'crp-holder-name', label: 'Nombre completo', type: 'text', placeholder: 'Nombre completo' },
-    { id: 'crp-holder-document', label: 'Documento de identidad', type: 'text', placeholder: 'Documento' },
-    { id: 'crp-holder-phone', label: 'Teléfono', type: 'tel', placeholder: 'Teléfono' },
-    { id: 'crp-holder-email', label: 'Correo electrónico', type: 'email', placeholder: 'correo@ejemplo.com' },
-    { id: 'crp-holder-birthdate', label: 'Fecha de nacimiento', type: 'date', placeholder: '' },
+    { key: 'name', id: 'crp-holder-name', type: 'text', ...HOLDER_TEXT.name },
+    { key: 'document', id: 'crp-holder-document', type: 'text', ...HOLDER_TEXT.document },
+    { key: 'phone', id: 'crp-holder-phone', type: 'tel', ...HOLDER_TEXT.phone },
+    { key: 'email', id: 'crp-holder-email', type: 'email', ...HOLDER_TEXT.email },
+    { key: 'birthdate', id: 'crp-holder-birthdate', type: 'date', ...HOLDER_TEXT.birthdate },
   ] as const;
+  protected readonly holderValues = signal<HolderValues>(BLANK_HOLDER);
+  protected readonly holderProblem = signal<ReturnType<typeof holderIssues>>(null);
+  protected holderChanged(key: HolderKey, event: Event): void { this.holderValues.update((v) => ({ ...v, [key]: (event.target as HTMLInputElement).value })); }
   /** Volver a fecha y viajeros: only when the shell can open Reservar tour. */
   private readonly navigation = inject(PortalNavigation, { optional: true });
   protected readonly back = this.navigation?.has(RESERVATION_FLOW.reserve) ? this.navigation : null;
+  /** AC-RS.13 / DP-RS9: Continuar pago opens this screen with { reservation }, which draws its second mode. */
+  protected readonly continuing = this.navigation?.params()['reservation'] ?? '';
   /** Ver mis reservas after success: only when the shell can open Mis reservas. */
   protected readonly mine = this.navigation?.has(CLIENT_AREA.reservations) ? this.navigation : null;
   protected readonly area = CLIENT_AREA;
@@ -145,12 +169,25 @@ export class ConfirmReservationPageComponent {
     { key: 'conditions', label: SELF_SERVICE_TEXT.acceptConditions },
     { key: 'terms', label: SELF_SERVICE_TEXT.acceptTerms },
   ] as const;
+  private readonly clock = inject(Clock);
+  protected readonly today = computed(() => tenantDay(this.clock.now()));
+  /** HU-COM-005 AC-PC.13/14: the companions of the selection, checked among themselves before anything is sent (the titular is checked with them, DP-RS5). */
+  protected readonly needed = companionsFor(injectSelection()?.people ?? 1);
+  /** The risk block of the operator form, reused: it starts hidden and shows when the service names risk data. */
+  protected readonly party = inject(ReservationParty);
+  private readonly typedCompanions = signal<readonly CustomerCompanion[]>([]);
+  protected readonly companionList = computed(() => paddedCompanions(this.typedCompanions(), this.needed));
+  protected readonly issues = signal<CompanionIssues | null>(null);
+  protected companionChanged(change: { index: number; field: keyof CustomerCompanion; value: string }): void {
+    this.typedCompanions.set(withCompanionField(this.companionList(), this.needed, change.index, change.field, change.value));
+  }
   private readonly customer = inject(CustomerContext);
   protected readonly standing = this.customer.standing;
   protected readonly selection = injectSelection();
   private readonly methods = inject(PaymentMethodsSource);
   private readonly quotes = inject(SelectionQuoteSource);
   private readonly requester = inject(ReservationRequester);
+  private readonly typeChoice = inject(PaymentTypeChoice);
   private readonly keys = inject(IdempotencyKeys);
   private readonly lifetime = inject(DestroyRef);
   /** Plan D-05: the key follows the body: kept across retries of the same data, new when the data is corrected. */
@@ -163,16 +200,17 @@ export class ConfirmReservationPageComponent {
   protected readonly asked = signal(false);
   protected readonly refusal = signal('');
   protected readonly created = signal<CustomerReservation | null>(null);
+  private readonly creationNotice = inject(CreationNotice);
   private readonly requests = new Subject<void>();
   readonly state = toSignal(this.requests.pipe(switchMap(() => forkJoin({
-    methods: this.methods.listEnabled(), quote: this.quotes.quote(this.selection!),
+    methods: this.methods.listEnabled(), types: this.methods.listTypes(), quote: this.quotes.quote(this.selection!),
   }).pipe(
-    map(({ methods, quote }): ConfirmState => (methods.length ? { kind: 'data', methods, quote } : { kind: 'empty' })),
+    map(({ methods, types, quote }): ConfirmState => (methods.length ? { kind: 'data', methods, types, quote } : { kind: 'empty' })),
     catchError((error) => of<ConfirmState>({ kind: 'error', ...readFailure(error) })),
     startWith<ConfirmState>({ kind: 'loading' }),
   ))), { initialValue: (this.selection ? { kind: 'loading' } : { kind: 'empty' }) as ConfirmState });
 
-  constructor() { this.reload(); }
+  constructor() { this.party.travelers.set(this.selection?.people ?? 1); this.reload(); }
 
   reload(): void { if (this.selection) this.requests.next(); }
 
@@ -194,18 +232,30 @@ export class ConfirmReservationPageComponent {
     const { conditions, terms } = this.accepted();
     this.missing.set(!this.method());
     this.unaccepted.set(!conditions || !terms);
-    if (this.missing() || this.unaccepted()) { this.focusFirstErrorOnRender(); return; }
+    const holderFound = holderIssues(this.holderValues(), this.today());
+    this.holderProblem.set(holderFound);
+    const found = this.needed ? companionIssues(this.companionList(), this.holderValues().document, this.today()) : null;
+    this.issues.set(found);
+    const riskFound = this.party.highRisk() && this.party.riskMissing();
+    if (riskFound) { this.party.attempted.set(true); this.party.rejected.update((n) => n + 1); }
+    if (this.missing() || this.unaccepted() || holderFound || found?.message || riskFound) { this.focusFirstErrorOnRender(); return; }
     if (!this.customer.hasSession) { this.asked.set(true); this.customer.requestSignIn(); return; }
     this.pending.set(true);
     this.refusal.set('');
-    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method() }))).pipe(
+    // DP-08 (option C): the type of the card of 21, else the first one the tenant enabled, which the card shows checked.
+    const current = this.state(), type = this.typeChoice.type() || (current.kind === 'data' ? current.types[0]?.code : '') || '';
+    const v = this.holderValues();
+    const holder: CheckoutHolder = { fullName: v.name.trim(), document: v.document.trim(), phone: v.phone.trim(), email: v.email.trim(), birthDate: v.birthdate, termsAccepted: terms };
+    const risk = this.party.highRisk() ? this.party.risk().map((r) => ({ informedConsent: r.informedConsent === 'true', bloodType: r.bloodType.trim(), emergencyContact: r.emergencyContact.trim(), physicalRestrictions: r.physicalRestrictions.trim() })) : undefined;
+    defer(() => this.requester.request(selection, this.method(), this.intention.keyFor({ selection, method: this.method(), type, companions: this.companionList(), holder, risk }), this.companionList(), type, holder, risk)).pipe(
       takeUntilDestroyed(this.lifetime),
       finalize(() => this.pending.set(false)),
     ).subscribe({
       // AC-RS.6: the intention is fulfilled; the key is kept and the screen offers no second confirmation.
-      next: (reservation) => this.created.set(reservation),
+      next: (reservation) => { this.created.set(reservation); this.creationNotice.record(reservation); },
       error: (error: Partial<ApiError> | null) => this.refusal.set(
-        error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
+        // The refusal of the service for lack of seats is shown with the authorized Spanish text, never with the English message toPageError copies into userMessage.
+        namesRiskData(error) ? (this.party.highRisk.set(true), this.text.riskNeeded) : error?.code === 'SEATS_UNAVAILABLE' ? this.text.noCapacity : error?.userMessage || (error?.status === 409 ? this.text.noCapacity : this.text.refused)),
     });
   }
 }

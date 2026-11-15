@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -31,7 +31,7 @@ type Decision = 'authorize' | 'reject' | 'saldo' | 'devolver';
       @case ('data') { @let r = shown() ?? s.items[0]; @let f = t.fields; @let treatment = s.items[0].state === 'PENDIENTE_DE_DECISION';
         @if (r.overdue) { <p class="crp-access-note">{{ t.overdueNote }}</p> }
         <section class="crp-operator-panel" data-state="data"><p class="crp-operator-eyebrow">{{ t.infoEyebrow }}</p><h2>{{ t.infoTitle }}</h2>
-          <dl class="crp-refunds-list"><div><dt>{{ f.reservation }}</dt><dd>#{{ r.id }}</dd></div><div><dt>{{ f.customer }}</dt><dd>{{ r.customer }}</dd></div>
+          <dl class="crp-refunds-list"><div><dt>{{ f.reservation }}</dt><dd>#{{ r.reservation ?? r.id }}</dd></div><div><dt>{{ f.customer }}</dt><dd>{{ r.customer }}</dd></div>
             <div><dt>{{ f.reason }}</dt><dd>{{ r.reason }}</dd></div><div><dt>{{ f.note }}</dt><dd>{{ r.note ?? t.noNote }}</dd></div><div><dt>{{ f.amount }}</dt><dd>{{ money(r.amountCents) }}</dd></div>
             <div><dt>{{ f.decisionReason }}</dt><dd>{{ r.decisionReason ?? t.notApplicable }}</dd></div><div><dt>{{ f.owner }}</dt><dd>{{ r.owner ?? t.noOwner }}</dd></div>
             <div><dt>{{ f.date }}</dt><dd>{{ dateTime(r.date) }}</dd></div><div><dt>{{ f.method }}</dt><dd>{{ r.method ? methods[r.method] : t.notApplicable }}</dd></div>
@@ -49,7 +49,7 @@ type Decision = 'authorize' | 'reject' | 'saldo' | 'devolver';
               <div class="crp-form-actions">
                 @if (treatment) { <button type="button" class="crp-operator-outline" [disabled]="locked" (click)="decide($event, 'saldo', r)">{{ t.creditAction }}</button>
                   <button type="button" class="crp-operator-primary" [disabled]="locked" (click)="decide($event, 'devolver', r)">{{ t.returnAction }}</button> }
-                @else { <button type="button" class="crp-operator-outline" [disabled]="locked" (click)="decide($event, 'reject', r)">{{ t.reject }}</button>
+                @else { @if (r.origin === 'CREDIT_BALANCE_REQUEST') { <button type="button" class="crp-operator-outline" [disabled]="locked" (click)="decide($event, 'reject', r)">{{ t.reject }}</button> }
                   <button type="submit" class="crp-operator-primary" [disabled]="locked">{{ t.authorize }}</button> }</div></form></section>
         }
         @if (executes && (r.state === 'AUTORIZADA' || executeNote()?.done)) { @let locked = !!busy() || !!executeNote()?.done;
@@ -89,7 +89,7 @@ export class RefundDetailPageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.list().pipe(
     map((all): State => { const found = all.find((r) => r.id === this.id); return found ? { kind: 'data', items: [found] } : { kind: 'empty' }; }),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   protected value(event: Event): string { return (event.target as HTMLInputElement).value; }
   private key(intent: string): string { return (this.keys[intent] ??= this.ids.generate()); }

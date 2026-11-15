@@ -1,13 +1,18 @@
 import type { Reservation } from '../../reservations/data/reservations-source';
+import { PAYMENTS_TEXT } from '../payments-copy';
 
 /** RN-PY3 (AC2): PDF, JPG, JPEG or PNG, at most 5 MB; checked by the form and again by the writer (D-04). */
 const PROOF_TYPES = /\.(pdf|jpe?g|png)$/i;
 const PROOF_MAX_BYTES = 5 * 1024 * 1024;
-export const PROOF_RULE = 'El comprobante debe ser PDF, JPG, JPEG o PNG y no superar 5 MB.';
+export const PROOF_RULE = PAYMENTS_TEXT.proofRule;
 
 export function proofProblem(file: File): string | null {
   return PROOF_TYPES.test(file.name) && file.size <= PROOF_MAX_BYTES ? null : PROOF_RULE;
 }
+
+/** AC-PY.12 (PDR v1.9 GAP-03): the minimum deposit conditions the confirmation, not the registration: true for a first deposit under the minimum, so the reservation stays Pendiente de pago (informative only, it never blocks). */
+export const depositBelowMinimum = (r: Reservation, amountCents: number, minimumCents: number | null): boolean =>
+  r.paymentType === 'PARTIAL' && (r.validatedCents ?? 0) === 0 && minimumCents !== null && amountCents < minimumCents;
 
 /**
  * What 13 offers for a reservation (mockup app.js 6700-6744): cancelled and settled close the form with their note, executed and

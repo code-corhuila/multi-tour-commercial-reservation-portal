@@ -4,6 +4,7 @@ import type { MountProps } from '../src/app/shell-contract';
 import { SIGN_IN_REQUESTED_EVENT } from '../src/app/self-service-reservation/data/customer-context';
 import { SELF_SERVICE_TEXT } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { sourceProviders as demoSources } from '../src/app/sources.demo';
+import { fillCompanionsIn } from './customer-companions.double';
 
 const propsFor = (roles: string[], initialParams?: Record<string, string>): MountProps => ({
   apiClient: { request: vi.fn() } as never,
@@ -52,6 +53,7 @@ describe('mountEntryWiresTheSelfServiceReservation', () => {
     const select = host.querySelector('select') as HTMLSelectElement;
     select.value = select.options[1].value; select.dispatchEvent(new Event('change'));
     host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());
+    fillCompanionsIn(host);
     Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === SELF_SERVICE_TEXT.confirm)!.click();
     await vi.waitFor(() => expect(asked).toHaveBeenCalledTimes(1));
     expect(location.pathname + location.search).toBe('/reserve');

@@ -134,7 +134,7 @@ describe('theAdministratorSeesEveryAction', () => {
 
   it('opens the full form with every control', async () => {
     const page = await openAs(actorAs('TENANT_ADMINISTRATOR'));
-    await page.click(page.ui.getByRole('button', { name: CATALOG_COPY.newItem }));
+    await page.click(page.ui.getAllByRole('button', { name: CATALOG_COPY.edit })[0]);
     for (const label of ['Nombre comercial', 'Tarifa base', 'Costo operativo base', 'Capacidad configurada', 'Transporte obligatorio', 'Alto riesgo']) {
       expect(page.ui.queryByLabelText(label), label).not.toBeNull();
     }

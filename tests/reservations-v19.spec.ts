@@ -22,12 +22,17 @@ const valueOf = (element: Element, label: string) => row(element, label)?.queryS
 const optionsOf = (element: Element, name: string) => texts(element, `[name="${name}"] option`);
 
 describe('create reservation (admin-crear-reserva): one tour, its scheduled departure, and payment type and method apart', () => {
+  it('draws the seats left of the total when the departure reports its total, as the mockup does', async () => {
+    const { element } = await screenOf(ReservationFormComponent, reservationProviders({ departures: new StubDepartures(() => of([departureOf(1, { effectiveCapacity: 4, totalSeats: 12 }), departureOf(2)])) }));
+    expect(optionsOf(element, 'departureId')).toEqual(expect.arrayContaining(['Tour 1 · 07 nov 2026 · 4 de 12 cupos disponibles', 'Tour 2 · 07 nov 2026 · 10 cupos disponibles']));
+  });
+
   it('draws Tour, Salida programada, travelers and the vehicles line of section 02', async () => {
     const { element, field } = await screenOf(ReservationFormComponent, reservationProviders());
-    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')[0]).toBe('02. Tour, salida y viajeros');
+    expect(texts(element, '.crp-operator-panel .crp-operator-eyebrow')[1]).toBe('02. Tour, salida y viajeros');
     expect(field('serviceId').tagName).toBe('SELECT');
     expect(element.querySelector('fieldset')).toBeNull();
-    expect(optionsOf(element, 'serviceId')).toEqual(['Selecciona una opción', 'Kayak · $20 por persona', 'Lunch · $25 por persona']);
+    expect(optionsOf(element, 'serviceId')).toEqual(['Selecciona un tour', 'Kayak', 'Lunch']);
     expect(optionsOf(element, 'departureId')).toContain('Tour 1 · 07 nov 2026 · 10 cupos disponibles');
     for (const label of ['Tour', 'Salida programada', 'Cantidad total de viajeros', 'Vehículo(s) de la salida']) {
       expect(texts(element, 'label'), label).toContain(label);
@@ -62,12 +67,13 @@ describe('create reservation (admin-crear-reserva): one tour, its scheduled depa
   });
 
   it('keeps Registrar reserva disabled, with the feedback, until every mandatory datum and the acceptance are given', async () => {
-    const { element, button, choose, tick, type, payWith } = await screenOf(ReservationFormComponent, reservationProviders());
+    const { element, button, choose, tick, type, payWith, party } = await screenOf(ReservationFormComponent, reservationProviders());
+    expect(button('Registrar reserva')!.disabled).toBe(true);
+    expect(element.textContent).toContain('Selecciona un tour para consultar sus requisitos y valores.');
+    expect(element.textContent).toContain('Confirmo que el cliente acepta las condiciones aplicables a esta reserva.');
+    await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2'); await party();
     expect(button('Registrar reserva')!.disabled).toBe(true);
     expect(element.textContent).toContain('Completa los campos obligatorios para registrar la reserva.');
-    expect(element.textContent).toContain('Confirmo que el cliente acepta las condiciones aplicables a esta reserva.');
-    await choose('leadCustomerId', 'cus-1'); await choose('departureId', 'dep-1'); await tick('svc-Kayak'); await type('people', '2');
-    expect(button('Registrar reserva')!.disabled).toBe(true);
     await payWith();
     expect(button('Registrar reserva')!.disabled).toBe(false);
     expect(element.textContent).not.toContain('Completa los campos obligatorios');

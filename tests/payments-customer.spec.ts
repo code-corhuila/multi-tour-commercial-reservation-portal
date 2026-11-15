@@ -1,20 +1,23 @@
 import { Component, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as entry from '../src/mount-entry';
+import { fillCompanionsIn } from './customer-companions.double';
 import { CatalogItemsSource } from '../src/app/catalog/data/catalog-api.service';
 import { DemoCatalogStore } from '../src/app/demo/demo-sources';
 import { paymentsDemoProviders } from '../src/app/demo/payments-demo';
 import { reservationDemoProviders } from '../src/app/demo/reservations-demo';
 import { DemoPaymentMethods, selfServiceDemoProviders } from '../src/app/demo/self-service-reservation-demo';
 import { CheckoutPaymentBlockComponent } from '../src/app/payments/components/checkout-payment-block.component';
+import { PaymentQuote, PaymentQuoteReader } from '../src/app/payments/data/payments-writer';
 import { TransferPaymentPageComponent } from '../src/app/payments/pages/transfer-payment-page.component';
 import { CLIENT_AREA, PORTAL_AREAS } from '../src/app/portal-areas';
 import { PortalNavigation } from '../src/app/portal-navigation';
 import { ReservationsSource } from '../src/app/reservations/data/reservations-source';
 import { CustomerContext, customerContextFor } from '../src/app/self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../src/app/self-service-reservation/data/my-reservations-source';
+import { PaymentTypeChoice } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { PaymentMethodsSource, ReservationRequester } from '../src/app/self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerReservation } from '../src/app/self-service-reservation/model/self-service-reservation';
 import { ActorContext } from '../src/app/shared/actor-context';
@@ -121,6 +124,12 @@ describe('the Tipo de pago y plazo block of 21', () => {
     button('Reintentar')!.click(); await settle();
     expect(element.querySelectorAll('input[name="paymentType"]')).toHaveLength(2);
   });
+
+  it('tells the page of 21 the type the customer chose, so the reservation is created with it (DP-08, option C)', async () => {
+    const { choose } = await blockOf(null);
+    await choose('PARTIAL');
+    expect(TestBed.inject(PaymentTypeChoice).type()).toBe('PARTIAL');
+  });
 });
 
 describe('screen 24, Pago por transferencia', () => {
@@ -143,7 +152,11 @@ describe('screen 24, Pago por transferencia', () => {
       Object.defineProperty(i, 'files', { value: [file], configurable: true }); i.dispatchEvent(new Event('change')); await view.settle();
     };
     const stored = async (id = 'RES-1842') => (await firstValueFrom(TestBed.inject(ReservationsSource).list())).find((r) => r.id === id)!;
-    return { ...view, attach, stored, feedback: () => view.element.querySelector('#crp-transfer-proof-feedback')?.textContent?.trim() };
+    const declare = async (value: string) => {
+      const i = view.element.querySelector<HTMLInputElement>('#crp-transfer-amount')!;
+      i.value = value; i.dispatchEvent(new Event('input')); await view.settle();
+    };
+    return { ...view, attach, declare, stored, feedback: () => view.element.querySelector('#crp-transfer-proof-feedback')?.textContent?.trim() };
   }
 
   it('everyPaymentScreenShowsOneOfTheFourStates', async () => {
@@ -172,6 +185,24 @@ describe('screen 24, Pago por transferencia', () => {
     expect(text).not.toMatch(/PENDING_PAYMENT|SIN_PAGO|undefined/);
   });
 
+  // Audit F2 of HU-COM-009: over HTTP the service does not publish the operator's bank data, and the whole screen used to fail with it.
+  it('in HTTP mode the bank data the service does not publish falls back to the marked demo account and the screen still opens', async () => {
+    const missing = new (class extends DemoPaymentMethods {
+      override bankAccount() { return throwError(() => ({ status: 0, code: 'NOT_IN_CONTRACT', message: 'x', details: [], traceId: '', userMessage: 'x' })); }
+    })();
+    const { element } = await transferOf(TOTAL, [{ provide: PaymentMethodsSource, useValue: missing }]);
+    expect(element.querySelector('[data-state="error"]')).toBeNull();
+    const text = element.textContent!.replace(/\s+/g, ' ');
+    for (const piece of ['Datos bancarios', 'Banco de ejemplo (datos de demostración)', 'Ahorros', '000-000-000', 'Travesía Natural', 'Reserva #RES-1842']) expect(text, piece).toContain(piece);
+  });
+
+  it('any other failure of the bank data keeps the error state, never a made-up account', async () => {
+    const broken = new (class extends DemoPaymentMethods { override bankAccount() { return throwError(() => ({ status: 503, code: 'UNAVAILABLE' })); } })();
+    const { element } = await transferOf(TOTAL, [{ provide: PaymentMethodsSource, useValue: broken }]);
+    expect(element.querySelector('[data-state="error"]')).not.toBeNull();
+    expect(element.textContent).not.toContain('000-000-000');
+  });
+
   it('a customer reaches only their own reservations: another one gets the empty state (AC-PY.9)', async () => {
     const { element } = await transferOf({ reservation: 'RES-1841', type: 'TOTAL', amount: '100' });
     expect(element.querySelector('[data-state="empty"]')).not.toBeNull();
@@ -192,9 +223,9 @@ describe('screen 24, Pago por transferencia', () => {
   });
 
   it('customerTransferLeavesThePaymentPendingAndTheReservationUnchanged, shows the customer as who registered it and opens Comprobante recibido or the panel', async () => {
-    const { attach, click, stored } = await transferOf({ reservation: 'RES-1842', type: 'PARTIAL', amount: '30000000' });
+    const { attach, click, stored, declare } = await transferOf({ reservation: 'RES-1842', type: 'PARTIAL' });
     const before = await stored(), open = vi.spyOn(TestBed.inject(PortalNavigation), 'open');
-    await attach(pdf()); await click('Enviar comprobante para validación');
+    await declare('300000'); await attach(pdf()); await click('Enviar comprobante para validación');
     const after = await stored();
     expect(after.payments).toEqual([expect.objectContaining({ amountCents: 30_000_000, method: 'BANK_TRANSFER', proofStatus: 'EN_VALIDACION', registeredBy: 'Cliente (demo)' })]);
     expect(after).toMatchObject({ status: before.status, financialStatus: before.financialStatus, balanceCents: before.balanceCents, paymentType: 'TOTAL' });
@@ -202,11 +233,56 @@ describe('screen 24, Pago por transferencia', () => {
     expect(open.mock.calls[0]).toEqual(['payment-received', { reservation: 'RES-1842' }]);
   });
 
-  it.each(['abc', '-5', '0', '1.5', '', '9007199254740993', '1e3'])('refuses to send an amount that is not a positive safe integer (%j) and says so beside the field', async (amount) => {
-    const { element, attach, click, stored } = await transferOf({ reservation: 'RES-1842', type: 'TOTAL', amount });
-    await attach(pdf()); await click('Enviar comprobante para validación');
+  it.each(['abc', '-5', '0', '', '1e3x'])('refuses a declared value that is not a positive amount (%j), says so beside the field and sends nothing', async (typed) => {
+    const { element, attach, click, stored, declare } = await transferOf();
+    await declare(typed); await attach(pdf()); await click('Enviar comprobante para validación');
     expect((await stored()).payments ?? []).toHaveLength(0);
+    expect(element.querySelector('#crp-transfer-amount')?.getAttribute('aria-invalid')).toBe('true');
     expect(element.querySelector('[role="alert"]')?.textContent).toContain('Registra un monto mayor a $0.');
+  });
+
+  // AC-PY.13 (spec 009- V-T8): the amount to pay is the service's; the customer declares the value of the proof; the params carry no amount.
+  it('aForgedAmountInTheNavigationParamsIsIgnored', async () => {
+    const { element, attach, click, stored } = await transferOf({ reservation: 'RES-1842', type: 'TOTAL', amount: '1' });
+    const text = element.textContent!.replace(/\s+/g, ' ');
+    expect(text).toContain('Valor a transferir $850.000');
+    expect(element.querySelector<HTMLInputElement>('#crp-transfer-amount')?.value).toBe('850000');
+    await attach(pdf()); await click('Enviar comprobante para validación');
+    expect((await stored()).payments).toEqual([expect.objectContaining({ amountCents: 85_000_000 })]);
+  });
+
+  it('theDeclaredTransferredValueIsReadInCentsAndSentWithTheProof', async () => {
+    const { element, attach, click, stored, declare } = await transferOf();
+    expect(element.querySelector('label[for="crp-transfer-amount"]')?.textContent).toBe('Valor transferido (según tu comprobante)');
+    await declare('1234.5'); await attach(pdf()); await click('Enviar comprobante para validación');
+    expect((await stored()).payments).toEqual([expect.objectContaining({ amountCents: 123_450, method: 'BANK_TRANSFER', proofStatus: 'EN_VALIDACION' })]);
+  });
+
+  it('readsTheAmountToPayAndThePendingBalanceFromThePaymentQuotePort', async () => {
+    const asked: string[][] = [];
+    const quote = new (class extends PaymentQuoteReader {
+      override quote(id: string, type: string) { asked.push([id, type]); return of<PaymentQuote>({ amountToPayCents: 28_333_300, pendingBalanceCents: 85_000_000 }); }
+    })();
+    const { element } = await transferOf({ reservation: 'RES-1842', type: 'PARTIAL', amount: '5' }, [{ provide: PaymentQuoteReader, useValue: quote }]);
+    const text = element.textContent!.replace(/\s+/g, ' ');
+    expect(asked).toEqual([['RES-1842', 'PARTIAL']]);
+    expect(text).toContain('Saldo pendiente de la reserva $850.000');
+    expect(text).toContain('Valor a transferir $283.333');
+    expect(element.querySelector<HTMLInputElement>('#crp-transfer-amount')?.value).toBe('283333');
+  });
+
+  it('showsTheErrorStateWhenThePaymentQuoteFailsAndNeverTheParamsAmount', async () => {
+    const quote = new (class extends PaymentQuoteReader { override quote() { return throwError(() => ({ status: 503, code: 'UNAVAILABLE' })); } })();
+    const { element } = await transferOf({ reservation: 'RES-1842', type: 'TOTAL', amount: '85000000' }, [{ provide: PaymentQuoteReader, useValue: quote }]);
+    expect(element.querySelector('[data-state="error"]')).not.toBeNull();
+    expect(element.textContent).not.toContain('850.000');
+  });
+
+  it('transferScreenShowsYourReservationBankDataAndTheSeatText (the NIT is not served by the contract, DP-06, and is not drawn)', async () => {
+    const { element } = await transferOf();
+    const text = element.textContent!.replace(/\s+/g, ' ');
+    for (const piece of ['Tu reserva', 'Datos bancarios', 'Si es tu primer pago, el cupo se verifica y se aparta al recibir el comprobante, antes de aceptarlo. Si ya no hay cupo, te lo informaremos y no se recibirá el comprobante.']) expect(text, piece).toContain(piece);
+    expect(text).not.toContain('NIT');
   });
 
   it('a double click sends one proof under one key', async () => {
@@ -250,6 +326,16 @@ describe('customer payment wiring', () => {
     expect(stored?.paymentMethod).toBe('CASH_AT_OFFICE');
   });
 
+  it('keeps the type chosen on 21 with the reservation, so the creation can send it (DP-08, option C)', async () => {
+    TestBed.configureTestingModule({ providers: [
+      { provide: CustomerContext, useValue: customerContextFor(['FINAL_CUSTOMER'], () => undefined) },
+      { provide: CatalogItemsSource, useValue: new DemoCatalogStore() }, ...reservationDemoProviders(), ...selfServiceDemoProviders(),
+    ] });
+    const created = await firstValueFrom(TestBed.inject(ReservationRequester).request({ departureId: 'demo-dep-1', serviceIds: ['demo-svc-1'], people: 1 }, 'CASH_AT_OFFICE', 'k-2', [], 'PARTIAL'));
+    const stored = (await firstValueFrom(TestBed.inject(ReservationsSource).list())).find((r) => r.id === created.reservationId);
+    expect(stored?.paymentType).toBe('PARTIAL');
+  });
+
   it('page 21 hands the chosen medium to the block, which shows its note before Confirmar reserva (AC-PY.2)', async () => {
     const fresh = [{ provide: CatalogItemsSource, useValue: new DemoCatalogStore() }, ...reservationDemoProviders(), ...selfServiceDemoProviders(), ...paymentsDemoProviders()];
     const host = document.createElement('div'); document.body.append(host);
@@ -285,6 +371,7 @@ describe('customer payment wiring', () => {
       const method = host.querySelector<HTMLSelectElement>('#self-service-method')!;
       method.value = 'BANK_TRANSFER'; method.dispatchEvent(new Event('change'));
       host.querySelector<HTMLInputElement>('[name="conditions"]')!.click(); host.querySelector<HTMLInputElement>('[name="terms"]')!.click();
+      fillCompanionsIn(host);
       press('Confirmar reserva');
       await vi.waitFor(() => expect(host.querySelector('.crp-self-service-created')?.textContent).toContain('RES-1843'));
       await vi.waitFor(() => press('Continuar al pago'));

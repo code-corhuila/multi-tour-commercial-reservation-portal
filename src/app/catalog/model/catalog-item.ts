@@ -1,11 +1,11 @@
-/** The kinds of item the draft contract allows (`CatalogServiceType`); proposed like the rest of this file. */
+/** The kinds of item the published contract allows (`CatalogServiceType`). */
 export const CATALOG_SERVICE_TYPES = ['TOUR', 'TRANSPORTATION'] as const;
 export type CatalogServiceType = (typeof CATALOG_SERVICE_TYPES)[number];
 
 /**
- * A catalog item as the PROPOSED contract describes it (`CatalogServiceResponse` of the draft
- * commercial-reservation.yaml). It stays proposed until the contract is published (T-00); reconcile
- * names and types then. Money is in minor units, dates are RFC 3339 strings.
+ * A catalog item as the published contract describes it (`CatalogServiceResponse` of
+ * commercial-reservation.yaml). Fields marked PROPOSED below are not in it yet. Money is in minor units,
+ * dates are RFC 3339 strings.
  */
 export interface CatalogItem {
   readonly serviceId: string;
@@ -34,12 +34,16 @@ export interface CreateCatalogItemCommand {
   readonly commercialName: string;
   readonly baseRateCents: number;
   readonly baseOperationalCostCents: number;
-  readonly configuredCapacity: number | null;
+  /** Absent when the form leaves it empty (a transport may go without it); the contract wants the field omitted, never null. */
+  readonly configuredCapacity?: number;
   readonly transportRequired: boolean;
   readonly highRisk: boolean;
-  /** The validity the form requires (G-B: the container adapter drops it until the contract has the fields). */
+  /** Optional: the API has no validity fields (owner decision 2026-10-23); the container adapter drops them. */
   readonly validFrom?: string;
   readonly validTo?: string;
+  /** Nuevo servicio of the mockup; PROPOSED like the validity: the container adapter drops them until the contract has the fields (G-B). */
+  readonly operationalRestrictions?: string;
+  readonly route?: string;
 }
 
 /**

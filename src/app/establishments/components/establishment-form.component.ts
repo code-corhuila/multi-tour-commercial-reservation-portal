@@ -3,11 +3,10 @@ import { focusFirstError } from '../../shared/focus';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, exhaustMap, tap } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
-import { ApiError } from '../../shell-contract';
 import { AssociatedEstablishmentsWriter, RegisterEstablishmentCommand } from '../data/associated-establishments-writer';
 import { AssociatedEstablishment, ESTABLISHMENT_TYPES, EstablishmentType } from '../model/associated-establishment';
 import { IMAGE_GUIDANCE, IMAGE_TYPES, imageMessage } from '../model/image-policy';
-import { ESTABLISHMENTS_COPY } from '../establishments-copy';
+import { ESTABLISHMENTS_COPY, registrationRefusal } from '../establishments-copy';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
 import { FilePickerComponent } from '../../shared/file-picker.component';
 
@@ -15,6 +14,7 @@ type Field = keyof RegisterEstablishmentCommand;
 type Messages = Partial<Record<Field, string>>;
 const TEXT_FIELDS = [{ name: 'commercialName', label: 'Nombre del establecimiento' },
   { name: 'commercialInformation', label: 'Información comercial' }] as const;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 let nextFormId = 0;
 
 @Component({
@@ -66,10 +66,25 @@ let nextFormId = 0;
           </app-file-picker>
         </div>
         </section>
+        <section class="crp-form-panel">
+        <p class="crp-operator-eyebrow">{{ contact.eyebrow }}</p>
+        <div class="crp-form-grid">
+        @for (field of contactFields; track field.name) {
+          <div>
+            <label [for]="id(field.name)">{{ field.label }}</label>
+            <input [name]="field.name" [id]="id(field.name)" [type]="field.type" [attr.placeholder]="field.placeholder" [value]="draft()[field.name]" [disabled]="pending()"
+              [attr.aria-invalid]="messages()[field.name] ? 'true' : null"
+              [attr.aria-describedby]="describedBy(field.name)" (input)="edit(field.name, $event)">
+            @if (messages()[field.name]; as text) { <p role="alert" [id]="id(field.name) + '-error'">{{ text }}</p> }
+          </div>
+        }
+        </div>
+        </section>
         <div class="crp-form-actions">
         <button class="crp-operator-outline" type="button" [disabled]="pending()" (click)="cancel()">Cancelar</button>
         <button class="crp-operator-primary" type="submit" [disabled]="pending()">Guardar establecimiento</button>
       </div>
+      @if (general(); as text) { <p role="alert">{{ text }}</p> }
       </form>
     }
   `,
@@ -89,19 +104,28 @@ export class EstablishmentFormComponent {
   protected readonly types = ESTABLISHMENT_TYPES;
   protected readonly typeLabels = ESTABLISHMENTS_COPY.types;
   protected readonly textFields = TEXT_FIELDS;
+  protected readonly contact = ESTABLISHMENTS_COPY.contactForm;
+  protected readonly contactFields = [
+    { name: 'contactEmail', label: ESTABLISHMENTS_COPY.contactForm.email, type: 'email', placeholder: ESTABLISHMENTS_COPY.contactForm.emailPlaceholder },
+    { name: 'contactPhone', label: ESTABLISHMENTS_COPY.contactForm.phone, type: 'text', placeholder: null },
+    { name: 'contactAddress', label: ESTABLISHMENTS_COPY.contactForm.address, type: 'text', placeholder: null }] as const;
   protected readonly guidance = IMAGE_GUIDANCE;
   protected readonly acceptedTypes = IMAGE_TYPES.join(',');
   protected readonly pending = signal(false);
-  protected readonly draft = signal({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '' });
+  protected readonly draft = signal({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '', contactEmail: '', contactPhone: '', contactAddress: '' });
   protected readonly image = signal<File | null>(null);
   private readonly attempted = signal(false);
   private readonly refused = signal<Messages>({});
+  /** A refusal with no field of its own (permission, key, content type, server): the notice of the form, as in the catalog form. */
+  protected readonly general = signal<string | null>(null);
   protected readonly messages = computed(() => {
     const local: Messages = {}, draft = this.draft();
     if (this.attempted()) {
       if (!this.types.includes(draft.establishmentType as EstablishmentType)) { local.establishmentType = 'El tipo es obligatorio.'; }
       if (!draft.commercialName.trim() || draft.commercialName.trim().length > 255) { local.commercialName = 'Obligatorio: de 1 a 255 caracteres.'; }
       if (!draft.commercialInformation.trim()) { local.commercialInformation = 'La información comercial es obligatoria.'; }
+      if (!draft.contactEmail.trim() && !draft.contactPhone.trim()) { local.contactEmail = this.contact.required; }
+      else if (draft.contactEmail.trim() && !EMAIL.test(draft.contactEmail.trim())) { local.contactEmail = this.contact.invalidEmail; }
     }
     if (this.attempted() || this.image()) { const message = imageMessage(this.image()); if (message) { local.image = message; } }
     return { ...this.refused(), ...local };
@@ -112,7 +136,7 @@ export class EstablishmentFormComponent {
     this.writer.register(command, this.idempotencyKey).pipe(
       tap((stored) => {
         this.idempotencyKey = this.keys.generate(); this.attempted.set(false);
-        this.draft.set({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '' });
+        this.draft.set({ establishmentType: 'HOTEL', commercialName: '', commercialInformation: '', contactEmail: '', contactPhone: '', contactAddress: '' });
         this.image.set(null); this.submittedForm?.reset(); this.finish(); this.saved.emit(stored);
       }),
       catchError((error: unknown) => { this.showRefusal(error); this.finish(); this.focusFirstErrorOnRender(); return EMPTY; }),
@@ -137,21 +161,18 @@ export class EstablishmentFormComponent {
     event.preventDefault(); if (this.pending() || !this.canRegister) { return; }
     this.attempted.set(true);
     // Service messages must not block retrying an otherwise valid intention.
-    this.refused.set({}); if (Object.keys(this.messages()).length) { this.focusFirstErrorOnRender(); return; }
+    this.refused.set({}); this.general.set(null); if (Object.keys(this.messages()).length) { this.focusFirstErrorOnRender(); return; }
     this.pending.set(true); this.saving.emit(true);
     this.submittedForm = event.target as HTMLFormElement;
     const draft = this.draft();
+    const contact = { contactEmail: draft.contactEmail.trim(), contactPhone: draft.contactPhone.trim(), contactAddress: draft.contactAddress.trim() };
     this.submissions.next({ commercialName: draft.commercialName.trim(), commercialInformation: draft.commercialInformation.trim(),
-      establishmentType: draft.establishmentType as EstablishmentType, image: this.image()! });
+      establishmentType: draft.establishmentType as EstablishmentType, image: this.image()!,
+      ...Object.fromEntries(Object.entries(contact).filter(([, value]) => value)) });
   }
   private finish(): void { this.pending.set(false); this.saving.emit(false); }
   private showRefusal(value: unknown): void {
-    const error = value as Partial<ApiError> | null, messages: Messages = {};
-    const reason = error?.userMessage ?? ESTABLISHMENTS_COPY.requestFailed;
-    for (const detail of Array.isArray(error?.details) ? error.details : []) {
-      const field: Field = ['establishmentType', 'commercialName', 'commercialInformation', 'image'].includes(detail.field) ? detail.field as Field : 'image';
-      messages[field] = `${messages[field] ?? reason} ${detail.message}`;
-    }
-    this.refused.set(Object.keys(messages).length ? messages : { image: reason });
+    const { fields, general } = registrationRefusal(value as Parameters<typeof registrationRefusal>[0]);
+    this.refused.set(fields); this.general.set(general);
   }
 }

@@ -17,14 +17,24 @@ export const contribute = (slot: PortalSlotToken, entry: PortalSlot): Provider =
 export const RESERVATION_DETAIL_BLOCKS: PortalSlotToken = new InjectionToken('RESERVATION_DETAIL_BLOCKS');
 /** 10 (admin-reservas): actions of the "Acción" cell after "Ver detalle"; each draws its own " · ". Input: reservation. */
 export const RESERVATION_ROW_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_ROW_ACTIONS');
+/** 10 (admin-reservas) opened in a mode (HU-COM-004 additional-discount): the actions of the Acción cell after "Ver detalle" while the mode is open, which replace the usual ones. Inputs: reservation, mode. */
+export const RESERVATION_MODE_ACTIONS: PortalSlotToken = new InjectionToken('RESERVATION_MODE_ACTIONS');
 /** 21 (finalizar-reserva): blocks of the main column after the payment method card. Inputs: quote, method (the chosen code), reservation (once created). */
 export const CHECKOUT_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_BLOCKS');
+/** 21 (finalizar-reserva): blocks of the main column after "Viajeros" and before "Condiciones de reserva", such as the risk requirements. Input: customer (true). */
+export const CHECKOUT_TRAVELER_BLOCKS: PortalSlotToken = new InjectionToken('CHECKOUT_TRAVELER_BLOCKS');
+/** 10B (admin-crear-reserva): sections of the form hosted by HU-COM-007, by order. Inputs of the outlet: crpSlotFrom, crpSlotUntil (the order range it draws).
+ * HU-COM-005 contributes 01 (order 10) before 02 and 03 (order 30) after it, so the form draws the outlet twice, split at AFTER_OFFER. */
+export const RESERVATION_FORM_SECTIONS: PortalSlotToken = new InjectionToken('RESERVATION_FORM_SECTIONS');
+export const RESERVATION_FORM_AFTER_OFFER = 20;
 /** 24 (pago-transferencia): lines of the transfer payment page; the outlet comes with that page. */
 export const TRANSFER_PAYMENT_LINES: PortalSlotToken = new InjectionToken('TRANSFER_PAYMENT_LINES');
 /** 13 sub-screen (admin-gestion-pago): actions of the payment management page; the outlet comes with that page. */
 export const PAYMENT_MANAGEMENT_ACTIONS: PortalSlotToken = new InjectionToken('PAYMENT_MANAGEMENT_ACTIONS');
 /** 13 sub-screen (admin-gestion-pago): notes under the Acción de pago copy, before the form; the outlet comes with that page. Input: reservation. */
 export const PAYMENT_MANAGEMENT_NOTES: PortalSlotToken = new InjectionToken('PAYMENT_MANAGEMENT_NOTES');
+/** 13 (admin-pagos): header links before "Parámetros de pago" and "Ver reservas" (the mockup's addLinks), each a button of class crp-page-header-action; the outlet comes with that page. */
+export const PAYMENTS_HEADER_ACTIONS: PortalSlotToken = new InjectionToken('PAYMENTS_HEADER_ACTIONS');
 /** 13 (admin-pagos): page panels, such as "Devoluciones monetarias"; the outlet comes with that page. */
 export const PAYMENTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('PAYMENTS_PAGE_PANELS');
 /** 13 (admin-pagos): actions of each payments row; the outlet comes with that page. */
@@ -37,6 +47,10 @@ export const OPERATOR_NOTIFICATIONS: PortalSlotToken = new InjectionToken('OPERA
 export const CLIENT_QUICK_ACTIONS: PortalSlotToken = new InjectionToken('CLIENT_QUICK_ACTIONS');
 /** 17 (panel-cliente): the "Notificaciones" section, drawn only when a notice is available. */
 export const CLIENT_NOTICES: PortalSlotToken = new InjectionToken('CLIENT_NOTICES');
+/** 21 in its second mode (continue-payment.component): blocks after the payment card. Inputs: existing (true), reservation ({ reservationId }). */
+export const CONTINUE_PAYMENT_BLOCKS: PortalSlotToken = new InjectionToken('CONTINUE_PAYMENT_BLOCKS');
+/** Mis pagos (mis-pagos.html): the credit panel of the customer, which replaces the read-only credit line of the page when a story contributes it. */
+export const MY_PAYMENTS_CREDIT: PortalSlotToken = new InjectionToken('MY_PAYMENTS_CREDIT');
 /** Mis reservas: lines of each reservation card under the departure line. Input: reservationId. */
 export const RESERVATION_CARD_EXTRAS: PortalSlotToken = new InjectionToken('RESERVATION_CARD_EXTRAS');
 /** 10A: header actions before "Volver a reservas", such as "Cancelar o modificar reserva". Input: reservation. */
@@ -51,8 +65,8 @@ export const REFUND_TREATMENT_ACTIONS: PortalSlotToken = new InjectionToken('REF
 export const DISCOUNTS_PAGE_PANELS: PortalSlotToken = new InjectionToken('DISCOUNTS_PAGE_PANELS');
 
 /** The available contributions of a slot, by order. */
-export function slotEntries(slot: PortalSlotToken, injector: Injector): readonly Type<unknown>[] {
-  return [...(injector.get(slot, null, { optional: true }) ?? [])].filter((entry) => entry.isAvailable?.(injector) ?? true)
+export function slotEntries(slot: PortalSlotToken, injector: Injector, from = -Infinity, until = Infinity): readonly Type<unknown>[] {
+  return [...(injector.get(slot, null, { optional: true }) ?? [])].filter((entry) => entry.order >= from && entry.order < until && (entry.isAvailable?.(injector) ?? true))
     .sort((a, b) => a.order - b.order).map((entry) => entry.component);
 }
 
@@ -61,6 +75,9 @@ export function slotEntries(slot: PortalSlotToken, injector: Injector): readonly
 export class PortalSlotOutlet implements OnChanges {
   readonly crpSlot = input.required<PortalSlotToken>();
   readonly crpSlotInputs = input<Readonly<Record<string, unknown>>>({});
+  /** Only the contributions whose order is in [from, until). */
+  readonly crpSlotFrom = input(-Infinity);
+  readonly crpSlotUntil = input(Infinity);
   private readonly view = inject(ViewContainerRef);
   private readonly injector = inject(Injector);
   private refs: ComponentRef<unknown>[] = [];
@@ -68,7 +85,7 @@ export class PortalSlotOutlet implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['crpSlot']) {
       this.view.clear();
-      this.refs = slotEntries(this.crpSlot(), this.injector).map((component) => this.view.createComponent(component, { injector: this.injector }));
+      this.refs = slotEntries(this.crpSlot(), this.injector, this.crpSlotFrom(), this.crpSlotUntil()).map((component) => this.view.createComponent(component, { injector: this.injector }));
     }
     const values = this.crpSlotInputs();
     for (const ref of this.refs) {
@@ -77,3 +94,6 @@ export class PortalSlotOutlet implements OnChanges {
     }
   }
 }
+
+/** Markup of a quick-action row of the client panel (screen 17): no text of its own, every word comes from the item. */
+export const QUICK_ITEM = `<button type="button" class="crp-panel-quick-item" (click)="go()"><span class="crp-panel-quick-icon" aria-hidden="true">{{ item.icon }}</span>&ngsp;<span class="crp-panel-quick-copy"><strong>{{ item.title }}</strong>&ngsp;<span>{{ item.copy }}</span></span></button>`;

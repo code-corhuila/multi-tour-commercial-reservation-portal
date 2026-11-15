@@ -1,20 +1,27 @@
 import { Injector } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
+import type { Reservation } from '../../reservations/data/reservations-source';
 
 /** DP-RF7 (PROPUESTO, mockup labels): En ejecución is not stored, only drawn while executeRefund is in flight (plan D-05). */
 export type RefundState = 'PENDIENTE_DE_DECISION' | 'PENDIENTE_DE_AUTORIZACION' | 'AUTORIZADA' | 'EJECUTADA' | 'RECHAZADA' | 'SALDO_A_FAVOR';
 export type RefundMethod = 'BANK_TRANSFER' | 'CASH';
+/** What registered the refund (panel Origen of the manage screen): a cancellation, or a modification that left a surplus. */
+export type RefundOriginType = 'CANCELLATION' | 'MODIFICATION';
+/** AC-RF.12, D-3 (RN-RES-009): where the refund comes from; only a request to refund a credit balance can be rejected. */
+export type RefundOrigin = 'CREDIT_BALANCE_REQUEST' | 'OTHER';
 
 /** Plan D-03: one refund per reservation (its code is the id), every business value resolved by the port; the view formats only (RN-RF1). */
 export interface Refund {
-  readonly id: string; readonly customer: string; readonly reason: string; readonly amountCents: number; readonly state: RefundState;
+  readonly id: string; readonly origin: RefundOrigin; /** The reservation code when the id is not it (a credit-balance request has its own id). */ readonly reservation?: string; readonly customer: string; readonly reason: string; readonly amountCents: number; readonly state: RefundState;
   /** The authorization reason; the person and date of the last act (execution, else authorization); null while there is none. */
   readonly decisionReason: string | null; readonly owner: string | null; readonly date: string; readonly method: RefundMethod | null; readonly cashMovement: string | null;
   /** AC-RF.6, AC-RF.7 (resolved as job 2 applies them): minutes left of the 24 hours while undecided, the default applied, the Vencida mark. */
   readonly remainingMinutes: number | null; readonly defaulted: boolean; readonly overdue: boolean;
   /** v1.9: the administrative note, the limit of the 24-hour decision (while undecided) and of the 5-business-day execution (while Autorizada), ISO with offset. */
   readonly note: string | null; readonly decisionDueAt: string | null; readonly executionDueAt: string | null;
+  /** Panel Origen (v1.9): the status of the reservation (null when the service does not answer it), the kind of act, the validated value paid and the instant it was registered. */
+  readonly reservationStatus: Reservation['status'] | null; readonly originType: RefundOriginType; readonly paidCents: number; readonly registeredAt: string;
 }
 /** The refunds of the reservations store (plan D-02); gap G-B: no path in the contract yet. */
 export abstract class RefundsSource { abstract list(): Observable<readonly Refund[]>; }

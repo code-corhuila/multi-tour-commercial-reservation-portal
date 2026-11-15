@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PortalNavigation } from '../../portal-navigation';
@@ -31,9 +31,9 @@ type State = PageState<Refund>;
         @case ('loading') { <p role="status" data-state="loading">{{ t.loading }}</p> }
         @case ('error') { <div role="alert" data-state="error"><crp-read-error [state]="s" [fallback]="t.failed" />&ngsp;<button type="button" class="crp-operator-outline" (click)="s.retry()">{{ t.retry }}</button></div> }
         @default {
-          <div class="crp-table-wrap" [attr.data-state]="s.kind === 'data' ? 'data' : null"><table class="crp-operator-table"><thead><tr>@for (column of t.columns; track column) { <th>{{ column }}</th> }</tr></thead>
+          <div class="crp-table-wrap" [attr.data-state]="s.kind === 'data' ? 'data' : null"><table class="crp-operator-table crp-refunds-table"><thead><tr>@for (column of t.columns; track column) { <th>{{ column }}</th> }</tr></thead>
             <tbody>@if (s.kind === 'data') { @for (r of s.items; track r.id) {
-              <tr><td><button type="button" (click)="open(r)">#{{ r.id }}</button></td><td>{{ r.customer }}</td><td>{{ r.reason }}</td><td>{{ money(r.amountCents) }}</td>
+              <tr><td><button type="button" (click)="open(r)">#{{ r.reservation ?? r.id }}</button></td><td>{{ r.customer }}</td><td>{{ r.reason }}</td><td>{{ money(r.amountCents) }}</td>
                 <td><span class="crp-operator-status" [class.crp-is-pending]="!r.overdue" [class.crp-is-cancelled]="r.overdue">{{ states[r.state] }}</span>@for (mark of marks(r); track mark) { <br><small>{{ mark }}</small> }</td><td>{{ dateTime(r.date) }}</td><td><button type="button" (click)="open(r)">{{ action(r) }}</button></td></tr>
             } }</tbody></table>
             @if (s.kind === 'empty') { <p class="crp-operator-copy" role="status" data-state="empty">{{ t.empty }}</p> }</div>
@@ -48,7 +48,7 @@ export class RefundRequestsPageComponent {
   protected readonly can = inject(PortalCapabilities); private readonly source = inject(RefundsSource); private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.source.list().pipe(
     map((items): State => (items.length ? { kind: 'data', items } : { kind: 'empty' })),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))), { initialValue: { kind: 'loading' } as State });
 
   /** The panel alerts, in the order of the mockup: overdue executions, decisions about to expire, automatic determinations. */
   protected alertLines(items: readonly Refund[]): string[] {

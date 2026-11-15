@@ -30,10 +30,10 @@ async function openForm() {
 }
 
 describe('registersAnEstablishmentAndItAppearsAsPublished', () => {
-  it('sends exactly the four required fields with the chosen file and emits what the service stored', async () => {
+  it('sends exactly the four required fields and the typed contact with the chosen file and emits what the service stored', async () => {
     const { fill, submit, writer, saved, settle } = await openForm();
     await fill(); await submit();
-    expect(Object.keys(writer.registrations[0].command).sort()).toEqual(['commercialInformation', 'commercialName', 'establishmentType', 'image']);
+    expect(Object.keys(writer.registrations[0].command).sort()).toEqual(['commercialInformation', 'commercialName', 'contactEmail', 'establishmentType', 'image']);
     expect(writer.registrations[0].command.establishmentType).toBe('HOTEL');
     expect(writer.registrations[0].command.image).toBeInstanceOf(File);
     const stored = establishmentNamed('Stored'); writer.registrations[0].reply(stored); await settle();
@@ -59,7 +59,7 @@ describe('eachFieldHasItsLabelAndItsErrorBesideItThroughAriaDescribedby', () => 
       expect(control.parentElement!.querySelector('[role="alert"]')).not.toBeNull();
     }
     expect(writer.registrations).toEqual([]);
-    expect(element.querySelectorAll('[role="alert"]').length).toBe(4);
+    expect(element.querySelectorAll('[role="alert"]').length).toBe(5);
   });
   it('enforces commercial name length at 255 and preserves the typed text on rejection', async () => {
     const { fill, text, submit, writer, errorFor, field } = await openForm();
@@ -117,8 +117,8 @@ describe('aCorrectedImageResubmitsWithTheSameKey', () => {
     expect(keys.generated.length).toBe(1);
     await fill(); const firstFile = (field('image') as HTMLInputElement).files![0]; await submit();
     expect(writer.registrations[0].key).toBe(keys.generated[0]);
-    writer.registrations[0].fail(apiError({ userMessage: 'Image refused.', details: [{ field: 'image', message: 'Content does not match.' }] })); await settle();
-    expect(errorFor('image')).toContain('Image refused.'); expect(errorFor('image')).toContain('Content does not match.');
+    writer.registrations[0].fail(apiError({ status: 400, userMessage: 'Image refused.', details: [{ field: 'image', message: 'Content does not match.' }] })); await settle();
+    expect(errorFor('image')).toBe('La imagen debe ser PNG, JPEG o WebP.');
     expect(field('commercialName').value).toBe('Hotel Alpha');
     expect((field('image') as HTMLInputElement).files![0]).toBe(firstFile);
     expect(saving).toEqual([true, false]);
@@ -129,15 +129,14 @@ describe('aCorrectedImageResubmitsWithTheSameKey', () => {
     expect(saved).toHaveLength(1); expect(keys.generated.length).toBe(2);
     await fill(); await submit(); expect(writer.registrations[2].key).toBe(keys.generated[1]);
   });
-  it('places service details and userMessage by their field, including unknown details beside image', async () => {
+  it('places Spanish texts by the field the API names and never prints the English details', async () => {
     const { fill, submit, writer, settle, errorFor, element } = await openForm();
     await fill(); await submit();
-    writer.registrations[0].fail(apiError({ userMessage: 'Please correct these fields.', details: [
-      { field: 'commercialName', message: 'Name conflicts.' }, { field: 'commercialName', message: 'Choose another name.' },
-      { field: 'commercialInformation', message: 'Contact required.' }, { field: 'content', message: 'Unreadable file.' },
+    writer.registrations[0].fail(apiError({ status: 400, userMessage: 'Please correct these fields.', details: [
+      { field: 'commercialName', message: 'Name conflicts.' }, { field: 'commercialInformation', message: 'Contact required.' }, { field: 'content', message: 'Unreadable file.' },
     ] })); await settle();
-    for (const text of ['Please correct these fields.', 'Name conflicts.', 'Choose another name.']) { expect(errorFor('commercialName')).toContain(text); }
-    expect(errorFor('commercialInformation')).toContain('Contact required.'); expect(errorFor('image')).toContain('Unreadable file.');
+    expect(errorFor('commercialName')).toBe('Obligatorio: de 1 a 255 caracteres.'); expect(errorFor('commercialInformation')).not.toBe('');
+    expect(element.textContent).not.toMatch(/Please correct|Name conflicts|Contact required|Unreadable/);
     expect(Array.from(element.querySelectorAll('[role="alert"]')).every((alert) => alert.parentElement?.querySelector('input, textarea, select'))).toBe(true);
   });
 });
@@ -145,14 +144,14 @@ describe('aCorrectedImageResubmitsWithTheSameKey', () => {
 describe('theEstablishmentFormFollowsTheAuthorizedScreenInSpanish', () => {
   it('numbers its sections and writes labels, options, guidance, buttons and messages in Spanish', async () => {
     const { element, submit } = await openForm();
-    expect(Array.from(element.querySelectorAll('.crp-operator-eyebrow'), (node) => node.textContent?.trim())).toEqual(['01. Datos del establecimiento', '02. Imagen']);
-    expect(Array.from(element.querySelectorAll('label'), (label) => label.textContent?.trim())).toEqual(['Tipo de establecimiento', 'Nombre del establecimiento', 'Información comercial', 'Imagen']);
+    expect(Array.from(element.querySelectorAll('.crp-operator-eyebrow'), (node) => node.textContent?.trim())).toEqual(['01. Datos del establecimiento', '02. Imagen', '03. Datos de contacto']);
+    expect(Array.from(element.querySelectorAll('label'), (label) => label.textContent?.trim())).toEqual(['Tipo de establecimiento', 'Nombre del establecimiento', 'Información comercial', 'Imagen', 'Correo de contacto', 'Teléfono', 'Dirección']);
     expect(Array.from(element.querySelectorAll('option'), (option) => option.textContent?.trim())).toEqual(['Alojamiento', 'Restaurante']);
     expect(element.textContent).toContain('Máximo 800 KB (819200 bytes). Tipos aceptados: PNG, JPEG, WebP.');
     expect(Array.from(element.querySelectorAll('.crp-form-actions button'), (button) => button.textContent?.trim())).toEqual(['Cancelar', 'Guardar establecimiento']);
     await submit();
     const alerts = Array.from(element.querySelectorAll('[role="alert"]'), (alert) => alert.textContent?.trim());
-    expect(alerts).toEqual(['Obligatorio: de 1 a 255 caracteres.', 'La información comercial es obligatoria.', 'La imagen es obligatoria.']);
+    expect(alerts).toEqual(['Obligatorio: de 1 a 255 caracteres.', 'La información comercial es obligatoria.', 'La imagen es obligatoria.', 'Registra al menos un dato de contacto (correo o teléfono).']);
     expect(element.textContent).not.toMatch(/HOTEL|RESTAURANT|Required|Save|Cancel\b|At most/);
   });
 });

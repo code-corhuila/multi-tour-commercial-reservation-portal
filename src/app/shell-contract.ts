@@ -32,6 +32,8 @@ export interface MountSession {
   displayName?: string;
   /** One or two uppercase letters for the avatar; the portal derives them from displayName when absent. */
   initials?: string;
+  /** Set when the token is a temporary or restricted credential (multi-tour-front `core/client/types.ts`); `restricted` is the Administrator of an inactive tenant (HU-COM-020). */
+  access?: 'password-change' | 'restricted';
   open(answer: unknown): void;
   close(): void;
 }
@@ -59,9 +61,32 @@ export interface MountProps {
   initialParams?: Readonly<Record<string, string>>;
   /** Asks the container to open an area of another portal; absent, the Perfil button and the avatar link are not drawn. */
   navigate?: (target: PortalTarget) => void;
+  /** The commercial name of the company (multi-tour-front `core/client/types.ts`, tenant mounts only; absent when blank): the strip "Operador activo" of 10B. */
+  commercialName?: string;
+  /** Who draws the navigation chrome: 'container' means the container draws the sidebar and the portal only shows its content; absent, the portal draws its own. */
+  chrome?: 'container';
+  /** Set only with `chrome: 'container'` (multi-tour-front `core/client/types.ts`): the portal calls it with the sidebar entry it shows as current, so the container marks it. */
+  onAreaChange?: (area: string) => void;
 }
 
 /** The container's `navigate` as the screens read it; null when the container does not offer it. */
 export const CONTAINER_NAVIGATION = new InjectionToken<((target: PortalTarget) => void) | null>('CONTAINER_NAVIGATION', { factory: () => null });
 
+/** The container's `onAreaChange`, or null: the shell reports the sidebar entry it shows whenever it changes (only with the container chrome). */
+export const CONTAINER_AREA_REPORTER = new InjectionToken<((area: string) => void) | null>('CONTAINER_AREA_REPORTER', { factory: () => null });
+
+/** The commercial name the container sent, or null; screens draw their strip only when it is there (007- V3, amended). */
+export const COMMERCIAL_NAME = new InjectionToken<string | null>('COMMERCIAL_NAME', { factory: () => null });
+
+/** true when the container draws the navigation (MountProps.chrome === 'container'): the operator shell then omits its sidebar. */
+export const CONTAINER_CHROME = new InjectionToken<boolean>('CONTAINER_CHROME', { factory: () => false });
+
+/** The area the container asked to open at mount (MountProps.initialParams.area), or null. */
+/** HU-COM-020: the session is the restricted access of an inactive tenant; the operator menu keeps only the regularization areas. */
+export const RESTRICTED_ACCESS = new InjectionToken<boolean>('RESTRICTED_ACCESS', { factory: () => false });
+export const INITIAL_AREA = new InjectionToken<string | null>('INITIAL_AREA', { factory: () => null });
+
 export type PortalApiClient = MountProps['apiClient'];
+
+/** The public identifier of the tenant of the link (MountProps.identifier), or null: the public offer asks its routes with it (ADR-004 D5); the customer never picks it. */
+export const TENANT_IDENTIFIER = new InjectionToken<string | null>('TENANT_IDENTIFIER', { factory: () => null });

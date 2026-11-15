@@ -5,7 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, defer, exhaustMap, finalize, tap } from 'rxjs';
 import { CatalogItem } from '../../catalog/data/catalog-api.service';
 import { ApiError } from '../../shell-contract';
-import { CUSTOMERS_COPY, PERSON_LABELS } from '../customers-copy';
+import { CUSTOMERS_COPY, PERSON_LABELS, PLACEHOLDERS } from '../customers-copy';
 import { CustomersWriter } from '../data/customers-writer';
 import { CustomerGroup, LEAD_FIELDS, LeadCommand, PERSON_FIELDS, PersonDraft, PersonField, PersonKind, personCommand, validatePerson } from '../model/customer-group';
 import { IdempotencyKeys } from '../../shared/idempotency-keys';
@@ -56,7 +56,7 @@ let formSequence = 0;
       }
       <div class="crp-form-actions">
         @if (pending()) { <p role="status">{{ text.saving }}</p> }
-        @if (refused()) { <p role="alert" class="crp-customers-error">{{ refused() }}</p> }
+        @if (refused()) { <p role="alert" class="crp-customers-error" tabindex="-1" data-refusal>{{ refused() }}</p> }
         <button type="submit" [disabled]="pending()">{{ kind() === 'lead' ? text.registerLead : text.addCompanion }}</button>
       </div>
     </form>
@@ -91,9 +91,9 @@ export class CustomerFormComponent {
   });
   protected readonly riskControls = computed<Control[]>(() => this.highRisk() ? [
     // DP-PC2 is open (no closed list of blood types yet): a text field, as screen 10B draws it.
-    { field: 'bloodType', label: PERSON_LABELS.bloodType, type: 'text', placeholder: 'Ej. O+' },
-    { field: 'emergencyContact', label: PERSON_LABELS.emergencyContact, type: 'text', placeholder: 'Nombre y teléfono' },
-    { field: 'physicalRestrictions', label: PERSON_LABELS.physicalRestrictions, type: 'text', placeholder: 'Indica restricciones o escribe Ninguna.' },
+    { field: 'bloodType', label: PERSON_LABELS.bloodType, type: 'text', placeholder: PLACEHOLDERS.bloodType },
+    { field: 'emergencyContact', label: PERSON_LABELS.emergencyContact, type: 'text', placeholder: PLACEHOLDERS.emergencyContact },
+    { field: 'physicalRestrictions', label: PERSON_LABELS.physicalRestrictions, type: 'text', placeholder: PLACEHOLDERS.physicalRestrictions },
     { field: 'informedConsent', label: PERSON_LABELS.informedConsent, type: 'checkbox' },
   ] : []);
   private readonly submissions = new Subject<ReturnType<typeof personCommand>>();
@@ -103,7 +103,11 @@ export class CustomerFormComponent {
       ? this.writer.registerLead(command as LeadCommand, this.key)
       : this.writer.addCompanion(this.group()!.groupId, command, this.key)).pipe(
       tap((group) => { this.key = this.keys.generate(); this.fingerprint = null; this.draft.set({}); this.submitted.set(false); this.saved.emit(group); }),
-      catchError((error: Partial<ApiError> | null) => { this.refused.set(error?.userMessage ?? this.text.refused); return EMPTY; }),
+      catchError((error: Partial<ApiError> | null) => {
+        this.refused.set(error?.userMessage ?? this.text.refused);
+        afterNextRender(() => { this.host.querySelector<HTMLElement>('[data-refusal]')?.focus(); }, { injector: this.injector });
+        return EMPTY;
+      }),
       finalize(() => this.pending.set(false)),
     )), takeUntilDestroyed()).subscribe();
   }

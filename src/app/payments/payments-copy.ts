@@ -1,14 +1,16 @@
 import { departureLine } from '../shared/format';
 /** Texts of screens 10A ("Pagos y soportes"), 10C ("Gestionar pago") and 13 (admin-gestion-pago.html), as the mockup writes them. */
 export const PAYMENTS_TEXT = {
-  manage: 'Gestionar pago', blockEyebrow: 'Pagos y comprobantes', blockTitle: 'Seguimiento económico', receiptsEyebrow: 'Histórico', receiptsTitle: 'Comprobantes presentados',
+  manage: 'Gestionar pago', seePayments: 'Ver pagos', blockEyebrow: 'Pagos y comprobantes', blockTitle: 'Seguimiento económico', receiptsEyebrow: 'Histórico', receiptsTitle: 'Comprobantes presentados',
   receiptColumns: ['Presentado', 'Valor declarado', 'Monto verificado', 'Estado', 'Decisión'], noReceipts: 'Sin comprobantes presentados.', pendingDecision: 'Pendiente de decisión',
-  columns: ['Tipo', 'Medio', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente'],
+  columns: ['Tipo de pago', 'Medio de pago', 'Estado del comprobante', 'Situación financiera', 'Valores validados', 'Saldo pendiente'],
   eyebrow: 'Seguimiento de reserva', title: 'Gestión de pago', reservation: 'Reserva',
   infoEyebrow: 'Información de pago', modality: 'Tipo y medio de pago', departure: 'Salida', deadline: 'Plazo de pago', validated: 'Valores validados', proofState: 'Estado del comprobante', financial: 'Situación financiera',
   economyEyebrow: 'Estado económico', final: 'Valor final', balance: 'Saldo pendiente',
   actionEyebrow: 'Acción de pago', actionTitle: 'Registra el pago de esta reserva', actionCopy: 'El comprobante no es ingreso de caja hasta su validación y la reserva permanece Pendiente de pago hasta cumplir la condición de confirmación (100 % del valor final en pago total, abono mínimo en abono). Registra aquí el efectivo recibido o el comprobante en nombre del cliente: el sistema verifica el cupo de la salida antes de recibirlo. La revisión máxima del comprobante es de 24 horas corridas.',
-  amount: 'Monto recibido', partialAmount: 'Monto del abono', proof: 'Comprobante de transferencia (PDF, JPG, JPEG o PNG, máximo 5 MB)', back: 'Volver a la reserva',
+  amount: 'Monto recibido', partialAmount: 'Monto del abono', partialAmountMinimum: (minimum: string) => `Monto del abono (mínimo para confirmar ${minimum})`,
+  minimumHint: (minimum: string, staysPending: boolean) => `Abono mínimo para confirmar la reserva: ${minimum} (sobre el valor final después de descuentos). Puedes registrar un abono menor: la reserva se confirma cuando lo validado llegue al mínimo.${staysPending ? ' La reserva queda Pendiente de pago hasta que lo validado llegue al mínimo.' : ''}`,
+  proof: 'Comprobante de transferencia (PDF, JPG, JPEG o PNG, máximo 5 MB)', back: 'Volver a la reserva',
   submit: { transfer: 'Registrar comprobante', partial: 'Registrar pago recibido', total: 'Registrar pago recibido' },
   readOnly: 'Tu rol es de solo consulta: no puede registrar pagos.',
   hint: 'Registra el monto para actualizar la situación financiera y el saldo pendiente.',
@@ -27,7 +29,7 @@ export const PAYMENTS_TEXT = {
     settled: 'No existen valores pendientes por registrar para esta reserva.' } as Readonly<Record<string, string>>,
   /** Spec 009- section 5: 13 has no text for En ejecución and Finalizada; the mockup's own sentence for them (app.js 6079). */
   closedState: (status: string) => `Esta reserva está en estado "${status}" y ya no admite modificaciones.`,
-  amountRequired: 'Registra un monto mayor a $0.', proofRequired: 'Adjunta el comprobante de transferencia para enviarlo a validación.',
+  proofRule: 'El comprobante debe ser PDF, JPG, JPEG o PNG y no superar 5 MB.', amountRequired: 'Registra un monto mayor a $0.', proofRequired: 'Adjunta el comprobante de transferencia para enviarlo a validación.',
   registeredBy: 'Registrado por', noModality: 'Sin modalidad definida', noProof: 'Sin comprobante',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   notFound: 'No se encontró la reserva seleccionada. Vuelve a Reservas u Operación e ingresa nuevamente por Gestionar pago.',
@@ -52,16 +54,33 @@ export const CUSTOMER_PAYMENT_TEXT = {
   title: 'Pago por transferencia', reservation: 'Reserva',
   alert: 'Realiza la transferencia y sube el comprobante. El comprobante queda En validación solo cuando lo envías; no es ingreso de caja ni confirma la reserva hasta que un usuario del operador con el permiso Validar comprobantes lo valide, en un plazo máximo de 24 horas corridas.',
   typeName: { TOTAL: 'Pago total', PARTIAL: 'Abono' } as Readonly<Record<string, string>>, transferMethod: ' · Transferencia',
-  yourReservation: 'Tu reserva', tour: 'Tour', departure: 'Salida', travelers: 'Viajeros', typeAndMethod: 'Tipo y medio de pago', toTransfer: 'Valor a transferir',
+  yourReservation: 'Tu reserva', pendingBalance: 'Saldo pendiente de la reserva', declaredValue: 'Valor transferido (según tu comprobante)', tour: 'Tour', departure: 'Salida', travelers: 'Viajeros', typeAndMethod: 'Tipo y medio de pago', toTransfer: 'Valor a transferir',
   seatNote: 'Si es tu primer pago, el cupo se verifica y se aparta al recibir el comprobante, antes de aceptarlo. Si ya no hay cupo, te lo informaremos y no se recibirá el comprobante.',
   bankTitle: 'Datos bancarios', bank: 'Banco', accountType: 'Tipo de cuenta', accountNumber: 'Número de cuenta', holder: 'Titular',
   proofTitle: 'Comprobante de pago', proof: 'Archivo del comprobante (PDF, JPG, JPEG o PNG; máximo 5 MB)',
   proofState: 'Estado del comprobante:', financial: 'Situación financiera:', send: 'Enviar comprobante para validación', panel: 'Volver a mis reservas',
   chooseProof: 'Selecciona un comprobante para continuar.', validProof: 'Archivo válido. El comprobante quedará En validación solo cuando lo envíes.',
   none: 'No hay una reserva pendiente de transferencia. Vuelve a Explorar para crear una reserva.',
+  /** The account of the mockup, marked as demo: the service does not publish the operator's bank data (portal spec P9). */
+  demoBank: { bank: 'Banco de ejemplo (datos de demostración)', accountType: 'Ahorros', accountNumber: '000-000-000', holder: 'Travesía Natural' },
 };
 
 const DEPARTURE_STATE: Readonly<Record<string, string>> = { PROGRAMADA: 'Programada', EN_CURSO: 'En ejecución', FINALIZADA: 'Finalizada', CANCELADA: 'Cancelada' };
 /** "Salida" of 13 and of the follow-up (app.js 10170, 5072): tour, date and state; the SAL- code is not in the contract (blocked). */
 export const departureText = (r: { tourName: string; departureDate: string }, state?: string) =>
   `${r.tourName} · ${departureLine(r.departureDate)}${state ? ` (${DEPARTURE_STATE[state] ?? state})` : ''}`;
+
+/** Spanish answers for the refusals of the payment operations (AC-PY.4, AC-PY.5, AC-PY.7); the service answers in English, so the writer maps them. */
+export const PAYMENT_REFUSAL_TEXT = {
+  noCashSession: 'No hay una sesión de caja abierta: el pago en efectivo no se registró.',
+  noSeats: 'La salida no tiene cupo suficiente: el sistema no recibe el primer pago ni aparta cupo.',
+  deadlineExpired: 'El plazo de pago venció: la reserva ya no admite pagos ni comprobantes.',
+  departureCancelled: 'La salida fue cancelada: no se aceptan pagos.',
+  reservationClosed: 'Esta reserva ya no admite pagos.',
+  belowMinimum: 'El abono no puede ser menor al abono mínimo del servicio.',
+  aboveBalance: 'El valor transferido no puede superar el saldo pendiente.',
+  methodNotEnabled: 'El tipo o el medio de pago no está habilitado para este servicio.',
+  proofTooLarge: 'El comprobante supera el tamaño máximo de 5 MB.',
+  tooManyRequests: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.',
+  unavailable: 'El servicio no está disponible en este momento. Intenta más tarde.',
+};

@@ -5,9 +5,10 @@ import { ReservationsSource } from '../reservations/data/reservations-source';
 import { Departure, Reservation } from '../reservations/model/reservation';
 import { Clock } from '../reservation-changes/data/cancellation-ports';
 import {
-  Admission, ModificationOutcome, ModificationQuote, ModificationTrace, ModifyCommand, Recalculation, ReservationModificationWriter,
+  Admission, ModificationHistorySource, ModificationLines, ModificationOutcome, ModificationQuote, ModificationTrace, ModifyCommand, Recalculation, ReservationModificationWriter,
   TransportFareSource, TravellersChange,
 } from '../reservation-changes/travellers-modification/data/modification-ports';
+import { demoDate } from './demo-fixtures';
 import { PortalCapabilities } from '../shared/portal-capabilities';
 import type { DemoReservationsStore } from './reservations-demo';
 
@@ -32,6 +33,13 @@ export function recalculateReservation(r: Reservation, people: number, farePerPe
     differenceCents: Math.max(0, finalCents - r.quote.finalCents), excessCents: Math.max(0, validated - finalCents) };
 }
 
+/** RN-MD7: the seats the other reservations hold on the departure leave room for the new total; removed travellers free theirs at once. */
+function seatsLeft(store: DemoReservationsStore, departures: Departures, r: Reservation, people: number): boolean {
+  const capacity = departures.items.find((d) => d.id === r.departureId)?.effectiveCapacity ?? 0;
+  const held = store.items.filter((x) => x.id !== r.id && x.seatHeld && x.departureId === r.departureId).reduce((sum, x) => sum + x.people, 0);
+  return held + people <= capacity;
+}
+
 /** DP-MD3 (PROPUESTO): the seeded fare of the departure, or the per-person transport fixed at creation. */
 export class DemoTransportFare extends TransportFareSource {
   constructor(private readonly departures: Departures) { super(); }
@@ -41,7 +49,8 @@ export class DemoTransportFare extends TransportFareSource {
 }
 
 export class DemoModificationQuote extends ModificationQuote {
-  constructor(private readonly store: DemoReservationsStore, readonly fare: TransportFareSource, private readonly closedTours = MODIFICATION_CLOSED_TOURS) { super(); }
+  constructor(private readonly store: DemoReservationsStore, readonly fare: TransportFareSource, private readonly closedTours = MODIFICATION_CLOSED_TOURS,
+    private readonly departures?: Departures) { super(); }
   override admits(code: string): Observable<Admission | null> {
     const r = this.store.items.find((x) => x.id === code);
     return of(r ? this.admission(r) : null);
@@ -49,6 +58,13 @@ export class DemoModificationQuote extends ModificationQuote {
   override preview(code: string, change: TravellersChange): Observable<Recalculation | null> {
     const r = this.store.items.find((x) => x.id === code);
     return of(r ? recalculateReservation(r, r.people + change.added - change.removed, this.fare.perPerson(r)) : null);
+  }
+  override lines(code: string, change: TravellersChange): Observable<ModificationLines | null> {
+    const r = this.store.items.find((x) => x.id === code);
+    if (!r) return of(null);
+    const people = r.people + change.added - change.removed, next = recalculateReservation(r, people, this.fare.perPerson(r));
+    return of({ allowed: this.admission(r).kind === 'allowed', projectedCents: next.quote.projectedCents, discountCents: next.quote.discountCents, finalCents: next.quote.finalCents,
+      balanceCents: next.balanceCents, differenceCents: next.differenceCents, excessCents: next.excessCents, seatsAvailable: people <= r.people || (!this.departures || seatsLeft(this.store, this.departures, r, people)) });
   }
   /** RN-MD4: before execution only, then the tour policy. */
   admission(r: Reservation): Admission {
@@ -69,7 +85,7 @@ export class DemoReservationModificationWriter extends ReservationModificationWr
     if (!r || people < 1) return throwError(() => new Error('Unknown reservation or no traveller left'));
     const admission = this.quotes.admission(r);
     if (admission.kind === 'refused') return of(admission);
-    if (people > r.people && !this.seatsFor(r, people)) return of({ kind: 'refused', reason: 'no-capacity' });
+    if (people > r.people && !seatsLeft(this.store, this.departures, r, people)) return of({ kind: 'refused', reason: 'no-capacity' });
     const next = recalculateReservation(r, people, this.quotes.fare.perPerson(r));
     const modified: Reservation = { ...r, people, quote: next.quote, balanceCents: next.balanceCents };
     const trace: ModificationTrace = { reservationCode: code, originalCents: r.quote.finalCents, recalculatedCents: next.quote.finalCents,
@@ -90,6 +106,26 @@ export class DemoReservationModificationWriter extends ReservationModificationWr
   }
 }
 
+/**
+ * AC-MD.6 (DEMO): the traces of the one store, newest first. RES-1842 already carries a registered modification (one traveller added: 425.000 to
+ * 850.000, the discounts of the reservation unchanged), so 10A draws the history with data before anyone modifies anything.
+ */
+export class DemoModificationHistory extends ModificationHistorySource {
+  constructor(private readonly store: DemoReservationsStore) { super(); }
+  override list(code: string): Observable<readonly ModificationTrace[]> {
+    return of(this.store.modifications.filter((trace) => trace.reservationCode === code).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)));
+  }
+}
+
+/** The seeded history of the demo: pushed once into the store, so the writer's traces join it. */
+function seedHistory(store: DemoReservationsStore): DemoReservationsStore {
+  if (!store.modifications.some((trace) => trace.reservationCode === 'RES-1842')) {
+    store.modifications.push({ reservationCode: 'RES-1842', originalCents: 42_500_000, recalculatedCents: 85_000_000, balanceCents: 85_000_000, differenceCents: 42_500_000,
+      cause: 'Se suma un viajero a la reserva', by: 'Colaborador operativo (demo)', at: demoDate('2026-10-12T15:30:00-05:00'), decision: null });
+  }
+  return store;
+}
+
 /** Registered in sources.demo.ts after reservationChangesDemoProviders(), over its store, departures and clock. */
 export function reservationModificationDemoProviders(): Provider[] {
   const byKey = new Map<string, ModificationOutcome>();
@@ -97,6 +133,7 @@ export function reservationModificationDemoProviders(): Provider[] {
     { provide: TransportFareSource, useFactory: (d: DeparturesSource) => new DemoTransportFare(d as unknown as Departures), deps: [DeparturesSource] },
     { provide: ModificationQuote, useFactory: (s: ReservationsSource, f: TransportFareSource) => new DemoModificationQuote(s as DemoReservationsStore, f),
       deps: [ReservationsSource, TransportFareSource] },
+    { provide: ModificationHistorySource, useFactory: (s: ReservationsSource) => new DemoModificationHistory(seedHistory(s as DemoReservationsStore)), deps: [ReservationsSource] },
     { provide: ReservationModificationWriter, deps: [ReservationsSource, DeparturesSource, ModificationQuote, Clock, PortalCapabilities],
       useFactory: (s: DemoReservationsStore, d: Departures, q: DemoModificationQuote, c: Clock, p: PortalCapabilities) =>
         new DemoReservationModificationWriter(s, d, q, () => c.now(), p.roleLabel(), byKey) },

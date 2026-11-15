@@ -8,3 +8,8 @@ export function readFailure(error: unknown): ReadFailure {
   const traceId = typeof e?.traceId === 'string' && e.traceId ? e.traceId : undefined;
   return { ...(userMessage ? { userMessage } : {}), ...(traceId ? { traceId } : {}) };
 }
+
+/** The error state of a failed read: the message and trace of the failure and the retry, as every page of the portal builds it. */
+export function errorState(error: unknown, retry: () => void): { readonly kind: 'error'; readonly retry: () => void } & ReadFailure {
+  return { kind: 'error', retry, ...readFailure(error) };
+}

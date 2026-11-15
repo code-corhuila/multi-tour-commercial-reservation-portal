@@ -37,6 +37,22 @@ describe('discount management intentions', () => {
     expect(p.element.querySelector('[role="dialog"]')).toBeNull();
     expect(Array.from(p.element.querySelectorAll('button')).some(b => b.textContent?.trim() === 'Inactivar')).toBe(false);
   });
+  it('reactivates an inactive rule: asks confirmation, says only new reservations are affected, cancels without writing and retries with the same key', async () => {
+    const p = await open(); await p.click('Inactivar'); await p.click('Confirmar inactivación');
+    p.writer.calls[0].reply({ ...discountNamed(), status: 'INACTIVE', validity: { label: 'Inactivo', tone: 'pending', inForce: false } }); await p.settle();
+    const labels = () => Array.from(p.element.querySelectorAll('li button'), b => b.textContent?.trim());
+    expect(labels()).toEqual(['Editar parámetros', 'Reactivar']);
+    await p.click('Reactivar');
+    expect(p.element.querySelector('[role="dialog"]')?.textContent).toContain('La reactivación solo aplica a reservas nuevas');
+    expect(p.writer.calls).toHaveLength(1); await p.click('Cancelar'); expect(p.element.querySelector('[role="dialog"]')).toBeNull();
+    await p.click('Reactivar'); await p.click('Confirmar reactivación'); await p.click('Confirmar reactivación');
+    expect(p.writer.calls).toHaveLength(2); expect(p.writer.calls[1]).toMatchObject({ kind: 'reactivate', id: 'Promotion' });
+    p.writer.calls[1].fail(apiError()); await p.settle(); expect(p.element.querySelector('[role="dialog"] [role="alert"]')).not.toBeNull();
+    await p.click('Confirmar reactivación'); expect(p.writer.calls[2].key).toBe(p.writer.calls[1].key);
+    p.writer.calls[2].reply(discountNamed()); await p.settle();
+    expect(p.element.querySelector('[role="dialog"]')).toBeNull();
+    expect(labels()).toEqual(['Editar parámetros', 'Inactivar']);
+  });
   it('opens create and edit forms, cancels them and renews the intention on reopening', async () => {
     const p = await open(); await p.click('Crear descuento');
     const first = p.keys.generated.at(-1); expect(p.element.querySelector('form')).not.toBeNull();
@@ -59,5 +75,25 @@ describe('discount management intentions', () => {
     }
     p.element.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true })); await p.settle();
     p.writer.calls[1].reply(discountNamed('Created', 2)); await p.settle(); expect(p.element.querySelectorAll('li')).toHaveLength(2);
+  });
+});
+
+describe('focus follows the screen (pillar 7, HC-4)', () => {
+  it('moves the focus into the confirmation dialog and gives it back to the rule action when cancelled', async () => {
+    const p = await open(); document.body.append(p.element);
+    await p.click('Inactivar');
+    const dialog = p.element.querySelector('[role="dialog"]')!;
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await p.click('Cancelar');
+    expect(document.activeElement).toBe(Array.from(p.element.querySelectorAll('li button')).find(b => b.textContent?.trim() === 'Inactivar'));
+    p.element.remove();
+  });
+  it('focuses the heading of the form when it opens and the heading of the list when it closes', async () => {
+    const p = await open(); document.body.append(p.element);
+    await p.click('Crear descuento'); expect(document.activeElement).toBe(p.element.querySelector('h1'));
+    expect(p.element.querySelector('h1')?.textContent).toBe('Nuevo descuento');
+    await p.click('Cancelar'); expect(document.activeElement).toBe(p.element.querySelector('h1'));
+    expect(p.element.querySelector('h1')?.textContent).toBe('Descuentos');
+    p.element.remove();
   });
 });

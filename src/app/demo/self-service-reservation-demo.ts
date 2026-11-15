@@ -1,5 +1,5 @@
 import { Provider } from '@angular/core';
-import { Observable, forkJoin, map, of } from 'rxjs';
+import { Observable, forkJoin, map, of, throwError } from 'rxjs';
 import { DeparturesSource } from '../reservations/data/departures-source';
 import { LeadCustomersSource } from '../reservations/data/reservation-integrations';
 import { ReservationsSource, STATUS_CODE } from '../reservations/data/reservations-source';
@@ -7,16 +7,18 @@ import { ReservationsWriter } from '../reservations/data/reservations-writer';
 import { ReservationQuoteSource } from '../reservations/data/reservation-quote-source';
 import { Reservation } from '../reservations/model/reservation';
 import type { DemoReservationsStore } from './reservations-demo';
+import { CustomerCompanion } from '../shared/customer-companions';
 import { CustomerContext } from '../self-service-reservation/data/customer-context';
 import { MyReservationsSource } from '../self-service-reservation/data/my-reservations-source';
-import { PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from '../self-service-reservation/data/reservation-confirmation-ports';
+import { CheckoutHolder, PaymentMethodsSource, ReservationRequester, SelectionQuoteSource } from '../self-service-reservation/data/reservation-confirmation-ports';
 import { CustomerReservation, PaymentMethod, ReservationSelection, SelectionQuote } from '../self-service-reservation/model/self-service-reservation';
+import type { RiskData } from '../customers/data/reservation-party';
 
 // DEMO (spec DD-1): the customer side of the one demo store of HU-COM-007 (reservations-demo.ts), so the
 // operator and the customer read the same reservation under the same code. Debt: the contract has no
 // reservation path yet (G-B); the service will decide whose reservations they are (RN-RS8).
 /** PROVISIONAL, demo only: the lead customer the signed-in final customer stands for (no customer id in the session yet). */
-const DEMO_FINAL_CUSTOMER = 'demo-cus-3';
+export const DEMO_FINAL_CUSTOMER = 'demo-cus-3';
 
 const asCustomer = (r: Reservation, selection: Partial<ReservationSelection>): CustomerReservation => ({
   reservationId: r.id, tourName: r.tourName, departureAt: r.departureDate, departureId: selection.departureId ?? '',
@@ -69,12 +71,15 @@ export class DemoSelectionQuotes extends SelectionQuoteSource {
  */
 export class DemoReservationRequester extends ReservationRequester {
   constructor(private readonly writer: ReservationsWriter, private readonly mine: DemoMyReservations, private readonly store: DemoReservationsStore) { super(); }
-  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string): Observable<CustomerReservation> {
+  override request(selection: ReservationSelection, paymentMethod: string, idempotencyKey: string, companions: readonly CustomerCompanion[] = [], paymentType = '', _holder?: CheckoutHolder, risk?: readonly RiskData[]): Observable<CustomerReservation> {
     const { departureId, serviceIds, people } = selection;
-    return this.writer.create({ leadCustomerId: DEMO_FINAL_CUSTOMER, departureId, serviceIds, people }, idempotencyKey).pipe(
+    // Like the service: the high-risk demo tour is refused until the customer types the risk data of each traveler.
+    if (serviceIds[0] === 'demo-svc-3' && !risk) return throwError(() => ({ status: 400, code: 'VALIDATION_ERROR', message: 'bloodType is required', details: [{ field: 'bloodType', message: 'bloodType is required' }], traceId: '', userMessage: '' }));
+    return this.writer.create({ leadCustomerId: DEMO_FINAL_CUSTOMER, departureId, serviceIds, people,
+      ...(companions.length ? { companions: companions.map(({ fullName, document, birthDate }) => ({ fullName, document, birthDate })) } : {}) }, idempotencyKey).pipe(
       map((created) => {
         // HU-COM-009 DP-PY3: the method chosen on 21 stays with the reservation (mockup finalizar-reserva.html).
-        const kept = { ...created, paymentMethod };
+        const kept = { ...created, paymentMethod, ...(paymentType ? { paymentType } : {}) };
         this.store.items = this.store.items.map((r) => (r.id === created.id ? kept : r));
         this.mine.selections.set(created.id, selection); return asCustomer(kept, selection);
       }),

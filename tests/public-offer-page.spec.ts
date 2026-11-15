@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '../src/app/public-offer/data/public-offer-sources';
+import { PublicDeparturesSource, PublicEstablishmentsSource, PublicOfferSource, TourValueSource } from '../src/app/public-offer/data/public-offer-sources';
 import { PublicTour, TourValue } from '../src/app/public-offer/model/public-offer';
 import { GastronomyOfferPageComponent, LodgingOfferPageComponent } from '../src/app/public-offer/pages/establishments-offer-page.component';
 import { PublicOfferPageComponent } from '../src/app/public-offer/pages/public-offer-page.component';
@@ -19,7 +19,7 @@ import { DepartureCapacity } from '../src/app/reservations/data/departure-capaci
 import { DemoDepartureCapacity } from '../src/app/demo/departure-capacity-demo';
 import { DeparturesSource } from '../src/app/reservations/data/departures-source';
 import type { Departure } from '../src/app/reservations/data/departures-source';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 interface Options {
   readonly value?: TourValueSource; readonly withoutPorts?: boolean; readonly role?: Parameters<typeof actorAs>[0];
@@ -29,6 +29,8 @@ interface Options {
   readonly areas?: readonly string[];
   /** The departures port of HU-COM-007/008; absent where the container does not provide it. */
   readonly departures?: readonly Departure[];
+  /** The public departures port (HU-COM-006, the public tour detail); when given, the authenticated port answers 401 like for a visitor. */
+  readonly publicDepartures?: readonly Departure[];
 }
 const PAGES = { tours: PublicOfferPageComponent, lodging: LodgingOfferPageComponent, gastronomy: GastronomyOfferPageComponent };
 
@@ -43,6 +45,7 @@ async function openPage(options: Options = {}) {
         { provide: PublicEstablishmentsSource, useValue: places },
       ]),
       ...(options.departures ? [{ provide: DepartureCapacity, useValue: new DemoDepartureCapacity() }, { provide: DeparturesSource, useValue: Object.assign(Object.create(DeparturesSource.prototype), { list: () => of(options.departures) }) }] : []),
+      ...(options.publicDepartures ? [{ provide: DepartureCapacity, useValue: new DemoDepartureCapacity() }, { provide: DeparturesSource, useValue: Object.assign(Object.create(DeparturesSource.prototype), { list: () => throwError(() => ({ status: 401 })) }) }, { provide: PublicDeparturesSource, useValue: Object.assign(Object.create(PublicDeparturesSource.prototype), { list: () => of(options.publicDepartures) }) }] : []),
       ...(options.value ? [{ provide: TourValueSource, useValue: options.value }] : []),
       ...(options.role ? [{ provide: ActorContext, useValue: actorAs(options.role) }] : []),
       ...(options.areas ? [{ provide: PortalNavigation, useFactory: () => { const nav = new PortalNavigation(); nav.register(options.areas!); return nav; } }] : []),
@@ -394,6 +397,28 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     expect(text(detail.querySelector('.crp-offer-validity'))).toBe('Vigente del 01 sep 2026 al 30 sep 2026.');
   });
 
+  it('writes the capacity card of detalle-tour.html, "Capacidad: Hasta N viajeros", in the facts and in the summary (AC-PO.6)', async () => {
+    const page = await openPage();
+    await page.chooseDate('2026-11-22');
+    page.tours.requests[1].reply([tourNamed('Suaza', { maxTravelers: 12, transportIncluded: true })]);
+    await page.settle();
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    const detail = page.host.querySelector('[data-part="detail"]')!;
+    expect(text(detail.querySelector('.crp-offer-facts'))).toBe('Vigencia Disponible el 22 nov 2026 Capacidad Hasta 12 viajeros Transporte Transporte incluido');
+    expect(text(detail.querySelector('.crp-offer-summary .crp-offer-facts'))).toBe('Vigencia Disponible el 22 nov 2026 Capacidad Hasta 12 viajeros');
+    expect(detail.textContent).not.toMatch(/cupos? (disponibles?|apartados?)|costo|Estado/i);
+  });
+
+  it('draws no capacity card when the offer port gives no maximum: nothing is invented', async () => {
+    const page = await openPage();
+    page.tours.requests[0].reply([tourNamed('Suaza')]);
+    await page.settle();
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    expect(page.host.querySelector('[data-part="detail"]')!.textContent).not.toMatch(/Capacidad|viajeros/);
+  });
+
   it('draws Reservar tour only when the shell can open Reservar tour of HU-COM-008, and opens it on the tour', async () => {
     const page = await openPage({ areas: [CLIENT_AREA.tours, 'reserve'] });
     page.tours.requests[0].reply([tourNamed('Suaza')]);
@@ -558,6 +583,17 @@ describe('theOfferFollowsItsAuthorizedScreens (tours.html, detalle-tour.html, al
     const none = await detailWith([]);
     expect(text(none.detail.querySelector('.crp-offer-departures'))).toContain('No hay salidas programadas disponibles para este tour por ahora.');
     expect(within(none.page.host).getByRole('button', { name: 'Elegir salida y reservar' }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('a visitor sees the departures of the public tour detail even when the authenticated reader refuses with 401', async () => {
+    const page = await openPage({ publicDepartures: [departureOf('Canotaje en el Río Suaza', '2026-11-21', 8)], areas: [CLIENT_AREA.tours, 'reserve'] });
+    page.tours.requests[0].reply([tourNamed('Canotaje en el Río Suaza')]);
+    await page.settle();
+    fireEvent.click(within(page.cards('tours')[0]).getByRole('button', { name: 'Ver detalle' }));
+    await page.settle();
+    const detail = page.host.querySelector('[data-part="detail"]')!;
+    expect(Array.from(detail.querySelectorAll('.crp-offer-departures li'), (row) => text(row))).toEqual(['21 nov 2026 8 cupos disponibles']);
+    expect(within(page.host).getByRole('button', { name: 'Elegir salida y reservar' }).hasAttribute('disabled')).toBe(false);
   });
 
   it('draws no departures section where the container provides no departures port', async () => {

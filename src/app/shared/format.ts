@@ -22,8 +22,18 @@ export function departureLine(isoDateTime: string): string {
   return time ? `${formatDate(isoDateTime)} · ${time}` : formatDate(isoDateTime);
 }
 
+/** `2026-09-18T06:30:00-05:00` to `06:30`, read as written; empty for a date alone. */
+export function timeOf(isoDateTime: string): string {
+  return /T(\d{2}:\d{2})/.exec(isoDateTime)?.[1] ?? '';
+}
+
 /** `01 sep 2026 - 30 sep 2026`. */
 export function formatDateRange(startIsoDate: string, endIsoDate: string): string {
   return `${formatDate(startIsoDate)} - ${formatDate(endIsoDate)}`;
 }
 
+
+/** An instant as the tenant writes it (Colombia, UTC-05:00 all year), so the screens read it as written: `2026-11-11T09:00:00Z` to `2026-11-11T04:00:00-05:00`. */
+export function tenantInstant(instant: string | number): string {
+  return `${new Date(new Date(instant).getTime() - 5 * 3_600_000).toISOString().slice(0, 19)}-05:00`;
+}

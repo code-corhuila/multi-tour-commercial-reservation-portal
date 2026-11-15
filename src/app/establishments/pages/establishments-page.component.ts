@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, map, mergeMap, of, startWith, switchMap, tap } from 'rxjs';
 import { PortalCapabilities } from '../../shared/portal-capabilities';
 import { ApiError } from '../../shell-contract';
 import { EstablishmentFormComponent } from '../components/establishment-form.component';
-import { ESTABLISHMENTS_COPY } from '../establishments-copy';
+import { EstablishmentManageComponent } from '../components/establishment-manage.component';
+import { EstablishmentStateChangeComponent } from '../components/establishment-state-change.component';
+import { ESTABLISHMENTS_COPY, changeWhen, transitionRefusal } from '../establishments-copy';
 import { AssociatedEstablishmentsWriter } from '../data/associated-establishments-writer';
 import { AssociatedEstablishmentsSource } from '../data/associated-establishments-source';
 import {
@@ -22,7 +24,7 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
 @Component({
   selector: 'app-establishments-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReadErrorComponent, EstablishmentFormComponent],
+  imports: [ReadErrorComponent, EstablishmentFormComponent, EstablishmentManageComponent, EstablishmentStateChangeComponent],
   template: `
     @if (!canRead) {
       <p role="alert" data-state="denied">{{ copy.denied }}</p>
@@ -72,6 +74,9 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
         <button class="crp-operator-outline" type="button" [disabled]="saving()" (click)="clearFilters()">{{ copy.filters.clear }}</button>
       }
       </div>
+      @for (item of [changing()]; track item?.associationId) {
+        @if (item) { <app-establishment-state-change [establishment]="item" (confirmed)="confirmChange(item, $event)" (cancelled)="changing.set(null)" /> }
+      }
       @let current = state();
       @switch (current.kind) {
         @case ('loading') { <p role="status" data-state="loading">{{ copy.loading }}</p> }
@@ -89,12 +94,14 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
             <tbody>
             @for (item of current.items; track item.associationId) {
               <tr>
-                <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.establishmentType] }}</small></td>
-                <td>{{ item.commercialInformation }}</td>
-                <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ copy.statuses[item.associationStatus] }}</span></td>
+                <td><strong>{{ item.commercialName }}</strong><br><small>{{ copy.types[item.establishmentType] }}</small><br><small>{{ item.commercialInformation }}</small></td>
+                <td>@for (line of contactLines(item); track line) { <span>{{ line }}</span><br> } @empty { {{ copy.noContact }} }</td>
+                <td><span class="crp-operator-status" [class.crp-is-confirmed]="item.associationStatus === 'ACTIVE'" [class.crp-is-pending]="item.associationStatus === 'INACTIVE'">{{ copy.statuses[item.associationStatus] }}</span>
+                  <br><small>{{ lastChangeOf(item) }}</small></td>
                 @if (canWrite) {
                 <td class="crp-row-actions">
-                  <button class="crp-row-toggle" type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="changeStatus(item)">
+                  <button class="crp-operator-outline" type="button" [attr.aria-expanded]="managing() === item.associationId" (click)="managing.set(item.associationId)">{{ copy.manage }}</button>
+                  <button class="crp-row-toggle" type="button" [disabled]="saving() || pendingIds()[item.associationId]" (click)="startChange(item)">
                     {{ item.associationStatus === 'ACTIVE' ? copy.inactivate : copy.reactivate }}
                   </button>
                 @if (rowErrors()[item.associationId]; as reason) { <p role="alert">{{ reason }}</p> }
@@ -105,9 +112,28 @@ export type EstablishmentsPageState = PageState<AssociatedEstablishment>;
             </tbody>
           </table>
           </div>
+          @for (item of [managed(current.items)]; track item?.associationId) {
+            @if (item) { <app-establishment-manage [establishment]="item" (saved)="onManaged($event)" (closed)="managing.set(null)" /> }
+          }
         }
       }
       </section>
+      @if (current.kind === 'data' || current.kind === 'empty') {
+      <section class="crp-operator-panel" [attr.aria-label]="copy.log.title">
+        <p class="crp-operator-eyebrow">{{ copy.log.eyebrow }}</p>
+        <h2>{{ copy.log.title }}</h2>
+        <div class="crp-table-wrap">
+          <table class="crp-operator-table" [attr.aria-label]="copy.log.title">
+            <thead><tr>@for (column of copy.log.columns; track column) { <th scope="col">{{ column }}</th> }</tr></thead>
+            <tbody>
+              @for (line of logLines(); track line.key) {
+                <tr><td>{{ line.when }}</td><td>{{ line.name }}</td><td>{{ line.event }}</td><td>{{ line.by }}</td><td>{{ line.reason ?? copy.log.noReason }}</td></tr>
+              } @empty { <tr><td [attr.colspan]="copy.log.columns.length">{{ copy.log.empty }}</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </section>
+      }
     }
   `,
 })
@@ -121,6 +147,10 @@ export class EstablishmentsPageComponent {
   protected readonly formOpen = signal(false);
   protected readonly formKey = signal(0);
   protected readonly saving = signal(false);
+  /** The establishment whose "Gestionar" panel is open on this screen; one at a time. */
+  protected readonly managing = signal<string | null>(null);
+  /** The establishment whose "Cambiar estado" panel is open: the reason is asked before anything is sent (AC-PE.13). */
+  protected readonly changing = signal<AssociatedEstablishment | null>(null);
   protected readonly pendingIds = signal<Readonly<Record<string, boolean>>>({});
   protected readonly rowErrors = signal<Readonly<Record<string, string>>>({});
   private readonly local = signal<EstablishmentsPageState | null>(null);
@@ -136,20 +166,20 @@ export class EstablishmentsPageComponent {
     // RN-PE3: only the most recent request may supply the screen's next state.
     switchMap((filters) => this.source.list(filters).pipe(
       map((items): EstablishmentsPageState => items.length ? { kind: 'data', items } : { kind: 'empty' }),
-      catchError((error) => of<EstablishmentsPageState>({ kind: 'error', ...readFailure(error), retry: () => this.reload() })),
+      catchError((error) => of<EstablishmentsPageState>(errorState(error, () => this.reload()))),
       startWith<EstablishmentsPageState>({ kind: 'loading' }),
     )),
   ), { initialValue: { kind: 'loading' } as EstablishmentsPageState });
   readonly state = computed(() => this.local() ?? this.listed());
-  private readonly actions = new Subject<AssociatedEstablishment>();
-  private readonly actionResponses = toSignal(this.actions.pipe(mergeMap((item) =>
-    (item.associationStatus === 'ACTIVE' ? this.writer!.inactivate(item.associationId) : this.writer!.reactivate(item.associationId)).pipe(
+  private readonly actions = new Subject<{ readonly item: AssociatedEstablishment; readonly reason: string }>();
+  private readonly actionResponses = toSignal(this.actions.pipe(mergeMap(({ item, reason }) =>
+    (item.associationStatus === 'ACTIVE' ? this.writer!.inactivate(item.associationId, reason) : this.writer!.reactivate(item.associationId, reason)).pipe(
       tap((stored) => {
         const current = this.state();
         if (current.kind === 'data') { this.local.set({ kind: 'data', items: current.items.map((row) => row.associationId === stored.associationId ? stored : row) }); }
       }),
       catchError((error: Partial<ApiError> | null) => {
-        this.rowErrors.update((errors) => ({ ...errors, [item.associationId]: error?.userMessage ?? this.copy.requestFailed })); return EMPTY;
+        this.rowErrors.update((errors) => ({ ...errors, [item.associationId]: transitionRefusal(error) })); return EMPTY;
       }),
       finalize(() => this.pendingIds.update(({ [item.associationId]: _settled, ...rest }) => rest)),
     ),
@@ -188,9 +218,35 @@ export class EstablishmentsPageComponent {
     this.local.set({ kind: 'data', items: [stored, ...(current.kind === 'data' ? current.items : [])] });
     this.formOpen.set(false);
   }
-  protected changeStatus(item: AssociatedEstablishment): void {
+  protected managed(items: readonly AssociatedEstablishment[]): AssociatedEstablishment | undefined { return items.find((row) => row.associationId === this.managing()); }
+  protected lastChangeOf(item: AssociatedEstablishment): string {
+    const last = item.changes?.at(-1);
+    if (!item.changes) { return this.copy.noChangeInfo; }
+    return last ? this.copy.lastChange(last.kind, last.by, last.at, last.reason) : this.copy.noChange;
+  }
+  protected contactLines(item: AssociatedEstablishment): readonly string[] {
+    return [item.contactEmail, item.contactPhone, item.contactAddress].filter((line): line is string => !!line);
+  }
+  /** Every change of every listed establishment, newest first, as "Bitácora de cambios" draws it (12 lines at most, like the mockup). */
+  protected readonly logLines = computed(() => {
+    const current = this.state();
+    if (current.kind !== 'data') { return []; }
+    return current.items.flatMap((item) => (item.changes ?? []).map((change, index) => ({ at: change.at, key: `${item.associationId}-${index}`, when: changeWhen(change.at),
+      name: item.commercialName, event: this.copy.changeLabel[change.kind], by: change.by, reason: change.reason })))
+      .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 12);
+  });
+  protected onManaged(stored: AssociatedEstablishment): void {
+    const current = this.state();
+    if (current.kind === 'data') { this.local.set({ kind: 'data', items: current.items.map((row) => row.associationId === stored.associationId ? stored : row) }); }
+  }
+  protected startChange(item: AssociatedEstablishment): void {
     if (!this.canWrite || this.saving() || this.pendingIds()[item.associationId]) { return; }
+    this.changing.set(item);
+  }
+  protected confirmChange(item: AssociatedEstablishment, reason: string): void {
+    if (!this.canWrite || this.saving() || this.pendingIds()[item.associationId]) { return; }
+    this.changing.set(null);
     this.pendingIds.update((ids) => ({ ...ids, [item.associationId]: true }));
-    this.rowErrors.update(({ [item.associationId]: _previous, ...rest }) => rest); this.actions.next(item);
+    this.rowErrors.update(({ [item.associationId]: _previous, ...rest }) => rest); this.actions.next({ item, reason });
   }
 }

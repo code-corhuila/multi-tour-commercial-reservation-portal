@@ -1,6 +1,6 @@
 import { NgComponentOutlet } from '@angular/common';
 import { ReadErrorComponent } from '../../shared/read-error.component';
-import { readFailure } from '../../shared/read-failure';
+import { errorState } from '../../shared/read-failure';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, InjectionToken, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, map, of, startWith, switchMap, take } from 'rxjs';
@@ -100,7 +100,7 @@ export class ReservationChangePageComponent {
   private readonly requests = new Subject<void>();
   protected readonly state = toSignal(this.requests.pipe(startWith(undefined), switchMap(() => this.quotes.quote(this.code).pipe(
     map((q): State => (q ? { kind: 'data', items: [q] } : { kind: 'empty' })),
-    catchError((error) => of<State>({ kind: 'error', ...readFailure(error), retry: () => this.requests.next() })), startWith<State>({ kind: 'loading' })))),
+    catchError((error) => of<State>(errorState(error, () => this.requests.next()))), startWith<State>({ kind: 'loading' })))),
   { initialValue: { kind: 'loading' } as State });
 
   protected chosen() { return this.types.find((type) => type.key === this.selected()); }
@@ -123,7 +123,7 @@ export class ReservationChangePageComponent {
     const body = { reservationCode: q.reservation.id, cause, origin: this.origin() };
     type.submit({ ...body, idempotencyKey: this.intention.keyFor(body) }).subscribe({
       next: (outcome) => {
-        if (outcome.kind === 'registered') { this.showRegistered(q); return; }
+        if (outcome.kind === 'registered') { this.showRegistered(q, outcome.message); return; }
         this.failure.set(outcome.reason); this.pending.set(false);
       },
       error: () => { this.failure.set(this.t.failed); this.pending.set(false); },
@@ -131,8 +131,8 @@ export class ReservationChangePageComponent {
   }
 
   /** app.js: the registered text stays in the feedback line, the form stays disabled, then 10A opens. */
-  private showRegistered(q: CancellationQuoteResult): void {
-    this.registered.set(registeredMessage(this.origin(), q.reservation.validatedCents ?? 0, q.refundable));
+  private showRegistered(q: CancellationQuoteResult, message?: string): void {
+    this.registered.set(message ?? registeredMessage(this.origin(), q.reservation.validatedCents ?? 0, q.refundable));
     this.delay().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.back());
   }
 }

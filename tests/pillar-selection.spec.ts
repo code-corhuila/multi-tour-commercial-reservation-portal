@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { fillCompanionsIn } from './customer-companions.double';
 import { firstValueFrom, of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -66,8 +67,8 @@ describe('theConfirmationShowsTheQuoteOfTheSharedQuoteSource', () => {
   });
 });
 
-describe('theHolderFieldsAreDrawnDisabledAndNothingIsSent', () => {
-  it('draws the five holder fields disabled with the pending note, and the request carries none of them', async () => {
+describe('theHolderFieldsAreSentWithTheCreation (DP-RS5, replaces theHolderFieldsAreDrawnDisabledAndNothingIsSent)', () => {
+  it('draws the five holder fields enabled, with no pending note, and the request carries the holder and still no customer, tenant or value', async () => {
     const methods = new ControllablePaymentMethods(), requester = new RecordingRequester();
     TestBed.configureTestingModule({ providers: [
       { provide: CustomerContext, useValue: new CustomerAs('FINAL_CUSTOMER') },
@@ -82,14 +83,15 @@ describe('theHolderFieldsAreDrawnDisabledAndNothingIsSent', () => {
     const element: HTMLElement = fixture.nativeElement;
     const holder = Array.from(element.querySelectorAll<HTMLInputElement>('.crp-finish-holder input'));
     expect(holder).toHaveLength(5);
-    expect(holder.every((input) => input.disabled)).toBe(true);
-    expect(element.querySelector('.crp-finish-holder')!.textContent).toContain('Pendiente de definición');
+    expect(holder.every((input) => !input.disabled)).toBe(true);
+    expect(element.querySelector('.crp-finish-holder')!.textContent).not.toContain('Pendiente de definición');
     const select = element.querySelector('select') as HTMLSelectElement;
     select.value = 'BANK_TRANSFER'; select.dispatchEvent(new Event('change'));
     element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((box) => box.click());
-    await settle();
+    fillCompanionsIn(element); await settle();
     Array.from(element.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Confirmar reserva')!.click(); await settle();
     expect(requester.calls).toHaveLength(1);
     expect(Object.keys(requester.calls[0].selection).sort()).toEqual(['departureId', 'people', 'serviceIds']);
+    expect(requester.calls[0].holder).toMatchObject({ fullName: 'Titular Ficticio', document: 'DEMO-1001', termsAccepted: true });
   });
 });
