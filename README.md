@@ -22,7 +22,7 @@ to `develop` and `qa`. Without a local Node:
 
 | Script | Output | What it is |
 |---|---|---|
-| `npm run build:module` | `dist/portal.js`, `dist/portal.css` | the real module: `src/app/sources.ts` provides only the catalog and establishments adapters, over the container `apiClient` |
+| `npm run build:module` | `dist/portal.js`, `dist/portal.css` | the real module: `src/app/sources.ts` provides the HTTP adapters of every story (`src/app/http/`), over the container `apiClient` |
 | `npm run build:module:demo` | same files | the demo module: `sources.ts` is replaced by `sources.demo.ts`, so every story reads in-memory data from `src/app/demo/` |
 | `npm run build` | `dist/commercial-reservation-portal` | the standalone Native Federation build |
 
@@ -40,7 +40,7 @@ the customer screen of HU-COM-008 needs the holder and the risk requirements. Lo
 `deploy/Dockerfile` builds with `npm ci` and `npm run build:${PORTAL_BUILD}`, then serves the two files
 with nginx under the names the container manifest loads (`commercial-reservation-portal.js` and
 `.css`). `PORTAL_BUILD` defaults to `module:demo`: the delivered image shows demo data on every screen
-until each story is connected. The real module is `--build-arg PORTAL_BUILD=module`.
+(in-memory sources from `src/app/demo/`). The real module, wired to the API, is `--build-arg PORTAL_BUILD=module`.
 `deploy/compose.yml` brings up only this portal; the whole application is composed in the infra repository.
 
 ## How the container mounts it
@@ -66,7 +66,7 @@ first mount and removed with the last one. Every rule hangs from `.crp-root`.
   `refunds`, `rescheduling`, `reservation-changes`. Inside, `model/` (rules), `data/` (abstract ports
   and their sources), `pages/` and `components/`.
 - `shared/`: what several stories use (money, clock, formats, idempotency keys, focus, slots, capabilities).
-- `http/`: the container-client adapters of the stories that are connected.
+- `http/`: the container-client adapters; `sources.ts` registers them for every story.
 - `demo/`: the in-memory stores and fixtures of the demo build.
 - `portal-shell.component.ts`, `portal-navigation.ts`, `portal-areas.ts`, `shell-contract.ts`: the shell
   and the contract with the container.
@@ -93,9 +93,22 @@ Conventional Commit. Work goes to `develop` through branches named `feat/` or `f
 
 ## Status
 
-Connected to the API through `src/app/http/`: the catalog and the associated establishments, only.
-Every other story (discounts, customers, reservations, self-service reservation, payments,
-my payments, credit balance, refunds, rescheduling, reservation changes, public offer) is built
-and tested against the demo sources: it works in the demo image and has no HTTP adapter yet.
-Images come from the `TourImages` port (`src/app/shared/tour-photo.ts`) under the same origin as the
-container (CSP `img-src 'self'`); the portal produces no `blob:` or `data:` URL.
+Every story reads and writes through the container client with the adapters of `src/app/http/`,
+registered in `src/app/sources.ts` (catalog, establishments, discounts, customers, reservations,
+self-service reservation, public offer, payments and proofs, my payments, credit balance, refunds,
+rescheduling, reservation changes). The demo build (`sources.demo.ts`) replaces them with in-memory data.
+Tour images come from the `TourImages` port (`src/app/shared/tour-photo.ts`) under the same origin as the
+container (CSP `img-src 'self'`).
+
+## Content Security Policy impact (pillar 9)
+
+The portal does create `blob:` URLs, only in the browser memory, from a file the API returned:
+
+- `src/app/payments/components/proof-file-view.component.ts`: the payment proof preview. An image goes to
+  an `<img>` and a PDF to an `<iframe>`; the URL is released when the view is destroyed or reloaded.
+- `src/app/my-payments/pages/my-payments-page.component.ts`: the receipt download. The URL is created for a
+  temporary link and revoked right after the click.
+
+Showing the preview therefore needs the container CSP to allow `blob:` in `img-src` and `frame-src`
+(or `child-src`); the download needs no directive of its own. It has not been confirmed against the
+container CSP in this repository: check it with the front team before relying on the preview.
