@@ -122,7 +122,7 @@ describe('theCustomerCreditPanelOfMyPayments', () => {
     const list = s.host.querySelector('[data-credit-requests]')!;
     expect(s.flat(list)).toContain('Solicitudes de devolución de saldo a favor');
     expect(s.flat(list)).toContain('RES-O1 · $300.000 · Pendiente de autorización (solicitada el 14 oct 2026)');
-    expect(s.flat(list)).toContain('El Administrador del tenant tiene 24 horas corridas para autorizar o rechazar de forma justificada; sin decisión, Multitour autoriza la devolución por el monto solicitado.');
+    expect(s.flat(list)).toContain('El Administrador del tenant autoriza o rechaza de forma justificada cada solicitud; la devolución autorizada se ejecuta en máximo 5 días hábiles.');
   });
 
   it('says so and keeps the credit when the request fails', async () => {

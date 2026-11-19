@@ -114,7 +114,7 @@ describe('theRefundRequestFormOfTheCreditScreen', () => {
     expect(s.host.querySelector('[data-credit-refund-form]')).toBeNull();
   });
 });
-const CREDIT_REFUND_OK = 'Solicitud registrada por $100.000. El Administrador del tenant decide hasta el 15 oct 2026 · 10:00; sin decisión se autoriza automáticamente el monto y se notifica a todos los Administradores. Ejecución en máximo 5 días hábiles.';
+const CREDIT_REFUND_OK = 'Solicitud registrada por $100.000. El Administrador del tenant decide hasta el 15 oct 2026 · 10:00. Ejecución en máximo 5 días hábiles.';
 
 describe('creditRefundRequestOverTheApiClient', () => {
   const credit = (id: string, source: string, available: number) => ({ creditBalanceId: id, sourceReservationId: source, customerId: 'cu-1', origin: 'CUSTOMER_CANCELLATION',

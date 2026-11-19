@@ -8,7 +8,7 @@ export const CREDIT_BALANCE_COPY = {
   record: 'Registrar saldo a favor del 100 %', pending: 'Saldo a favor pendiente', amount: 'Monto', owner: 'Responsable', date: 'Fecha',
   loading: 'Cargando…', failed: 'No se pudo completar la solicitud.', retry: 'Reintentar',
   eyebrow: 'RN-RES-009 · GAP-014 · GAP-015', title: 'Saldo a favor', back: 'Volver a Pagos', link: 'Saldo a favor',
-  note: 'El saldo a favor es del cliente dentro de este tenant: no vence y no se transfiere a otros tenants. Se aplica como pago validado (sin comprobante) a una reserva del mismo cliente y, si es su primer pago, aparta el cupo en la misma operación. La devolución la autoriza el Administrador del tenant dentro de 24 horas corridas (sin decisión, se autoriza el monto disponible y se notifica a los Administradores) y se ejecuta en máximo 5 días hábiles.',
+  note: 'El saldo a favor es del cliente dentro de este tenant: no vence y no se transfiere a otros tenants. Se aplica como pago validado (sin comprobante) a una reserva del mismo cliente y, si es su primer pago, aparta el cupo en la misma operación. La devolución la autoriza o rechaza de forma justificada el Administrador del tenant y se ejecuta en máximo 5 días hábiles.',
   summary: ['Saldo disponible del tenant', 'Clientes con saldo', 'Devoluciones por decidir (24 h)'],
   empty: 'Ningún cliente del tenant tiene saldo a favor. Se genera por excedentes de pago, reducciones de valor o decisiones del Administrador sobre valores en tratamiento.',
   customer: 'Cliente', unknownCustomer: 'Cliente sin identificar', available: (money: string) => `Disponible ${money}`,
@@ -16,7 +16,7 @@ export const CREDIT_BALANCE_COPY = {
   apply: 'Aplicar como pago validado', noTargets: 'El cliente no tiene reservas con saldo pendiente donde aplicar.',
   requestRefund: 'Solicitar devolución', refundAmount: 'Monto a devolver', refundMotive: 'Motivo o referencia del cliente', refundPlaceholder: 'Ej.: solicitud del cliente por correo', refundSend: 'Registrar solicitud',
   /** The mockup own line (app.js, setupOperatorCreditScreen), with the due instant when the port gives it. */
-  refundRegistered: (money: string, due?: string) => `Solicitud registrada por ${money}. El Administrador del tenant decide${due ? ` hasta el ${due}` : ""}; sin decisión se autoriza automáticamente el monto y se notifica a todos los Administradores. Ejecución en máximo 5 días hábiles.`,
+  refundRegistered: (money: string, due?: string) => `Solicitud registrada por ${money}. El Administrador del tenant decide${due ? ` hasta el ${due}` : ""}. Ejecución en máximo 5 días hábiles.`,
   history: (n: number) => `Historial de aplicaciones y devoluciones (${n})`, historyColumns: ['Fecha', 'Movimiento', 'Detalle', 'Reserva', 'Valor', 'Responsable'],
   movement: { ORIGEN: 'Origen', APLICACION: 'Aplicación', DEVOLUCION: 'Devolución' }, state: { PENDIENTE_DE_AUTORIZACION: 'Pendiente de autorización', AUTORIZADA: 'Autorizada', RECHAZADA: 'Rechazada' },
   origin: { TRATAMIENTO: 'Tratamiento pendiente registrado como saldo a favor del 100 %', EXCEDENTE: 'Excedente de comprobante aprobado' }, appliedTo: (id: string) => `Aplicado a la reserva ${id}`,
