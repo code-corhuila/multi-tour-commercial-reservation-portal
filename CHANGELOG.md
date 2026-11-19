@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-11-18
+
+Minor release after 3.0.0. Every entry below is a pull request merged into `develop`, promoted to `qa` with `git cherry-pick -x` and re-applied to `release/3.1.0` the same way; the entry is the title of the original pull request without its type. The frozen head of `qa` is `6284a7fc54823eb7df6f56626da2b0703de6f6ca`.
+
+### Changed
+
+#### HU-COM-016 - Refunds: credit balance refund requests
+
+- Stop saying the credit balance refund is authorized on its own after 24 hours ([PR 310](https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/pull/310), promoted by [PR 311](https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/pull/311))
+
+#### Cross-cutting: documentation alignment (no single story is named in the pull request)
+
+- Align the readme with the connected adapters and blob urls ([PR 309](https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/pull/309), promoted by [PR 311](https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/pull/311))
+
 ## [3.0.0] - 2026-11-14
 
 Cut 3 release. Every entry below is a pull request merged into `qa` and re-applied to `release/3.0.0` with `git cherry-pick -x`; the heading of each group is the user story named in the pull request, and the entry is the title of the pull request without its type. The frozen head of `qa` is `08af8910f2275e74e855a68fab7ac580fcf9fcba`.
@@ -157,5 +171,6 @@ Cut 3 release. Every entry below is a pull request merged into `qa` and re-appli
 
 - The bundle budget of the module build ([PR 283](https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/pull/283))
 
-[Unreleased]: https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/code-corhuila/multi-tour-commercial-reservation-portal/releases/tag/v3.0.0
